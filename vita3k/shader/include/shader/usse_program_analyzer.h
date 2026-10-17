@@ -199,7 +199,8 @@ public:
 struct AttributeInformation {
     uint16_t location;
     SceGxmParameterType gxm_type;
-    uint8_t component_count;
+    // Includes all array elements, matching the shader input's register layout.
+    uint32_t component_count;
     // this is needed for Vulkan as it doesn't implicitly convert between integers and floats and between signed and unsigned
     bool is_integer;
     // only meaningful is is_integer is true
@@ -215,7 +216,7 @@ struct AttributeInformation {
         , regformat(false) {
     }
 
-    explicit AttributeInformation(uint16_t loc, SceGxmParameterType type, uint8_t count, bool is_integer, bool is_signed, bool regformat)
+    explicit AttributeInformation(uint16_t loc, SceGxmParameterType type, uint32_t count, bool is_integer, bool is_signed, bool regformat)
         : location(loc)
         , gxm_type(type)
         , component_count(count)

@@ -73,6 +73,7 @@ fun AppNavigation(
     settingsViewModel: SettingsViewModel,
     userManagementViewModel: UserManagementViewModel,
     onAppLaunch: (AppInfo) -> Unit,
+    onShellLaunch: () -> Unit,
     onCreateAppShortcut: (AppInfo) -> Unit
 ) {
     val navController = rememberNavController()
@@ -275,6 +276,7 @@ fun AppNavigation(
                 selectedAppIds = appsListViewModel.selectedAppIds,
                 resolveAvailableActions = { app -> appsListViewModel.getAvailableActions(app.titleId) },
                 onAppSelected = { app -> onAppLaunch(app) },
+                onShellLaunch = onShellLaunch,
                 onRunAppAction = { app, action -> appsListViewModel.runAppAction(app, action) },
                 onPrepareAppActions = { app -> appsListViewModel.prepareAppActions(app) },
                 onShowAppInfo = { app -> appsListViewModel.showAppInfo(app) },

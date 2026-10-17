@@ -225,7 +225,93 @@
 		<silver>シルバー</silver>
 		<hours_ago>{}時間前</hours_ago>
 		<minutes_ago>{}分前</minutes_ago>
+		<activities>アクティビティー</activities>
+		<like>いいね</like>
+		<likes_this>{}さんがいいねと言っています。</likes_this>
+		<and_like_this>{}さんと{}さんがいいねと言っています。</and_like_this>
+		<people_like_this>{}人がいいねと言っています。</people_like_this>
+		<comments>コメント {}</comments>
+		<delete_activity>このアクティビティーを削除します。</delete_activity>
+		<delete_comment>このコメントを削除します。</delete_comment>
+		<unlike>取り消す</unlike>
+		<write_comment>コメントを書く</write_comment>
+		<has_earned_platinum_trophy>さんが"{}"でプラチナトロフィーを獲得しました！</has_earned_platinum_trophy>
+		<has_earned_trophy>さんが"{}"でトロフィーを獲得しました！</has_earned_trophy>
+		<first_time_playing>さんが"{}"を初めてプレイしています。</first_time_playing>
+		<download_failed>ダウンロードできませんでした。</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}さんのアクティビティー</activities_of>
+		<anyone>誰にでも</anyone>
+		<no_one>公開しない</no_one>
+		<cannot_display>これ以上のページは表示できません。</cannot_display>
+		<friends_of_friends>フレンドのフレンドまで</friends_of_friends>
+		<friends_only>フレンドまで</friends_only>
+		<share_range>公開範囲:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>許可</accept>
+		<players_blocked>ブロックしているプレーヤー</players_blocked>
+		<friend_request_already_canceled>このフレンド依頼はすでにキャンセルされています。</friend_request_already_canceled>
+		<search_for_player>Vita3K Networkのプレーヤーを検索して、プロフィールを見たりフレンド依頼を送ったりできます。</search_for_player>
+		<friend_requests>フレンド依頼</friend_requests>
+		<friends>フレンド</friends>
+		<could_not_find_online_id>オンラインIDが見つかりませんでした。</could_not_find_online_id>
+		<there_are_no_players>プレーヤーがいません。</there_are_no_players>
+		<no_players_found>プレーヤーが見つかりません。</no_players_found>
+		<online_id>オンラインID</online_id>
+		<enter_from_3_to_16_characters>3～16文字で入力してください。</enter_from_3_to_16_characters>
+		<online_status>オンライン状況</online_status>
+		<received>受信済み</received>
+		<search>検索</search>
+		<sent>送信済み</sent>
+		<waiting_for_friend_response>フレンドの対応を待っています。</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>自己紹介</about_me>
+		<accept>許可</accept>
+		<activity>アクティビティー</activity>
+		<warn_block_player>このプレーヤーをブロックすると、このプレーヤーからのメッセージを受け取れなくなります。
+よろしいですか？</warn_block_player>
+		<warn_block_friend>このプレーヤーをブロックすると、このプレーヤーがフレンドから外されます。またこのプレーヤーからのメッセージを受け取れなくなります。
+よろしいですか？</warn_block_friend>
+		<block>ブロックする</block>
+		<blocked>ブロックしています。</blocked>
+		<cancel_friend_request>フレンド依頼をキャンセルする</cancel_friend_request>
+		<friend_request_canceled>フレンド依頼をキャンセルします。</friend_request_canceled>
+		<delete_request>依頼を削除する</delete_request>
+		<edit_profile>プロフィールを編集する</edit_profile>
+		<friend_request_already_canceled>このフレンド依頼はすでにキャンセルされています。</friend_request_already_canceled>
+		<friends>フレンド</friends>
+		<is_now_friends_with>は{}さんとフレンドになりました</is_now_friends_with>
+		<level>レベル</level>
+		<not_a_friend_yet>まだフレンドではありません。</not_a_friend_yet>
+		<remove_from_friends>フレンドから外す</remove_from_friends>
+		<player_removed_from_friends>このプレーヤーをフレンドから外します。</player_removed_from_friends>
+		<send_friend_request>フレンド依頼を送る</send_friend_request>
+		<send>送信</send>
+		<trophies>トロフィー数</trophies>
+		<unblock>ブロック解除する</unblock>
+		<unblock_player>このプレーヤーをブロック解除します。</unblock_player>
+		<waiting_friend_response>フレンドの対応を待っています。</waiting_friend_response>
+		<friend_request_from_player>このプレーヤーからフレンド依頼が届いています。</friend_request_from_player>
+		<you_have_friend_requests>フレンド依頼が届いています。</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>メッセージ</title>
+		<create_message>+ メッセージを作成</create_message>
+		<uncheck_all>すべての選択を解除</uncheck_all>
+		<enter_online_id>オンラインIDを入力してください。</enter_online_id>
+		<add>追加</add>
+		<add_recipient>宛先を追加</add_recipient>
+		<delete>削除</delete>
+		<cancel>キャンセル</cancel>
+		<to>宛先</to>
+	</messages_app>
 
 	<compatibility name="互換性">
 		<states>
@@ -325,13 +411,43 @@ SDL3に対応したコントローラーを接続してください。</not_conn
 
 	<indicator>
 		<app_added_home>ホーム画面にアプリケーションが追加されました。</app_added_home>
+		<cancel_download>このダウンロードをキャンセルしますか？</cancel_download>
+		<cancel_install>このインストールをキャンセルしますか？
+キャンセルすると、このインストールのためにダウンロードしたファイルも削除されます。</cancel_install>
 		<delete_all>すべて削除</delete_all>
 		<notif_deleted>お知らせを削除します。</notif_deleted>
+		<waiting_download>ダウンロード待機中です...</waiting_download>
+		<downloading_complete>ダウンロードしました。</downloading_complete>
 		<install_failed>インストールできませんでした。</install_failed>
+		<player_is_online>{}さんがオンラインになりました。</player_is_online>
+		<waiting_install>インストール待機中です...</waiting_install>
 		<install_complete>インストールしました。</install_complete>
 		<installing>インストール中です...</installing>
+		<minutes_left>残り {}分</minutes_left>
 		<no_notif>お知らせはありません。</no_notif>
+		<commented_on_activity>{}さんのアクティビティーにコメントが付きました。</commented_on_activity>
+		<commented_on_your_activity>あなたのアクティビティーにコメントが付きました。</commented_on_your_activity>
+		<commented_and_likes_your_activity>あなたのアクティビティーにコメントといいねが付きました。</commented_and_likes_your_activity>
+		<likes_your_activity>あなたのアクティビティーにいいねが付きました。</likes_your_activity>
+		<pause_all>すべて一時停止</pause_all>
+		<pause>一時停止</pause>
+		<paused>一時停止中</paused>
+		<resume_all>すべて再開</resume_all>
+		<resume>再開</resume>
+		<seconds_left>残り {}秒</seconds_left>
+		<friend_requests>フレンド依頼が届いています。</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>新しいバージョンのアプリケーションがあります。</new_app_version_available>
+		<latest_version_installed>最新のバージョンのアプリケーションがインストールされています。</latest_version_installed>
+		<downloading_app_update>アプリケーションのアップデートファイルをダウンロード中です...
+ダウンロードの進み具合は、お知らせリストで確認できます。</downloading_app_update>
+		<download>ダウンロード</download>
+		<not_enough_space>ダウンロードできませんでした。
+メモリーカードの空き容量が不足しています。メモリーカードに{}以上の空き容量を用意してからもう一度ダウンロードしてください。</not_enough_space>
+		<version>バージョン {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>戻る</back>

@@ -123,7 +123,9 @@ static void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SameLine(0, 20.f * SCALE.x);
     if ((ImGui::Button(::lang::get(::lang::str::ok).c_str(), BUTTON_SIZE) || button == confirm_button) && !cancelled) {
         gui.vita_area.app_close = false;
-        const auto &app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
+        const auto &app_path = gui.live_area_app_current_open >= 0 && gui.live_area_app_current_open < static_cast<int32_t>(gui.live_area_current_open_apps_list.size())
+            ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open]
+            : emuenv.app_path;
         close_and_run_new_app(emuenv, app_path);
     }
     ImGui::PopStyleVar();

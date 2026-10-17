@@ -17,11 +17,13 @@
 
 #include <module/module.h>
 
+#include <io/state.h>
 #include <np/functions.h>
 #include <np/state.h>
 #include <np/trophy/context.h>
 #include <rtc/rtc.h>
 #include <util/log.h>
+#include <v3kn/activity.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNpTrophy);
@@ -544,6 +546,35 @@ static int do_trophy_callback(EmuEnvState &emuenv, np::trophy::Context *context,
             }
         }
     }
+
+    std::string status_type = "trophy_acquisition";
+    if (context->is_trophy_hidden(trophy_id))
+        status_type += "_hidden";
+    else if (context->platinum_trophy_id == trophy_id)
+        status_type += "_platinum";
+
+    std::string grade;
+    switch (callback_data.trophy_kind) {
+    case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM: grade = "platinum"; break;
+    case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD: grade = "gold"; break;
+    case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER: grade = "silver"; break;
+    case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE: grade = "bronze"; break;
+    default:
+        LOG_ERROR("Unknown trophy grade for {}", callback_data.trophy_id);
+        return 0;
+    }
+
+    ActivityPostStatus status{
+        .type = std::move(status_type),
+        .title_id = emuenv.io.title_id,
+        .trophy_activity = {
+            .npcomm_id = callback_data.np_com_id,
+            .id = callback_data.trophy_id,
+            .grade = std::move(grade),
+            .name = callback_data.trophy_name,
+        },
+    };
+    v3kn::create_and_post_activity_status(emuenv, status);
 
     return 0;
 }

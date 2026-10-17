@@ -74,6 +74,7 @@ void TextureCache::set_replacement_state(bool import_textures, bool export_textu
     // invalidate all the current textures, will force all of them to be re-uploaded next frame
     for (auto &queue_item : texture_queue.items) {
         queue_item.content.hash = 0;
+        queue_item.content.data_hash = 0;
         queue_item.content.dirty = true;
     }
 

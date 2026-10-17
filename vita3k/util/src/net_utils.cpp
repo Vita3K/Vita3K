@@ -115,8 +115,19 @@ struct DownloadCallbackData {
     const ProgressCallback *callback;
 };
 
+struct DownloadFileData {
+    std::string output_file_path;
+    FILE *file = nullptr;
+};
+
 static size_t write_download_data(void *ptr, size_t size, size_t count, void *stream) {
-    return std::fwrite(ptr, size, count, static_cast<FILE *>(stream));
+    auto &data = *static_cast<DownloadFileData *>(stream);
+    if (!data.file) {
+        data.file = std::fopen(data.output_file_path.c_str(), "ab");
+        if (!data.file)
+            return 0;
+    }
+    return std::fwrite(ptr, size, count, data.file);
 }
 
 static int download_progress_callback(void *user_data, curl_off_t total, curl_off_t current, curl_off_t, curl_off_t) {
@@ -147,6 +158,16 @@ static int download_progress_callback(void *user_data, curl_off_t total, curl_of
     return state->canceled ? 1 : 0;
 }
 
+static void cleanup_failed_download(const std::string &output_file_path, uint64_t bytes_already_downloaded, bool succeeded, long http_code) {
+    if ((http_code != 404) && (succeeded || (bytes_already_downloaded > 0)))
+        return;
+
+    std::error_code error;
+    std::filesystem::remove(output_file_path, error);
+    if (error)
+        LOG_ERROR("Failed to remove incomplete download '{}': {}", output_file_path, error.message());
+}
+
 bool download_file(const std::string &url, const std::string &output_file_path, const ProgressCallback &progress_callback) {
     auto *curl = curl_easy_init();
     if (!curl)
@@ -154,35 +175,34 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
 
     const auto bytes_already_downloaded = std::filesystem::exists(output_file_path) ? std::filesystem::file_size(output_file_path) : 0;
     DownloadCallbackData callback_data{ { get_current_time_ms(), bytes_already_downloaded }, &progress_callback };
+    DownloadFileData file_data{ output_file_path };
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_download_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &file_data);
     curl_easy_setopt(curl, CURLOPT_RESUME_FROM_LARGE, static_cast<curl_off_t>(bytes_already_downloaded));
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &callback_data);
     curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, download_progress_callback);
 
-    auto *file = std::fopen(output_file_path.c_str(), "ab");
-    if (!file) {
-        curl_easy_cleanup(curl);
-        return false;
-    }
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
     const auto result = perform_verified_request(curl);
     long response_code = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-    std::fclose(file);
+    if (file_data.file)
+        std::fclose(file_data.file);
     curl_easy_cleanup(curl);
-    if (result == CURLE_OK && bytes_already_downloaded > 0 && response_code != 206) {
+    bool succeeded = result == CURLE_OK && (response_code == 200 || response_code == 206);
+    if (succeeded && bytes_already_downloaded > 0 && response_code != 206) {
         LOG_ERROR("Expected HTTP 206 for resumed download, got {}.", response_code);
         std::error_code error;
         std::filesystem::resize_file(output_file_path, bytes_already_downloaded, error);
         if (error)
             LOG_ERROR("Failed to restore partial download size: {}.", error.message());
-        return false;
+        succeeded = false;
     }
-    return result == CURLE_OK && (response_code == 200 || response_code == 206);
+    cleanup_failed_download(output_file_path, bytes_already_downloaded, succeeded, response_code);
+    return succeeded;
 }
 
 // 0 is ok, negative is bad
@@ -589,13 +609,7 @@ WebResponse download_file_ex(const std::string &url, const std::string &output_f
     }
 
     const auto downloaded = std::filesystem::exists(output_file_path) ? std::filesystem::file_size(output_file_path) : 0;
-    auto *file = std::fopen(output_file_path.c_str(), downloaded ? "ab" : "wb");
-    if (!file) {
-        response.curl_res = CURLE_WRITE_ERROR;
-        if (owns_session)
-            cleanup_curl_session(local_session);
-        return response;
-    }
+    DownloadFileData file_data{ output_file_path };
 
     auto *curl = static_cast<CURL *>(session->handle);
     curl_easy_reset(curl);
@@ -604,7 +618,7 @@ WebResponse download_file_ex(const std::string &url, const std::string &output_f
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_download_data);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &file_data);
     curl_easy_setopt(curl, CURLOPT_RESUME_FROM_LARGE, static_cast<curl_off_t>(downloaded));
     TransferProgressData progress_data{ &progress_callback, get_current_time_ms(), downloaded };
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, progress_callback ? 0L : 1L);
@@ -616,7 +630,8 @@ WebResponse download_file_ex(const std::string &url, const std::string &output_f
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, static_cast<curl_slist *>(session->headers));
     response.curl_res = perform_verified_request(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response.http_code);
-    std::fclose(file);
+    if (file_data.file)
+        std::fclose(file_data.file);
     if (owns_session)
         cleanup_curl_session(local_session);
     if (response.curl_res == CURLE_OK && downloaded > 0 && response.http_code != 206) {
@@ -629,6 +644,7 @@ WebResponse download_file_ex(const std::string &url, const std::string &output_f
     }
     if (response.curl_res == CURLE_OK && response.http_code / 100 != 2)
         response.curl_res = CURLE_HTTP_RETURNED_ERROR;
+    cleanup_failed_download(output_file_path, downloaded, response.is_success(), response.http_code);
     return response;
 }
 

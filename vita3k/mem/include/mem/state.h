@@ -22,9 +22,11 @@
 #include <mem/util.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 struct AllocMemPage {
     uint32_t allocated : 4;
@@ -65,6 +67,9 @@ struct MemExternalMapping {
 
 struct MemState {
     std::mutex generation_mutex;
+    std::condition_variable pins_changed;
+    uint64_t next_pin = 1;
+    std::map<uint64_t, std::vector<GuestMemoryRange>> pinned_ranges;
     std::mutex protect_mutex;
 
     uint32_t host_page_size = 0;
@@ -79,5 +84,8 @@ struct MemState {
     PageTable page_table;
     std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
 
+    bool trace_silent_hill = false;
+    bool silent_hill_scheduler_experiment = false;
+    bool silent_hill_late_wait_experiment = false;
     std::atomic_flag invalid_access_logged;
 };

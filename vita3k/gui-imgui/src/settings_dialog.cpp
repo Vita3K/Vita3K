@@ -28,11 +28,16 @@
 #include <gui-imgui/functions.h>
 #include <gui-imgui/state.h>
 #include <host/dialog/filesystem.h>
+#include <io/functions.h>
 #include <io/state.h>
+#include <io/vfs.h>
 #include <kernel/state.h>
+#include <packages/sfo.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
+#include <vfs/mounts.h>
+#include <vita_shell/functions.h>
 
 #include <emuenv/state.h>
 
@@ -49,9 +54,11 @@
 
 #include <SDL3/SDL_camera.h>
 #include <algorithm>
+#include <array>
 #include <camera/state.h>
 #include <imgui_internal.h>
 #include <pugixml.hpp>
+#include <string_view>
 #include <util/vector_utils.h>
 
 #undef ERROR
@@ -271,6 +278,11 @@ bool has_available_modules() {
 }
 
 static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
+    gui.theme_preview_loader.reset();
+    gui.theme_catalog_loader.reset();
+    gui.themes_package.clear();
+    gui.theme_preview.clear();
+    gui.theme_preview_id.clear();
     gui.configuration_menu.settings_dialog = false;
     gui.vita_area.home_screen = false;
 
@@ -281,8 +293,9 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     emuenv.io.user_id.clear();
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
-    // Stop the Background Music
-    bgm_player::stop_bgm();
+    bgm_player::clear_current_bgm();
+    pfsmgr::clear_shell_mounts(emuenv.io);
+    vita_shell::clear_theme();
 
     refresh_modules_list(emuenv);
     get_sys_apps_title(gui, emuenv);
@@ -298,6 +311,8 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
 
     if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path != emuenv.vita_fs_path) {
         // Refresh the working paths
+        gui.theme_preview_loader.reset();
+        gui.theme_catalog_loader.reset();
         app::switch_emulator_path(emuenv, emulator_path);
 
         // TODO: Move app old to new path
@@ -312,6 +327,41 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
 
 static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx, current_user_lang;
 static std::vector<std::string> list_user_lang;
+
+static constexpr std::array<std::string_view, 24> firmware_apps_paths = {
+    "pd0:app/NPXS10007",
+    "vs0:app/NPXS10000", "vs0:app/NPXS10001", "vs0:app/NPXS10002",
+    "vs0:app/NPXS10003", "vs0:app/NPXS10004", "vs0:app/NPXS10006",
+    "vs0:app/NPXS10008", "vs0:app/NPXS10009", "vs0:app/NPXS10010",
+    "vs0:app/NPXS10012", "vs0:app/NPXS10013", "vs0:app/NPXS10014",
+    "vs0:app/NPXS10015", "vs0:app/NPXS10018", "vs0:app/NPXS10021",
+    "vs0:app/NPXS10026", "vs0:app/NPXS10031", "vs0:app/NPXS10072",
+    "vs0:app/NPXS10078", "vs0:app/NPXS10091", "vs0:app/NPXS10094",
+    "vs0:app/NPXS10095", "vs0:app/NPXS10098"
+};
+
+static std::vector<std::pair<std::string, std::string>> fw_apps;
+static std::vector<std::string> current_fw_apps;
+static bool firmware_apps_refresh_pending = false;
+static std::string settings_save_error;
+
+static void get_firmware_apps_title(EmuEnvState &emuenv) {
+    current_fw_apps = emuenv.cfg.firmware_apps;
+    fw_apps.clear();
+    for (const auto app_path : firmware_apps_paths) {
+        vfs::FileBuffer param;
+        sfo::SfoAppInfo app_info;
+        if (vfs::read_app_file(param, emuenv.vita_fs_path, std::string(app_path), "sce_sys/param.sfo")
+            && sfo::get_param_info(app_info, param, emuenv.cfg.sys_lang) && !app_info.app_title.empty())
+            fw_apps.emplace_back(app_path, app_info.app_title);
+    }
+
+    std::sort(fw_apps.begin(), fw_apps.end(), [](const auto &a, const auto &b) {
+        const bool a_selected = vector_utils::contains(current_fw_apps, a.first);
+        const bool b_selected = vector_utils::contains(current_fw_apps, b.first);
+        return a_selected != b_selected ? a_selected : a.second < b.second;
+    });
+}
 
 /** Initialize the dialog draft from the global or app-specific configuration. */
 void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
@@ -340,6 +390,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 
     current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (vector_utils::find_index(list_user_lang, emuenv.cfg.user_lang) + 1);
 
+    get_firmware_apps_title(emuenv);
     refresh_modules_list(emuenv);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
@@ -349,18 +400,72 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     gui.vita_area.information_bar = true;
 }
 
-static app::SettingsCommitResult save_config(GuiState &gui, EmuEnvState &emuenv) {
+static bool save_config(GuiState &gui, EmuEnvState &emuenv, app::SettingsCommitResult &result) {
+    settings_save_error.clear();
+    if (gui.apps_list_scan_running.exchange(true)) {
+        settings_save_error = "The application list is being refreshed. Please try saving again.";
+        return false;
+    }
+    struct ScanGuard {
+        GuiState &gui;
+        ~ScanGuard() { gui.apps_list_scan_running = false; }
+    } scan_guard{ gui };
+
+    const auto previous_fw_apps = emuenv.cfg.firmware_apps;
+    const bool firmware_apps_changed = previous_fw_apps != current_fw_apps;
     Config desired_cfg;
     desired_cfg = emuenv.cfg;
     desired_cfg.current_config = config;
 
     const auto scope_app_path = gui.configuration_menu.custom_settings_dialog ? emuenv.app_path : std::string{};
-    if (scope_app_path.empty())
+    if (scope_app_path.empty()) {
         config::copy_current_config_to_global(desired_cfg);
-    const auto result = app::commit_settings(emuenv, desired_cfg, scope_app_path);
+    }
 
-    if (!scope_app_path.empty())
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    try {
+        const bool had_custom_config = !scope_app_path.empty() && config::has_custom_config(emuenv.config_path, scope_app_path);
+        if (!scope_app_path.empty() && !config::save_custom_config(config, emuenv.config_path, scope_app_path)) {
+            settings_save_error = "Could not save the application settings.";
+            LOG_ERROR("{}", settings_save_error);
+            return false;
+        }
+
+        result = app::commit_settings(emuenv, desired_cfg, scope_app_path);
+        if (!scope_app_path.empty())
+            result.custom_config_created = !had_custom_config;
+        emuenv.cfg.firmware_apps = current_fw_apps;
+        if (config::serialize_config(emuenv.cfg, emuenv.cfg.config_path) != Success) {
+            emuenv.cfg.firmware_apps = previous_fw_apps;
+            settings_save_error = "Could not save the emulator settings. Some other changes may have been applied.";
+            LOG_ERROR("{}", settings_save_error);
+            return false;
+        }
+    } catch (const std::exception &e) {
+        emuenv.cfg.firmware_apps = previous_fw_apps;
+        settings_save_error = "Could not save the settings. Some changes may have been applied; check the log.";
+        LOG_ERROR("{}: {}", settings_save_error, e.what());
+        return false;
+    }
+
+    firmware_apps_refresh_pending |= firmware_apps_changed;
+    if (firmware_apps_refresh_pending) {
+        try {
+            std::vector<std::string> added_paths;
+            if (!app::update_firmware_apps(emuenv, added_paths)) {
+                settings_save_error = "Settings were saved, but the application list could not be refreshed. Please retry.";
+                LOG_ERROR("{}", settings_save_error);
+                return false;
+            }
+            for (const auto &path : added_paths)
+                init_app_icon(gui, emuenv, path);
+            gui.app_selector.is_app_list_sorted = false;
+            firmware_apps_refresh_pending = false;
+        } catch (const std::exception &e) {
+            settings_save_error = "Settings were saved, but the application list could not be refreshed. Please retry.";
+            LOG_ERROR("{}: {}", settings_save_error, e.what());
+            return false;
+        }
+    }
 
     if (result.runtime_settings_applied && emuenv.renderer) {
         emuenv.renderer->set_stretch_display(emuenv.cfg.current_config.stretch_the_display_area);
@@ -368,7 +473,7 @@ static app::SettingsCommitResult save_config(GuiState &gui, EmuEnvState &emuenv)
     }
 
     bgm_player::set_bgm_volume(emuenv.cfg.bgm_volume);
-    return result;
+    return true;
 }
 
 static std::vector<const char *> cameras_list(2);
@@ -582,6 +687,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
         SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
+        ImGui::Spacing();
+        ImGui::Checkbox(lang.cpu["thread_scheduler"].c_str(), &config.thread_scheduler);
+        SetTooltipEx(lang.cpu["thread_scheduler_description"].c_str());
         break;
     }
     case SettingsDialogSection::GPU: {
@@ -1060,10 +1168,150 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.system["demo_mode"].c_str(), &emuenv.cfg.demo_mode);
         SetTooltipEx(lang.system["demo_mode_description"].c_str());
 
+        ImGui::Spacing();
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", "Select Your Preferred Firmware App");
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
+        if (ImGui::BeginListBox("##fw_apps_list", { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
+            for (const auto &[path, title] : fw_apps) {
+                const auto it = std::find(current_fw_apps.begin(), current_fw_apps.end(), path);
+                const bool selected = it != current_fw_apps.end();
+                ImGui::PushID(path.c_str());
+                if (ImGui::Selectable(title.c_str(), selected)) {
+                    if (selected)
+                        current_fw_apps.erase(it);
+                    else
+                        current_fw_apps.push_back(path);
+                }
+                ImGui::PopID();
+                ImGui::ScrollWhenDragging();
+            }
+            ImGui::EndListBox();
+        }
+        ImGui::PopItemWidth();
+
         break;
     }
 
     case SettingsDialogSection::Emulator: {
+        static fs::path identity_import_path;
+        static std::string identity_import_result;
+        static bool identity_reset = false;
+        bool show_identity_result = false;
+        const auto prepare_identity_popup = [&]() {
+            const float width = std::min(640.f * SCALE.x, VIEWPORT_SIZE.x * 0.9f);
+            ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + VIEWPORT_SIZE.x / 2.f, VIEWPORT_POS.y + VIEWPORT_SIZE.y / 2.f),
+                ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(ImVec2(width, 0.f), ImGuiCond_Always);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.f), ImVec2(width, VIEWPORT_SIZE.y * 0.9f));
+        };
+        const auto draw_identity_popup_title = [&]() {
+            const auto &title = lang.emulator[identity_reset ? "reset_savedata_identity" : "import_savedata_identity"];
+            const float available = ImGui::GetContentRegionAvail().x;
+            const float title_width = ImGui::CalcTextSize(title.c_str()).x;
+            if (title_width < available)
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (available - title_width) / 2.f);
+            ImGui::PushTextWrapPos(0.f);
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
+            ImGui::PopTextWrapPos();
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+        };
+        ImGui::Spacing();
+        const auto identity_buttons_start = ImGui::GetCursorPosX();
+        const auto identity_buttons_width = ImGui::GetContentRegionAvail().x;
+        if (ImGui::Button(lang.emulator["import_savedata_identity"].c_str())) {
+            identity_reset = false;
+            if (!emuenv.io.app_path.empty()) {
+                identity_import_result = lang.emulator["import_savedata_identity_running"];
+                ImGui::OpenPopup("##identity_import_result");
+            } else {
+                const auto result = host::dialog::filesystem::open_file(identity_import_path, { { "Savedata SFO", { "sfo" } } });
+                if (result == host::dialog::filesystem::Result::SUCCESS)
+                    ImGui::OpenPopup("##identity_import_confirm");
+                else if (result == host::dialog::filesystem::Result::ERROR) {
+                    identity_import_result = host::dialog::filesystem::get_error();
+                    LOG_ERROR("Cannot select savedata SFO: {}", identity_import_result);
+                    ImGui::OpenPopup("##identity_import_result");
+                }
+            }
+        }
+        const auto reset_button_width = ImGui::CalcTextSize(lang.emulator["reset_savedata_identity"].c_str()).x + ImGui::GetStyle().FramePadding.x * 2.f;
+        if (ImGui::GetCursorPosX() - identity_buttons_start + ImGui::GetItemRectSize().x + ImGui::GetStyle().ItemSpacing.x + reset_button_width <= identity_buttons_width)
+            ImGui::SameLine();
+        if (ImGui::Button(lang.emulator["reset_savedata_identity"].c_str())) {
+            identity_reset = true;
+            if (!emuenv.io.app_path.empty()) {
+                identity_import_result = lang.emulator["identity_change_running"];
+                ImGui::OpenPopup("##identity_import_result");
+            } else {
+                ImGui::OpenPopup("##identity_import_confirm");
+            }
+        }
+        prepare_identity_popup();
+        constexpr auto identity_popup_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
+        if (ImGui::BeginPopupModal("##identity_import_confirm", nullptr, identity_popup_flags)) {
+            draw_identity_popup_title();
+            ImGui::TextWrapped("%s", lang.emulator[identity_reset ? "reset_savedata_identity_confirm" : "import_savedata_identity_confirm"].c_str());
+            ImGui::Spacing();
+            const auto &style = ImGui::GetStyle();
+            const auto &import_label = lang.emulator[identity_reset ? "reset_savedata_identity_action" : "import_savedata_identity_action"];
+            const auto &cancel_label = lang.emulator["import_savedata_identity_cancel"];
+            const float import_width = std::max(100.f * SCALE.x, ImGui::CalcTextSize(import_label.c_str()).x + style.FramePadding.x * 2.f);
+            const float cancel_width = std::max(100.f * SCALE.x, ImGui::CalcTextSize(cancel_label.c_str()).x + style.FramePadding.x * 2.f);
+            const float available = ImGui::GetContentRegionAvail().x;
+            const bool same_line = import_width + style.ItemSpacing.x + cancel_width <= available;
+            const float buttons_width = same_line ? import_width + style.ItemSpacing.x + cancel_width : import_width;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.f, (available - buttons_width) / 2.f));
+            if (ImGui::Button(import_label.c_str(), ImVec2(std::min(import_width, available), 0.f))) {
+                try {
+                    if (!emuenv.io.app_path.empty()) {
+                        identity_import_result = lang.emulator["identity_change_running"];
+                    } else if (identity_reset) {
+                        if (app::reset_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path, identity_import_result))
+                            identity_import_result = lang.emulator["reset_savedata_identity_success"];
+                    } else {
+                        std::string identity_error;
+                        const auto identity = sfo::read_savedata_identity(identity_import_path, identity_error);
+                        if (identity) {
+                            if (app::import_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path, *identity, identity_import_result))
+                                identity_import_result = lang.emulator["import_savedata_identity_success"];
+                        } else {
+                            identity_import_result = identity_error;
+                        }
+                    }
+                } catch (const std::runtime_error &error) {
+                    identity_import_result = error.what();
+                    LOG_ERROR("Cannot change savedata identity: {}", error.what());
+                } catch (const std::bad_alloc &) {
+                    identity_import_result = lang.emulator["identity_change_memory"];
+                    LOG_ERROR("{}", identity_import_result);
+                }
+                ImGui::CloseCurrentPopup();
+                show_identity_result = true;
+            }
+            if (same_line)
+                ImGui::SameLine();
+            else
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.f, (available - cancel_width) / 2.f));
+            if (ImGui::Button(cancel_label.c_str(), ImVec2(std::min(cancel_width, available), 0.f)))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        if (show_identity_result)
+            ImGui::OpenPopup("##identity_import_result");
+        prepare_identity_popup();
+        if (ImGui::BeginPopupModal("##identity_import_result", nullptr, identity_popup_flags)) {
+            draw_identity_popup_title();
+            ImGui::TextWrapped("%s", identity_import_result.c_str());
+            ImGui::Spacing();
+            const float available = ImGui::GetContentRegionAvail().x;
+            const float button_width = std::min(available, std::max(100.f * SCALE.x, ImGui::CalcTextSize(common["close"].c_str()).x + ImGui::GetStyle().FramePadding.x * 2.f));
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (available - button_width) / 2.f);
+            if (ImGui::Button(common["close"].c_str(), ImVec2(button_width, 0.f)))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
 #ifndef __ANDROID__
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["boot_apps_full_screen"].c_str(), &emuenv.cfg.boot_apps_full_screen);
@@ -1131,6 +1379,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SameLine();
             if (ImGui::Button(lang.emulator["reset_emu_path"].c_str())) {
                 if (emuenv.default_path != emuenv.vita_fs_path) {
+                    gui.theme_preview_loader.reset();
+                    gui.theme_catalog_loader.reset();
                     app::switch_emulator_path(emuenv, emuenv.default_path);
 
                     // Refresh the working paths
@@ -1244,11 +1494,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang.gui["current_theme_content_id"].c_str(), user.theme_id.c_str());
         if (user.theme_id != "default") {
             ImGui::Spacing();
-            if (ImGui::Button(lang.gui["reset_default_theme"].c_str())) {
+            if (ImGui::Button(lang.gui["reset_default_theme"].c_str()) && apply_theme(gui, emuenv, "default")) {
                 user.theme_id = "default";
-                user.use_theme_bg = false;
-                if (init_theme(gui, emuenv, "default"))
-                    user.use_theme_bg = true;
+                user.use_theme_bg = !gui.theme_backgrounds.empty();
                 user.start_path.clear();
                 user.start_type = "default";
                 app::save_user(emuenv, emuenv.io.user_id);
@@ -1332,7 +1580,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (emuenv.cfg.adhoc_addr >= addrs.size()) {
             emuenv.cfg.adhoc_addr = 0;
             LOG_WARN("Invalid adhoc address index {}, resetting to 0", emuenv.cfg.adhoc_addr);
-            save_config(gui, emuenv);
+            app::SettingsCommitResult result;
+            save_config(gui, emuenv, result);
         }
 
         ImGui::PushItemWidth(ImGui::CalcTextSize(addrsStrings[emuenv.cfg.adhoc_addr].c_str()).x + (30.f * SCALE.x));
@@ -1550,18 +1799,28 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             button_label = lang.main_window["save_apply"].c_str();
     }
     if (ImGui::Button(button_label, BUTTON_SIZE)) {
-        const auto result = save_config(gui, emuenv);
-        if (result.affected_running_game && !result.restart_required_settings.empty())
-            app::request_in_process_launch(emuenv, AppLaunchRequest{
-                                                       .app_path = emuenv.io.app_path,
-                                                       .self_path = emuenv.self_path,
-                                                       .argv = emuenv.cfg.app_args.empty() ? std::vector<std::string>{} : std::vector<std::string>{ emuenv.cfg.app_args },
-                                                       .reason = AppLaunchReason::LoadExec,
-                                                   });
+        app::SettingsCommitResult result;
+        if (save_config(gui, emuenv, result)) {
+            if (result.affected_running_game && !result.restart_required_settings.empty())
+                app::request_in_process_launch(emuenv, AppLaunchRequest{
+                                                           .app_path = emuenv.io.app_path,
+                                                           .self_path = emuenv.self_path,
+                                                           .argv = emuenv.cfg.app_args.empty() ? std::vector<std::string>{} : std::vector<std::string>{ emuenv.cfg.app_args },
+                                                           .reason = AppLaunchReason::LoadExec,
+                                                       });
 
-        close_settings_dialog();
+            close_settings_dialog();
+        } else {
+            ImGui::OpenPopup("##settings_save_error");
+        }
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
+    if (ImGui::BeginPopupModal("##settings_save_error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextWrapped("%s", settings_save_error.c_str());
+        if (ImGui::Button(common["close"].c_str()))
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
     ImGui::PopStyleColor(8);
     ImGui::PopStyleVar(3);
 

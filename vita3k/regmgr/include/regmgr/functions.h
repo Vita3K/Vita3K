@@ -19,11 +19,25 @@
 
 #include <regmgr/state.h>
 
+#include <array>
+#include <cstdint>
+#include <optional>
 #include <string>
 
 namespace regmgr {
 
+void reset_regmgr(RegMgrState &regmgr);
 void init_regmgr(RegMgrState &regmgr, const fs::path &vita_fs_path);
+
+// Returns failure on an invalid or inconsistent registry or an I/O failure. Both calls
+// require the loaded registry to match disk. The three-argument overload can
+// preserve the original as system.dreg.bak; an existing backup is never replaced.
+// A backup contains private registry data and remains even if replacement fails.
+// Failure to synchronize the parent directory can be reported after replacement;
+// in that case the loaded account ID has already been updated.
+std::optional<std::array<uint8_t, 8>> get_account_id(RegMgrState &regmgr);
+bool set_account_id(RegMgrState &regmgr, const std::array<uint8_t, 8> &account_id);
+bool set_account_id(RegMgrState &regmgr, const std::array<uint8_t, 8> &account_id, bool backup_original);
 
 // Getters and setters for binary values
 void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize);

@@ -220,6 +220,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "check-for-updates", true, check_for_updates)                                            \
     code(int, "check-for-updates-mode", static_cast<int>(UPDATE_STARTUP_PROMPT), check_for_updates_mode)\
     code(int, "file-loading-delay", 0, file_loading_delay)                                              \
+    code(bool, "thread-scheduler", true, thread_scheduler)                                               \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
@@ -250,6 +251,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(std::vector<short>, "controller-axis-binds", std::vector<short>{}, controller_axis_binds)      \
     code(std::vector<int>, "controller-led-color", std::vector<int>{}, controller_led_color)            \
     code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
+    code(std::vector<std::string>, "firmware-apps", std::vector<std::string>{}, firmware_apps)          \
     code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)                       \
     code(std::vector<std::string>, "tracy-advanced-profiling-modules", std::vector<std::string>{}, tracy_advanced_profiling_modules)
 

@@ -91,6 +91,8 @@ std::string path_to_utf8(const fs::path &path);
  */
 fs::path utf8_to_path(const std::string &str);
 
+bool is_plain_component(const fs::path &path);
+
 /**
  * \brief Concatenate two paths. Usable to add extension to path.
  * \param path1 First path

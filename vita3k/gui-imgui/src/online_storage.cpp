@@ -110,12 +110,7 @@ void draw_online_storage(GuiState &gui, EmuEnvState &emuenv, app::AppSessionCont
     ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, 10.f * SCALE.y));
     if (ImGui::Button("X", CLOSE_BUTTON_SIZE)) {
         gui.vita_area.online_storage = false;
-        if ((gui.live_area_app_current_open >= 0)
-            && (gui.live_area_app_current_open < gui.live_area_current_open_apps_list.size())
-            && (gui::get_live_area_current_open_apps_list_index(gui, gui.live_area_current_open_apps_list[gui.live_area_app_current_open]) != gui.live_area_current_open_apps_list.end()))
-            gui.vita_area.live_area_screen = true;
-        else
-            gui.vita_area.home_screen = true;
+        gui.vita_area.home_screen = true;
     }
     ImGui::PopStyleVar();
 
@@ -326,7 +321,7 @@ void draw_online_storage(GuiState &gui, EmuEnvState &emuenv, app::AppSessionCont
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) + (BUTTON_SPACING / 2.f), POPUP_SIZE.y - BUTTON_SIZE.y - (24.f * SCALE.y)));
             if (ImGui::Button(::lang::get(::lang::str::yes).c_str(), BUTTON_SIZE)) {
                 if (app_is_running()) {
-                    close_live_area_app(gui, emuenv, emuenv.io.app_path);
+                    close_live_area_app(gui, emuenv, app_ui_path(emuenv.io.app_path));
                     storage_state.online_storage_state = ONLINE_STORAGE_WAIT_APP_CLOSE;
                     gui.vita_area.please_wait = true;
                     storage_state.please_wait_timestamp = get_timestamp_ms();
@@ -476,7 +471,6 @@ void open_online_storage(GuiState &gui, EmuEnvState &emuenv, const std::string &
         if (v3kn::get_savedata_info(emuenv, titleid, error)) {
             gui.vita_area.online_storage = true;
             gui.vita_area.home_screen = false;
-            gui.vita_area.live_area_screen = false;
         } else if (!error.empty()) {
             InfoMessage info_message;
             info_message.function = "v3kn_storage";

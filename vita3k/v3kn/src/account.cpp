@@ -76,6 +76,10 @@ Error get_v3kn_error(const net_utils::WebResponse &response) {
     };
 }
 
+std::string get_v3kn_error_message(EmuEnvState &, const net_utils::WebResponse &response) {
+    return get_v3kn_error(response).message;
+}
+
 std::string get_v3kn_server_url(const std::string &host, const std::string &path) {
     if (V3KN_SERVER_PROTOCOL.find(host) == V3KN_SERVER_PROTOCOL.end()) {
         LOG_WARN("V3KN: Unknown server host {}, defaulting to https", host);
@@ -176,8 +180,20 @@ void save_v3kn_user_info(EmuEnvState &emuenv) {
     doc.save_file(user_info_path.string().c_str());
 }
 
-void init_v3kn_user_info(EmuEnvState &emuenv, Error &error) {
+void init_v3kn_user_info(EmuEnvState &emuenv, Error &error, const std::map<std::string, std::string> &language) {
     error = {};
+    {
+        std::lock_guard lock(emuenv.v3kn.activity_state.language_mutex);
+        emuenv.v3kn.activity_state.language = language;
+    }
+    auto &friends_state = emuenv.v3kn.friends_state;
+    stop_friend_polling(friends_state);
+    cleanup_friend_state(friends_state);
+    auto &messages_state = emuenv.v3kn.messages_state;
+    stop_messages_polling(messages_state);
+    cleanup_messages_state(messages_state);
+    emuenv.v3kn.take_social_events();
+
     auto &account_state = emuenv.v3kn.account_state;
     UserInfo request_user_info;
     {
@@ -187,6 +203,7 @@ void init_v3kn_user_info(EmuEnvState &emuenv, Error &error) {
         account_state.selected_server = V3knServer::Official;
         set_v3kn_logged_in(false);
         set_v3kn_login_init_completed(false);
+        load_activity_cache(emuenv);
 
         const fs::path user_info_path{ emuenv.vita_fs_path / "ux0/user" / emuenv.io.user_id / "v3kn.xml" };
         pugi::xml_document doc;
@@ -269,6 +286,7 @@ void init_v3kn_user_info(EmuEnvState &emuenv, Error &error) {
     }
 
     set_v3kn_logged_in(true);
+    flush_activity_cache(emuenv);
 
     set_v3kn_login_init_completed(true);
     LOG_INFO("V3KN user info: successfully logged in as {}", user_info.online_id);

@@ -18,11 +18,14 @@
 #include "private.h"
 
 #include <app/functions.h>
+#include <app/session_controller.h>
+#include <config/config.h>
 #include <config/state.h>
 #include <config/version.h>
 #include <dialog/state.h>
 #include <gui-imgui/functions.h>
 #include <io/state.h>
+#include <io/vfs.h>
 #include <renderer/state.h>
 
 #include <packages/license.h>
@@ -39,9 +42,6 @@
 #undef main
 
 #include <boost/algorithm/string/replace.hpp>
-
-#include <pugixml.hpp>
-#include <regex>
 
 #ifdef _WIN32
 #include <comdef.h>
@@ -196,10 +196,9 @@ static fs::path get_exe_path() {
 
 namespace gui {
 
-static void create_app_icon(EmuEnvState &emuenv, const fs::path &app_path) {
+static void create_app_icon(EmuEnvState &emuenv, const fs::path &app_path, const std::string &title_id) {
     // Get title ID and icon path
-    const std::string title_id = app_path.stem().string();
-    const fs::path png_path = emuenv.vita_fs_path / "ux0/app" / app_path / "sce_sys" / "icon0.png";
+    const fs::path png_path = vfs::resolve_app_path(emuenv.vita_fs_path, app_path.string(), "sce_sys/icon0.png", title_id);
 
     if (!fs::exists(png_path))
         return; // skip, will use exe icon
@@ -209,7 +208,7 @@ static void create_app_icon(EmuEnvState &emuenv, const fs::path &app_path) {
     fs::create_directories(icon_dir);
 
     // Create icon in appropriate format
-    fs::path icon_path = icon_dir / title_id;
+    fs::path icon_path = icon_dir / app_path.stem();
 #ifdef _WIN32
     icon_path += ".ico";
     if (!png_to_ico(png_path, icon_path))
@@ -418,43 +417,6 @@ static void create_shortcut(EmuEnvState &emuenv, const std::string &app_path, co
 #endif
 }
 
-static std::map<double, std::string> update_history_infos;
-
-static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    update_history_infos.clear();
-    const auto change_info_path{ emuenv.vita_fs_path / "ux0/app" / app_path / "sce_sys/changeinfo/" };
-
-    std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang) : "changeinfo.xml";
-
-    pugi::xml_document doc;
-    if (!doc.load_file((change_info_path / fname).c_str()))
-        return false;
-
-    for (const auto &info : doc.child("changeinfo")) {
-        double app_ver = info.attribute("app_ver").as_double();
-        std::string text = info.text().as_string();
-
-        // Replace HTML tags and special character entities
-        text = std::regex_replace(text, std::regex(R"(<li>)"), reinterpret_cast<const char *>(u8"\u30FB"));
-        text = std::regex_replace(text, std::regex(R"(<br/>|<br>|</li>)"), "\n");
-        text = std::regex_replace(text, std::regex(R"(<[^>]+>)"), "");
-        text = std::regex_replace(text, std::regex(R"(&nbsp;)"), " ");
-        text = std::regex_replace(text, std::regex(R"(&reg;)"), reinterpret_cast<const char *>(u8"\u00AE"));
-
-        // Remove duplicate newlines and spaces
-        auto end = std::unique(text.begin(), text.end(), [](char a, char b) {
-            return std::isspace(static_cast<unsigned char>(a)) && std::isspace(static_cast<unsigned char>(b));
-        });
-        if (end != text.begin() && std::isspace(static_cast<unsigned char>(end[-1])))
-            --end;
-        text.erase(end, text.end());
-
-        update_history_infos[app_ver] = text;
-    }
-
-    return !update_history_infos.empty();
-}
-
 static std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
     constexpr uint32_t one_min = 60;
     constexpr uint32_t one_hour = one_min * 60;
@@ -492,19 +454,41 @@ static std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
     }
 }
 
-void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path, app::AppSessionController *session) {
     const auto APP_INDEX = get_app_index(gui, emuenv, app_path);
     if (!APP_INDEX) {
         LOG_ERROR("Failed to delete app '{}': App index not found", app_path);
         return;
     }
 
-    const auto title_id = APP_INDEX->title_id;
-    if (!app::delete_app(emuenv, app_path))
+    const std::string deleted_app_path = app_path;
+    const bool is_running = session && session->has_active_session() && emuenv.io.app_path == deleted_app_path;
+    if (is_running) {
+        if (!gui.pending_app_deletion.empty()) {
+            LOG_WARN("Cannot delete '{}': app '{}' is already pending deletion.", deleted_app_path, gui.pending_app_deletion);
+            return;
+        }
+        gui.pending_app_deletion = deleted_app_path;
+    }
+
+    if (is_running || (gui.live_area_app_closing != deleted_app_path && get_live_area_current_open_apps_list_index(gui, deleted_app_path) != gui.live_area_current_open_apps_list.end())) {
+        const auto home_screen = gui.vita_area.home_screen;
+        const auto information_bar = gui.vita_area.information_bar;
+        close_live_area_app(gui, emuenv, deleted_app_path);
+        if (gui.vita_area.content_manager) {
+            gui.vita_area.home_screen = home_screen;
+            gui.vita_area.information_bar = information_bar;
+        }
+    }
+    if (is_running)
         return;
 
-    if (gui.app_selector.user_apps_icon.contains(app_path))
-        gui.app_selector.user_apps_icon.erase(app_path);
+    const auto title_id = APP_INDEX->title_id;
+    if (!app::delete_app(emuenv, deleted_app_path))
+        return;
+
+    if (gui.app_selector.user_apps_icon.contains(deleted_app_path))
+        gui.app_selector.user_apps_icon.erase(deleted_app_path);
 
     erase_app_notice(gui, title_id);
     save_notice_list(emuenv);
@@ -551,15 +535,17 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     static std::string context_dialog;
 
     const auto APP_INDEX = get_app_index(gui, emuenv, app_path);
+    if (!APP_INDEX)
+        return;
     const auto &title_id = APP_INDEX->title_id;
 
-    const auto APP_PATH{ emuenv.vita_fs_path / "ux0/app" / app_path };
-    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+    const auto APP_PATH = vfs::get_app_base_path(emuenv.vita_fs_path, app_asset_path(app_path));
     const auto SAVE_DATA_PATH{ emuenv.vita_fs_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto PATCH_PATH{ emuenv.shared_path / "patch" / title_id };
+    const auto UPDATE_PATH{ emuenv.vita_fs_path / "ux0/patch" / title_id };
     const auto ADDCONT_PATH{ emuenv.vita_fs_path / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ emuenv.vita_fs_path / "ux0/license" / title_id };
-    const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
+    const auto MANUAL_PATH = vfs::resolve_app_path(emuenv.vita_fs_path, app_asset_path(app_path), "sce_sys/manual", title_id);
     const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
     const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
     const auto EXPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/export" / title_id };
@@ -580,7 +566,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto &textures = gui.lang.settings_dialog.gpu;
 
     const auto is_commercial_app = title_id.starts_with("PCS") || (title_id == "NPXS10007");
-    const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
+    const auto is_system_app = is_emu_app(app_path);
+    const bool update_in_use = session && session->has_active_session()
+        && (emuenv.io.app_path == app_path || emuenv.io.title_id == title_id);
     const auto has_state_report = gui.compat.compat_db_loaded && gui.compat.app_compat_db.contains(title_id);
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
     const auto compat_state_color = compatibility_color(compat_state);
@@ -589,7 +577,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.1f);
-        const auto &START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
+        const auto &START_STR = app_launch_path(app_path) == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
         if (ImGui::MenuItem(START_STR.c_str()))
             pre_run_app(gui, emuenv, app_path, session);
         if (!is_system_app) {
@@ -710,18 +698,18 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
             if (has_shortcut_support() && ImGui::MenuItem(lang.main["create_shortcut"].c_str())) {
-                create_app_icon(emuenv, app_path);
+                create_app_icon(emuenv, app_path, title_id);
                 create_shortcut(emuenv, app_path, string_utils::remove_special_chars(APP_INDEX->title));
             }
             if (ImGui::BeginMenu(lang.custom_config["title"].c_str())) {
-                if (!fs::exists(CUSTOM_CONFIG_PATH)) {
+                if (!config::has_custom_config(emuenv.config_path, app_path)) {
                     if (ImGui::MenuItem(lang.custom_config["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, emuenv, app_path);
                 } else {
                     if (ImGui::MenuItem(lang.custom_config["edit"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, emuenv, app_path);
                     if (ImGui::MenuItem(lang.custom_config["remove"].c_str())) {
-                        fs::remove(CUSTOM_CONFIG_PATH);
+                        config::delete_custom_config(emuenv.config_path, app_path);
                     }
                 }
                 ImGui::EndMenu();
@@ -732,6 +720,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(fs_utils::path_to_utf8(APP_PATH));
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     open_path(fs_utils::path_to_utf8(SAVE_DATA_PATH));
+                if (fs::is_directory(UPDATE_PATH) && ImGui::MenuItem(lang.live_area["update"].c_str()))
+                    open_path(fs_utils::path_to_utf8(UPDATE_PATH));
                 if (fs::exists(PATCH_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
                     open_path(fs_utils::path_to_utf8(PATCH_PATH));
                 if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.path["addcont"].c_str()))
@@ -751,14 +741,17 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 #endif
 
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
-                if (ImGui::MenuItem("Live Area", nullptr, &gui.vita_area.live_area_screen))
+                bool is_live_area = gui.live_area_app_current_open >= 0;
+                if (ImGui::MenuItem("Live Area", nullptr, &is_live_area))
                     open_live_area(gui, emuenv, app_path);
+                if (has_live_area_update(gui, app_path, title_id) && ImGui::MenuItem(lang.live_area["update"].c_str()))
+                    process_live_area_update(gui, emuenv, app_path);
                 if (ImGui::MenuItem(common["search"].c_str(), nullptr))
                     open_search(APP_INDEX->title);
                 if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem(lang.live_area["manual"].c_str(), nullptr))
                     open_manual(gui, emuenv, app_path);
                 if (ImGui::MenuItem(gui.lang.home_screen["refresh"].c_str()))
-                    refresh_app(gui, emuenv, app_path);
+                    refresh_and_check_patch(gui, emuenv, app_path);
                 if (title_id.starts_with("PCS") && ImGui::MenuItem(gui.lang.online_storage["online_storage"].c_str()))
                     open_online_storage(gui, emuenv, title_id);
                 ImGui::EndMenu();
@@ -768,6 +761,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     context_dialog = lang.deleting["delete_app"];
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     context_dialog = delete_saved_data;
+                if (fs::is_directory(UPDATE_PATH) && ImGui::MenuItem(lang.live_area["update"].c_str(), nullptr, false, !update_in_use))
+                    context_dialog = lang.deleting["delete_update"];
                 if (fs::exists(PATCH_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
                     context_dialog = lang.deleting["delete_patch"];
                 if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.path["addcont"].c_str()))
@@ -798,11 +793,10 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
 
-            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang.main["update_history"].c_str())) {
-                if (get_update_history(gui, emuenv, app_path))
-                    context_dialog = "history";
-                else
-                    LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
+            if ((fs::exists(APP_PATH / "sce_sys/changeinfo") || fs::exists(UPDATE_PATH / "sce_sys/changeinfo"))
+                && ImGui::MenuItem(lang.main["update_history"].c_str())) {
+                if (!get_local_update_history(gui, emuenv, app_path, title_id))
+                    push_update_notification(gui, title_id, {}, lang.main["history_unavailable"]);
             }
         }
         if (ImGui::MenuItem(lang.info["title"].c_str(), nullptr, &gui.vita_area.app_information)) {
@@ -836,57 +830,59 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
-        // Update History
-        if (context_dialog == "history") {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + 20.f * SCALE.x, ImGui::GetWindowPos().y + BUTTON_SIZE.y));
-            ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-            // Reverse iterator to show the latest update first
-            for (auto it = update_history_infos.rbegin(); it != update_history_infos.rend(); ++it) {
-                ImGui::SetWindowFontScale(1.3f);
-                const auto version_str = fmt::format(fmt::runtime(lang.main["history_version"]), it->first);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", version_str.c_str());
-                ImGui::SetWindowFontScale(0.9f);
-                ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", it->second.c_str());
-                ImGui::PopTextWrapPos();
-                ImGui::TextColored(GUI_COLOR_TEXT, "\n");
-            }
-            ImGui::ScrollWhenDragging();
-            ImGui::EndChild();
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
-        } else {
-            // Delete Data
-            const auto ICON_MARGIN = 24.f * SCALE.y;
-            if (const auto app_icon = get_app_icon(gui, app_path)) {
-                ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), ICON_MARGIN));
-                const auto POS_MIN = ImGui::GetCursorScreenPos();
-                const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);
-                ImGui::GetWindowDrawList()->AddImageRounded(*app_icon, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
-            }
-            ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
-            ImGui::SetCursorPosY(ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y));
-            TextColoredCentered(GUI_COLOR_TEXT, APP_INDEX->stitle.c_str());
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            ImGui::SetCursorPosY((WINDOW_SIZE.y / 2) + 10);
-            TextColoredCentered(GUI_COLOR_TEXT, context_dialog.c_str(), 54.f * SCALE.x);
-            if (context_dialog == lang.deleting["delete_app"])
-                SetTooltipEx(lang.deleting["delete_app_description"].c_str());
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-            if (ImGui::Button(::lang::get(::lang::str::cancel).c_str(), BUTTON_SIZE) || ImGui_ImplSdl_IsPhysicalKeyPressed(emuenv.cfg.keyboard_button_circle)) {
-                context_dialog.clear();
-            }
-            ImGui::SameLine();
-            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
+        // Delete Data
+        const auto ICON_MARGIN = 24.f * SCALE.y;
+        if (const auto app_icon = get_app_icon(gui, app_path)) {
+            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), ICON_MARGIN));
+            const auto POS_MIN = ImGui::GetCursorScreenPos();
+            const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);
+            ImGui::GetWindowDrawList()->AddImageRounded(*app_icon, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
         }
+        ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+        ImGui::SetCursorPosY(ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y));
+        TextColoredCentered(GUI_COLOR_TEXT, APP_INDEX->stitle.c_str());
+        ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+        ImGui::SetCursorPosY((WINDOW_SIZE.y / 2) + 10);
+        TextColoredCentered(GUI_COLOR_TEXT, context_dialog.c_str(), 54.f * SCALE.x);
+        if (context_dialog == lang.deleting["delete_app"])
+            SetTooltipEx(lang.deleting["delete_app_description"].c_str());
+        ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
+        if (ImGui::Button(::lang::get(::lang::str::cancel).c_str(), BUTTON_SIZE) || ImGui_ImplSdl_IsPhysicalKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+            context_dialog.clear();
+        }
+        ImGui::SameLine();
+        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         if (ImGui::Button(::lang::get(::lang::str::ok).c_str(), BUTTON_SIZE) || ImGui_ImplSdl_IsPhysicalKeyPressed(emuenv.cfg.keyboard_button_cross)) {
             if (context_dialog == lang.deleting["delete_app"])
-                delete_app(gui, emuenv, app_path);
+                delete_app(gui, emuenv, app_path, session);
             if (context_dialog == delete_saved_data)
                 fs::remove_all(SAVE_DATA_PATH);
-            if (context_dialog == lang.deleting["delete_patch"])
-                fs::remove_all(PATCH_PATH);
+            if (context_dialog == lang.deleting["delete_patch"]) {
+                std::error_code error;
+                fs::remove_all(PATCH_PATH, error);
+                if (error)
+                    LOG_ERROR("Failed to delete patch at '{}': {}", PATCH_PATH, error.message());
+            } else if (context_dialog == lang.deleting["delete_update"]) {
+                if (update_in_use) {
+                    LOG_WARN("Cannot delete update for '{}': application is running.", title_id);
+                } else {
+                    const std::string target_path = app_path;
+                    destroy_update_check_thread(gui);
+                    std::error_code error;
+                    fs::remove_all(UPDATE_PATH, error);
+                    if (error)
+                        LOG_ERROR("Failed to delete update at '{}': {}", UPDATE_PATH, error.message());
+                    init_user_app(gui, emuenv, target_path);
+                    refresh_live_area(gui, emuenv, target_path);
+                    const auto refreshed = get_app_index(gui, emuenv, target_path);
+                    if (refreshed) {
+                        const bool has_update = check_has_patch(emuenv, refreshed->title_id, refreshed->app_ver).value_or(false);
+                        std::lock_guard lock(gui.update_state_mutex);
+                        gui.app_has_update[target_path] = has_update;
+                    }
+                }
+            }
             if (context_dialog == lang.deleting["delete_addcont"])
                 fs::remove_all(ADDCONT_PATH);
             else if (context_dialog == lang.deleting["delete_license"])

@@ -40,11 +40,19 @@
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <v3kn/state.h>
+#include <vfs/appmeta.h>
 
 #include <imgui_internal.h>
 
 #include <stb_image.h>
 
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <codecvt>
+#include <locale>
+#include <map>
 #include <optional>
 #include <string>
 #include <thread>
@@ -324,7 +332,7 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
     if (!APP_INDEX)
         return {};
 
-    if (!vfs::read_app_file(buffer, emuenv.vita_fs_path, app_path, "sce_sys/icon0.png")) {
+    if (!vfs::read_app_icon(buffer, emuenv.vita_fs_path, app_path, APP_INDEX->title_id)) {
         buffer = init_default_icon(gui, emuenv);
         if (buffer.empty()) {
             LOG_WARN("Default icon not found for title {}, [{}] in path {}.",
@@ -349,6 +357,33 @@ void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pa
     IconData data = load_app_icon(gui, emuenv, app_path);
     if (data.data) {
         gui.app_selector.user_apps_icon[app_path] = ImGui_Texture(gui.imgui_state.get(), data.data.get(), data.width, data.height);
+    }
+}
+
+static void init_vita_icons(GuiState &gui, EmuEnvState &emuenv) {
+    constexpr std::array<const char *, 26> icon_names = { "cloud", "comments", "game_start", "gate", "indicator_new", "indicator_no", "like", "likes", "manual", "playing_game", "refresh", "refresh_bg", "search", "small_like", "start", "trophy_all", "trophy_bronze", "trophy_gold", "trophy_hidden", "trophy_level", "trophy_locked", "trophy_platinum", "trophy_silver", "unlike", "update", "www" };
+    const auto icon_directory = emuenv.static_assets_path / "data/image/vita";
+    for (const auto *name : icon_names) {
+        if (gui.vita_icons.contains(name))
+            continue;
+
+        const auto icon_path = icon_directory / (std::string(name) + ".png");
+        vfs::FileBuffer buffer;
+        if (!fs_utils::read_data(icon_path, buffer)) {
+            LOG_WARN("Vita icon not found at {}.", icon_path);
+            continue;
+        }
+
+        int32_t width = 0;
+        int32_t height = 0;
+        stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+        if (!data) {
+            LOG_ERROR("Invalid Vita icon: {}.", icon_path);
+            continue;
+        }
+
+        gui.vita_icons[name] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+        stbi_image_free(data);
     }
 }
 
@@ -413,11 +448,12 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    const auto is_sys = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
-    if (is_sys)
-        vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.vita_fs_path, "app/" + app_path + "/sce_sys/pic0.png");
-    else
-        vfs::read_app_file(buffer, emuenv.vita_fs_path, app_path, "sce_sys/pic0.png");
+    const auto asset_path = is_emu_app(app_path) ? app_asset_path(app_path) : app_path;
+    if (is_emu_app(app_path) || (asset_path.starts_with("NPXS") && asset_path != "NPXS10007")) {
+        const auto id = fs::path(asset_path).filename().string();
+        vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.vita_fs_path, "app/" + id + "/sce_sys/pic0.png");
+    } else
+        vfs::read_app_livearea_file(buffer, emuenv.vita_fs_path, asset_path, "sce_sys/pic0.png", APP_INDEX ? APP_INDEX->title_id : asset_path);
 
     const auto &title = APP_INDEX ? APP_INDEX->title : app_path;
 
@@ -457,41 +493,51 @@ static bool get_user_apps(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 bool set_scroll_animation(float &scroll, float target_scroll, const std::string &target_id, std::function<void(float)> set_scroll) {
-    // Persistent state for animation tracking (keeps values between frames)
-    static float start_time = 0.f;
-    static float initial_target_scroll = 0.f;
-    static float initial_scroll = 0.f;
-    static ImGuiID initial_target_id = 0;
-
     constexpr float duration = 0.25f; // Duration of the animation in seconds
+    struct AnimationState {
+        float start_time = 0.f;
+        float initial_target_scroll = 0.f;
+        float initial_scroll = 0.f;
+        float last_used_time = 0.f;
+        bool initialized = false;
+    };
+    static std::map<ImGuiID, AnimationState> animation_states;
 
-    // Generate a unique ID for the current target based on its string identifier
+    const auto now = ImGui::GetTime();
+    for (auto it = animation_states.begin(); it != animation_states.end();) {
+        if (now - it->second.last_used_time > duration * 4.f)
+            it = animation_states.erase(it);
+        else
+            ++it;
+    }
+
+    // Generate a unique ID for the current target based on its string identifier.
     const auto CURRENT_TARGET_ID = ImGui::GetID(target_id.c_str());
+    auto &state = animation_states[CURRENT_TARGET_ID];
+    state.last_used_time = now;
 
     // Compute animation progress [0.0, 1.0]
-    float elapsed = ImGui::GetTime() - start_time;
+    float elapsed = now - state.start_time;
     float t = std::min(elapsed / duration, 1.0f);
 
-    // Determine if a new animation target has been set (position or ID changed)
-    const bool is_new_target = std::abs(target_scroll - initial_target_scroll) > 1.f || CURRENT_TARGET_ID != initial_target_id;
+    // Restart when the destination changes.
+    const bool is_new_target = !state.initialized || std::abs(target_scroll - state.initial_target_scroll) > 1.f;
 
     if (is_new_target) {
         // Start a new animation
-        start_time = ImGui::GetTime();
-        initial_scroll = scroll;
-        initial_target_scroll = target_scroll;
-        initial_target_id = CURRENT_TARGET_ID;
+        state.start_time = now;
+        state.initial_scroll = scroll;
+        state.initial_target_scroll = target_scroll;
+        state.initialized = true;
 
-        // Only reset t if the previous animation has finished
-        if (t >= 1.f)
-            t = 0.f;
+        t = 0.f;
     }
 
     // Apply smoothstep easing function: easeInOutCubic
     float eased_t = t * t * (3.0f - 2.0f * t);
 
     // Interpolate between the initial and target scroll values
-    scroll = std::lerp(initial_scroll, initial_target_scroll, eased_t);
+    scroll = std::lerp(state.initial_scroll, state.initial_target_scroll, eased_t);
 
     // Ensure we exactly hit the target value at the end
     if (t >= 1.f)
@@ -501,10 +547,15 @@ bool set_scroll_animation(float &scroll, float target_scroll, const std::string 
     set_scroll(scroll);
 
     // Return true if the animation is still running
-    return t < 1.f;
+    if (t >= 1.f) {
+        animation_states.erase(CURRENT_TARGET_ID);
+        return false;
+    }
+    return true;
 }
 
 void init_home(GuiState &gui, EmuEnvState &emuenv) {
+    init_vita_icons(gui, emuenv);
     if (!get_user_apps(gui, emuenv) && (emuenv.cfg.load_app_list || !emuenv.cfg.run_app_path))
         init_user_apps(gui, emuenv);
     init_app_background(gui, emuenv, "NPXS10015");
@@ -531,31 +582,41 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    gui.app_selector.user_apps_icon.erase(app_path);
-
-    app::update_app(emuenv, app::read_app_info(emuenv, app_path));
-    init_app_icon(gui, emuenv, app_path);
+    const auto info = app::read_app_info(emuenv, app_path);
+    gui.app_selector.user_apps_icon.erase(info.path);
+    app::update_app(emuenv, info);
+    init_app_icon(gui, emuenv, info.path);
 
     gui.app_selector.is_app_list_sorted = false;
 }
 
 const ImGui_Texture *get_app_icon(GuiState &gui, const std::string &app_path) {
-    const auto &app_type = app_path.starts_with("NPXS") && (app_path != "NPXS10007") ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
-    const auto app_icon = app_type.find(app_path);
+    const auto key = app_ui_path(app_path);
+    const auto &app_type = is_emu_app(key) ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+    const auto app_icon = app_type.find(key);
 
-    return app_icon != app_type.end() ? &app_icon->second : nullptr;
+    return app_icon != app_type.end() && app_icon->second ? &app_icon->second : nullptr;
 }
 
 std::optional<App> get_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (!(app_path.starts_with("NPXS") && (app_path != "NPXS10007")))
+    auto key = app_ui_path(app_path);
+    if (key.find(':') == std::string::npos) {
+        if (const auto installed = app::get_app(emuenv, key))
+            return installed;
+    }
+    if (!is_emu_app(key) && key.find(':') == std::string::npos && key.starts_with("NPXS") && key != "NPXS10007")
+        key = emu_app_path(key);
+    if (!is_emu_app(key))
         return app::get_app(emuenv, app_path);
 
     const auto &app_type = gui.app_selector.sys_apps;
     const auto app_index = std::ranges::find_if(app_type, [&](const App &a) {
-        return a.path == app_path;
+        return a.path == key;
     });
 
-    return (app_index != app_type.end()) ? std::optional<App>(*app_index) : std::nullopt;
+    if (app_index != app_type.end())
+        return *app_index;
+    return app_path.find(':') == std::string::npos ? app::get_app(emuenv, app_path) : std::nullopt;
 }
 
 ImU32 get_selectable_color_pulse(const float max_alpha) {
@@ -573,40 +634,157 @@ ImU32 get_selectable_color_pulse(const float max_alpha) {
     return ImGui::ColorConvertFloat4ToU32(base_color);
 }
 
+void draw_stretchable_horizontal_image(ImDrawList *draw_list, ImTextureID texture, const ImVec2 &pos, const ImVec2 &size,
+    float texture_width, float texture_height, float left_slice_width, float right_slice_width, ImU32 tint,
+    float source_x, float source_y, float source_width, float source_height) {
+    if (!texture || !draw_list || (size.x <= 0.f) || (size.y <= 0.f) || (texture_width <= 0.f) || (texture_height <= 0.f))
+        return;
+
+    if (source_width <= 0.f)
+        source_width = texture_width;
+    if (source_height <= 0.f)
+        source_height = texture_height;
+
+    const float uniform_scale = size.y / source_height;
+    float left_dest_width = left_slice_width * uniform_scale;
+    float right_dest_width = right_slice_width * uniform_scale;
+    if ((left_dest_width + right_dest_width) > size.x) {
+        const float edge_scale = size.x / (left_dest_width + right_dest_width);
+        left_dest_width *= edge_scale;
+        right_dest_width *= edge_scale;
+    }
+
+    const float center_dest_width = std::max(0.f, size.x - left_dest_width - right_dest_width);
+    const float u0 = source_x / texture_width;
+    const float u1 = (source_x + left_slice_width) / texture_width;
+    const float u2 = (source_x + source_width - right_slice_width) / texture_width;
+    const float u3 = (source_x + source_width) / texture_width;
+    const float v0 = source_y / texture_height;
+    const float v1 = (source_y + source_height) / texture_height;
+
+    if (left_dest_width > 0.f)
+        draw_list->AddImage(texture, pos, ImVec2(pos.x + left_dest_width, pos.y + size.y), ImVec2(u0, v0), ImVec2(u1, v1), tint);
+
+    if (center_dest_width > 0.f) {
+        const ImVec2 center_min(pos.x + left_dest_width, pos.y);
+        draw_list->AddImage(texture, center_min, ImVec2(center_min.x + center_dest_width, center_min.y + size.y), ImVec2(u1, v0), ImVec2(u2, v1), tint);
+    }
+
+    if (right_dest_width > 0.f) {
+        const ImVec2 right_min(pos.x + size.x - right_dest_width, pos.y);
+        draw_list->AddImage(texture, right_min, ImVec2(right_min.x + right_dest_width, right_min.y + size.y), ImVec2(u2, v0), ImVec2(u3, v1), tint);
+    }
+}
+
+void draw_stretchable_9slice_image(ImDrawList *draw_list, ImTextureID texture, const ImVec2 &pos, const ImVec2 &size,
+    float texture_width, float texture_height, float left_slice_width, float right_slice_width, float top_slice_height, float bottom_slice_height, ImU32 tint,
+    float source_x, float source_y, float source_width, float source_height,
+    float dest_left_width, float dest_right_width, float dest_top_height, float dest_bottom_height) {
+    if (!texture || !draw_list || (size.x <= 0.f) || (size.y <= 0.f) || (texture_width <= 0.f) || (texture_height <= 0.f))
+        return;
+
+    if (source_width <= 0.f)
+        source_width = texture_width;
+    if (source_height <= 0.f)
+        source_height = texture_height;
+
+    float left_dest_width = dest_left_width >= 0.f ? dest_left_width : left_slice_width;
+    float right_dest_width = dest_right_width >= 0.f ? dest_right_width : right_slice_width;
+    float top_dest_height = dest_top_height >= 0.f ? dest_top_height : top_slice_height;
+    float bottom_dest_height = dest_bottom_height >= 0.f ? dest_bottom_height : bottom_slice_height;
+
+    if ((left_dest_width + right_dest_width) > size.x) {
+        const float width_scale = size.x / (left_dest_width + right_dest_width);
+        left_dest_width *= width_scale;
+        right_dest_width *= width_scale;
+    }
+    if ((top_dest_height + bottom_dest_height) > size.y) {
+        const float height_scale = size.y / (top_dest_height + bottom_dest_height);
+        top_dest_height *= height_scale;
+        bottom_dest_height *= height_scale;
+    }
+
+    const float center_dest_width = std::max(0.f, size.x - left_dest_width - right_dest_width);
+    const float center_dest_height = std::max(0.f, size.y - top_dest_height - bottom_dest_height);
+    const float u0 = source_x / texture_width;
+    const float u1 = (source_x + left_slice_width) / texture_width;
+    const float u2 = (source_x + source_width - right_slice_width) / texture_width;
+    const float u3 = (source_x + source_width) / texture_width;
+    const float v0 = source_y / texture_height;
+    const float v1 = (source_y + top_slice_height) / texture_height;
+    const float v2 = (source_y + source_height - bottom_slice_height) / texture_height;
+    const float v3 = (source_y + source_height) / texture_height;
+    const float x0 = pos.x;
+    const float x1 = pos.x + left_dest_width;
+    const float x2 = pos.x + size.x - right_dest_width;
+    const float x3 = pos.x + size.x;
+    const float y0 = pos.y;
+    const float y1 = pos.y + top_dest_height;
+    const float y2 = pos.y + size.y - bottom_dest_height;
+    const float y3 = pos.y + size.y;
+
+    if ((left_dest_width > 0.f) && (top_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x0, y0), ImVec2(x1, y1), ImVec2(u0, v0), ImVec2(u1, v1), tint);
+    if ((center_dest_width > 0.f) && (top_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x1, y0), ImVec2(x2, y1), ImVec2(u1, v0), ImVec2(u2, v1), tint);
+    if ((right_dest_width > 0.f) && (top_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x2, y0), ImVec2(x3, y1), ImVec2(u2, v0), ImVec2(u3, v1), tint);
+    if ((left_dest_width > 0.f) && (center_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x0, y1), ImVec2(x1, y2), ImVec2(u0, v1), ImVec2(u1, v2), tint);
+    if ((center_dest_width > 0.f) && (center_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x1, y1), ImVec2(x2, y2), ImVec2(u1, v1), ImVec2(u2, v2), tint);
+    if ((right_dest_width > 0.f) && (center_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x2, y1), ImVec2(x3, y2), ImVec2(u2, v1), ImVec2(u3, v2), tint);
+    if ((left_dest_width > 0.f) && (bottom_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x0, y2), ImVec2(x1, y3), ImVec2(u0, v2), ImVec2(u1, v3), tint);
+    if ((center_dest_width > 0.f) && (bottom_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x1, y2), ImVec2(x2, y3), ImVec2(u1, v2), ImVec2(u2, v3), tint);
+    if ((right_dest_width > 0.f) && (bottom_dest_height > 0.f))
+        draw_list->AddImage(texture, ImVec2(x2, y2), ImVec2(x3, y3), ImVec2(u2, v2), ImVec2(u3, v3), tint);
+}
+
 void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
     gui.app_selector.sys_apps.clear();
-    constexpr std::array<const std::string_view, 4> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
+    constexpr std::array<const std::string_view, 6> sys_apps_list = { "NPXS10003", "NPXS10006", "NPXS10008", "NPXS10014", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
+        sfo::SfoAppInfo app_info;
         vfs::FileBuffer params;
         if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.vita_fs_path, fmt::format("app/{}/sce_sys/param.sfo", app))) {
             SfoFile sfo_handle;
             sfo::load(sfo_handle, params);
-            sfo::get_data_by_key(emuenv.app_info.app_version, sfo_handle, "APP_VER");
-            if (emuenv.app_info.app_version[0] == '0')
-                emuenv.app_info.app_version.erase(emuenv.app_info.app_version.begin());
-            sfo::get_data_by_key(emuenv.app_info.app_category, sfo_handle, "CATEGORY");
-            sfo::get_data_by_key(emuenv.app_info.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", emuenv.cfg.sys_lang));
-            sfo::get_data_by_key(emuenv.app_info.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", emuenv.cfg.sys_lang));
-            boost::trim(emuenv.app_info.app_title);
-            sfo::get_data_by_key(emuenv.app_info.app_title_id, sfo_handle, "TITLE_ID");
+            sfo::get_data_by_key(app_info.app_version, sfo_handle, "APP_VER");
+            if (!app_info.app_version.empty() && app_info.app_version[0] == '0')
+                app_info.app_version.erase(app_info.app_version.begin());
+            sfo::get_data_by_key(app_info.app_category, sfo_handle, "CATEGORY");
+            sfo::get_data_by_key(app_info.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", emuenv.cfg.sys_lang));
+            sfo::get_data_by_key(app_info.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", emuenv.cfg.sys_lang));
+            boost::trim(app_info.app_title);
+            sfo::get_data_by_key(app_info.app_title_id, sfo_handle, "TITLE_ID");
         } else {
             auto &lang = gui.lang.sys_apps_title;
-            emuenv.app_info.app_version = "1.00";
-            emuenv.app_info.app_category = "gda";
-            emuenv.app_info.app_title_id = app;
+            app_info.app_version = "1.00";
+            app_info.app_category = "gda";
+            app_info.app_title_id = app;
             if (app == "NPXS10003") {
-                emuenv.app_info.app_short_title = lang["browser"];
-                emuenv.app_info.app_title = lang["internet_browser"];
+                app_info.app_short_title = lang["browser"];
+                app_info.app_title = lang["internet_browser"];
+            } else if (app == "NPXS10006") {
+                app_info.app_short_title = app_info.app_title = lang["friends"];
             } else if (app == "NPXS10008") {
-                emuenv.app_info.app_short_title = lang["trophies"];
-                emuenv.app_info.app_title = lang["trophy_collection"];
+                app_info.app_short_title = lang["trophies"];
+                app_info.app_title = lang["trophy_collection"];
+            } else if (app == "NPXS10014") {
+                app_info.app_short_title = app_info.app_title = lang["messages"];
             } else if (app == "NPXS10015")
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"];
+                app_info.app_short_title = app_info.app_title = lang["settings"];
             else
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["content_manager"];
+                app_info.app_short_title = app_info.app_title = lang["content_manager"];
         }
-        gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, std::string(app) });
+        gui.app_selector.sys_apps.push_back({ app_info.app_version, app_info.app_category, {}, {}, {}, {}, app_info.app_short_title, app_info.app_title, app_info.app_title_id, emu_app_path(std::string(app)) });
     }
+
+    if (fs::exists(emuenv.vita_fs_path / "vs0/vsh/shell"))
+        gui.app_selector.sys_apps.push_back({ "1.00", "gda", {}, {}, {}, {}, "PS Vita OS", "PlayStation Vita OS", "NPXS19999", "emu:vsh/shell" });
 
     std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
         return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
@@ -743,7 +921,25 @@ void draw_touchpad_cursor(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
+static void process_v3kn_events(GuiState &gui, EmuEnvState &emuenv) {
+    for (const auto &event : emuenv.v3kn.take_social_events()) {
+        switch (event.type) {
+        case SocialEventType::MessagePollError:
+            init_info_message({ .function = "v3kn_messages_poll", .title = "V3KN Connection Error", .level = spdlog::level::err, .msg = get_v3kn_error_message(gui.lang, event.response) });
+            break;
+        case SocialEventType::Message:
+            init_info_message({ .function = "v3kn_messages_poll", .title = "V3KN Message", .level = spdlog::level::info, .msg = fmt::format("New message from {}", event.online_id) });
+            break;
+        case SocialEventType::Friend:
+        case SocialEventType::Activity:
+            add_social_notice(gui, emuenv, event);
+            break;
+        }
+    }
+}
+
 void draw_vita_area(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *session) {
+    process_v3kn_events(gui, emuenv);
     if (gui.vita_area.start_screen)
         draw_start_screen(gui, emuenv);
 
@@ -752,8 +948,6 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv, app::AppSessionControlle
     if (gui.vita_area.home_screen)
         draw_home_screen(gui, emuenv, session);
 
-    if (gui.vita_area.live_area_screen)
-        draw_live_area_screen(gui, emuenv, session);
     if (gui.vita_area.manual)
         draw_manual(gui, emuenv);
 
@@ -778,12 +972,12 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv, app::AppSessionControlle
         }
     }
 
-    if (emuenv.ime.state && !gui.vita_area.home_screen && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && get_sys_apps_state(gui))
+    if (emuenv.ime.state && !gui.vita_area.home_screen && !gui.vita_area.user_management && get_sys_apps_state(gui))
         draw_ime(gui, emuenv.ime, emuenv);
 
     // System App
     if (gui.vita_area.content_manager)
-        draw_content_manager(gui, emuenv);
+        draw_content_manager(gui, emuenv, session);
 
     if (gui.vita_area.online_storage)
         draw_online_storage(gui, emuenv, session);
@@ -794,15 +988,34 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv, app::AppSessionControlle
     if (gui.vita_area.trophy_collection)
         draw_trophy_collection(gui, emuenv);
 
+    if (gui.vita_area.friends)
+        draw_friend(gui, emuenv);
+
+    if (gui.vita_area.friend_profile)
+        draw_friend_profile(gui, emuenv);
+
+    if (gui.vita_area.friend_activity)
+        draw_friend_activity(gui, emuenv);
+
+    if (gui.vita_area.messages)
+        draw_messages(gui, emuenv);
+
+    poll_vita3k_update_check(gui);
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
 
     if ((emuenv.cfg.show_info_bar || !gui.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
         draw_information_bar(gui, emuenv);
 
-    if (!gui.vita_area.start_screen && (gui.vita_area.live_area_screen || gui.vita_area.home_screen))
+    if (!gui.vita_area.start_screen && gui.vita_area.home_screen)
         draw_indicator(gui, emuenv);
 
+    if (gui.vita_area.pkg_install)
+        draw_pkg_install(gui, emuenv);
+    draw_notifications(gui, emuenv);
+
+    if (gui.vita_area.update_history_info)
+        draw_update_history_infos(gui, emuenv);
     draw_popups(gui, emuenv);
 
     ImGui::PopFont();
@@ -810,7 +1023,7 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv, app::AppSessionControlle
 
 void draw_ui(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *session) {
     ImGui::PushFont(gui.vita_font[gui.current_font_level]);
-    if ((gui.vita_area.home_screen || !emuenv.io.app_path.empty()) && get_sys_apps_state(gui) && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && (!emuenv.cfg.show_info_bar || !gui.vita_area.information_bar))
+    if ((gui.vita_area.home_screen || !emuenv.io.app_path.empty()) && get_sys_apps_state(gui) && !gui.vita_area.user_management && (!emuenv.cfg.show_info_bar || !gui.vita_area.information_bar))
         draw_main_menu_bar(gui, emuenv, session);
 
     if (gui.configuration_menu.v3kn_dialog)
@@ -859,6 +1072,126 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *sess
         draw_disassembly_dialog(gui, emuenv);
 
     ImGui::PopFont();
+}
+
+void draw_ellipsis_text(const std::string &text, const float wrap_width, const ImVec2 init_pos, const ImVec2 align, const ImVec4 &col, const uint32_t max_lines) {
+    if (text.empty() || max_lines == 0 || wrap_width <= 0.f)
+        return;
+
+    const std::array<std::string, 14> separators{
+        "\x0A", "\x0D", "\x20", "\x28", "\x29", "\x2D", "\x40", "\x5B", "\x5D",
+        "\xC2\xAE", "\xE3\x80\x80", "\xE3\x80\x8E", "\xE3\x80\x8F", "\xE3\x83\xBB"
+    };
+
+    std::vector<std::string> words;
+    std::string current;
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        bool found_separator = false;
+        for (const auto &separator : separators) {
+            if (text.compare(i, separator.size(), separator) != 0)
+                continue;
+
+            if (!current.empty()) {
+                words.emplace_back(current);
+                current.clear();
+            }
+            words.emplace_back(separator);
+            i += separator.size() - 1;
+            found_separator = true;
+            break;
+        }
+
+        if (!found_separator)
+            current += text[i];
+    }
+    if (!current.empty())
+        words.emplace_back(current);
+
+    std::vector<std::string> lines;
+    lines.reserve(max_lines);
+    std::size_t used_words = 0;
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+    for (uint32_t line = 0; line < max_lines; ++line) {
+        std::string temp_line;
+        for (std::size_t i = used_words; i < words.size(); ++i) {
+            if (words[i].find('\n') != std::string::npos) {
+                lines.emplace_back(temp_line);
+                temp_line.clear();
+                used_words = i + 1;
+                break;
+            }
+
+            const std::string test_line = temp_line + words[i];
+            if (ImGui::CalcTextSize(test_line.c_str()).x <= wrap_width) {
+                temp_line = test_line;
+                used_words = i + 1;
+                continue;
+            }
+
+            if (temp_line.empty()) {
+                const std::u32string utf32 = converter.from_bytes(words[i]);
+                std::u32string chopped;
+                for (const char32_t character : utf32) {
+                    const std::string test = converter.to_bytes(chopped + character) + "...";
+                    if (ImGui::CalcTextSize(test.c_str()).x > wrap_width)
+                        break;
+                    chopped += character;
+                }
+                lines.emplace_back(converter.to_bytes(chopped) + "...");
+                used_words = i + 1;
+            }
+            break;
+        }
+
+        if (!temp_line.empty())
+            lines.emplace_back(temp_line);
+        else if (lines.size() >= max_lines)
+            break;
+    }
+
+    if (used_words < words.size() && lines.size() == max_lines) {
+        std::string &last_line = lines.back();
+        if (!last_line.empty() && std::isspace(static_cast<unsigned char>(last_line.front())))
+            last_line.erase(last_line.begin());
+
+        const std::u32string utf32 = converter.from_bytes(last_line);
+        std::u32string cropped;
+        for (const char32_t character : utf32) {
+            const std::string test = converter.to_bytes(cropped + character) + "...";
+            if (ImGui::CalcTextSize(test.c_str()).x > wrap_width)
+                break;
+            cropped += character;
+        }
+
+        std::string cropped_line = converter.to_bytes(cropped);
+        if (!cropped_line.empty() && std::isspace(static_cast<unsigned char>(cropped_line.back())))
+            cropped_line.pop_back();
+        last_line = cropped_line + "...";
+    }
+
+    const float line_height = ImGui::GetFontSize();
+    const float block_height = line_height * static_cast<float>(lines.size())
+        + ImGui::GetStyle().ItemSpacing.y * static_cast<float>(lines.size() - 1);
+    float text_y = init_pos.y;
+    if (align.y == -1.f)
+        text_y -= block_height;
+    else if (align.y == 0.f)
+        text_y -= block_height / 2.f;
+
+    float text_x = init_pos.x;
+    if (align.x == 1.f) {
+        float max_line_width = 0.f;
+        for (const auto &line : lines)
+            max_line_width = std::max(max_line_width, ImGui::CalcTextSize(line.c_str()).x);
+        text_x -= max_line_width;
+    }
+
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        const auto line_width = ImGui::CalcTextSize(lines[i].c_str()).x;
+        const auto line_x = align.x == 0.f ? text_x - (line_width / 2.f) : text_x;
+        ImGui::SetCursorPos(ImVec2(line_x, text_y + (static_cast<float>(i) * line_height) + (static_cast<float>(i) * ImGui::GetStyle().ItemSpacing.y)));
+        ImGui::TextColored(col, "%s", lines[i].c_str());
+    }
 }
 
 void SetTooltipEx(const char *tooltip) {

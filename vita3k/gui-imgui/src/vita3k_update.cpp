@@ -17,15 +17,13 @@
 
 #include "private.h"
 
-#include <boost/algorithm/string.hpp>
-
 #include <config/state.h>
 #include <config/version.h>
 #include <dialog/state.h>
 #include <gui-imgui/functions.h>
+#include <updater/functions.h>
 #include <util/fs.h>
 #include <util/net_utils.h>
-#include <util/string_utils.h>
 
 #include <SDL3/SDL_events.h>
 
@@ -37,8 +35,6 @@
 #include <SDL3/SDL_system.h>
 #include <jni.h>
 #endif
-
-#include <regex>
 
 namespace gui {
 
@@ -54,20 +50,28 @@ enum Vita3kUpdate {
 static std::atomic<Vita3kUpdate> state{ NO_UPDATE };
 static VitaAreaState vita_area_state;
 
-struct GitCommitDesc {
-    std::string author;
-    std::string sha;
-    std::string msg;
-};
-
 static int git_version;
-static std::vector<GitCommitDesc> git_commit_desc_list;
+static std::vector<updater::LimuleCommit> git_commit_desc_list;
 static std::atomic<bool> cancel_thread{ false };
 static std::atomic<bool> thread_running{ false };
 static std::mutex commit_desc_list_mutex;
 static std::mutex update_init_mutex;
 static std::jthread commit_desc_thread;
-bool init_vita3k_update(GuiState &gui) {
+
+struct StartupUpdateCheck {
+    std::mutex mutex;
+    bool complete = false;
+    std::optional<updater::LimuleRelease> release;
+};
+
+static std::shared_ptr<StartupUpdateCheck> startup_update_check;
+
+static std::optional<updater::LimuleRelease> fetch_limule_release() {
+    const auto response = net_utils::get_web_response("https://api.github.com/repos/Zangetsu38/Vita3K/releases/tags/continuous");
+    return updater::parse_limule_release(response);
+}
+
+static bool apply_vita3k_release(GuiState &gui, const std::optional<updater::LimuleRelease> &release) {
     std::lock_guard<std::mutex> init_lock(update_init_mutex);
     if (commit_desc_thread.joinable()) {
         commit_desc_thread.request_stop();
@@ -83,112 +87,44 @@ bool init_vita3k_update(GuiState &gui) {
     git_version = 0;
     vita_area_state = {};
 
-    // Get Build number of latest release
-    const auto version = net_utils::get_web_regex_result("https://api.github.com/repos/Vita3K/Vita3K/releases/latest", std::regex("Vita3K Build: (\\d+)"));
-
-    // Check if version is empty or not all digit
-    if (version.empty() || !std::all_of(version.begin(), version.end(), ::isdigit)) {
-        LOG_WARN("Failed to get current git version, try again later\n{}", version);
+    if (!release) {
+        LOG_WARN("Failed to get latest Limule release metadata");
         gui.help_menu.vita3k_update = false;
         return false;
     }
 
-    // Set latest git version number
-    git_version = string_utils::stoi_def(version, 0, "git version");
-
-    // Get difference between current app number and git version
-    const auto dif_from_current = static_cast<uint32_t>(std::max(git_version - app_number, 0));
+    git_version = release->build_number;
+    if (git_version == app_number && !release->commit.starts_with(app_hash))
+        LOG_WARN("Current build and Limule release have the same build number but different commits; not assuming an update is newer");
+    const auto dif_from_current = updater::limule_update_count(app_number, git_version);
     const auto has_update = dif_from_current > 0;
     if (has_update) {
         // Reset cancel and thread running variable before starting the worker
         cancel_thread = false;
         thread_running = true;
-        commit_desc_thread = std::jthread([dif_from_current](std::stop_token stop_token) {
-            // Lambda function for get commits from github api
-            const auto get_commits = [dif_from_current, stop_token]() {
-                // Set constant for get commits from github api
-                static const uint32_t max_per_page = 100;
-                static const std::regex commit_regex(R"lit("sha":"([a-f0-9]{40})".*?"author":\{"name":"([^"]+)".*?"message":"([^"]+)")lit");
-                static const std::regex end_commit(R"(\s*"parents":\[\{"sha":"[a-f0-9]{40}","url":"[^"]+","html_url":"[^"]+"\}\]\})");
-
-                // Reserve memory for commit description list
-                {
-                    std::lock_guard<std::mutex> lock(commit_desc_list_mutex);
-                    git_commit_desc_list.reserve(dif_from_current);
-                }
-
-                // Calculate Page and Last Per Page Get
-                const uint32_t page_count = static_cast<uint32_t>(std::ceil(static_cast<double>(dif_from_current) / max_per_page));
-                const uint32_t last_per_page = dif_from_current % max_per_page;
-
-                // Browse all page
-                for (auto p = 0; p < page_count; p++) {
-                    // Check if thread is requested to stop
+        commit_desc_thread = std::jthread([dif_from_current, commit = release->commit](std::stop_token stop_token) {
+            const auto get_commits = [&]() {
+                constexpr uint32_t max_per_page = 100;
+                const uint32_t total = std::min(dif_from_current, 500u);
+                if (total != dif_from_current)
+                    LOG_WARN("Limiting update descriptions to the latest {} commits", total);
+                const uint32_t page_count = (total + max_per_page - 1) / max_per_page;
+                for (uint32_t page = 0; page < page_count; ++page) {
                     if (cancel_thread || stop_token.stop_requested())
                         return;
-
-                    // Create link for get commits
-                    const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", p + 1, std::min(dif_from_current, max_per_page));
-
-                    // Get response from github api
-                    auto commits = net_utils::get_web_response(continuous_link);
-
-                    // Check if response is empty
-                    if (commits.empty()) {
-                        LOG_WARN("Failed to get commits from page: {}", p + 1);
+                    const auto url = fmt::format("https://api.github.com/repos/Zangetsu38/Vita3K/commits?sha={}&page={}&per_page={}",
+                        commit, page + 1, std::min(total, max_per_page));
+                    const auto commits = updater::parse_limule_commits(net_utils::get_web_response(url));
+                    if (!commits || commits->empty()) {
+                        LOG_WARN("Failed to read update commits from page {}", page + 1);
                         return;
                     }
-
-                    // Replace \" to &quot; for help regex search message
-                    boost::replace_all(commits, "\\\"", "&quot;");
-
-                    const uint32_t commit_count = std::min(dif_from_current - (p * max_per_page), max_per_page);
-                    for (uint32_t c = 0; c < commit_count; c++) {
-                        // Check if thread is requested to stop
-                        if (cancel_thread || stop_token.stop_requested())
-                            return;
-
-                        std::smatch match;
-
-                        // Using regex to get sha, author and message from commits
-                        if (!std::regex_search(commits, match, commit_regex) || (match.size() != 4)) {
-                            LOG_WARN("Failed to find commit: {}, on page: {}", c + 1, p + 1);
-                            return;
-                        }
-
-                        // Get sha, Author and message from regex match result
-                        const std::string sha = match[1].str();
-                        const std::string author = match[2].str();
-                        std::string msg = match[3].str();
-
-                        // Replace &quot; to \" for get back original message
-                        boost::replace_all(msg, "&quot;", "\"");
-
-                        // Replace \r and \n to new line
-                        boost::replace_all(msg, "\\r\\n", "\n");
-                        boost::replace_all(msg, "\\n", "\n");
-
-                        {
-                            // Add commit description to list with lock mutex for thread safe
-                            std::lock_guard<std::mutex> lock(commit_desc_list_mutex);
-                            git_commit_desc_list.push_back({ author, sha, msg });
-                        }
-
-                        // Find end of commit
-                        if (!std::regex_search(commits, match, end_commit)) {
-                            LOG_WARN("Failed to find end of commit: {}, on page: {}", c + 1, p + 1);
-                            return;
-                        }
-
-                        // Remove current commit for next search
-                        commits = match.suffix();
-                    }
+                    const auto count = std::min<size_t>(commits->size(), total - page * max_per_page);
+                    const std::lock_guard lock(commit_desc_list_mutex);
+                    git_commit_desc_list.insert(git_commit_desc_list.end(), commits->begin(), commits->begin() + count);
                 }
             };
-
-            // Get commits descriptions from github api
             get_commits();
-
             thread_running = false;
         });
 
@@ -198,12 +134,44 @@ bool init_vita3k_update(GuiState &gui) {
     if (has_update || gui.help_menu.vita3k_update) {
         vita_area_state = gui.vita_area;
         gui.vita_area.home_screen = false;
-        gui.vita_area.live_area_screen = false;
         gui.vita_area.start_screen = false;
         gui.vita_area.information_bar = true;
     }
 
     return has_update;
+}
+
+bool init_vita3k_update(GuiState &gui) {
+    startup_update_check.reset();
+    return apply_vita3k_release(gui, fetch_limule_release());
+}
+
+void start_vita3k_update_check() {
+    if (startup_update_check)
+        return;
+    auto check = std::make_shared<StartupUpdateCheck>();
+    startup_update_check = check;
+    std::thread([check]() {
+        auto release = fetch_limule_release();
+        const std::lock_guard lock(check->mutex);
+        check->release = std::move(release);
+        check->complete = true;
+    }).detach();
+}
+
+void poll_vita3k_update_check(GuiState &gui) {
+    if (!startup_update_check)
+        return;
+    std::optional<updater::LimuleRelease> release;
+    {
+        const std::lock_guard lock(startup_update_check->mutex);
+        if (!startup_update_check->complete)
+            return;
+        release = std::move(startup_update_check->release);
+    }
+    startup_update_check.reset();
+    if (apply_vita3k_release(gui, release))
+        gui.help_menu.vita3k_update = true;
 }
 
 static std::atomic<float> progress(0);
@@ -214,7 +182,7 @@ static void download_update(const fs::path &download_path) {
     progress_state.canceled = false;
     progress_state.pause = false;
     std::thread download([download_path]() {
-        std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous/";
+        std::string download_continuous_link = "https://github.com/Zangetsu38/Vita3K/releases/download/continuous/";
 #ifdef _WIN32
 #if defined(__aarch64__) || defined(_M_ARM64)
         download_continuous_link += "windows-arm64-latest.zip";
@@ -473,7 +441,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPosY(pos);
             ImGui::PushID(desc.sha.c_str());
             if (ImGui::Selectable("##commit_link", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(ImGui::GetWindowWidth(), max_height))) {
-                open_path(fmt::format("https://github.com/Vita3K/Vita3K/commit/{}", desc.sha));
+                open_path(fmt::format("https://github.com/Zangetsu38/Vita3K/commit/{}", desc.sha));
             }
             ImGui::PopID();
             ImGui::Separator();

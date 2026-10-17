@@ -58,6 +58,8 @@
     <string name="apps_list_cd_more_options">More options</string>
     <string name="apps_list_cd_close_search">Close search</string>
     <string name="apps_list_cd_selected">Selected</string>
+    <string name="apps_list_shell">PS Vita OS</string>
+    <string name="apps_list_shell_unavailable">The Vita system shell is missing or inaccessible. Check your main firmware installation.</string>
     <string name="apps_list_menu_users">User Management</string>
     <string name="apps_list_menu_welcome">Welcome Screen</string>
     <string name="apps_list_menu_check_updates">Check for Updates</string>
@@ -79,6 +81,20 @@
     <string name="apps_list_install_firmware">Install Firmware</string>
     <string name="apps_list_install_app">Install App</string>
     <string name="apps_list_init_failed">Failed to initialise emulator.</string>
+    <string name="settings_identity_title">Import Identity from Save SFO</string>
+    <string name="settings_identity_description">Select the param.sfo from a Vita savedata folder to import its OpenPSID and account ID.</string>
+    <string name="settings_identity_confirm">Import the OpenPSID and account ID from this save?\nThe current identity will be backed up. Existing saves will not be changed and may no longer be accessible. ux0:id.dat will be deleted and recreated by the shell.</string>
+    <string name="settings_identity_import">Import</string>
+    <string name="settings_identity_success">Identity imported. New saves will use these identifiers.</string>
+    <string name="settings_identity_running">Close the running application before importing an identity.</string>
+    <string name="settings_identity_read_failed">Cannot read the selected SFO.</string>
+    <string name="settings_identity_too_large">The selected SFO is too large.</string>
+    <string name="settings_identity_error">Cannot import savedata identity: %1$s</string>
+    <string name="settings_identity_reset">Reset Identity</string>
+    <string name="settings_identity_reset_confirm">Generate a new OpenPSID and clear the account ID?\nThe current identity will be backed up. Existing saves will not be changed and may no longer be accessible. ux0:id.dat will be deleted and recreated by the shell.</string>
+    <string name="settings_identity_reset_success">Identity reset. New saves will use the new identity.</string>
+    <string name="settings_identity_reset_error">Cannot reset savedata identity: %1$s</string>
+    <string name="settings_identity_change_running">Close the running application before changing the identity.</string>
 
     <!-- App actions menu -->
     <string name="app_menu_information">Information</string>

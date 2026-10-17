@@ -25,7 +25,12 @@
 
 #include <vulkan/vulkan_format_traits.hpp>
 
+#include <algorithm>
 #include <array>
+#include <cmath>
+#include <limits>
+#include <mem/functions.h>
+#include <stdexcept>
 #include <util/align.h>
 #include <util/log.h>
 #include <util/vector_utils.h>
@@ -35,8 +40,8 @@ extern "C" {
 }
 
 static bool format_support_surface_sync(SceGxmColorBaseFormat format) {
-    // we use rgba16 to emulate this format, don't even try to convert it back for now
-    return format != SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10;
+    // U2F10F10F10 readback is repacked from the RGBA16F emulation below.
+    return true;
 }
 
 static bool format_support_swizzle(SceGxmColorBaseFormat format) {
@@ -64,6 +69,11 @@ static bool surface_sync_needs_u4u4u4u4_repack(const ColorSurfaceCacheInfo &surf
     return surface.format == SCE_GXM_COLOR_BASE_FORMAT_U4U4U4U4
         && (surface.texture.format == vk::Format::eR8G8B8A8Unorm
             || surface.texture.format == vk::Format::eR8G8B8A8Srgb);
+}
+
+static bool surface_sync_needs_f10_repack(const ColorSurfaceCacheInfo &surface) {
+    return surface.format == SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10
+        && surface.texture.format == vk::Format::eR16G16B16A16Sfloat;
 }
 
 static uint8_t unorm8_to_unorm4(uint8_t value) {
@@ -98,29 +108,41 @@ static void pack_rgba8_to_u4u4u4u4(uint8_t *dst, const uint8_t *src, uint32_t pi
     }
 }
 
-static vk::ImageView retrieve_surface_gamma_view(vk::Device device, ColorSurfaceCacheInfo &surface) {
-    if (!surface.gamma_view) {
-        const vk::ImageViewUsageCreateInfo usage_info{
-            .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment
-        };
-        const vk::ImageViewCreateInfo view_info{
-            .pNext = &usage_info,
-            .image = surface.texture.image,
-            .viewType = vk::ImageViewType::e2D,
-            .format = vk::Format::eR8G8B8A8Srgb,
-            .components = vkutil::default_comp_mapping,
-            .subresourceRange = vkutil::color_subresource_range
-        };
-        surface.gamma_view = device.createImageView(view_info);
-    }
-    return surface.gamma_view;
+static uint32_t half_to_f10(uint16_t half) {
+    return (half & 0x8000) ? 0 : (half >> 5) & 0x3FF;
 }
 
-static void ensure_surface_sync_buffer(vkutil::Buffer &buffer, vkutil::DestroyQueue &destroy_queue, vk::DeviceSize required_size) {
+static uint32_t half_to_unorm2(uint16_t half) {
+    if (half & 0x8000)
+        return 0;
+    // Round to the nearest of {0, 1/3, 2/3, 1}.
+    return half >= 0x3AAB ? 3 : half >= 0x3800 ? 2
+        : half >= 0x3155                       ? 1
+                                               : 0;
+}
+
+static void pack_rgba16f_to_u2f10f10f10(uint8_t *dst, const uint8_t *src, uint32_t pixel_stride, uint32_t width, uint32_t height, uint32_t dst_stride_bytes) {
+    for (uint32_t y = 0; y < height; ++y) {
+        const uint8_t *src_row = src + static_cast<size_t>(y) * pixel_stride * sizeof(uint64_t);
+        uint8_t *dst_row = dst + static_cast<size_t>(y) * dst_stride_bytes;
+        for (uint32_t x = 0; x < width; ++x) {
+            std::array<uint16_t, 4> components{};
+            std::memcpy(components.data(), src_row + static_cast<size_t>(x) * sizeof(uint64_t), sizeof(components));
+            const uint32_t packed = half_to_f10(components[0])
+                | (half_to_f10(components[1]) << 10)
+                | (half_to_f10(components[2]) << 20)
+                | (half_to_unorm2(components[3]) << 30);
+            std::memcpy(dst_row + static_cast<size_t>(x) * sizeof(packed), &packed, sizeof(packed));
+        }
+    }
+}
+
+static void ensure_surface_sync_buffer(vkutil::Buffer &buffer, vkutil::DestroyQueue &destroy_queue, vk::DeviceSize required_size,
+    const vma::AllocationCreateInfo &allocation_info = vkutil::vma_mapped_alloc) {
     if (!buffer.buffer || buffer.size < required_size) {
         destroy_queue.add_buffer(buffer);
         buffer = vkutil::Buffer(required_size);
-        buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+        buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, allocation_info);
     }
 }
 
@@ -146,7 +168,7 @@ static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
 
     add_protect(mem, addr_start, addr_end - addr_start, perm,
         [dirty, need_sync](Address, bool write) {
-            if (write && dirty)
+            if (write && dirty && !SurfaceSyncWriteScope::active())
                 *dirty = true;
             if (need_sync)
                 *need_sync = true;
@@ -165,6 +187,7 @@ void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
         if (it->first.first == view || it->first.second == view) {
             destroy_queue.add(it->second.standard);
             destroy_queue.add(it->second.shader_interlock);
+            destroy_queue.add(it->second.storage_color_view);
             it = framebuffer_array.erase(it);
         } else {
             it = std::next(it);
@@ -172,7 +195,47 @@ void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
     }
 }
 
+void VKSurfaceCache::record_pending_cast(PendingCast &cast, VKContext &context) {
+    // Without a macroblock flush, feedback samples the surface as it was before this recording.
+    const bool pre_scene = cast.info->last_scene_rendered == context.scene_timestamp
+        && context.scene_has_drawn && !context.scene_macroblock_flushed;
+    if (!pre_scene && context.in_renderpass)
+        context.stop_render_pass();
+    cast.record(pre_scene ? context.prerender_cmd : context.render_cmd);
+}
+
+void VKSurfaceCache::perform_pending_casts(VKContext &context, uint16_t vert_texture_count, uint16_t frag_texture_count) {
+    for (size_t i = 0; i < pending_casts.size();) {
+        bool used = false;
+        for (uint16_t unit = 0; unit < frag_texture_count; ++unit) {
+            if (pending_casts[i].view == context.fragment_textures[unit].imageView) {
+                used = true;
+                if (pending_casts[i].info->has_phase_view)
+                    context.curr_frag_ublock.set_cast_sampler_bit(unit, false, false);
+            }
+        }
+        for (uint16_t unit = 0; unit < vert_texture_count && !used; ++unit)
+            used = pending_casts[i].view == context.vertex_textures[unit].imageView;
+        if (used) {
+            PendingCast cast = std::move(pending_casts[i]);
+            pending_casts.erase(pending_casts.begin() + i);
+            record_pending_cast(cast, context);
+            i = 0;
+        } else {
+            ++i;
+        }
+    }
+}
+
+void VKSurfaceCache::flush_all_pending_casts() {
+    std::vector<PendingCast> casts;
+    casts.swap(pending_casts);
+    for (auto &cast : casts)
+        record_pending_cast(cast, *static_cast<VKContext *>(state.context));
+}
+
 void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
+    flush_all_pending_casts();
     vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
 
     // don't forget to destroy in the right order
@@ -182,21 +245,33 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
     }
     info.casted_textures.clear();
 
+    destroy_framebuffers(info.texture.view);
+    destroy_framebuffers(info.alternate_view);
     if (info.gamma_view) {
         destroy_framebuffers(info.gamma_view);
         destroy_queue.add(info.gamma_view);
     }
+    destroy_queue.add(info.alternate_view);
+    if (info.raw_image) {
+        destroy_queue.add_image(*info.raw_image);
+        info.raw_image.reset();
+    }
+    info.raw_image_valid = false;
+    destroy_queue.add_image(info.texture);
+
     if (info.blit_image) {
         destroy_queue.add_image(*info.blit_image);
         info.blit_image.reset();
     }
-    destroy_queue.add(info.alternate_view);
-
-    destroy_framebuffers(info.texture.view);
-    destroy_queue.add_image(info.texture);
+    if (info.copy_buffer) {
+        destroy_queue.add_buffer(*info.copy_buffer);
+        info.copy_buffer.reset();
+    }
 }
 
 void VKSurfaceCache::destroy_surface(DepthStencilSurfaceCacheInfo &info) {
+    if (pending_ds_scene == &info)
+        pending_ds_scene = nullptr;
     vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
 
     for (auto &read_only : info.read_surfaces) {
@@ -219,9 +294,25 @@ VKSurfaceCache::VKSurfaceCache(VKState &state)
 }
 
 void VKSurfaceCache::cleanup() {
+    pending_casts.clear();
+    pending_ds_scene = nullptr;
+    state.device.destroy(typeless_pipeline);
+    state.device.destroy(typeless_pipeline_layout);
+    state.device.destroy(typeless_descriptor_layout);
+    state.device.destroy(typeless_shader);
+    typeless_pipeline = nullptr;
+    typeless_pipeline_layout = nullptr;
+    typeless_descriptor_layout = nullptr;
+    typeless_shader = nullptr;
+    for (auto &frame : state.frames) {
+        frame.typeless_descriptor.sets.clear();
+        frame.typeless_descriptor.descriptors_idx = 0;
+    }
+
     for (auto &[key, fb] : framebuffer_array) {
         state.device.destroy(fb.standard);
         state.device.destroy(fb.shader_interlock);
+        state.device.destroy(fb.storage_color_view);
     }
     framebuffer_array.clear();
 
@@ -246,6 +337,11 @@ void VKSurfaceCache::cleanup() {
             info.blit_image->destroy();
         if (info.copy_buffer)
             info.copy_buffer->destroy();
+
+        if (info.raw_image)
+            info.raw_image->destroy();
+        info.raw_image.reset();
+        info.raw_image_valid = false;
 
         info.texture.destroy();
     }
@@ -278,6 +374,231 @@ void VKSurfaceCache::cleanup() {
     last_written_surface = nullptr;
 }
 
+void VKSurfaceCache::ensure_typeless_pipeline() {
+    if (typeless_pipeline)
+        return;
+
+    const fs::path path = state.static_assets / "shaders-builtin" / "vulkan" / "surface_copy_typeless.comp.spv";
+    typeless_shader = vkutil::load_shader(state.device, path);
+    if (!typeless_shader) {
+        LOG_ERROR("Cannot load typeless surface copy shader: {}", path.string());
+        throw std::runtime_error("Cannot load typeless surface copy shader");
+    }
+
+    const std::array bindings{
+        vk::DescriptorSetLayoutBinding{ 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute },
+        vk::DescriptorSetLayoutBinding{ 1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute }
+    };
+    vk::DescriptorSetLayoutCreateInfo descriptor_info{};
+    descriptor_info.setBindings(bindings);
+    typeless_descriptor_layout = state.device.createDescriptorSetLayout(descriptor_info);
+
+    const vk::PushConstantRange constants{ vk::ShaderStageFlagBits::eCompute, 0, 10 * sizeof(uint32_t) };
+    vk::PipelineLayoutCreateInfo layout_info{};
+    layout_info.setSetLayouts(typeless_descriptor_layout);
+    layout_info.setPushConstantRanges(constants);
+    typeless_pipeline_layout = state.device.createPipelineLayout(layout_info);
+
+    const vk::ComputePipelineCreateInfo pipeline_info{
+        .stage = { .stage = vk::ShaderStageFlagBits::eCompute, .module = typeless_shader, .pName = "main" },
+        .layout = typeless_pipeline_layout
+    };
+    const auto result = state.device.createComputePipeline(nullptr, pipeline_info);
+    if (result.result != vk::Result::eSuccess) {
+        LOG_ERROR("Cannot create typeless surface copy pipeline: {}", vk::to_string(result.result));
+        throw std::runtime_error("Cannot create typeless surface copy pipeline");
+    }
+    typeless_pipeline = result.value;
+}
+
+vk::DescriptorSet VKSurfaceCache::retrieve_typeless_descriptor() {
+    auto &descriptor = state.frame().typeless_descriptor;
+    if (descriptor.descriptors_idx == descriptor.sets.size()) {
+        constexpr uint32_t pack_size = 16;
+        const vk::DescriptorPoolSize pool_size{ vk::DescriptorType::eStorageBuffer, 2 * pack_size * MAX_FRAMES_RENDERING };
+        vk::DescriptorPoolCreateInfo pool_info{ .maxSets = pack_size * MAX_FRAMES_RENDERING };
+        pool_info.setPoolSizes(pool_size);
+        const auto pool = state.device.createDescriptorPool(pool_info);
+        state.frame_descriptor_pools.push_back(pool);
+        const std::vector<vk::DescriptorSetLayout> layouts(pack_size * MAX_FRAMES_RENDERING, typeless_descriptor_layout);
+        vk::DescriptorSetAllocateInfo allocation{ .descriptorPool = pool };
+        allocation.setSetLayouts(layouts);
+        const auto sets = state.device.allocateDescriptorSets(allocation);
+        for (uint32_t i = 0; i < MAX_FRAMES_RENDERING; ++i) {
+            auto &frame_sets = state.frames[i].typeless_descriptor.sets;
+            frame_sets.insert(frame_sets.end(), sets.begin() + i * pack_size, sets.begin() + (i + 1) * pack_size);
+        }
+    }
+    return descriptor.sets[descriptor.descriptors_idx++];
+}
+
+void VKSurfaceCache::copy_typeless_scaled(vk::CommandBuffer cmd, const ColorSurfaceCacheInfo &source, const vkutil::Image &source_image, CastedTexture &dest,
+    uint32_t width, uint32_t height, uint32_t data_delta, uint32_t source_bpp, uint32_t dest_bpp) {
+    LOG_INFO_ONCE("Using resolution-aware typeless surface copies: {} {}x{} -> {} {}x{}, scale {}, guest byte offset {}, guest stride {}",
+        vk::to_string(source_image.format), source.width, source.height, vk::to_string(dest.texture.format), width, height,
+        state.res_multiplier, data_delta, source.stride_bytes);
+    const auto &limits = state.physical_device_properties.limits;
+    const vk::DeviceSize source_size = align(static_cast<vk::DeviceSize>(source.width) * source.height * source_bpp, vk::DeviceSize{ 4 });
+    const vk::DeviceSize dest_size = align(static_cast<vk::DeviceSize>(width) * height * dest_bpp, vk::DeviceSize{ 4 });
+    if (source_size > limits.maxStorageBufferRange || dest_size > limits.maxStorageBufferRange) {
+        LOG_ERROR("Typeless copy requires buffers of {} and {} bytes, exceeding the GPU limit of {}", source_size, dest_size, limits.maxStorageBufferRange);
+        throw std::runtime_error("Typeless surface copy exceeds GPU storage buffer range");
+    }
+    const vk::DeviceSize dest_offset = align(source_size, static_cast<vk::DeviceSize>(limits.minStorageBufferOffsetAlignment));
+    const vk::DeviceSize buffer_size = dest_offset + dest_size;
+    if (!dest.transition_buffer.buffer || dest.transition_buffer.size < buffer_size) {
+        state.frame().destroy_queue.add_buffer(dest.transition_buffer);
+        dest.transition_buffer = vkutil::Buffer(buffer_size);
+        dest.transition_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eStorageBuffer);
+    }
+    ensure_typeless_pipeline();
+    const auto buffer = dest.transition_buffer.buffer;
+    vk::BufferMemoryBarrier barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead,
+        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .buffer = buffer,
+        .size = VK_WHOLE_SIZE
+    };
+    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eTransfer,
+        vk::PipelineStageFlagBits::eTransfer, {}, {}, barrier, {});
+    vk::BufferImageCopy copy{
+        .imageSubresource = vkutil::color_subresource_layer,
+        .imageExtent = { source.width, source.height, 1 }
+    };
+    cmd.copyImageToBuffer(source_image.image, vk::ImageLayout::eTransferSrcOptimal, buffer, copy);
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eTransferRead;
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eComputeShader, {}, {}, barrier, {});
+
+    const auto descriptor = retrieve_typeless_descriptor();
+    const std::array buffers{
+        vk::DescriptorBufferInfo{ buffer, 0, source_size },
+        vk::DescriptorBufferInfo{ buffer, dest_offset, dest_size }
+    };
+    std::array<vk::WriteDescriptorSet, 2> writes;
+    for (uint32_t i = 0; i < writes.size(); ++i) {
+        writes[i] = vk::WriteDescriptorSet{ .dstSet = descriptor, .dstBinding = i, .descriptorCount = 1, .descriptorType = vk::DescriptorType::eStorageBuffer, .pBufferInfo = &buffers[i] };
+    }
+    state.device.updateDescriptorSets(writes, {});
+    const struct {
+        uint32_t source_width, source_height, dest_width, dest_height;
+        uint32_t source_bpp, dest_bpp, byte_offset, row_offset;
+        float scale;
+        uint32_t interleave;
+    } constants{
+        source.width, source.height, width, height, source_bpp, dest_bpp,
+        data_delta % source.stride_bytes, data_delta / source.stride_bytes, state.res_multiplier,
+        !source.has_phase_view && source_bpp == 8 && dest_bpp == 4
+                && width == 2 * source.width && data_delta % source.stride_bytes == 0
+            ? 1U
+            : 0U
+    };
+    static_assert(sizeof(constants) == 10 * sizeof(uint32_t));
+    if (state.res_multiplier != 1.0f && source_bpp == 8 && dest_bpp == 4)
+        LOG_INFO_ONCE("Packed 64-to-32-bit surface copy: interleave={}, explicit phase views={}, byte offset={}, widths={}->{}",
+            constants.interleave, source.has_phase_view, constants.byte_offset, source.width, width);
+    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, typeless_pipeline);
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, typeless_pipeline_layout, 0, descriptor, {});
+    cmd.pushConstants(typeless_pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(constants), &constants);
+    const uint32_t groups = static_cast<uint32_t>((dest_size / 4 + 63) / 64);
+    const uint32_t groups_x = std::min(groups, limits.maxComputeWorkGroupCount[0]);
+    cmd.dispatch(groups_x, (groups + groups_x - 1) / groups_x, 1);
+    barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+    barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eTransfer, {}, {}, barrier, {});
+    copy.bufferOffset = dest_offset;
+    copy.imageExtent = vk::Extent3D{ width, height, 1 };
+    cmd.copyBufferToImage(buffer, dest.texture.image, vk::ImageLayout::eTransferDstOptimal, copy);
+}
+
+vk::ImageView VKSurfaceCache::create_surface_view(vk::Image image, vk::Format format, vk::ComponentMapping mapping) {
+    const vk::ImageViewUsageCreateInfo usage{
+        .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment
+    };
+    const vk::ImageViewCreateInfo info{
+        .pNext = state.features.support_shader_interlock && format == vk::Format::eR8G8B8A8Srgb ? &usage : nullptr,
+        .image = image,
+        .viewType = vk::ImageViewType::e2D,
+        .format = format,
+        .components = mapping,
+        .subresourceRange = vkutil::color_subresource_range
+    };
+    return state.device.createImageView(info);
+}
+
+vk::ImageView VKSurfaceCache::retrieve_color_surface_view(ColorSurfaceCacheInfo &info, vk::Format format) {
+    if (format == info.texture.format)
+        return info.texture.view;
+
+    vk::ImageView &view = state.features.support_shader_interlock && format == vk::Format::eR8G8B8A8Srgb
+        ? info.gamma_view
+        : info.alternate_view;
+    if (!view)
+        view = create_surface_view(info.texture.image, format, vkutil::default_comp_mapping);
+    return view;
+}
+
+bool VKSurfaceCache::try_upload_guest_content(ColorSurfaceCacheInfo &info, MemState &mem) {
+    const uint32_t bytes_per_pixel = static_cast<uint32_t>(vk::blockSize(info.texture.format));
+    if (!state.features.enable_memory_mapping || info.tiling != SurfaceTiling::Linear
+        || !format_support_surface_sync(info.format) || info.swizzle.r != vk::ComponentSwizzle::eR
+        || bytes_per_pixel != gxm::bits_per_pixel(info.format) / 8 || !bytes_per_pixel
+        || info.stride_bytes % bytes_per_pixel || info.stride_bytes / bytes_per_pixel < info.original_width) {
+        LOG_WARN_ONCE("Cannot upload CPU-written surface with format {} and tiling {}", vk::to_string(info.texture.format), static_cast<int>(info.tiling));
+        return false;
+    }
+
+    const uint64_t upload_size = static_cast<uint64_t>(info.stride_bytes) * info.original_height;
+    const uint64_t end_address = static_cast<uint64_t>(info.data.address()) + upload_size;
+    if (!upload_size || end_address > std::numeric_limits<Address>::max()
+        || !is_valid_addr_range(mem, info.data.address(), static_cast<Address>(end_address))) {
+        LOG_WARN_ONCE("Cannot upload surface at {}: backing memory is not fully allocated", log_hex(info.data.address()));
+        return false;
+    }
+
+    vkutil::Buffer upload(upload_size);
+    upload.init_buffer(vk::BufferUsageFlagBits::eTransferSrc, vkutil::vma_mapped_alloc);
+    memcpy(upload.mapped_data, info.data.get(mem), upload_size);
+    state.allocator.flushAllocation(upload.allocation, 0, VK_WHOLE_SIZE);
+
+    const auto cmd = static_cast<VKContext *>(state.context)->prerender_cmd;
+    const vk::BufferImageCopy copy{
+        .bufferRowLength = info.stride_bytes / bytes_per_pixel,
+        .bufferImageHeight = info.original_height,
+        .imageSubresource = vkutil::color_subresource_layer,
+        .imageExtent = { info.original_width, info.original_height, 1 }
+    };
+    if (state.res_multiplier == 1.0f) {
+        info.texture.transition_to(cmd, vkutil::ImageLayout::TransferDst);
+        cmd.copyBufferToImage(upload.buffer, info.texture.image, vk::ImageLayout::eTransferDstOptimal, copy);
+    } else {
+        if (!info.blit_image) {
+            info.blit_image = std::make_unique<vkutil::Image>(info.original_width, info.original_height, info.texture.format);
+            info.blit_image->init_image(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
+        }
+        auto &native = *info.blit_image;
+        native.transition_to_discard(cmd, vkutil::ImageLayout::TransferDst);
+        cmd.copyBufferToImage(upload.buffer, native.image, vk::ImageLayout::eTransferDstOptimal, copy);
+        native.transition_to(cmd, vkutil::ImageLayout::TransferSrc);
+        info.texture.transition_to(cmd, vkutil::ImageLayout::TransferDst);
+        const vk::ImageBlit blit{
+            .srcSubresource = vkutil::color_subresource_layer,
+            .srcOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{}, vk::Offset3D{ info.original_width, info.original_height, 1 } },
+            .dstSubresource = vkutil::color_subresource_layer,
+            .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{}, vk::Offset3D{ info.width, info.height, 1 } }
+        };
+        cmd.blitImage(native.image, vk::ImageLayout::eTransferSrcOptimal, info.texture.image, vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eNearest);
+    }
+    info.texture.transition_to(cmd, vkutil::ImageLayout::ColorAttachmentReadWrite);
+    // The upload only updates the float image, so its old raw companion is no longer usable.
+    info.raw_image_valid = false;
+    // Every upload keeps its own staging data until the submitting frame has completed.
+    state.frame().destroy_queue.add_buffer(upload);
+    return true;
+}
+
 SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(MemState &mem, SceGxmColorSurface *color) {
     // Create the key to access the cache struct
     const uint32_t address = color->data.address();
@@ -300,6 +621,11 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     // ite is now the first item with an address lower or equal to key
 
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
+
+    while (!overlap && ite != color_address_lookup.begin()) {
+        --ite;
+        overlap = static_cast<uint64_t>(ite->first) + ite->second->total_bytes > address;
+    }
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(color->colorFormat);
     vk::Format vk_format = color::translate_surface_format(base_format,
@@ -353,8 +679,10 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         } else {
             color_surface_queue.set_as_mru(&info);
 
-            if (info.data && *info.dirty)
+            if (info.data && *info.dirty) {
+                try_upload_guest_content(info, mem);
                 protect_surface(mem, info);
+            }
             *info.dirty = false;
 
             last_written_surface = &info;
@@ -363,26 +691,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             constexpr uint64_t big_delay_between_frames = 60;
             state.pipeline_cache.can_use_deferred_compilation = state.frame_timestamp - info.last_frame_rendered < big_delay_between_frames;
             info.last_frame_rendered = state.frame_timestamp;
+            info.last_scene_rendered = context->scene_timestamp;
 
-            if (state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb) {
-                return { retrieve_surface_gamma_view(state.device, info), &info.texture };
-            } else if (vk_format == info.texture.format) {
-                return { info.texture.view, &info.texture };
-            } else {
-                // using both srgb/linear
-                if (!info.alternate_view) {
-                    vk::ImageViewCreateInfo view_info{
-                        .image = info.texture.image,
-                        .viewType = vk::ImageViewType::e2D,
-                        .format = vk_format,
-                        .components = vkutil::default_comp_mapping,
-                        .subresourceRange = vkutil::color_subresource_range
-                    };
-                    info.alternate_view = state.device.createImageView(view_info);
-                }
-
-                return { info.alternate_view, &info.texture };
-            }
+            return { retrieve_color_surface_view(info, vk_format), &info.texture, &info };
         }
     }
 
@@ -391,11 +702,15 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     if (info_added.texture.image)
         // deferred destruction of the existing surface
         destroy_surface(info_added);
+    if (info_added.data && info_added.data.address() != address)
+        info_added.has_phase_view = false;
     if (info_added.data)
         color_address_lookup.erase(info_added.data.address());
 
     color_surface_queue.set_as_mru(&info_added);
     info_added.last_frame_rendered = state.frame_timestamp;
+    info_added.last_scene_rendered = context->scene_timestamp;
+    info_added.written_back_scene = 0;
 
     color_address_lookup[address] = &info_added;
 
@@ -446,10 +761,26 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     cmd_buffer.clearColorImage(image.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
     image.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
 
+    info_added.raw_image_valid = false;
+    if (state.features.preserve_f16_nan_as_u16 && base_format == SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16) {
+        info_added.raw_image = std::make_unique<vkutil::Image>(width, height, vk::Format::eR16G16B16A16Uint);
+        auto &raw = *info_added.raw_image;
+        raw.init_image(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment
+            | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
+        raw.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        const vk::ClearColorValue raw_zero{ .uint32 = std::array<uint32_t, 4>{} };
+        cmd_buffer.clearColorImage(raw.image, vk::ImageLayout::eTransferDstOptimal, raw_zero, vkutil::color_subresource_range);
+        raw.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+        info_added.raw_image_valid = true;
+    }
+
     last_written_surface = &info_added;
     info_added.need_surface_sync.reset();
     info_added.need_surface_sync = std::make_shared<bool>(false);
     info_added.dirty = std::make_shared<bool>(false);
+
+    if (original_width >= 1024 && original_height >= 1024 && state.features.enable_memory_mapping)
+        try_upload_guest_content(info_added, mem);
 
     // we only support surface sync of linear surfaces for now
     if (!can_mprotect_mapped_memory) {
@@ -463,12 +794,13 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     // it's not impossible that this surface will be rendered once and only used after, so do not skip any shader on it
     state.pipeline_cache.can_use_deferred_compilation = false;
 
-    if (state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb)
-        return { retrieve_surface_gamma_view(state.device, info_added), &info_added.texture };
-    return { info_added.texture.view, &info_added.texture };
+    return { retrieve_color_surface_view(info_added, vk_format), &info_added.texture, &info_added };
 }
 
 std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_texture(const SceGxmTexture &texture, const SceGxmColorBaseFormat base_format, TextureViewport *texture_viewport) {
+    if (texture.texture_type() == SCE_GXM_TEXTURE_CUBE || texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY)
+        return std::nullopt;
+
     // Create the key to access the cache struct
     const uint32_t address = (texture.data_addr << 2);
 
@@ -477,38 +809,6 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
 
     const uint32_t width = static_cast<uint32_t>(original_width * state.res_multiplier);
     const uint32_t height = static_cast<uint32_t>(original_height * state.res_multiplier);
-
-    bool overlap = true;
-    // Of course, this works under the assumption that range must be unique :D
-    auto ite = color_address_lookup.upper_bound(address);
-    if (ite == color_address_lookup.begin())
-        // no match
-        overlap = false;
-    else
-        --ite;
-    // ite is now the first item with an address lower or equal to key
-
-    overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
-
-    if (!overlap)
-        return std::nullopt;
-
-    if (*ite->second->dirty)
-        // Guest wrote to the surface backing memory since it was rendered, so GPU data is stale.
-        return std::nullopt;
-
-    const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
-    vk::Format vk_format = color::translate_surface_format(base_format,
-        state.support_native_rgba4_surface, state.features.support_shader_interlock);
-
-    const bool is_srgb = texture.gamma_mode != 0;
-    if (is_srgb) {
-        if (vk_format == vk::Format::eR8G8B8A8Unorm) {
-            vk_format = vk::Format::eR8G8B8A8Srgb;
-        } else {
-            LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
-        }
-    }
 
     uint32_t stride_bytes = 0;
     SurfaceTiling tiling = SurfaceTiling::Swizzled;
@@ -537,6 +837,30 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         stride_bytes = pixel_stride * gxm::bits_per_pixel(base_format) / 8;
     }
     uint32_t total_surface_size = stride_bytes * original_height;
+
+    auto ite = color_address_lookup.upper_bound(address);
+    bool found = false;
+    while (ite != color_address_lookup.begin()) {
+        --ite;
+        const auto &candidate = *ite->second;
+        if (static_cast<uint64_t>(ite->first) + candidate.total_bytes > address
+            && candidate.tiling == tiling && candidate.stride_bytes == stride_bytes) {
+            found = true;
+            break;
+        }
+    }
+    if (!found || *ite->second->dirty)
+        return std::nullopt;
+
+    const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
+    vk::Format vk_format = color::translate_surface_format(base_format,
+        state.support_native_rgba4_surface, state.features.support_shader_interlock);
+    if (texture.gamma_mode) {
+        if (vk_format == vk::Format::eR8G8B8A8Unorm)
+            vk_format = vk::Format::eR8G8B8A8Srgb;
+        else
+            LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
+    }
 
     ColorSurfaceCacheInfo &info = *ite->second;
 
@@ -573,6 +897,18 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     uint32_t start_sourced_line = static_cast<uint32_t>((data_delta / stride_bytes) * state.res_multiplier);
     uint32_t start_x = static_cast<uint32_t>((data_delta % stride_bytes) / bytes_per_pixel_requested * state.res_multiplier);
 
+    const bool is_typeless_cast = bytes_per_pixel_requested != bytes_per_pixel_in_store;
+    const bool cast_phase_hi = is_typeless_cast
+        && ((data_delta % stride_bytes) % bytes_per_pixel_in_store) / bytes_per_pixel_requested != 0;
+    if (cast_phase_hi && !info.has_phase_view) {
+        info.has_phase_view = true;
+        for (auto &casted : info.casted_textures)
+            casted.scene_timestamp = 0;
+    }
+
+    if (start_x >= info.width || start_sourced_line >= info.height)
+        return std::nullopt;
+
     if (static_cast<uint16_t>(start_sourced_line + height) > info.height)
         LOG_WARN_ONCE("Trying to use texture partially in the surface cache");
 
@@ -583,11 +919,18 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     const bool is_same_image = (color_handle_view == info.texture.view) || (color_handle_view == info.alternate_view)
         || (info.gamma_view && color_handle_view == info.gamma_view);
 
-    const vk::ImageViewUsageCreateInfo sampled_usage{
-        .usage = vk::ImageUsageFlagBits::eSampled
-    };
+    const bool native_point_texture = state.res_multiplier != std::floor(state.res_multiplier)
+        && original_width <= 256 && original_height <= 256
+        && base_format == info.format && vk_format == info.texture.format
+        && start_x + width <= info.width && start_sourced_line + height <= info.height
+        && texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT && texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT;
 
-    if (state.features.use_texture_viewport && base_format == info.format) {
+    // Resample partial-width reads, but never numerically convert a raw format reinterpretation.
+    const bool native_size_cast = native_point_texture
+        || (bytes_per_pixel_requested == bytes_per_pixel_in_store && vk_format == info.texture.format
+            && (start_x != 0 || width != info.width));
+
+    if (state.features.use_texture_viewport && base_format == info.format && !native_point_texture) {
         // use a texture viewport
         *texture_viewport = {
             .ratio = {
@@ -608,15 +951,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         if (!info.alternate_view) {
             vk::ComponentMapping resulting_mapping = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
 
-            vk::ImageViewCreateInfo view_info{
-                .pNext = state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb ? &sampled_usage : nullptr,
-                .image = info.texture.image,
-                .viewType = vk::ImageViewType::e2D,
-                .format = vk_format,
-                .components = resulting_mapping,
-                .subresourceRange = vkutil::color_subresource_range
-            };
-            info.alternate_view = state.device.createImageView(view_info);
+            info.alternate_view = create_surface_view(info.texture.image, vk_format, resulting_mapping);
         }
 
         return TextureLookupResult{
@@ -626,7 +961,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         };
     }
 
-    if (is_same_image || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
+    if (is_same_image || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format) || native_point_texture) {
         const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
 
         std::vector<CastedTexture> &casted_vec = info.casted_textures;
@@ -635,15 +970,19 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
 
         // Look in cast cache and grab one. The cache really does not store immediate grab on now, but rather to reduce the synchronization in the pipeline (use different texture)
         for (size_t i = 0; i < casted_vec.size();) {
-            if ((casted_vec[i].cropped_height == height) && (casted_vec[i].cropped_width == width) && (casted_vec[i].cropped_y == start_sourced_line) && (casted_vec[i].cropped_x == start_x) && (casted_vec[i].format == base_format)) {
+            if ((casted_vec[i].cropped_height == height) && (casted_vec[i].cropped_width == width) && (casted_vec[i].cropped_y == start_sourced_line) && (casted_vec[i].cropped_x == start_x) && (casted_vec[i].format == base_format) && casted_vec[i].texture.format == vk_format) {
                 casted = &casted_vec[i];
 
-                if (casted->scene_timestamp == scene_timestamp) {
-                    // already copied for this scene, don't do it again
+                const bool copy_pending = std::any_of(pending_casts.begin(), pending_casts.end(),
+                    [casted](const PendingCast &pending) { return pending.view == casted->texture.view; });
+                if (casted->scene_timestamp == scene_timestamp && (!is_same_image || copy_pending)) {
+                    // Already copied or queued for this scene.
                     return TextureLookupResult{
                         casted->texture.view,
-                        casted->texture.layout,
-                        casted->texture.format
+                        vkutil::ImageLayout::SampledImage,
+                        casted->texture.format,
+                        is_typeless_cast && !info.has_phase_view,
+                        cast_phase_hi
                     };
                 }
 
@@ -653,10 +992,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             }
         }
 
-        // use prerender cmd as we can't copy an image or use pipeline barriers in a render pass
-        VKContext *context = reinterpret_cast<VKContext *>(state.context);
-        vk::CommandBuffer cmd_buffer = context->prerender_cmd;
-
+        const bool casted_is_new = casted == nullptr;
         if (casted == nullptr) {
             // Try to crop + cast
             casted_vec.resize(casted_vec.size() + 1);
@@ -668,8 +1004,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
                 .cropped_height = height,
                 .format = base_format
             };
-            casted->texture.width = width;
-            casted->texture.height = height;
+            casted->texture.width = native_size_cast ? original_width : width;
+            casted->texture.height = native_size_cast ? original_height : height;
             casted->texture.format = vk_format;
 
             // find the swizzle we need to apply
@@ -684,68 +1020,108 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
                 resulting_swizzle = swizzle;
 
             casted->texture.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, resulting_swizzle);
-            casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
-        } else {
-            casted->texture.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
         }
 
         casted->scene_timestamp = scene_timestamp;
+        const size_t casted_index = static_cast<size_t>(casted - casted_vec.data());
+        vk::Filter cast_filter = vk::Filter::eNearest;
+        if (native_size_cast && !native_point_texture
+            && (state.physical_device.getFormatProperties(info.texture.format).optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear))
+            cast_filter = vk::Filter::eLinear;
+        auto record_cast = [this, info_ptr = &info, casted_index, casted_is_new, native_size_cast, cast_filter,
+                               bytes_per_pixel_requested, bytes_per_pixel_in_store, width, height,
+                               start_x, start_sourced_line, data_delta, stride_bytes](vk::CommandBuffer cmd_buffer) {
+            auto &info = *info_ptr;
+            auto *casted = &info.casted_textures[casted_index];
+            if (casted_is_new)
+                casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+            else
+                casted->texture.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
+            auto &source_image = info.raw_image_valid && info.raw_image && info.format != casted->format ? *info.raw_image : info.texture;
+            source_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc);
 
-        if (bytes_per_pixel_requested == bytes_per_pixel_in_store) {
-            vk::ImageCopy image_copy{
-                .srcSubresource = vkutil::color_subresource_layer,
-                .srcOffset = { static_cast<int32_t>(start_x), static_cast<int32_t>(start_sourced_line), 0 },
-                .dstSubresource = vkutil::color_subresource_layer,
-                .dstOffset = { 0,
-                    0,
-                    0 },
-                .extent = {
-                    // Don't try to copy what is in the stride
-                    std::min<uint32_t>(width, info.width),
-                    std::min<uint32_t>(height, info.height),
-                    1 }
-            };
-            cmd_buffer.copyImage(info.texture.image, vk::ImageLayout::eGeneral, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
-        } else {
-            LOG_INFO_ONCE("Game is doing typeless copies");
-            // We must use a transition buffer
-            vk::DeviceSize buffer_size = stride_bytes * static_cast<size_t>(state.res_multiplier * align(height, 4)) + start_x * bytes_per_pixel_requested;
-            if (!casted->transition_buffer.buffer || casted->transition_buffer.size < buffer_size) {
-                // create or re-create the buffer
-                state.frame().destroy_queue.add_buffer(casted->transition_buffer);
-                casted->transition_buffer = vkutil::Buffer(buffer_size);
-                casted->transition_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc);
+            if (bytes_per_pixel_requested == bytes_per_pixel_in_store && native_size_cast) {
+                const vk::ImageBlit blit{
+                    .srcSubresource = vkutil::color_subresource_layer,
+                    .srcOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ static_cast<int32_t>(start_x), static_cast<int32_t>(start_sourced_line), 0 }, vk::Offset3D{ static_cast<int32_t>(std::min(start_x + width, static_cast<uint32_t>(info.width))), static_cast<int32_t>(std::min(start_sourced_line + height, static_cast<uint32_t>(info.height))), 1 } },
+                    .dstSubresource = vkutil::color_subresource_layer,
+                    .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{}, vk::Offset3D{ static_cast<int32_t>(casted->texture.width), static_cast<int32_t>(casted->texture.height), 1 } }
+                };
+                cmd_buffer.blitImage(source_image.image, vk::ImageLayout::eTransferSrcOptimal, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, blit, cast_filter);
+            } else if (bytes_per_pixel_requested == bytes_per_pixel_in_store) {
+                vk::ImageCopy image_copy{
+                    .srcSubresource = vkutil::color_subresource_layer,
+                    .srcOffset = { static_cast<int32_t>(start_x), static_cast<int32_t>(start_sourced_line), 0 },
+                    .dstSubresource = vkutil::color_subresource_layer,
+                    .dstOffset = { 0,
+                        0,
+                        0 },
+                    .extent = {
+                        // Don't try to copy what is in the stride
+                        std::min<uint32_t>(width, info.width - start_x),
+                        std::min<uint32_t>(height, info.height - start_sourced_line),
+                        1 }
+                };
+                cmd_buffer.copyImage(source_image.image, vk::ImageLayout::eTransferSrcOptimal, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+            } else if (state.res_multiplier != 1.0f
+                && vk::blockSize(info.texture.format) == bytes_per_pixel_in_store
+                && vk::blockSize(casted->texture.format) == bytes_per_pixel_requested) {
+                copy_typeless_scaled(cmd_buffer, info, source_image, *casted, width, height, data_delta, bytes_per_pixel_in_store, bytes_per_pixel_requested);
+            } else {
+                LOG_INFO_ONCE("Game is doing typeless copies");
+                // We must use a transition buffer
+                vk::DeviceSize buffer_size = stride_bytes * static_cast<size_t>(state.res_multiplier * align(height, 4)) + start_x * bytes_per_pixel_requested;
+                if (!casted->transition_buffer.buffer || casted->transition_buffer.size < buffer_size) {
+                    // create or re-create the buffer
+                    state.frame().destroy_queue.add_buffer(casted->transition_buffer);
+                    casted->transition_buffer = vkutil::Buffer(buffer_size);
+                    casted->transition_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc);
+                }
+
+                // copy the image to the buffer
+                const uint32_t src_pixel_stride = static_cast<uint32_t>((info.stride_bytes / bytes_per_pixel_in_store) * state.res_multiplier);
+                vk::BufferImageCopy copy_image_buffer{
+                    .bufferOffset = 0,
+                    .bufferRowLength = src_pixel_stride,
+                    .bufferImageHeight = height,
+                    .imageSubresource = vkutil::color_subresource_layer,
+                    .imageOffset = { 0,
+                        static_cast<int32_t>(start_sourced_line),
+                        0 },
+                    .imageExtent = { info.width, height, 1 }
+                };
+                cmd_buffer.copyImageToBuffer(source_image.image, vk::ImageLayout::eTransferSrcOptimal, casted->transition_buffer.buffer, copy_image_buffer);
+
+                const vk::BufferMemoryBarrier barrier{
+                    .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                    .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .buffer = casted->transition_buffer.buffer,
+                    .size = VK_WHOLE_SIZE
+                };
+                cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, barrier, {});
+
+                // then the buffer to the image
+                const uint32_t dst_pixel_stride = (stride_bytes / bytes_per_pixel_requested) * state.res_multiplier;
+                copy_image_buffer
+                    .setBufferOffset(start_x * bytes_per_pixel_requested)
+                    .setBufferRowLength(dst_pixel_stride)
+                    .setImageOffset({ 0, 0, 0 })
+                    .setImageExtent({ width, height, 1 });
+                cmd_buffer.copyBufferToImage(casted->transition_buffer.buffer, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, copy_image_buffer);
             }
-
-            // copy the image to the buffer
-            const uint32_t src_pixel_stride = static_cast<uint32_t>((info.stride_bytes / bytes_per_pixel_in_store) * state.res_multiplier);
-            vk::BufferImageCopy copy_image_buffer{
-                .bufferOffset = 0,
-                .bufferRowLength = src_pixel_stride,
-                .bufferImageHeight = height,
-                .imageSubresource = vkutil::color_subresource_layer,
-                .imageOffset = { 0,
-                    static_cast<int32_t>(start_sourced_line),
-                    0 },
-                .imageExtent = { info.width, height, 1 }
-            };
-            cmd_buffer.copyImageToBuffer(info.texture.image, vk::ImageLayout::eGeneral, casted->transition_buffer.buffer, copy_image_buffer);
-
-            // then the buffer to the image
-            const uint32_t dst_pixel_stride = (stride_bytes / bytes_per_pixel_requested) * state.res_multiplier;
-            copy_image_buffer
-                .setBufferOffset(start_x * bytes_per_pixel_requested)
-                .setBufferRowLength(dst_pixel_stride)
-                .setImageOffset({ 0, 0, 0 })
-                .setImageExtent({ width, height, 1 });
-            cmd_buffer.copyBufferToImage(casted->transition_buffer.buffer, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, copy_image_buffer);
-        }
-        casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+            source_image.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+            casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+        };
+        pending_casts.push_back({ casted->texture.view, &info, std::move(record_cast) });
 
         return TextureLookupResult{
             casted->texture.view,
-            casted->texture.layout,
-            casted->texture.format
+            vkutil::ImageLayout::SampledImage,
+            casted->texture.format,
+            is_typeless_cast && !info.has_phase_view,
+            cast_phase_hi
         };
     } else {
         // the renderpass external dependencies should take care of the barrier
@@ -760,15 +1136,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         if (!info.alternate_view) {
             vk::ComponentMapping resulting_mapping = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
 
-            vk::ImageViewCreateInfo view_info{
-                .pNext = state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb ? &sampled_usage : nullptr,
-                .image = info.texture.image,
-                .viewType = vk::ImageViewType::e2D,
-                .format = vk_format,
-                .components = resulting_mapping,
-                .subresourceRange = vkutil::color_subresource_range
-            };
-            info.alternate_view = state.device.createImageView(view_info);
+            info.alternate_view = create_surface_view(info.texture.image, vk_format, resulting_mapping);
         }
 
         return TextureLookupResult{
@@ -777,6 +1145,27 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             vk_format
         };
     }
+}
+
+bool VKSurfaceCache::begin_ds_scene_depth_check(const SceGxmDepthStencilSurface &depth_stencil, bool this_scene_stores, Address scene_color_addr) {
+    const auto &lookup = depth_stencil.depth_data ? depth_address_lookup : stencil_address_lookup;
+    const Address address = depth_stencil.depth_data ? depth_stencil.depth_data.address() : depth_stencil.stencil_data.address();
+    const auto it = lookup.find(address);
+    pending_ds_scene = it == lookup.end() ? nullptr : it->second;
+    pending_ds_scene_stores = this_scene_stores;
+    pending_ds_color_addr = scene_color_addr;
+    if (!pending_ds_scene)
+        return true;
+
+    const bool continuation = pending_ds_scene->last_scene_color_addr == scene_color_addr;
+    pending_ds_scene->last_scene_color_addr = scene_color_addr;
+    return pending_ds_scene->depth_content_stored || continuation;
+}
+
+void VKSurfaceCache::resolve_ds_scene_end(bool scene_wrote_depth) {
+    if (pending_ds_scene && scene_wrote_depth)
+        pending_ds_scene->depth_content_stored = pending_ds_scene_stores;
+    pending_ds_scene = nullptr;
 }
 
 SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(SceGxmDepthStencilSurface *depth_stencil, const uint32_t width, const uint32_t height) {
@@ -805,6 +1194,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
             cached_info = it->second;
     }
 
+    if (cached_info)
+        pending_ds_scene = cached_info;
     if (cached_info != nullptr) {
         // this the most recently used depth-stencil surface
         ds_surface_queue.set_as_mru(cached_info);
@@ -845,6 +1236,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
     cached_info->multisample_mode = target->multisample_mode;
     cached_info->stride_samples = depth_stencil->get_stride();
     cached_info->tiling = tiling;
+    cached_info->depth_content_stored = true;
+    cached_info->last_scene_color_addr = pending_ds_color_addr;
+    pending_ds_scene = cached_info;
 
     uint32_t bytes_per_sample;
     switch (depth_stencil->get_format()) {
@@ -887,6 +1281,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
 }
 
 std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_texture(const SceGxmTexture &texture, TextureViewport *texture_viewport) {
+    if (texture.texture_type() == SCE_GXM_TEXTURE_CUBE || texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY)
+        return std::nullopt;
+
     SceGxmTextureBaseFormat base_format = gxm::get_base_format(gxm::get_format(texture));
     bool can_be_depth = false;
     bool can_be_stencil = false;
@@ -941,11 +1338,18 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     // take upscaling into account
     uint32_t width = static_cast<uint32_t>(memory_width * state.res_multiplier);
     uint32_t height = static_cast<uint32_t>(memory_height * state.res_multiplier);
-    uint32_t total_bytes = bytes_per_sample * stride_samples * memory_height;
+    const uint64_t total_bytes = uint64_t{ bytes_per_sample } * stride_samples * memory_height;
 
     const uint32_t address = texture.data_addr << 2;
     uint32_t surface_address = 0;
     DepthStencilSurfaceCacheInfo *found_info = nullptr;
+
+    const auto allocated_rows = [](const DepthStencilSurfaceCacheInfo &info) -> uint32_t {
+        if (info.memory_height <= 0)
+            return 0;
+        const uint32_t rows = static_cast<uint32_t>(info.memory_height);
+        return info.tiling == SurfaceTiling::Tiled ? align(rows, 32U) : rows;
+    };
 
     if (can_be_depth) {
         // get the first depth surface with an address lower or equal to address
@@ -953,8 +1357,12 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         if (it != depth_address_lookup.begin()) {
             --it;
 
-            // the texture must be contained entirely in the depth surface
-            if (address + total_bytes <= it->first + it->second->total_bytes) {
+            const auto &info = *it->second;
+            const uint64_t surface_bytes = info.memory_height > 0
+                ? uint64_t{ info.total_bytes } / info.memory_height * allocated_rows(info)
+                : 0;
+            // the texture must be contained entirely in the depth surface allocation
+            if (uint64_t{ address } + total_bytes <= uint64_t{ it->first } + surface_bytes) {
                 surface_address = it->first;
                 found_info = it->second;
             }
@@ -968,10 +1376,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
 
             // note: we don't support sampling the stencil from a D24S8 depth-stencil
             // so we can assume any stencil uses only 1 byte per sample
-            uint32_t surface_bytes = it->second->stride_samples * it->second->memory_height * 1;
+            const uint64_t surface_bytes = uint64_t{ it->second->stride_samples } * allocated_rows(*it->second);
 
             // the texture must be contained entirely in the stencil surface
-            if (address + total_bytes <= it->first + surface_bytes) {
+            if (uint64_t{ address } + total_bytes <= uint64_t{ it->first } + surface_bytes) {
                 surface_address = it->first;
                 found_info = it->second;
             }
@@ -999,6 +1407,12 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     const uint32_t delta_samples = (address - surface_address) / bytes_per_sample;
     uint32_t delta_col_samples = delta_samples % stride_samples;
     uint32_t delta_row_samples = delta_samples / stride_samples;
+
+    if (delta_col_samples * state.res_multiplier >= cached_info.texture.width
+        || delta_row_samples * state.res_multiplier >= cached_info.texture.height) {
+        LOG_WARN_ONCE("Depth/stencil texture begins outside the rendered surface, using guest memory");
+        return std::nullopt;
+    }
 
     vk::ImageView ds_attachment = reinterpret_cast<VKContext *>(state.context)->current_ds_view;
     const bool reading_ds_attachment = cached_info.texture.view == ds_attachment;
@@ -1095,8 +1509,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         img_view.layout = vkutil::ImageLayout::SampledImage;
     }
 
-    // copy the depth stencil only once per scene
-    if (read_only.scene_timestamp == scene_timestamp)
+    // An active attachment may have changed since the previous snapshot in this scene.
+    if (read_only.scene_timestamp == scene_timestamp && !reading_ds_attachment)
         return TextureLookupResult{
             img_view.view,
             img_view.layout,
@@ -1105,8 +1519,13 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
 
     read_only.scene_timestamp = scene_timestamp;
 
-    // use prerender cmd as we can't copy an image or use pipeline barriers in a render pass
+    // Order a feedback snapshot after the draws that produced its source.
     VKContext *context = reinterpret_cast<VKContext *>(state.context);
+    if (reading_ds_attachment && context->has_recorded_render_pass) {
+        const SceGxmNotification notification{};
+        context->stop_recording(notification, notification, false);
+        context->start_recording();
+    }
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
 
     delta_row_samples *= state.res_multiplier;
@@ -1146,7 +1565,7 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     }
 
     if (!color && !depth_stencil)
-        LOG_ERROR_ONCE("Depth stencil and color surface are both null!");
+        LOG_INFO_ONCE("Using transient attachments for a scene without color or depth/stencil backing");
 
     // might get modified by retrieve_color_surface_for_framebuffer
     state.pipeline_cache.can_use_deferred_compilation = true;
@@ -1190,20 +1609,46 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
         .height = framebuffer_height,
         .layers = 1
     };
-    vk::ImageView attachments[] = { color_result.view, ds_result.view };
+    const auto raw = color_result.color_surface ? color_result.color_surface->raw_image.get() : nullptr;
+    vk::ImageView attachments[] = { color_result.view, raw ? raw->view : ds_result.view, ds_result.view };
     fb_info.setAttachments(attachments);
+    fb_info.attachmentCount = raw ? 3 : 2;
     vk::Framebuffer fb_standard = state.device.createFramebuffer(fb_info);
 
     vk::Framebuffer fb_interlock = nullptr;
+    vk::ImageView storage_color_view;
     if (state.features.support_shader_interlock) {
         // we also need to create the framebuffer for shader interlock
         fb_info.renderPass = interlock_render_pass;
-        fb_info.pAttachments = &attachments[1];
+        fb_info.pAttachments = &attachments[2];
         fb_info.attachmentCount = 1;
         fb_interlock = state.device.createFramebuffer(fb_info);
+
+        if (color && color->gamma && gxm::get_base_format(color->colorFormat) == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8) {
+            // Storage accesses use UNORM; the interlock shader handles gamma conversion.
+            const vk::ImageViewCreateInfo view_info{
+                .image = color_result.base_image->image,
+                .viewType = vk::ImageViewType::e2D,
+                .format = vk::Format::eR8G8B8A8Unorm,
+                .components = vkutil::default_comp_mapping,
+                .subresourceRange = vkutil::color_subresource_range
+            };
+            storage_color_view = state.device.createImageView(view_info);
+        }
     }
 
-    return (framebuffer_array[key] = { fb_standard, fb_interlock, color_result.base_image });
+    return (framebuffer_array[key] = { fb_standard, fb_interlock, color_result.base_image, storage_color_view, { framebuffer_width, framebuffer_height }, color_result.color_surface });
+}
+
+bool VKSurfaceCache::has_newer_overlapping_surface(const ColorSurfaceCacheInfo &surface) const {
+    const uint64_t begin = surface.data.address();
+    const uint64_t end = begin + surface.total_bytes;
+    for (const auto &[base, info] : color_address_lookup) {
+        if (info != &surface && base<end &&static_cast<uint64_t>(base) + info->total_bytes> begin
+            && info->last_scene_rendered > surface.last_scene_rendered)
+            return true;
+    }
+    return false;
 }
 
 bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, CallbackRequestFunction &callback, Address target_address) {
@@ -1226,14 +1671,15 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
 
     auto &surface = *it->second;
     VKContext &context = *static_cast<VKContext *>(state.context);
-    // if the frame is already rendered skip
-    // Note: that's not the best behavior but it should be fine
-    // also it prevents invalidated surfaces from causing issues
-    if (surface.last_frame_rendered + MAX_FRAMES_RENDERING <= state.frame_timestamp)
+    const bool stale = surface.last_frame_rendered + MAX_FRAMES_RENDERING <= state.frame_timestamp;
+    const bool needs_writeback = surface.written_back_scene < surface.last_scene_rendered;
+    const bool sync_stale = stale && needs_writeback && surface.tiling == SurfaceTiling::Linear
+        && format_support_surface_sync(surface.format) && !*surface.dirty && !has_newer_overlapping_surface(surface);
+    if (stale && needs_writeback && !sync_stale)
         return false;
 
-    // we found something
-    if (!*surface.need_surface_sync) {
+    // A recorded writeback may still be pending on the wait thread: keep callbacks ordered even for old surfaces.
+    if ((!stale && !*surface.need_surface_sync) || sync_stale) {
         // first send the command to sync the surface with the GPU
         *surface.need_surface_sync = true;
 
@@ -1250,8 +1696,10 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
             surface_cmd = vkutil::create_single_time_command(state.device, state.multithread_command_pool);
 
             context.render_cmd = surface_cmd;
+            ColorSurfaceCacheInfo *const prev_last_written = last_written_surface;
             last_written_surface = &surface;
-            returned_info = perform_surface_sync();
+            returned_info = perform_surface_sync(true);
+            last_written_surface = prev_last_written == &surface ? nullptr : prev_last_written;
             context.render_cmd = prev_cmd;
 
             surface_cmd.end();
@@ -1259,15 +1707,18 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
         // submit this command
         vk::SubmitInfo submit_info{};
         submit_info.setCommandBuffers(surface_cmd);
-        {
+        try {
             std::lock_guard<std::mutex> lock(state.queue_mutex);
             state.general_queue.submit(submit_info, fence);
+        } catch (const vk::DeviceLostError &) {
+            state.report_device_lost("surface readback queue submit");
+            throw;
         }
 
         // now we need to wait for the fence, then destroy it along with the command buffer
         // to prevent memory leaks
         CallbackRequestFunction vk_callback = [&state = this->state, fence, surface_cmd]() {
-            auto result = state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max());
+            auto result = state.wait_for_fences(fence, std::numeric_limits<uint64_t>::max());
             if (result != vk::Result::eSuccess)
                 LOG_ERROR("Could not wait for fences.");
 
@@ -1279,8 +1730,7 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
         };
         state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(vk_callback)) });
 
-        if (returned_info)
-            state.request_queue.push(PostSurfaceSyncRequest{ returned_info });
+        queue_surface_sync_completion(returned_info);
     }
 
     // now push the callback
@@ -1292,7 +1742,23 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
     return true;
 }
 
-ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
+void VKSurfaceCache::queue_surface_sync_completion(ColorSurfaceCacheInfo *surface) {
+    if (!surface)
+        return;
+
+    if (state.mapping_method == MappingMethod::DoubleBuffer && surface->need_buffer_sync) {
+        const auto &region = surface->sync_region;
+        const uint32_t bytes_per_pixel = gxm::bits_per_pixel(surface->format) / 8;
+        const uint32_t row_bytes = region.extent.width * bytes_per_pixel;
+        const uint32_t size = (region.extent.height - 1) * surface->stride_bytes + row_bytes;
+        const Address location = surface->data.address() + region.offset.y * surface->stride_bytes + region.offset.x * bytes_per_pixel;
+        state.request_queue.push(BufferSyncRequest{ location, size, surface->stride_bytes, row_bytes, region.extent.height });
+    }
+    if (surface->need_post_surface_sync)
+        state.request_queue.push(PostSurfaceSyncRequest{ surface });
+}
+
+ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync(bool full_surface) {
     // surface sync is supported only if memory mapping is enabled
     if (!state.features.enable_memory_mapping)
         return nullptr;
@@ -1303,8 +1769,12 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     VKContext *context = reinterpret_cast<VKContext *>(state.context);
     vk::CommandBuffer cmd_buffer = context->render_cmd;
 
-    vk::Image image_to_copy = last_written_surface->texture.image;
-    vk::ImageLayout image_layout = vk::ImageLayout::eGeneral;
+    auto &sync_source = last_written_surface->raw_image_valid && last_written_surface->raw_image
+        ? *last_written_surface->raw_image
+        : last_written_surface->texture;
+    sync_source.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc);
+    vk::Image image_to_copy = sync_source.image;
+    vk::ImageLayout image_layout = vk::ImageLayout::eTransferSrcOptimal;
 
     // this works for surface swizzles
     bool is_swizzle_identity = last_written_surface->swizzle.r == vk::ComponentSwizzle::eR;
@@ -1315,6 +1785,30 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
         is_swizzle_identity = true;
     }
 
+    vk::Rect2D region{ { 0, 0 }, { last_written_surface->original_width, last_written_surface->original_height } };
+    vk::Offset3D src_begin{};
+    vk::Offset3D src_end{ last_written_surface->width, last_written_surface->height, 1 };
+    const bool needs_f10_repack = surface_sync_needs_f10_repack(*last_written_surface);
+    const bool can_sync_region = !needs_f10_repack && (is_swizzle_identity || surface_sync_needs_u4u4u4u4_repack(*last_written_surface));
+    if (!full_surface && state.res_multiplier != 1.0f && context->render_target->has_macroblock_sync && context->rendered_area
+        && can_sync_region && !format_need_additional_memory(last_written_surface->format)) {
+        const auto &area = *context->rendered_area;
+        src_begin.x = std::clamp(area.offset.x, 0, static_cast<int32_t>(last_written_surface->width));
+        src_begin.y = std::clamp(area.offset.y, 0, static_cast<int32_t>(last_written_surface->height));
+        src_end.x = std::clamp(area.offset.x + static_cast<int32_t>(area.extent.width), src_begin.x, static_cast<int32_t>(last_written_surface->width));
+        src_end.y = std::clamp(area.offset.y + static_cast<int32_t>(area.extent.height), src_begin.y, static_cast<int32_t>(last_written_surface->height));
+        region.offset = { static_cast<int32_t>(src_begin.x / state.res_multiplier), static_cast<int32_t>(src_begin.y / state.res_multiplier) };
+        const uint32_t x1 = std::min<uint32_t>(src_end.x / state.res_multiplier, last_written_surface->original_width);
+        const uint32_t y1 = std::min<uint32_t>(src_end.y / state.res_multiplier, last_written_surface->original_height);
+        region.extent = { x1 - region.offset.x, y1 - region.offset.y };
+        if (!region.extent.width || !region.extent.height) {
+            LOG_WARN_ONCE("Surface sync region is empty after resolution scaling");
+            sync_source.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+            return nullptr;
+        }
+    }
+    last_written_surface->sync_region = region;
+
     if (state.res_multiplier != 1.0f) {
         // scale back the image using a blit command first
 
@@ -1323,25 +1817,30 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
 
         vkutil::Image &blit_image = *last_written_surface->blit_image;
 
+        if (blit_image.image && blit_image.format != sync_source.format) {
+            state.frame().destroy_queue.add_image(blit_image);
+            blit_image = vkutil::Image();
+        }
+
         if (!blit_image.image) {
-            blit_image.format = last_written_surface->texture.format;
+            blit_image.format = sync_source.format;
             blit_image.width = last_written_surface->original_width;
             blit_image.height = last_written_surface->original_height;
 
             blit_image.init_image(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
             blit_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
         } else {
-            blit_image.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
+            blit_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
         }
 
         vk::ImageBlit blit{
             .srcSubresource = vkutil::color_subresource_layer,
-            .srcOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ last_written_surface->width, last_written_surface->height, 1 } },
+            .srcOffsets = std::array<vk::Offset3D, 2>{ src_begin, src_end },
             .dstSubresource = vkutil::color_subresource_layer,
-            .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ last_written_surface->original_width, last_written_surface->original_height, 1 } },
+            .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ region.offset.x, region.offset.y, 0 }, vk::Offset3D{ region.offset.x + static_cast<int32_t>(region.extent.width), region.offset.y + static_cast<int32_t>(region.extent.height), 1 } },
         };
-        // Apply nearest filter for the time being, linear might be better if we have no data in the texture tho
-        cmd_buffer.blitImage(image_to_copy, image_layout, blit_image.image, vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eNearest);
+        const bool linear_supported = static_cast<bool>(state.physical_device.getFormatProperties(blit_image.format).optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+        cmd_buffer.blitImage(image_to_copy, image_layout, blit_image.image, vk::ImageLayout::eTransferDstOptimal, blit, linear_supported ? vk::Filter::eLinear : vk::Filter::eNearest);
 
         blit_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc);
         image_to_copy = blit_image.image;
@@ -1353,7 +1852,7 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     const uint32_t pixel_stride = (last_written_surface->stride_bytes * 8) / gxm::bits_per_pixel(last_written_surface->format);
     const uint32_t transfer_pixel_size = static_cast<uint32_t>(vk::blockSize(last_written_surface->texture.format));
     const bool needs_copy_buffer = format_need_additional_memory(last_written_surface->format)
-        || surface_sync_needs_u4u4u4u4_repack(*last_written_surface);
+        || surface_sync_needs_u4u4u4u4_repack(*last_written_surface) || needs_f10_repack;
     if (needs_copy_buffer) {
         if (!last_written_surface->copy_buffer)
             last_written_surface->copy_buffer = std::make_unique<vkutil::Buffer>();
@@ -1361,7 +1860,8 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
         vkutil::Buffer &copy_buffer = *last_written_surface->copy_buffer;
 
         const vk::DeviceSize required_size = static_cast<vk::DeviceSize>(pixel_stride) * last_written_surface->original_height * transfer_pixel_size;
-        ensure_surface_sync_buffer(copy_buffer, state.frame().destroy_queue, required_size);
+        ensure_surface_sync_buffer(copy_buffer, state.frame().destroy_queue, required_size,
+            needs_f10_repack ? vkutil::vma_readback_alloc : vkutil::vma_mapped_alloc);
 
         buffer = copy_buffer.buffer;
         offset = 0;
@@ -1374,14 +1874,19 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
         std::tie(buffer, offset) = state.get_matching_mapping(last_written_surface->data);
     }
     vk::BufferImageCopy copy{
-        .bufferOffset = offset,
+        .bufferOffset = offset + (static_cast<vk::DeviceSize>(region.offset.y) * pixel_stride + region.offset.x) * transfer_pixel_size,
         .bufferRowLength = pixel_stride,
         .bufferImageHeight = last_written_surface->original_height,
         .imageSubresource = vkutil::color_subresource_layer,
-        .imageOffset = { 0, 0, 0 },
-        .imageExtent = { last_written_surface->original_width, last_written_surface->original_height, 1 }
+        .imageOffset = { region.offset.x, region.offset.y, 0 },
+        .imageExtent = { region.extent.width, region.extent.height, 1 }
     };
     cmd_buffer.copyImageToBuffer(image_to_copy, image_layout, buffer, copy);
+    sync_source.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+
+    if (region.offset.x == 0 && region.offset.y == 0
+        && region.extent.width == last_written_surface->original_width && region.extent.height == last_written_surface->original_height)
+        last_written_surface->written_back_scene = last_written_surface->last_scene_rendered;
 
     ColorSurfaceCacheInfo *return_value = last_written_surface;
     last_written_surface = nullptr;
@@ -1452,13 +1957,19 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
     if (surface == nullptr)
         return;
 
+    const SurfaceSyncWriteScope internal_write;
     const uint32_t pixel_stride = (surface->stride_bytes * 8) / gxm::bits_per_pixel(surface->format);
     const uint32_t nb_pixels = pixel_stride * surface->original_height;
     uint8_t *pixels = surface->data.cast<uint8_t>().get(mem);
 
     if (surface_sync_needs_u4u4u4u4_repack(*surface)) {
-        const vk::Rect2D region{ { 0, 0 }, { surface->original_width, surface->original_height } };
-        pack_rgba8_to_u4u4u4u4(pixels, static_cast<const uint8_t *>(surface->copy_buffer->mapped_data), pixel_stride, region, surface->swizzle);
+        pack_rgba8_to_u4u4u4u4(pixels, static_cast<const uint8_t *>(surface->copy_buffer->mapped_data), pixel_stride, surface->sync_region, surface->swizzle);
+        return;
+    }
+
+    if (surface_sync_needs_f10_repack(*surface)) {
+        pack_rgba16f_to_u2f10f10f10(pixels, static_cast<const uint8_t *>(surface->copy_buffer->mapped_data), pixel_stride,
+            surface->original_width, surface->original_height, surface->stride_bytes);
         return;
     }
 

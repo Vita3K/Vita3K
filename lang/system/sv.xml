@@ -170,7 +170,93 @@ Vänta.</connecting_please_wait>
 		<silver>Silver</silver>
 		<hours_ago>{} timmar sedan</hours_ago>
 		<minutes_ago>{} minuter sedan</minutes_ago>
+		<activities>Aktiviteter</activities>
+		<like>Gilla</like>
+		<likes_this>{} gillar detta.</likes_this>
+		<and_like_this>{} och {} gillar detta.</and_like_this>
+		<people_like_this>{} personer gillar detta.</people_like_this>
+		<comments>Kommentarer {}</comments>
+		<delete_activity>Den här aktiviteten kommer att raderas.</delete_activity>
+		<delete_comment>Den här kommentaren kommer att raderas.</delete_comment>
+		<unlike>Sluta gilla</unlike>
+		<write_comment>Skriv kommentar</write_comment>
+		<has_earned_platinum_trophy>har vunnit en platinatrophy i "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>har vunnit en trophy i "{}"!</has_earned_trophy>
+		<first_time_playing>spelar "{}" för första gången.</first_time_playing>
+		<download_failed>Kunde inte ladda ned.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}s aktiviteter</activities_of>
+		<anyone>Alla</anyone>
+		<no_one>Ingen</no_one>
+		<cannot_display>Kunde inte visa fler sidor.</cannot_display>
+		<friends_of_friends>Vänners vänner</friends_of_friends>
+		<friends_only>Bara vänner</friends_only>
+		<share_range>Delningsgränser:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Acceptera</accept>
+		<players_blocked>Blockerade spelare</players_blocked>
+		<friend_request_already_canceled>Den här vänförfrågan har redan avbrutits.</friend_request_already_canceled>
+		<search_for_player>Sök efter en Vita3K Network-spelare och visa spelarens profil eller skicka en vänförfrågan.</search_for_player>
+		<friend_requests>Vänförfrågningar</friend_requests>
+		<friends>Vänner</friends>
+		<could_not_find_online_id>Kunde inte hitta detta online-ID.</could_not_find_online_id>
+		<there_are_no_players>Det finns inga spelare.</there_are_no_players>
+		<no_players_found>Inga spelare hittades.</no_players_found>
+		<online_id>Online-ID</online_id>
+		<enter_from_3_to_16_characters>Ange mellan 3 och 16 tecken.</enter_from_3_to_16_characters>
+		<online_status>Onlinestatus</online_status>
+		<received>Mottaget</received>
+		<search>Sök</search>
+		<sent>Skickat</sent>
+		<waiting_for_friend_response>Väntar på svar från vän.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Om mig</about_me>
+		<accept>Acceptera</accept>
+		<activity>Aktivitet</activity>
+		<warn_block_player>Om du blockerar den här spelaren kommer du inte längre att kunna ta emot meddelanden från den spelaren.
+Vill du fortsätta?</warn_block_player>
+		<warn_block_friend>Om du blockerar den här spelaren tas spelaren också bort från vänner. Du kommer inte längre att kunna ta emot meddelanden från den här spelaren.
+Vill du fortsätta?</warn_block_friend>
+		<block>Blockera</block>
+		<blocked>Blockerad.</blocked>
+		<cancel_friend_request>Avbryt vänförfrågan</cancel_friend_request>
+		<friend_request_canceled>Vänförfrågan kommer att avbrytas.</friend_request_canceled>
+		<delete_request>Radera förfrågan</delete_request>
+		<edit_profile>Redigera profil</edit_profile>
+		<friend_request_already_canceled>Den här vänförfrågan har redan avbrutits.</friend_request_already_canceled>
+		<friends>Vänner</friends>
+		<is_now_friends_with>är nu vän med {}</is_now_friends_with>
+		<level>Nivå</level>
+		<not_a_friend_yet>Inte en vän ännu.</not_a_friend_yet>
+		<remove_from_friends>Ta bort från vänner</remove_from_friends>
+		<player_removed_from_friends>Den här spelaren kommer att tas bort från vänner.</player_removed_from_friends>
+		<send_friend_request>Skicka vänförfrågan</send_friend_request>
+		<send>Skicka</send>
+		<trophies>Trophies</trophies>
+		<unblock>Häv blockering</unblock>
+		<unblock_player>Häv blockeringen för den här spelaren.</unblock_player>
+		<waiting_friend_response>Väntar på svar från vän.</waiting_friend_response>
+		<friend_request_from_player>Du har en vänförfrågan från den här spelaren.</friend_request_from_player>
+		<you_have_friend_requests>Du har vänförfrågningar.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Meddelanden</title>
+		<create_message>+ Skapa ett meddelande</create_message>
+		<uncheck_all>Avmarkera alla</uncheck_all>
+		<enter_online_id>Ange online-ID.</enter_online_id>
+		<add>Lägg till</add>
+		<add_recipient>Lägg till mottagare</add_recipient>
+		<delete>Ta bort</delete>
+		<cancel>Avbryt</cancel>
+		<to>Till</to>
+	</messages_app>
 
 	<content_manager name="Innehållshanterare">
 		<application name="Applikationer">
@@ -197,13 +283,43 @@ Vänta.</connecting_please_wait>
 
 	<indicator>
 		<app_added_home>Applikationen har lagts till på hemskärmen.</app_added_home>
+		<cancel_download>Vill du avbryta den här nedladdningen?</cancel_download>
+		<cancel_install>Vill du avbryta den här installationen?
+Om du avbryter raderas också de filer som har laddats ned för den här installationen.</cancel_install>
 		<delete_all>Radera alla</delete_all>
 		<notif_deleted>Notiserna raderas.</notif_deleted>
+		<waiting_download>Väntar på nedladdning...</waiting_download>
+		<downloading_complete>Nedladdning slutförd.</downloading_complete>
 		<install_failed>Kunde inte installera.</install_failed>
+		<player_is_online>{} är nu online.</player_is_online>
+		<waiting_install>Väntar på installering...</waiting_install>
 		<install_complete>Installation slutförd.</install_complete>
 		<installing>Installerar...</installing>
+		<minutes_left>{} minuter kvar</minutes_left>
 		<no_notif>Det finns inga notiser.</no_notif>
+		<commented_on_activity>Någon kommenterade {}s aktivitet.</commented_on_activity>
+		<commented_on_your_activity>Någon kommenterade din aktivitet.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Någon kommenterade och gillade din aktivitet.</commented_and_likes_your_activity>
+		<likes_your_activity>Någon gillar din aktivitet.</likes_your_activity>
+		<pause_all>Pausa alla</pause_all>
+		<pause>Pausa</pause>
+		<paused>Pausad</paused>
+		<resume_all>Återuppta alla</resume_all>
+		<resume>Återuppta</resume>
+		<seconds_left>{} sekunder kvar</seconds_left>
+		<friend_requests>Du har vänförfrågningar.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>En ny version av applikationen är tillgänglig.</new_app_version_available>
+		<latest_version_installed>Den senaste versionen av applikationen har redan installerats.</latest_version_installed>
+		<downloading_app_update>Laddar ned applikationsuppdateringsfilen...
+Du kan kontrollera nedladdningens status i notislistan.</downloading_app_update>
+		<download>Ladda ned</download>
+		<not_enough_space>Kunde inte ladda ned.
+Det finns inte tillräckligt med ledigt utrymme på minneskortet. Frigör minst {} ledigt utrymme på minneskortet och försök sedan ladda ned på nytt.</not_enough_space>
+		<version>Version {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Tillbaka</back>

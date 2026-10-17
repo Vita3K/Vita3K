@@ -19,10 +19,27 @@
 
 #include <updater/state.h>
 
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace updater {
 
+struct LimuleRelease {
+    std::string commit;
+    int build_number;
+    int master_number;
+};
+
+struct LimuleCommit {
+    std::string author;
+    std::string sha;
+    std::string msg;
+};
+
+std::optional<LimuleRelease> parse_limule_release(std::string_view response);
+std::optional<std::vector<LimuleCommit>> parse_limule_commits(std::string_view response);
+unsigned int limule_update_count(int current_build, int release_build);
 std::string release_api_url();
 std::string release_page_url();
 std::string display_version(const UpdateInfo &info);

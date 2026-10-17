@@ -1,0 +1,73 @@
+// Vita3K emulator project
+// Copyright (C) 2026 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#version 450
+
+layout(local_size_x = 64) in;
+layout(set = 0, binding = 0, std430) readonly buffer Source {
+    uint words[];
+} source;
+layout(set = 0, binding = 1, std430) writeonly buffer Destination {
+    uint words[];
+} destination;
+layout(push_constant) uniform Parameters {
+    uint source_width;
+    uint source_height;
+    uint dest_width;
+    uint dest_height;
+    uint source_bpp;
+    uint dest_bpp;
+    uint byte_offset;
+    uint row_offset;
+    float scale;
+    uint interleave;
+} pc;
+
+void main() {
+    uint word = gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    uint byte_count = pc.dest_width * pc.dest_height * pc.dest_bpp;
+    if (word >= (byte_count + 3u) / 4u)
+        return;
+
+    // Complete views keep both words; explicit lane views repeat only their selected word.
+    if (pc.scale != 1.0 && pc.source_bpp == 8u && pc.dest_bpp == 4u
+        && pc.row_offset == 0u && pc.byte_offset < 8u && pc.byte_offset % 4u == 0u) {
+        uint source_x = min((word % pc.dest_width) / 2u, pc.source_width - 1u);
+        uint source_y = min(word / pc.dest_width, pc.source_height - 1u);
+        uint lane = pc.interleave != 0u ? word % pc.dest_width % 2u : pc.byte_offset / 4u;
+        destination.words[word] = source.words[(source_y * pc.source_width + source_x) * 2u + lane];
+        return;
+    }
+
+    uint result = 0;
+    for (uint i = 0; i < 4u && word * 4u + i < byte_count; ++i) {
+        uint offset = word * 4u + i;
+        uint pixel = offset / pc.dest_bpp;
+        uint x = pixel % pc.dest_width;
+        uint y = pixel / pc.dest_width;
+        uint native_x = uint((float(x) + 0.5) / pc.scale);
+        uint native_byte = pc.byte_offset + native_x * pc.dest_bpp + offset % pc.dest_bpp;
+        // Preserve the subpixel position when splitting or joining native texels.
+        float phase = float(x) + 0.5 - float(native_x) * pc.scale;
+        uint source_x = min(uint(float(native_byte / pc.source_bpp) * pc.scale + phase), pc.source_width - 1u);
+        uint source_y = min(uint(float(pc.row_offset) * pc.scale + float(y) + 0.5), pc.source_height - 1u);
+        uint source_byte = (source_y * pc.source_width + source_x) * pc.source_bpp + native_byte % pc.source_bpp;
+        uint value = (source.words[source_byte / 4u] >> ((source_byte % 4u) * 8u)) & 255u;
+        result |= value << (i * 8u);
+    }
+    destination.words[word] = result;
+}

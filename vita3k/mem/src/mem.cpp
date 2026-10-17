@@ -166,6 +166,36 @@ bool is_valid_addr_len(const MemState &state, Address addr, uint32_t len) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
+uint64_t pin_guest_memory(MemState &state, std::span<const GuestMemoryRange> ranges) {
+    const std::lock_guard lock(state.generation_mutex);
+    if (!state.memory || !state.alloc_table)
+        return 0;
+    for (const GuestMemoryRange &range : ranges) {
+        if (range.size == 0)
+            continue;
+        const uint64_t end = uint64_t(range.address) + range.size;
+        if (range.address < STANDARD_PAGE_SIZE || end > TOTAL_MEM_SIZE)
+            return 0;
+        const uint32_t first = range.address / STANDARD_PAGE_SIZE;
+        const uint32_t last = static_cast<uint32_t>((end + STANDARD_PAGE_SIZE - 1) / STANDARD_PAGE_SIZE);
+        if (state.allocator.free_slot_count(first, last) != 0)
+            return 0;
+    }
+    if (state.next_pin == 0)
+        return 0;
+    const uint64_t pin = state.next_pin++;
+    state.pinned_ranges.emplace(pin, std::vector<GuestMemoryRange>(ranges.begin(), ranges.end()));
+    return pin;
+}
+
+void unpin_guest_memory(MemState &state, uint64_t pin) {
+    {
+        const std::lock_guard lock(state.generation_mutex);
+        state.pinned_ranges.erase(pin);
+    }
+    state.pins_changed.notify_all();
+}
+
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
@@ -254,7 +284,8 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
 #ifdef _WIN32
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(aligned_start, aligned_size, PAGE_READWRITE, &old_protect);
-    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+    LOG_CRITICAL_IF(!ret, "VirtualProtect failed while unprotecting guest range {}+{} (host range {}+{}): {}",
+        log_hex(addr), log_hex(size), log_hex(reinterpret_cast<uintptr_t>(aligned_start)), log_hex(aligned_size), get_error_msg());
 #else
     const int ret = mprotect(aligned_start, aligned_size, PROT_READ | PROT_WRITE);
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
@@ -273,7 +304,8 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
 #ifdef _WIN32
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(aligned_start, aligned_size, (perm == MemPerm::None) ? PAGE_NOACCESS : ((perm == MemPerm::ReadOnly) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
-    LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+    LOG_CRITICAL_IF(!ret, "VirtualProtect failed while protecting guest range {}+{} (host range {}+{}): {}",
+        log_hex(addr), log_hex(size), log_hex(reinterpret_cast<uintptr_t>(aligned_start)), log_hex(aligned_size), get_error_msg());
 #else
     const int ret = mprotect(aligned_start, aligned_size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
@@ -303,6 +335,11 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         vaddr = static_cast<Address>(fault_addr - memory_addr);
     }
 
+    // Never recover accesses to the null guard page by silently unprotecting it.
+    if (vaddr < STANDARD_PAGE_SIZE) {
+        return false;
+    }
+
     if (!is_valid_addr(state, vaddr)) {
         return false;
     }
@@ -314,7 +351,7 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     if (it == state.protect_tree.end()) {
         // HACK: keep going
         unprotect_inner(state, align_down(vaddr, state.host_page_size), state.host_page_size);
-        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        LOG_CRITICAL("Unhandled protected {} access to valid address=0x{:X}", write ? "write" : "read", vaddr);
         return true;
     }
 
@@ -322,7 +359,7 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     if (vaddr < it->first || vaddr >= it->first + info.size) {
         // HACK: keep going
         unprotect_inner(state, align_down(vaddr, state.host_page_size), state.host_page_size);
-        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        LOG_CRITICAL("Unhandled protected {} access to valid address=0x{:X}", write ? "write" : "read", vaddr);
         return true;
     }
 
@@ -495,7 +532,7 @@ Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_
 }
 
 void free(MemState &state, Address address) {
-    const std::lock_guard<std::mutex> lock(state.generation_mutex);
+    std::unique_lock<std::mutex> lock(state.generation_mutex);
     const uint32_t page_num = address / STANDARD_PAGE_SIZE;
     assert(page_num >= 0);
 
@@ -503,6 +540,18 @@ void free(MemState &state, Address address) {
     if (!page.allocated) {
         LOG_CRITICAL("Freeing unallocated page");
     }
+    const uint64_t allocation_start = uint64_t(page_num) * STANDARD_PAGE_SIZE;
+    const uint64_t allocation_end = allocation_start + uint64_t(page.size) * STANDARD_PAGE_SIZE;
+    state.pins_changed.wait(lock, [&] {
+        for (const auto &[_, ranges] : state.pinned_ranges) {
+            for (const GuestMemoryRange &range : ranges) {
+                const uint64_t end = uint64_t(range.address) + range.size;
+                if (range.size && range.address < allocation_end && end > allocation_start)
+                    return false;
+            }
+        }
+        return true;
+    });
     page.allocated = 0;
 
     state.allocator.free(page_num, page.size);
@@ -570,6 +619,8 @@ const char *mem_name(Address address, MemState &state) {
 
 void deinit_mem(MemState &state) {
     const std::lock_guard<std::mutex> gen_lock(state.generation_mutex);
+
+    assert(state.pinned_ranges.empty());
 
     {
         const std::lock_guard<std::mutex> prot_lock(state.protect_mutex);

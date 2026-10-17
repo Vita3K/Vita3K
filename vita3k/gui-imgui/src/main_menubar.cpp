@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <app/functions.h>
+#include <config/config.h>
 #include <config/state.h>
 #include <gui-imgui/functions.h>
 #include <io/state.h>
@@ -140,8 +141,7 @@ static void draw_debug_menu(GuiState &gui, DebugMenuState &state) {
 
 static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.main_menubar.configuration;
-    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", emuenv.io.app_path) };
-    auto &settings_dialog = !emuenv.io.app_path.empty() && fs::exists(CUSTOM_CONFIG_PATH) ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
+    auto &settings_dialog = !emuenv.io.app_path.empty() && config::has_custom_config(emuenv.config_path, emuenv.io.app_path) ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         if (ImGui::MenuItem(gui.lang.settings_dialog.main_window["title"].c_str(), nullptr, &settings_dialog))
             init_config(gui, emuenv, emuenv.io.app_path);

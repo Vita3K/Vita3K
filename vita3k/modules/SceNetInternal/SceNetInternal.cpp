@@ -19,7 +19,13 @@
 
 #include "../SceNet/SceNet.h"
 
+#include <emuenv/state.h>
+#include <kernel/types.h>
+#include <mem/functions.h>
 #include <util/tracy.h>
+
+#include <cstring>
+
 TRACY_MODULE_NAME(SceNetInternal);
 
 EXPORT(int, sceNetInternalInetPton, int af, const char *src, void *dst) {
@@ -30,4 +36,24 @@ EXPORT(int, sceNetInternalIcmConnect, int sid, int flags) {
     TRACY_FUNC(sceNetInternalIcmConnect, sid, flags);
     // call sceNetSyscallIcmConnect(sid, flags)
     return UNIMPLEMENTED();
+}
+
+EXPORT(Ptr<const char>, SceNetInternal_F3917021, int unk) {
+    TRACY_FUNC(SceNetInternal_F3917021, unk);
+    LOG_DEBUG("SceNetInternal_F3917021, {}", unk);
+    const Ptr<char> result(alloc(emuenv.mem, 0x10, "ip_field"));
+    if (!result) {
+        LOG_ERROR("Failed to allocate the SceNetInternal IP address.");
+        return {};
+    }
+    std::strcpy(result.get(emuenv.mem), "127.0.0.1");
+    return result;
+}
+
+EXPORT(int, SceNetInternal_689B9D7D, uint32_t *actual_interval) {
+    TRACY_FUNC(SceNetInternal_689B9D7D, actual_interval);
+    if (!actual_interval)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    LOG_DEBUG("actual interval: {}", *actual_interval);
+    return 0;
 }

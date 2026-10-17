@@ -418,7 +418,10 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         }
     } else {
         if (config.texture_cache) {
-            state.texture_cache.cache_and_bind_texture(texture, mem);
+            if (!state.texture_cache.cache_and_bind_texture(texture, mem)) {
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+            }
         } else {
             texture::bind_texture_without_cache(state.texture_cache, texture, mem);
         }
@@ -477,25 +480,22 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
 
     glBindBuffer(GL_ARRAY_BUFFER, context.vertex_stream_ring_buffer.handle());
 
-    for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        if (!glvert->attribute_infos.contains(attribute.regIndex))
-            continue;
-
-        const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
+    for (const auto &attribute : glvert->attribute_bindings) {
+        const SceGxmVertexStream &stream = vertex_program.streams[attribute.stream_index];
 
         GLenum type = attribute_format_to_gl_type(attribute.format);
         const GLboolean normalized = attribute_format_normalized(attribute.format);
 
         bool upload_integral = false;
 
-        shader::usse::AttributeInformation info = glvert->attribute_infos.at(attribute.regIndex);
+        shader::usse::AttributeInformation info = attribute.info;
         int attrib_location = info.location;
 
         // these 2 values are only used when a matrix is used as a vertex attribute
         // this is only supported for regformated attribute for now
         uint32_t array_size = 1;
         uint32_t array_element_size = 0;
-        uint8_t component_count = attribute.componentCount;
+        uint32_t component_count = attribute.component_count;
 
         if (info.regformat) {
             component_count = info.component_count;
@@ -524,7 +524,8 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
             if (component_count > 4) {
                 // a matrix is used as an attribute, pack everything into an array of vec4
                 array_size = (component_count + 3) / 4;
-                array_element_size = 4 * gxm::attribute_format_size(attribute.format);
+                array_element_size = 4 * (type == GL_UNSIGNED_BYTE ? sizeof(uint8_t) : type == GL_UNSIGNED_SHORT ? sizeof(uint16_t)
+                                                                                                                 : sizeof(uint32_t));
                 component_count = 4;
             }
         } else {
@@ -542,7 +543,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
             }
         }
 
-        const std::uint16_t stream_index = attribute.streamIndex;
+        const std::uint16_t stream_index = attribute.stream_index;
 
         for (uint32_t i = 0; i < array_size; i++) {
             if (upload_integral || (attribute.format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {

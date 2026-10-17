@@ -99,7 +99,9 @@ void State::update_overlays() {
     // Pause overlay
     const bool is_paused = paused.load(std::memory_order_relaxed);
     overlay_manager->set_paused(is_paused);
-    if (is_paused) {
+    const bool show_pause = app_session_controller.has_value()
+        && app_session_controller->get().should_show_pause_overlay();
+    if (show_pause) {
         bool just_created = false;
         auto pause_overlay = overlay_manager->get<overlay::pause_overlay>();
         if (!pause_overlay) {

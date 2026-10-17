@@ -109,13 +109,13 @@ static constexpr ImageLayoutTransition layout_transitions[] = {
     // DepthStencilAttachment
     {
         vk::ImageLayout::eDepthStencilAttachmentOptimal,
-        vk::PipelineStageFlagBits::eEarlyFragmentTests,
+        vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
         vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite },
-    // ColorAttachmentReadWrite
+    // ColorAttachmentReadWrite, including fragment-interlock storage access
     {
         vk::ImageLayout::eGeneral,
-        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-        vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eColorAttachmentRead },
+        vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
+        vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite },
     // SampledImage
     {
         vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -126,11 +126,11 @@ static constexpr ImageLayoutTransition layout_transitions[] = {
         vk::ImageLayout::eGeneral,
         vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eComputeShader,
         vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite },
-    // DepthStencilReadOnly
+    // DepthStencilReadOnly, also the final layout after depth/stencil attachment writes
     {
         vk::ImageLayout::eDepthStencilReadOnlyOptimal,
-        vk::PipelineStageFlagBits::eFragmentShader,
-        vk::AccessFlagBits::eShaderRead },
+        vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
+        vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite },
 };
 
 static void transition_image_layout_impl(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range, bool initial_undefined) {

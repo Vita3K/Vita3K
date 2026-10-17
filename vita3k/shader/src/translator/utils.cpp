@@ -31,8 +31,17 @@ spv::Id USSETranslatorVisitor::load(Operand op, const Imm4 dest_mask, const int 
     return utils::load(m_b, m_spirv_params, m_util_funcs, m_features, op, dest_mask, shift_offset);
 }
 
-void USSETranslatorVisitor::store(Operand dest, spv::Id source, std::uint8_t dest_mask, int shift_offset) {
-    utils::store(m_b, m_spirv_params, m_util_funcs, m_features, dest, source, dest_mask, shift_offset);
+void USSETranslatorVisitor::store(Operand dest, spv::Id source, std::uint8_t dest_mask, int shift_offset, bool raw_f16_lanes) {
+    if (!m_store_from_vpck) {
+        const int type_size = get_data_type_size(dest.type);
+        for (int i = 0; i < 4; i++) {
+            if (!(dest_mask & (1 << i)))
+                continue;
+            const uint32_t word = (dest.num + shift_offset + (i * type_size) / 4) & 0xFFFFFF;
+            m_vpck_written_bytes.erase((static_cast<uint32_t>(dest.bank) << 24) | word);
+        }
+    }
+    utils::store(m_b, m_spirv_params, m_util_funcs, m_features, dest, source, dest_mask, shift_offset, raw_f16_lanes);
 }
 
 spv::Id USSETranslatorVisitor::swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle) {

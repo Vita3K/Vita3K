@@ -170,7 +170,93 @@ Odota hetki.</connecting_please_wait>
 		<silver>Hopea</silver>
 		<hours_ago>{} tuntia sitten</hours_ago>
 		<minutes_ago>{} minuuttia sitten</minutes_ago>
+		<activities>Tapahtumat</activities>
+		<like>Tykkää</like>
+		<likes_this>{} tykkää tästä.</likes_this>
+		<and_like_this>{} ja {} tykkäävät tästä.</and_like_this>
+		<people_like_this>{} henkilöä tykkää tästä.</people_like_this>
+		<comments>Kommentteja {}</comments>
+		<delete_activity>Tämä tapahtuma poistetaan.</delete_activity>
+		<delete_comment>Tämä kommentti poistetaan.</delete_comment>
+		<unlike>Älä tykkää</unlike>
+		<write_comment>Kirjoita kommentti</write_comment>
+		<has_earned_platinum_trophy>on ansainnut platinatrophyn kohteessa "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>on ansainnut trophyn pelissä "{}"!</has_earned_trophy>
+		<first_time_playing>pelaa peliä "{}" ensimmäistä kertaa.</first_time_playing>
+		<download_failed>Ei voitu ladata.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>Käyttäjän {} tapahtumat</activities_of>
+		<anyone>Kuka tahansa</anyone>
+		<no_one>Ei kukaan</no_one>
+		<cannot_display>Ei voi näyttää lisää sivuja.</cannot_display>
+		<friends_of_friends>Ystävien ystävät</friends_of_friends>
+		<friends_only>Vain ystävät</friends_only>
+		<share_range>Jakamisen laajuus:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Hyväksy</accept>
+		<players_blocked>Estetyt pelaajat</players_blocked>
+		<friend_request_already_canceled>Ystäväpyyntö on jo peruutettu.</friend_request_already_canceled>
+		<search_for_player>Hae Vita3K Network-pelaajaa ja katsele pelaajan profiilia tai lähetä ystäväpyyntö.</search_for_player>
+		<friend_requests>Ystäväpyynnöt</friend_requests>
+		<friends>Ystävät</friends>
+		<could_not_find_online_id>Online-tunnusta ei löytynyt.</could_not_find_online_id>
+		<there_are_no_players>Ei pelaajia.</there_are_no_players>
+		<no_players_found>Pelaajia ei löydy.</no_players_found>
+		<online_id>Online-tunnus</online_id>
+		<enter_from_3_to_16_characters>Syötä 3 - 16 merkkiä.</enter_from_3_to_16_characters>
+		<online_status>Online-tila</online_status>
+		<received>Vastaanotettu</received>
+		<search>Haku</search>
+		<sent>Lähetetty</sent>
+		<waiting_for_friend_response>Odotetaan ystävän vastausta.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Tietoja minusta</about_me>
+		<accept>Hyväksy</accept>
+		<activity>Tapahtuma</activity>
+		<warn_block_player>Jos estät tämän pelaajan, et pysty enää vastaanottamaan viestejä tältä pelaajalta.
+Haluatko jatkaa?</warn_block_player>
+		<warn_block_friend>Jos estät tämän pelaajan, pelaaja poistetaan ystävistä. Et pysty enää vastaanottamaan viestejä tältä pelaajalta.
+Haluatko jatkaa?</warn_block_friend>
+		<block>Estä</block>
+		<blocked>Estetty.</blocked>
+		<cancel_friend_request>Peruuta ystäväpyyntö</cancel_friend_request>
+		<friend_request_canceled>Ystäväpyyntö peruutetaan.</friend_request_canceled>
+		<delete_request>Poista pyyntö</delete_request>
+		<edit_profile>Muokkaa profiilia</edit_profile>
+		<friend_request_already_canceled>Ystäväpyyntö on jo peruutettu.</friend_request_already_canceled>
+		<friends>Ystävät</friends>
+		<is_now_friends_with>on nyt käyttäjän {} ystävä</is_now_friends_with>
+		<level>Taso</level>
+		<not_a_friend_yet>Ei vielä ystävä.</not_a_friend_yet>
+		<remove_from_friends>Poista ystävistä</remove_from_friends>
+		<player_removed_from_friends>Tämä pelaaja poistetaan ystävistä.</player_removed_from_friends>
+		<send_friend_request>Lähetä ystäväpyyntö</send_friend_request>
+		<send>Lähetä</send>
+		<trophies>Trophyt</trophies>
+		<unblock>Poista esto</unblock>
+		<unblock_player>Poista tämän pelaajan esto.</unblock_player>
+		<waiting_friend_response>Odotetaan ystävän vastausta.</waiting_friend_response>
+		<friend_request_from_player>Sinulla on ystäväpyyntö tältä pelaajalta.</friend_request_from_player>
+		<you_have_friend_requests>Sinulla on ystäväpyyntöjä.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Viestit</title>
+		<create_message>+ Luo viesti</create_message>
+		<uncheck_all>Poista kaikkien valinta</uncheck_all>
+		<enter_online_id>Anna online-tunnus.</enter_online_id>
+		<add>Lisää</add>
+		<add_recipient>Lisää vastaanottaja</add_recipient>
+		<delete>Poista</delete>
+		<cancel>Peruuta</cancel>
+		<to>Vastaanottaja</to>
+	</messages_app>
 
 	<content_manager name="Sisällönhallinta">
 		<application name="Sovellukset">
@@ -197,13 +283,43 @@ Odota hetki.</connecting_please_wait>
 
 	<indicator>
 		<app_added_home>Sovellus on lisätty aloitusnäyttöön.</app_added_home>
+		<cancel_download>Haluatko peruuttaa tämän latauksen?</cancel_download>
+		<cancel_install>Haluatko peruuttaa tämän asennuksen?
+Jos peruutat, tälle asennukselle ladatut tiedostot poistetaan myös.</cancel_install>
 		<delete_all>Poista kaikki</delete_all>
 		<notif_deleted>Ilmoitukset poistetaan.</notif_deleted>
+		<waiting_download>Odotetaan lataamista...</waiting_download>
+		<downloading_complete>Lataus suoritettu.</downloading_complete>
 		<install_failed>Ei voitu asentaa.</install_failed>
+		<player_is_online>{} on nyt online-tilassa.</player_is_online>
+		<waiting_install>Odotetaan asentamista...</waiting_install>
 		<install_complete>Asennus suoritettu.</install_complete>
 		<installing>Asennetaan...</installing>
+		<minutes_left>{} minuuttia jäljellä</minutes_left>
 		<no_notif>Ei ilmoituksia.</no_notif>
+		<commented_on_activity>Joku kommentoi käyttäjän {} tapahtumaa.</commented_on_activity>
+		<commented_on_your_activity>Joku kommentoi tapahtumaasi.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Joku kommentoi tapahtumaasi ja tykkää siitä.</commented_and_likes_your_activity>
+		<likes_your_activity>Joku tykkää tapahtumastasi.</likes_your_activity>
+		<pause_all>Aseta kaikki tauolle</pause_all>
+		<pause>Aseta tauolle</pause>
+		<paused>Tauotettu</paused>
+		<resume_all>Jatka kaikkia</resume_all>
+		<resume>Jatka</resume>
+		<seconds_left>{} sekuntia jäljellä</seconds_left>
+		<friend_requests>Sinulla on ystäväpyyntöjä.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>Sovelluksesta on saatavissa uusi versio.</new_app_version_available>
+		<latest_version_installed>Sovelluksen viimeisin versio on jo asennettu.</latest_version_installed>
+		<downloading_app_update>Ladataan sovelluksen päivitystiedostoa...
+Voit tarkastaa latauksen edistymisen ilmoitusluettelosta.</downloading_app_update>
+		<download>Lataa</download>
+		<not_enough_space>Ei voitu ladata.
+Muistikortilla ei ole tarpeeksi vapaata tilaa. Vapauta vähintään {} tilaa muistikortilta ja yritä ladata uudelleen.</not_enough_space>
+		<version>Versio {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Takaisin</back>

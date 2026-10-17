@@ -7,6 +7,7 @@ add_library(
 	include/app/state.h
 	src/app_init.cpp
 	src/app.cpp
+	src/savedata_identity.cpp
 	src/apps_list.cpp
 	src/discord.cpp
 	src/session_controller.cpp
@@ -19,7 +20,7 @@ target_link_libraries(app PUBLIC emuenv mem)
 if(USE_DISCORD_RICH_PRESENCE)
   target_link_libraries(app PUBLIC discord-rpc)
 endif()
-target_link_libraries(app PRIVATE audio camera cheat config ctrl dialog display gdbstub gxm ime io mem modules motion net ngs np patch regmgr renderer touch SDL3::SDL3 pugixml::pugixml compat packages http)
+target_link_libraries(app PRIVATE audio bgm_player camera cheat config ctrl dialog display gdbstub gxm ime io mem modules motion net ngs np patch vfs regmgr renderer touch SDL3::SDL3 pugixml::pugixml compat packages http v3kn)
 if(WIN32)
 	target_link_libraries(app PRIVATE dwmapi)
 endif()

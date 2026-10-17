@@ -35,6 +35,8 @@
     <property name="title">
      <string>Emulation</string>
     </property>
+    <addaction name="toolbar_shell"/>
+    <addaction name="separator"/>
     <addaction name="pause_action"/>
     <addaction name="stop_action"/>
    </widget>
@@ -146,6 +148,7 @@
    <addaction name="toolbar_fullscreen"/>
    <addaction name="toolbar_stop"/>
    <addaction name="toolbar_start"/>
+   <addaction name="toolbar_shell"/>
    <addaction name="toolbar_config"/>
    <addaction name="toolbar_controls"/>
   </widget>
@@ -157,6 +160,14 @@
   <action name="toolbar_refresh">
    <property name="text">
     <string>Refresh</string>
+   </property>
+  </action>
+  <action name="toolbar_shell">
+   <property name="text">
+    <string>PS Vita OS</string>
+   </property>
+   <property name="toolTip">
+    <string>Launch the PlayStation Vita system shell</string>
    </property>
   </action>
   <action name="toolbar_stop">

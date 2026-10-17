@@ -32,7 +32,20 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
+#include <algorithm>
+
 namespace renderer {
+
+static void set_texture_info(ShaderProgram &shader, const SceGxmProgram &program) {
+    shader.textures_used = gxp::get_textures_used(program);
+    shader.texture_count = std::bit_width(shader.textures_used.to_ulong());
+    shader.cube_textures.reset();
+    for (uint32_t i = 0; i < program.parameter_count; ++i) {
+        const auto &parameter = program.program_parameters()[i];
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER && parameter.is_sampler_cube())
+            shader.cube_textures.set(parameter.resource_index);
+    }
+}
 
 static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
     std::uint32_t last_offset = 0;
@@ -199,8 +212,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
 
     fp->buffer_count = shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
     layout_ssbo_offset_from_uniform_buffer_sizes(fp->uniform_buffer_sizes, fp->uniform_buffer_data_offsets, fp->max_total_uniform_buffer_storage);
-    fp->textures_used = gxp::get_textures_used(program);
-    fp->texture_count = std::bit_width(fp->textures_used.to_ulong());
+    set_texture_info(*fp, program);
 
     return true;
 }
@@ -227,15 +239,47 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     vp->buffer_count = shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
     shader::usse::get_attribute_informations(program, vp->attribute_infos);
     layout_ssbo_offset_from_uniform_buffer_sizes(vp->uniform_buffer_sizes, vp->uniform_buffer_data_offsets, vp->max_total_uniform_buffer_storage);
-    vp->textures_used = gxp::get_textures_used(program);
-    vp->texture_count = std::bit_width(vp->textures_used.to_ulong());
+    set_texture_info(*vp, program);
 
-    if (vp->attribute_infos.empty()) {
+    if (vp->attribute_infos.empty() && !gxp::has_attribute_symbols(program)) {
         // Insert some symbols here
         if (program.primary_reg_count != 0) {
             for (size_t i = 0; i < attributes.size(); i++) {
                 vp->attribute_infos.emplace(attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, 1, false, false, false));
             }
+        }
+    }
+
+    for (const auto &attribute : attributes) {
+        auto info = vp->attribute_infos.lower_bound(attribute.regIndex);
+        const bool untyped = attribute.format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED;
+        const uint32_t end_register = attribute.regIndex + attribute.componentCount;
+        for (; info != vp->attribute_infos.end(); ++info) {
+            if (info->first != attribute.regIndex && (!untyped || !info->second.regformat || info->first >= end_register))
+                break;
+
+            // An untyped fetch may cover several shader parameters in consecutive PA registers.
+            const uint32_t byte_offset = attribute.offset + static_cast<uint32_t>(info->first - attribute.regIndex) * 4;
+            vp->attribute_bindings.push_back({ attribute.streamIndex, byte_offset, attribute.format, attribute.componentCount, info->second });
+            if (!untyped)
+                break;
+        }
+    }
+
+    for (uint32_t i = 0; i < program.parameter_count; ++i) {
+        const auto &parameter = program.program_parameters()[i];
+        if (parameter.category != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE
+            || parameter.semantic == SCE_GXM_PARAMETER_SEMANTIC_INDEX
+            || parameter.semantic == SCE_GXM_PARAMETER_SEMANTIC_INSTANCE
+            || !gxp::is_attribute_used(program, parameter))
+            continue;
+        const auto &info = vp->attribute_infos.at(parameter.resource_index);
+        if (std::none_of(vp->attribute_bindings.begin(), vp->attribute_bindings.end(), [&](const auto &binding) { return binding.info.location == info.location; })) {
+            LOG_WARN("Vertex shader {} has no stream for location {} (PA {}, type {}, components {})",
+                hex_string(vp->hash), info.location, parameter.resource_index, static_cast<uint32_t>(info.gxm_type), info.component_count);
+            for (const auto &attribute : attributes)
+                LOG_WARN("Vertex fetch: PA {}, words/components {}, format {}, stream {}, byte offset {}", attribute.regIndex, attribute.componentCount,
+                    static_cast<uint32_t>(attribute.format), attribute.streamIndex, attribute.offset);
         }
     }
 

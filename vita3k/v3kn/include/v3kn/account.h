@@ -21,6 +21,7 @@
 #include <v3kn/types.h>
 
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -44,9 +45,10 @@ void set_v3kn_logged_in(bool logged_in);
 bool is_v3kn_logged_in();
 bool wait_for_v3kn_login(uint32_t timeout_ms);
 UserInfo get_v3kn_user_info(EmuEnvState &emuenv);
-void init_v3kn_user_info(EmuEnvState &emuenv, Error &error);
+void init_v3kn_user_info(EmuEnvState &emuenv, Error &error, const std::map<std::string, std::string> &language);
 void handle_v3kn_status(EmuEnvState &emuenv, const net_utils::WebResponse &response, const UserInfo *request_user_info = nullptr);
 Error get_v3kn_error(const net_utils::WebResponse &response);
+std::string get_v3kn_error_message(EmuEnvState &emuenv, const net_utils::WebResponse &response);
 std::string get_v3kn_server_url(const std::string &host, const std::string &path);
 
 net_utils::WebResponse v3kn_create(const UserInfo &user_info, const std::string &online_id, const std::string &password);

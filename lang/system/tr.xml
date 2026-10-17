@@ -178,7 +178,93 @@ Lütfen bekleyin.</connecting_please_wait>
 		<silver>Gümüş</silver>
 		<hours_ago>{} Saat Önce</hours_ago>
 		<minutes_ago>{} Dakika Önce</minutes_ago>
+		<activities>Etkinlikler</activities>
+		<like>Beğen</like>
+		<likes_this>{} bunu beğendi.</likes_this>
+		<and_like_this>{} ve {} bunu beğendi.</and_like_this>
+		<people_like_this>{} kişi bunu beğendi.</people_like_this>
+		<comments>Yorumlar {}</comments>
+		<delete_activity>Bu etkinlik silinecek.</delete_activity>
+		<delete_comment>Bu yorum silinecek.</delete_comment>
+		<unlike>Beğenmekten Vazgeç</unlike>
+		<write_comment>Yorum Yaz</write_comment>
+		<has_earned_platinum_trophy>, "{}" oyununda bir platin kupa kazandı!</has_earned_platinum_trophy>
+		<has_earned_trophy>, "{}" oyununda bir kupa kazandı!</has_earned_trophy>
+		<first_time_playing>, ilk kez "{}" oynuyor.</first_time_playing>
+		<download_failed>İndirilemedi.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{} Kullanıcısının Etkinlikleri</activities_of>
+		<anyone>Herkes</anyone>
+		<no_one>Hiç Kimse</no_one>
+		<cannot_display>Daha fazla sayfa görüntülenemiyor.</cannot_display>
+		<friends_of_friends>Arkadaşlarımın Arkadaşları</friends_of_friends>
+		<friends_only>Yalnızca Arkadaşlar</friends_only>
+		<share_range>Paylaşma Durumu:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Kabul Et</accept>
+		<players_blocked>Engellenen Oyuncular</players_blocked>
+		<friend_request_already_canceled>Bu Arkadaşlık isteği önceden iptal edildi.</friend_request_already_canceled>
+		<search_for_player>Vita3K Network oyuncusu arayın ve oyuncunun profilini görüntüleyin veya Arkadaşlık isteği gönderin.</search_for_player>
+		<friend_requests>Arkadaşlık İstekleri</friend_requests>
+		<friends>Arkadaşlar</friends>
+		<could_not_find_online_id>Çevrimiçi kimlik bulunamadı.</could_not_find_online_id>
+		<there_are_no_players>Oyuncu yok.</there_are_no_players>
+		<no_players_found>Oyuncu bulunamadı.</no_players_found>
+		<online_id>Çevrimiçi Kimlik</online_id>
+		<enter_from_3_to_16_characters>3 ila 16 karakter girin.</enter_from_3_to_16_characters>
+		<online_status>Çevrimiçi Durum</online_status>
+		<received>Alınanlar</received>
+		<search>Arama</search>
+		<sent>Gönderilenler</sent>
+		<waiting_for_friend_response>Arkadaşlık isteğinize yanıt bekleniyor.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Hakkımda</about_me>
+		<accept>Kabul Et</accept>
+		<activity>Etkinlik</activity>
+		<warn_block_player>Bu oyuncuyu engellerseniz, bundan sonra bu oyuncudan mesaj alamazsınız.
+Devam etmek istiyor musunuz?</warn_block_player>
+		<warn_block_friend>Bu oyuncuyu engellerseniz, oyuncu Arkadaşlardan çıkarılacak. Bundan sonra bu oyuncudan mesaj alamayacaksınız.
+Devam etmek istiyor musunuz?</warn_block_friend>
+		<block>Engelle</block>
+		<blocked>Engellendi.</blocked>
+		<cancel_friend_request>Arkadaşlık İsteğini İptal Et</cancel_friend_request>
+		<friend_request_canceled>Arkadaşlık isteği iptal edilecek.</friend_request_canceled>
+		<delete_request>İsteği Sil</delete_request>
+		<edit_profile>Profili Düzenle</edit_profile>
+		<friend_request_already_canceled>Bu Arkadaşlık isteği önceden iptal edildi.</friend_request_already_canceled>
+		<friends>Arkadaşlar</friends>
+		<is_now_friends_with>artık {} ile arkadaş</is_now_friends_with>
+		<level>Seviye</level>
+		<not_a_friend_yet>Henüz Arkadaş değilsiniz.</not_a_friend_yet>
+		<remove_from_friends>Arkadaşlardan Çıkar</remove_from_friends>
+		<player_removed_from_friends>Bu oyuncu Arkadaşlardan çıkarılacak.</player_removed_from_friends>
+		<send_friend_request>Arkadaşlık İsteği Gönder</send_friend_request>
+		<send>Gönder</send>
+		<trophies>Kupalar</trophies>
+		<unblock>Engellemeyi Kaldır</unblock>
+		<unblock_player>Bu oyuncunun engeleni kaldırın.</unblock_player>
+		<waiting_friend_response>Arkadaşlık isteğinize yanıt bekleniyor.</waiting_friend_response>
+		<friend_request_from_player>Bu oyuncu size bir Arkadaşlık isteği gönderdi.</friend_request_from_player>
+		<you_have_friend_requests>Arkadaşlık istekleriniz var.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Mesajlar</title>
+		<create_message>+ Mesaj oluştur</create_message>
+		<uncheck_all>Tüm seçimleri kaldır</uncheck_all>
+		<enter_online_id>Çevrimiçi kimliği girin.</enter_online_id>
+		<add>Ekle</add>
+		<add_recipient>Alıcı ekle</add_recipient>
+		<delete>Sil</delete>
+		<cancel>İptal</cancel>
+		<to>Kime</to>
+	</messages_app>
 
 	<content_manager name="İçerik Yöneticisi">
 		<application name="Uygulamalar">
@@ -205,13 +291,43 @@ Lütfen bekleyin.</connecting_please_wait>
 
 	<indicator>
 		<app_added_home>Uygulama, giriş ekranına eklendi.</app_added_home>
+		<cancel_download>Bu indirmeyi iptal etmek istiyor musunuz?</cancel_download>
+		<cancel_install>Bu kurulumu iptal etmek istiyor musunuz?
+İptal ederseniz, bu kurulum için indirilen dosyalar da silinecek.</cancel_install>
 		<delete_all>Tümünü Sil</delete_all>
 		<notif_deleted>Bildirimler silinecek.</notif_deleted>
+		<waiting_download>İndirme bekleniyor...</waiting_download>
+		<downloading_complete>İndirme tamamlandı.</downloading_complete>
 		<install_failed>Kurulamadı.</install_failed>
+		<player_is_online>{} şimdi çevrimiçi.</player_is_online>
+		<waiting_install>Kurulum bekleniyor...</waiting_install>
 		<install_complete>Kurulum tamamlandı.</install_complete>
 		<installing>Kuruluyor...</installing>
+		<minutes_left>{} Dakika Kaldı</minutes_left>
 		<no_notif>Bildirim yok.</no_notif>
+		<commented_on_activity>{} kullanıcısının etkinliğine yorum yapanlar var.</commented_on_activity>
+		<commented_on_your_activity>Etkinliğinize yorum yapanlar var.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Etkinliğinize yorum yapanlar ve beğenenler var.</commented_and_likes_your_activity>
+		<likes_your_activity>Etkinliğinizi beğenenler var.</likes_your_activity>
+		<pause_all>Tümünü Duraklat</pause_all>
+		<pause>Duraklat</pause>
+		<paused>Duraklatıldı</paused>
+		<resume_all>Tümünü Sürdür</resume_all>
+		<resume>Sürdür</resume>
+		<seconds_left>{} Saniye Kaldı</seconds_left>
+		<friend_requests>Arkadaşlık istekleriniz var.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>Uygulamanın yeni bir sürümü mevcut.</new_app_version_available>
+		<latest_version_installed>Bu uygulamanın en son sürümü önceden kuruldu.</latest_version_installed>
+		<downloading_app_update>Uygulama güncelleme dosyası indiriliyor...
+İndirmenin ilerleyişini bildirim listesinden kontrol edebilirsiniz.</downloading_app_update>
+		<download>İndir</download>
+		<not_enough_space>İndirilemedi.
+Hafıza kartında yeterli boş alan yok. Hafıza kartında en az {} boş alan oluşturun ve ardından tekrar indirmeyi deneyin.</not_enough_space>
+		<version>Sürüm {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Geri</back>

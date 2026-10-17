@@ -32,6 +32,7 @@
 #include <gui-qt/theme_manager.h>
 #include <io/state.h>
 #include <kernel/state.h>
+#include <packages/sfo.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <util/log.h>
@@ -141,7 +142,7 @@ SettingsDialog::SettingsDialog(EmuEnvState &emuenv,
     if (!m_app_path.empty()) {
         QString title_name = QString::fromStdString(m_app_path);
         for (const auto &app : emuenv.app.apps_list.apps) {
-            if (app.title_id == m_app_path) {
+            if (app.path == m_app_path || app.title_id == m_app_path) {
                 title_name = QString::fromStdString(app.title);
                 break;
             }
@@ -1137,6 +1138,73 @@ void SettingsDialog::setup_connections() {
     connect(m_ui->reset_emu_path, &QPushButton::clicked, this, [this] {
         if (emuenv.default_path != m_pending_vita_fs_path)
             set_pending_vita_fs_path(emuenv.default_path);
+    });
+
+    connect(m_ui->import_savedata_identity, &QPushButton::clicked, this, [this] {
+        if (!emuenv.io.app_path.empty()) {
+            QMessageBox::warning(this, tr("Import Savedata Identity"), tr("Close the running application before importing an identity."));
+            return;
+        }
+        const QString file = QFileDialog::getOpenFileName(this, tr("Select a savedata param.sfo"), {}, tr("SFO files (*.sfo);;All files (*)"));
+        if (file.isEmpty())
+            return;
+        if (QMessageBox::question(this, tr("Import Savedata Identity"),
+                tr("Import the OpenPSID and account ID from this save?\nThe current identity will be backed up. Existing saves will not be changed and may no longer be accessible. ux0:id.dat will be deleted and recreated by the shell."))
+            != QMessageBox::Yes)
+            return;
+        if (!emuenv.io.app_path.empty()) {
+            QMessageBox::warning(this, tr("Import Savedata Identity"), tr("Close the running application before changing the identity."));
+            return;
+        }
+        try {
+            std::string identity_error;
+            const auto identity = sfo::read_savedata_identity(gui::utils::to_fs_path(file), identity_error);
+            if (!identity) {
+                QMessageBox::critical(this, tr("Import Savedata Identity"), QString::fromStdString(identity_error));
+                return;
+            }
+            if (!app::import_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path, *identity, identity_error)) {
+                QMessageBox::critical(this, tr("Import Savedata Identity"), QString::fromStdString(identity_error));
+                return;
+            }
+            QMessageBox::information(this, tr("Import Savedata Identity"), tr("Identity imported. New saves will use these identifiers."));
+        } catch (const std::runtime_error &error) {
+            LOG_ERROR("Cannot import savedata identity: {}", error.what());
+            QMessageBox::critical(this, tr("Import Savedata Identity"), QString::fromUtf8(error.what()));
+        } catch (const std::bad_alloc &) {
+            LOG_ERROR("Cannot import savedata identity: out of memory");
+            QMessageBox::critical(this, tr("Import Savedata Identity"), tr("Out of memory."));
+        }
+    });
+
+    connect(m_ui->reset_savedata_identity, &QPushButton::clicked, this, [this] {
+        const auto title = tr("Reset Savedata Identity");
+        if (!emuenv.io.app_path.empty()) {
+            QMessageBox::warning(this, title, tr("Close the running application before changing the identity."));
+            return;
+        }
+        if (QMessageBox::question(this, title,
+                tr("Generate a new OpenPSID and clear the account ID?\nThe current identity will be backed up. Existing saves will not be changed and may no longer be accessible. ux0:id.dat will be deleted and recreated by the shell."))
+            != QMessageBox::Yes)
+            return;
+        if (!emuenv.io.app_path.empty()) {
+            QMessageBox::warning(this, title, tr("Close the running application before changing the identity."));
+            return;
+        }
+        try {
+            std::string error;
+            if (!app::reset_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path, error)) {
+                QMessageBox::critical(this, title, QString::fromStdString(error));
+                return;
+            }
+            QMessageBox::information(this, title, tr("Identity reset. New saves will use the new identity."));
+        } catch (const std::runtime_error &error) {
+            LOG_ERROR("Cannot reset savedata identity: {}", error.what());
+            QMessageBox::critical(this, title, QString::fromUtf8(error.what()));
+        } catch (const std::bad_alloc &) {
+            LOG_ERROR("Cannot reset savedata identity: out of memory");
+            QMessageBox::critical(this, title, tr("Out of memory."));
+        }
     });
 
     connect(m_ui->clear_custom_config, &QPushButton::clicked, this, [this] {

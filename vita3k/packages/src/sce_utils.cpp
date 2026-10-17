@@ -23,8 +23,11 @@
 #include <fat16/fat16.h>
 #include <miniz.h>
 #include <openssl/evp.h>
+#include <openssl/params.h>
 #include <packages/sce_types.h>
 #include <util/string_utils.h>
+
+#include <fmt/format.h>
 
 #include <self.h>
 
@@ -600,6 +603,54 @@ void register_keys(KeyStore &SCE_KEYS, int type) {
     }
 }
 
+static constexpr unsigned char HMACKey[] = {
+    0xE5, 0xE2, 0x78, 0xAA, 0x1E, 0xE3, 0x40, 0x82,
+    0xA0, 0x88, 0x27, 0x9C, 0x83, 0xF9, 0xBB, 0xC8,
+    0x06, 0x82, 0x1C, 0x52, 0xF2, 0xAB, 0x5D, 0x2B,
+    0x4A, 0xBD, 0x99, 0x54, 0x50, 0x35, 0x51, 0x14
+};
+
+std::string resolve_ver_xml_url(const std::string &title_id) {
+    EVP_MAC *mac = EVP_MAC_fetch(nullptr, "HMAC", nullptr);
+    if (!mac) {
+        LOG_ERROR("Failed to fetch HMAC MAC");
+        return {};
+    }
+
+    EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
+    if (!ctx) {
+        EVP_MAC_free(mac);
+        LOG_ERROR("Failed to create HMAC context");
+        return {};
+    }
+
+    OSSL_PARAM params[2] = {
+        OSSL_PARAM_construct_utf8_string("digest", const_cast<char *>("SHA256"), 0),
+        OSSL_PARAM_construct_end()
+    };
+
+    const auto np_title_id = fmt::format("np_{}", title_id);
+    unsigned char hash[EVP_MAX_MD_SIZE]{};
+    size_t hash_size = 0;
+    const bool success = EVP_MAC_init(ctx, HMACKey, sizeof(HMACKey), params) == 1
+        && EVP_MAC_update(ctx, reinterpret_cast<const unsigned char *>(np_title_id.data()), np_title_id.size()) == 1
+        && EVP_MAC_final(ctx, hash, &hash_size, sizeof(hash)) == 1;
+
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_free(mac);
+    if (!success) {
+        LOG_ERROR("Failed to calculate app update URL hash for title ID: {}", title_id);
+        return {};
+    }
+
+    std::string hash_string;
+    hash_string.reserve(hash_size * 2);
+    for (size_t i = 0; i < hash_size; ++i)
+        hash_string += fmt::format("{:02x}", hash[i]);
+
+    return fmt::format("http://gs-sec.ww.np.dl.playstation.net/pl/np/{}/{}/{}-ver.xml", title_id, hash_string, title_id);
+}
+
 static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const fs::path &path) {
     const std::u16string filename_16 = entry.get_filename();
     const fs::path filename = path / std::wstring(filename_16.begin(), filename_16.end());
@@ -714,11 +765,19 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
 }
 
 std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, const uint64_t sysver, const SelfType self_type, int keytype, const uint8_t *klic) {
+    if (sce_hdr.header_length < sce_hdr.metadata_offset || sce_hdr.header_length - sce_hdr.metadata_offset < 48 + MetadataInfo::Size + MetadataHeader::Size) {
+        LOG_ERROR("Invalid SELF metadata size");
+        return {};
+    }
     std::vector<char> dat(sce_hdr.header_length - sce_hdr.metadata_offset - 48);
     memcpy(dat.data(), &input[sce_hdr.metadata_offset + 48], sce_hdr.header_length - sce_hdr.metadata_offset - 48);
 
     const std::string key = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).key;
     const std::string iv = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).iv;
+    if (key.size() != 64 || iv.size() != 32) {
+        LOG_ERROR("Missing or invalid SELF metadata key");
+        return {};
+    }
 
     EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER *cipher128 = EVP_CIPHER_fetch(nullptr, "AES-128-CBC", nullptr);
@@ -761,6 +820,14 @@ std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_
     EVP_DecryptUpdate(cipher_ctx, dec, &dec_len, dec_in, MetadataInfo::Size);
     EVP_DecryptFinal_ex(cipher_ctx, dec + dec_len, &dec_len);
 
+    if (!std::all_of(dec + 16, dec + 32, [](unsigned char value) { return value == 0; })
+        || !std::all_of(dec + 48, dec + 64, [](unsigned char value) { return value == 0; })) {
+        LOG_ERROR("SELF metadata decryption failed: invalid padding");
+        EVP_CIPHER_CTX_free(cipher_ctx);
+        EVP_CIPHER_free(cipher128);
+        EVP_CIPHER_free(cipher256);
+        return {};
+    }
     MetadataInfo metadata_info = MetadataInfo(reinterpret_cast<char *>(dec));
 
     std::vector<unsigned char> dec1(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
@@ -776,7 +843,14 @@ std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_
     MetadataHeader metadata_hdr = MetadataHeader(reinterpret_cast<char *>(dec2));
 
     std::vector<SceSegment> segs;
-    const auto start = MetadataHeader::Size + metadata_hdr.section_count * MetadataSection::Size;
+    const uint64_t start = MetadataHeader::Size + uint64_t(metadata_hdr.section_count) * MetadataSection::Size;
+    if (start > dec1.size() || uint64_t(metadata_hdr.key_count) * 16 > dec1.size() - start) {
+        LOG_ERROR("Invalid SELF metadata section or key count");
+        EVP_CIPHER_CTX_free(cipher_ctx);
+        EVP_CIPHER_free(cipher128);
+        EVP_CIPHER_free(cipher256);
+        return {};
+    }
     std::vector<std::string> vault;
 
     for (uint32_t i = 0; i < metadata_hdr.key_count; i++) {
@@ -790,6 +864,13 @@ std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_
         MetadataSection metsec = MetadataSection(reinterpret_cast<char *>(dec3.data()));
 
         if (metsec.encryption == EncryptionType::AES128CTR) {
+            if (metsec.key_idx < 0 || metsec.iv_idx < 0 || static_cast<size_t>(metsec.key_idx) >= vault.size() || static_cast<size_t>(metsec.iv_idx) >= vault.size()) {
+                LOG_ERROR("Invalid SELF segment key index");
+                EVP_CIPHER_CTX_free(cipher_ctx);
+                EVP_CIPHER_free(cipher128);
+                EVP_CIPHER_free(cipher256);
+                return {};
+            }
             segs.push_back({ metsec.offset, metsec.seg_idx, metsec.size, metsec.compression == CompressionType::DEFLATE, vault[metsec.key_idx], vault[metsec.iv_idx] });
         }
     }
@@ -924,6 +1005,17 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
 
     if (encrypted)
         scesegs = get_segments(fself.data(), sce_hdr, SCE_KEYS, app_info_hdr.sys_version, app_info_hdr.self_type, npdrmtype, klic);
+    if (encrypted && scesegs.size() < elf_hdr.e_phnum) {
+        LOG_ERROR("Cannot decrypt SELF: missing segment metadata");
+        return {};
+    }
+
+    for (const auto &segment : scesegs) {
+        if (segment.idx < 0 || static_cast<size_t>(segment.idx) >= elf_phdrs.size()) {
+            LOG_ERROR("Cannot decrypt SELF: invalid segment index");
+            return {};
+        }
+    }
 
     EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER *cipher = EVP_CIPHER_fetch(nullptr, "AES-128-CTR", nullptr);
@@ -939,9 +1031,13 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
         if (elf_phdrs[idx].p_filesz == 0)
             continue;
 
-        const int pad_len = elf_phdrs[idx].p_offset - at;
-        if (pad_len < 0)
+        if (elf_phdrs[idx].p_offset < at) {
             LOG_ERROR("ELF p_offset Invalid");
+            EVP_CIPHER_CTX_free(cipher_ctx);
+            EVP_CIPHER_free(cipher);
+            return {};
+        }
+        const auto pad_len = elf_phdrs[idx].p_offset - at;
 
         elf.resize(elf.size() + pad_len);
 

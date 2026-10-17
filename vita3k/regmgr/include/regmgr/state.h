@@ -40,6 +40,7 @@ struct RegValue {
 struct RegMgrState {
     std::mutex mutex;
     fs::path system_dreg_path;
+    bool system_dreg_valid = false;
 
     std::map<std::string, std::map<std::string, std::vector<char>>> system_dreg;
     std::vector<std::string> reg_category_template;

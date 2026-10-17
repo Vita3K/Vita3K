@@ -179,7 +179,93 @@ Een ogenblik geduld.</connecting_please_wait>
 		<silver>Zilver</silver>
 		<hours_ago>{} uur geleden</hours_ago>
 		<minutes_ago>{} minuten geleden</minutes_ago>
+		<activities>Activiteiten</activities>
+		<like>Vind ik leuk</like>
+		<likes_this>{} vindt dit leuk.</likes_this>
+		<and_like_this>{} en {} vinden dit leuk.</and_like_this>
+		<people_like_this>{} personen vinden dit leuk.</people_like_this>
+		<comments>Opmerkingen {}</comments>
+		<delete_activity>Deze activiteit wordt verwijderd.</delete_activity>
+		<delete_comment>Deze opmerking wordt verwijderd.</delete_comment>
+		<unlike>Vind ik niet leuk</unlike>
+		<write_comment>Geef hier je opmerkingen</write_comment>
+		<has_earned_platinum_trophy>heeft een platina trofee verdiend in "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>heeft een trofee verdiend in "{}"!</has_earned_trophy>
+		<first_time_playing>speelt "{}" voor de eerste keer.</first_time_playing>
+		<download_failed>Kan niet downloaden.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}'s activiteiten</activities_of>
+		<anyone>Iedereen</anyone>
+		<no_one>Niemand</no_one>
+		<cannot_display>Kan niet meer pagina's weergeven.</cannot_display>
+		<friends_of_friends>Vrienden van vrienden</friends_of_friends>
+		<friends_only>Alleen vrienden</friends_only>
+		<share_range>Deelbereik:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Accepteren</accept>
+		<players_blocked>Spelers geblokkeerd</players_blocked>
+		<friend_request_already_canceled>Het vriendschapsverzoek is al geannuleerd.</friend_request_already_canceled>
+		<search_for_player>Zoeken naar een Vita3K Network-speler en het profiel van de speler bekijken of een vriendschapsverzoek sturen.</search_for_player>
+		<friend_requests>Vriendschapsverzoeken</friend_requests>
+		<friends>Vrienden</friends>
+		<could_not_find_online_id>Kan de online-id niet vinden.</could_not_find_online_id>
+		<there_are_no_players>Er zijn geen spelers.</there_are_no_players>
+		<no_players_found>Geen spelers gevonden.</no_players_found>
+		<online_id>Online-id</online_id>
+		<enter_from_3_to_16_characters>Voer tussen 3 en 16 karakters in.</enter_from_3_to_16_characters>
+		<online_status>Onlinestatus</online_status>
+		<received>Ontvangen</received>
+		<search>Zoeken</search>
+		<sent>Verzonden</sent>
+		<waiting_for_friend_response>Wachten op antwoord van vriend.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Informatie over mij</about_me>
+		<accept>Accepteren</accept>
+		<activity>Activiteit</activity>
+		<warn_block_player>Als je deze speler blokkeert, krijg je geen berichten meer van deze speler.
+Wil je doorgaan?</warn_block_player>
+		<warn_block_friend>Als je deze speler blokkeert, wordt de speler verwijderd uit vrienden. Het is dan niet mogelijk om nog berichten van deze speler te ontvangen.
+Wil je doorgaan?</warn_block_friend>
+		<block>Blokkeren</block>
+		<blocked>Geblokkeerd.</blocked>
+		<cancel_friend_request>Vriendschapsverzoek annuleren</cancel_friend_request>
+		<friend_request_canceled>Het vriendschapsverzoek wordt geannuleerd.</friend_request_canceled>
+		<delete_request>Verzoek verwijderen</delete_request>
+		<edit_profile>Profiel bewerken</edit_profile>
+		<friend_request_already_canceled>Het vriendschapsverzoek is al geannuleerd.</friend_request_already_canceled>
+		<friends>Vrienden</friends>
+		<is_now_friends_with>is nu bevriend met {}</is_now_friends_with>
+		<level>Niveau</level>
+		<not_a_friend_yet>Nog geen vriend.</not_a_friend_yet>
+		<remove_from_friends>Uit vrienden verwijderen</remove_from_friends>
+		<player_removed_from_friends>Deze speler wordt uit vrienden verwijderd.</player_removed_from_friends>
+		<send_friend_request>Vriendschapsverzoek verzenden</send_friend_request>
+		<send>Verzenden</send>
+		<trophies>Trofeeën</trophies>
+		<unblock>Deblokkeer</unblock>
+		<unblock_player>Deze speler deblokkeren.</unblock_player>
+		<waiting_friend_response>Wachten op antwoord van vriend.</waiting_friend_response>
+		<friend_request_from_player>Je hebt een vriendschapsverzoek ontvangen van deze speler.</friend_request_from_player>
+		<you_have_friend_requests>Je hebt enkele vriendschapsverzoeken.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Berichten</title>
+		<create_message>+ Bericht maken</create_message>
+		<uncheck_all>Alles deselecteren</uncheck_all>
+		<enter_online_id>Voer de online-ID in.</enter_online_id>
+		<add>Toevoegen</add>
+		<add_recipient>Ontvanger toevoegen</add_recipient>
+		<delete>Verwijderen</delete>
+		<cancel>Annuleren</cancel>
+		<to>Aan</to>
+	</messages_app>
 
 	<compatibility name="Compatibiliteit">
 		<states>
@@ -219,13 +305,43 @@ Een ogenblik geduld.</connecting_please_wait>
 
 	<indicator>
 		<app_added_home>De applicatie is toegevoegd aan het beginscherm.</app_added_home>
+		<cancel_download>Wil je deze download annuleren?</cancel_download>
+		<cancel_install>Wil je deze installatie annuleren?
+Als je annuleert worden de bestanden, gedownload voor deze installatie, ook verwijderd.</cancel_install>
 		<delete_all>Alles verwijderen</delete_all>
 		<notif_deleted>De meldingen worden verwijderd.</notif_deleted>
+		<waiting_download>Bezig met wachten om te downloaden...</waiting_download>
+		<downloading_complete>Het downloaden is voltooid.</downloading_complete>
 		<install_failed>Kan niet installeren.</install_failed>
+		<player_is_online>{} is nu online.</player_is_online>
+		<waiting_install>Bezig met wachten op installeren...</waiting_install>
 		<install_complete>De installatie is voltooid.</install_complete>
 		<installing>Bezig met installeren...</installing>
+		<minutes_left>{} minuten resterend</minutes_left>
 		<no_notif>Er zijn geen meldingen.</no_notif>
+		<commented_on_activity>Iemand heeft een opmerking over de activiteit van {} gemaakt.</commented_on_activity>
+		<commented_on_your_activity>Iemand heeft een opmerking over je activiteit gemaakt.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Iemand vindt je activiteit leuk en heeft er een opmerking over gemaakt.</commented_and_likes_your_activity>
+		<likes_your_activity>Iemand vindt je activiteit leuk.</likes_your_activity>
+		<pause_all>Alles pauzeren</pause_all>
+		<pause>Pauzeren</pause>
+		<paused>Gepauzeerd</paused>
+		<resume_all>Alles hervatten</resume_all>
+		<resume>Hervatten</resume>
+		<seconds_left>{} seconden resterend</seconds_left>
+		<friend_requests>Je hebt enkele vriendschapsverzoeken.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>Een nieuwe versie van de applicatie is beschikbaar.</new_app_version_available>
+		<latest_version_installed>De meest recente versie van de applicatie is al geïnstalleerd.</latest_version_installed>
+		<downloading_app_update>Bezig met het downloaden van applicatie-updatebestand...
+Je kunt de voortgang van het downloaden volgen in de lijst met meldingen.</downloading_app_update>
+		<download>Downloaden</download>
+		<not_enough_space>Kan niet downloaden.
+Er is onvoldoende vrije ruimte op de geheugenkaart. Maak tenminste {} ruimte vrij op de geheugenkaart en probeer dan opnieuw te downloaden.</not_enough_space>
+		<version>Versie {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Terug</back>

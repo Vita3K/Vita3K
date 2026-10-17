@@ -24,7 +24,6 @@
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <renderer/state.h>
-#include <rif2zrif.h>
 #include <touch/functions.h>
 #include <touch/state.h>
 #include <util/fs.h>

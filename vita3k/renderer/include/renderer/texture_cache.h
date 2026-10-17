@@ -48,6 +48,7 @@ static constexpr size_t TextureCacheSize = 1024;
 typedef std::array<uint32_t, 4> TextureGxmDataRepr;
 struct TextureCacheInfo {
     uint64_t hash = 0;
+    uint64_t data_hash = 0;
     SceGxmTexture texture;
     int index = 0;
     uint32_t texture_size = 0;
@@ -154,7 +155,7 @@ public:
     virtual void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {}
 
     void upload_texture(const SceGxmTexture &gxm_texture, MemState &mem);
-    void cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem);
+    bool cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem);
 
     // is called by cache_and_bind_texture if use_sampler_cache is set to true
     int cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth = false);

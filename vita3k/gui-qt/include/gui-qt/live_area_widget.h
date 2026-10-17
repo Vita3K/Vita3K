@@ -31,6 +31,9 @@ class QTimer;
 class QVariantAnimation;
 
 struct EmuEnvState;
+namespace pugi {
+class xml_document;
+}
 
 struct FrameLayout {
     QPointF pos;
@@ -72,6 +75,7 @@ class LiveAreaWidget : public QWindow {
 public:
     explicit LiveAreaWidget(EmuEnvState &emuenv, const std::string &app_path, QWindow *parent = nullptr);
     ~LiveAreaWidget();
+    void refresh_app_contents(const std::string &app_path);
 
 signals:
     void play_clicked();
@@ -88,7 +92,7 @@ private:
     void request_redraw();
     void render_now();
     void load_contents();
-    void parse_template(const QString &xml_path, const QString &contents_dir);
+    void parse_template(const pugi::xml_document &doc, const QString &contents_dir);
     QPixmap load_image(const QString &dir, const std::string &name);
     void start_gate_animation();
     void update_autoflip();
@@ -109,6 +113,7 @@ private:
 
     EmuEnvState &m_emuenv;
     std::string m_app_path;
+    std::string m_title_id;
     QString m_app_fs_path;
     QString m_contents_dir;
     std::string m_style_type;

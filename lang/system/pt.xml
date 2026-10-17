@@ -173,7 +173,93 @@ Por favor, aguarde.</connecting_please_wait>
 		<silver>Prata</silver>
 		<hours_ago>Há {} horas</hours_ago>
 		<minutes_ago>Há {} minutos</minutes_ago>
+		<activities>Atividades</activities>
+		<like>Gostar</like>
+		<likes_this>{} gosta disto.</likes_this>
+		<and_like_this>{} e {} gostam disto.</and_like_this>
+		<people_like_this>{} pessoas gostam disto.</people_like_this>
+		<comments>Comentários {}</comments>
+		<delete_activity>Esta atividade será eliminada.</delete_activity>
+		<delete_comment>Este comentário será eliminado.</delete_comment>
+		<unlike>Desativar Gostar</unlike>
+		<write_comment>Escrever Comentário</write_comment>
+		<has_earned_platinum_trophy>ganhou um troféu de platina no "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>ganhou um troféu no "{}"!</has_earned_trophy>
+		<first_time_playing>está a reproduzir "{}" pela primeira vez.</first_time_playing>
+		<download_failed>Não foi possível transferir.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>Atividades de {}</activities_of>
+		<anyone>Qualquer pessoa</anyone>
+		<no_one>Ninguém</no_one>
+		<cannot_display>Não é possível apresentar mais páginas.</cannot_display>
+		<friends_of_friends>Amigos de amigos</friends_of_friends>
+		<friends_only>Só amigos</friends_only>
+		<share_range>Partilhar com:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Aceitar</accept>
+		<players_blocked>Jogadores bloqueados</players_blocked>
+		<friend_request_already_canceled>Este pedido de amizade já foi cancelado.</friend_request_already_canceled>
+		<search_for_player>Pesquise um jogador da Vita3K Network e visualize o perfil do mesmo ou envie um pedido de amizade.</search_for_player>
+		<friend_requests>Pedidos de amizade</friend_requests>
+		<friends>Amigos</friends>
+		<could_not_find_online_id>Não foi possível localizar o ID online.</could_not_find_online_id>
+		<there_are_no_players>Não há jogadores.</there_are_no_players>
+		<no_players_found>Nenhum jogador encontrado.</no_players_found>
+		<online_id>ID Online</online_id>
+		<enter_from_3_to_16_characters>Introduza entre 3 a 16 carateres.</enter_from_3_to_16_characters>
+		<online_status>Estado online</online_status>
+		<received>Recebidos</received>
+		<search>Pesquisa</search>
+		<sent>Enviados</sent>
+		<waiting_for_friend_response>A aguardar resposta do amigo.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Sobre mim</about_me>
+		<accept>Aceitar</accept>
+		<activity>Atividade</activity>
+		<warn_block_player>Se bloquear este jogador, deixará de poder receber mensagens deste jogador.
+Pretende continuar?</warn_block_player>
+		<warn_block_friend>Se bloquear este jogador, ele será removido de amigos. Deixará de poder receber mensagens deste jogador.
+Pretende continuar?</warn_block_friend>
+		<block>Bloquear</block>
+		<blocked>Bloqueado.</blocked>
+		<cancel_friend_request>Cancelar pedido de amizade</cancel_friend_request>
+		<friend_request_canceled>O pedido de amizade vai ser cancelado.</friend_request_canceled>
+		<delete_request>Eliminar pedido</delete_request>
+		<edit_profile>Editar perfil</edit_profile>
+		<friend_request_already_canceled>Este pedido de amizade já foi cancelado.</friend_request_already_canceled>
+		<friends>Amigos</friends>
+		<is_now_friends_with>agora é amigo de {}</is_now_friends_with>
+		<level>Nível</level>
+		<not_a_friend_yet>Ainda não é amigo.</not_a_friend_yet>
+		<remove_from_friends>Remover de amigos</remove_from_friends>
+		<player_removed_from_friends>Este jogador vai ser removido de amigos.</player_removed_from_friends>
+		<send_friend_request>Enviar pedido de amizade</send_friend_request>
+		<send>Enviar</send>
+		<trophies>Troféus</trophies>
+		<unblock>Desbloquear</unblock>
+		<unblock_player>Desbloquear este jogador.</unblock_player>
+		<waiting_friend_response>A aguardar resposta do amigo.</waiting_friend_response>
+		<friend_request_from_player>Tem um pedido de amizade deste jogador.</friend_request_from_player>
+		<you_have_friend_requests>Tem pedidos de amizade.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Mensagens</title>
+		<create_message>+ Criar mensagem</create_message>
+		<uncheck_all>Desmarcar tudo</uncheck_all>
+		<enter_online_id>Introduza a ID online.</enter_online_id>
+		<add>Adicionar</add>
+		<add_recipient>Adicionar destinatário</add_recipient>
+		<delete>Eliminar</delete>
+		<cancel>Cancelar</cancel>
+		<to>Para</to>
+	</messages_app>
 
 	<content_manager name="Gestor de conteúdo">
 		<application name="Aplicações">
@@ -200,13 +286,43 @@ Por favor, aguarde.</connecting_please_wait>
 
 	<indicator>
 		<app_added_home>A aplicação foi adicionada ao ecrã de início.</app_added_home>
+		<cancel_download>Pretende cancelar esta transferência?</cancel_download>
+		<cancel_install>Pretende cancelar esta instalação?
+Se cancelar, os ficheiros transferidos para esta instalação também serão eliminados.</cancel_install>
 		<delete_all>Elimine todos</delete_all>
 		<notif_deleted>As notificações serão eliminadas.</notif_deleted>
+		<waiting_download>A aguardar transferência...</waiting_download>
+		<downloading_complete>Transferência concluída.</downloading_complete>
 		<install_failed>Não foi possível instalar.</install_failed>
+		<player_is_online>{} está agora on-line.</player_is_online>
+		<waiting_install>A aguardar instalação...</waiting_install>
 		<install_complete>Instalação concluída.</install_complete>
 		<installing>A instalar...</installing>
+		<minutes_left>Restam {} minutos</minutes_left>
 		<no_notif>Não existem notificações.</no_notif>
+		<commented_on_activity>Alguém comentou sobre a atividade de {}.</commented_on_activity>
+		<commented_on_your_activity>Alguém comentou sobre a sua atividade.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Alguém comentou sobre e gosta da sua atividade.</commented_and_likes_your_activity>
+		<likes_your_activity>Alguém gosta da sua atividade.</likes_your_activity>
+		<pause_all>Pausar tudo</pause_all>
+		<pause>Pausar</pause>
+		<paused>Pausado</paused>
+		<resume_all>Continuar tudo</resume_all>
+		<resume>Continuar</resume>
+		<seconds_left>Restam {} segundos</seconds_left>
+		<friend_requests>Tem pedidos de amizade.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>Está disponível uma nova versão da aplicação.</new_app_version_available>
+		<latest_version_installed>Já está instalada a versão mais recente da aplicação.</latest_version_installed>
+		<downloading_app_update>A transferir o ficheiro de atualização da aplicação...
+Pode verificar o progresso da transferência na lista de notificações.</downloading_app_update>
+		<download>Transferir</download>
+		<not_enough_space>Não foi possível transferir.
+Não existe espaço livre suficiente no cartão de memória. Crie, pelo menos, {} de espaço livre no cartão de memória e, em seguida, tente transferir novamente.</not_enough_space>
+		<version>Versão {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Retroceder</back>

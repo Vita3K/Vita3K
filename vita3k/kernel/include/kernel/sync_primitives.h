@@ -113,7 +113,7 @@ public:
     SceInt32 info(SceKernelEventInfo &info);
 
 protected:
-    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
+    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data, bool create_event = true);
 
     struct WaitEntry {
         SceUInt32 pattern;
@@ -144,7 +144,7 @@ protected:
 
 class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
 public:
-    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator);
+    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator, bool create_event = true);
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);

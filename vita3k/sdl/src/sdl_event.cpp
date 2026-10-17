@@ -20,7 +20,6 @@
 #include <packages/license.h>
 #include <packages/pkg.h>
 #include <renderer/state.h>
-#include <rif2zrif.h>
 #include <touch/functions.h>
 #include <touch/state.h>
 #include <util/fs.h>

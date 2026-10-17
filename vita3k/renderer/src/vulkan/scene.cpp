@@ -165,6 +165,31 @@ static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex,
     return frame_descriptor.sets[frame_descriptor.descriptors_idx++];
 }
 
+static void prepare_texture_views(VKContext &context, const ShaderProgram &program, bool is_vertex) {
+    auto &textures = is_vertex ? context.vertex_textures : context.fragment_textures;
+    auto &cube_textures = is_vertex ? context.vertex_cube_textures : context.fragment_cube_textures;
+    for (uint16_t unit = 0; unit < program.texture_count; ++unit) {
+        vk::ImageView view;
+        if (program.textures_used[unit] && program.cube_textures[unit] != cube_textures[unit] && textures[unit].sampler)
+            view = context.state.texture_cache.retrieve_texture_view(context, textures[unit].imageView, program.cube_textures.test(unit));
+        auto &prepared_view = context.compatible_texture_views[unit + (is_vertex ? SCE_GXM_MAX_TEXTURE_UNITS : 0)];
+        if (prepared_view != view) {
+            prepared_view = view;
+            if (is_vertex)
+                context.last_vert_texture_count = ~0;
+            else
+                context.last_frag_texture_count = ~0;
+        }
+        if (!view)
+            continue;
+        const auto &texture = context.bound_textures[unit + (is_vertex ? SCE_GXM_MAX_TEXTURE_UNITS : 0)];
+        LOG_WARN_ONCE("Using {} for shader {}: stage={}, unit={}, address=0x{:08X}, size={}x{}, format=0x{:08X}, mip count={}",
+            program.cube_textures[unit] ? "a 2D texture replicated across cube faces" : "the first cube face as a 2D texture",
+            hex_string(program.hash), is_vertex ? "vertex" : "fragment", unit, texture.data_addr << 2,
+            gxm::get_width(texture), gxm::get_height(texture), static_cast<uint32_t>(gxm::get_format(texture)), texture.true_mip_count());
+    }
+}
+
 static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     VKState &state = context.state;
 
@@ -172,17 +197,29 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     descriptors[0] = context.global_set;
     descriptors[1] = context.rendertarget_set;
 
-    const uint16_t vertex_textures_count = context.record.vertex_program.get(mem)->renderer_data->texture_count;
-    const uint16_t fragment_texture_count = context.record.fragment_program.get(mem)->renderer_data->texture_count;
+    const auto &vertex_program = *context.record.vertex_program.get(mem)->renderer_data;
+    const auto &fragment_program = *context.record.fragment_program.get(mem)->renderer_data;
+    const uint16_t vertex_textures_count = vertex_program.texture_count;
+    const uint16_t fragment_texture_count = fragment_program.texture_count;
+
+    for (uint32_t i = 0; i < fragment_texture_count; i++) {
+        if (fragment_program.textures_used[i] && !context.fragment_textures[i].sampler && !fragment_program.cube_textures[i])
+            LOG_WARN_ONCE("Fragment texture {} is unbound for shader {}; using the default white 2D texture",
+                i, hex_string(fragment_program.hash));
+    }
 
     vk::PipelineLayout pipeline_layout = state.pipeline_cache.pipeline_layouts[vertex_textures_count][fragment_texture_count];
 
     // try to use last descriptor if it still matches
-    bool need_vert_descr = (vertex_textures_count != context.last_vert_texture_count);
-    bool need_frag_descr = (fragment_texture_count != context.last_frag_texture_count);
+    bool need_vert_descr = (vertex_textures_count != context.last_vert_texture_count)
+        || vertex_program.cube_textures != context.last_vert_cube_textures;
+    bool need_frag_descr = (fragment_texture_count != context.last_frag_texture_count)
+        || fragment_program.cube_textures != context.last_frag_cube_textures;
 
     context.last_vert_texture_count = vertex_textures_count;
     context.last_frag_texture_count = fragment_texture_count;
+    context.last_vert_cube_textures = vertex_program.cube_textures;
+    context.last_frag_cube_textures = fragment_program.cube_textures;
 
     {
         if (need_vert_descr) {
@@ -198,11 +235,17 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
 
     // bind textures
     std::array<vk::WriteDescriptorSet, 16> write_descrs;
+    std::array<vk::DescriptorImageInfo, 16> image_infos;
     // some default sampler in case a slot has never been set and we read a slot with higher idx
     vk::DescriptorImageInfo default_image_info{
         .sampler = context.state.default_image.sampler,
         .imageView = context.state.default_image.view,
         .imageLayout = vk::ImageLayout::eGeneral
+    };
+    const vk::DescriptorImageInfo default_cube_info{
+        .sampler = context.state.default_cube_image.sampler,
+        .imageView = context.state.default_cube_image.view,
+        .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
     };
 
     // vertex
@@ -214,7 +257,26 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
                 .dstArrayElement = 0,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
             };
-            write_descrs[i].setImageInfo(context.vertex_textures[i].sampler ? context.vertex_textures[i] : default_image_info);
+            const auto prepared_view = context.compatible_texture_views[SCE_GXM_MAX_TEXTURE_UNITS + i];
+            const bool compatible_view = vertex_program.cube_textures[i] != context.vertex_cube_textures[i] && prepared_view;
+            if (context.vertex_textures[i].sampler && vertex_program.textures_used[i]
+                && vertex_program.cube_textures[i] != context.vertex_cube_textures[i] && !compatible_view) {
+                const auto &texture = context.bound_textures[SCE_GXM_MAX_TEXTURE_UNITS + i];
+                LOG_ERROR_ONCE("Vertex texture {} has the wrong view type for shader {}: expected cube={}, bound cube={}, GXM type=0x{:08X}, address=0x{:08X}, size={}x{}, format=0x{:08X}, mip count={}",
+                    i, hex_string(vertex_program.hash), vertex_program.cube_textures.test(i), context.vertex_cube_textures.test(i),
+                    static_cast<uint32_t>(texture.texture_type()), texture.data_addr << 2,
+                    gxm::get_width(texture), gxm::get_height(texture), static_cast<uint32_t>(gxm::get_format(texture)), texture.true_mip_count());
+            }
+            const auto &fallback = vertex_program.cube_textures[i] ? default_cube_info : default_image_info;
+            if (!context.vertex_textures[i].sampler && vertex_program.cube_textures[i])
+                LOG_WARN_ONCE("Vertex cube texture {} is unbound for shader {}; using the default white cube",
+                    i, hex_string(vertex_program.hash));
+            image_infos[i] = context.vertex_textures[i].sampler ? context.vertex_textures[i] : fallback;
+            if (context.vertex_textures[i].sampler && compatible_view) {
+                image_infos[i].imageView = prepared_view;
+                image_infos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+            }
+            write_descrs[i].setImageInfo(image_infos[i]);
         }
         state.device.updateDescriptorSets(vertex_textures_count, write_descrs.data(), 0, nullptr);
     }
@@ -228,7 +290,26 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
                 .dstArrayElement = 0,
                 .descriptorType = vk::DescriptorType::eCombinedImageSampler,
             };
-            write_descrs[i].setImageInfo(context.fragment_textures[i].sampler ? context.fragment_textures[i] : default_image_info);
+            const auto prepared_view = context.compatible_texture_views[i];
+            const bool compatible_view = fragment_program.cube_textures[i] != context.fragment_cube_textures[i] && prepared_view;
+            if (context.fragment_textures[i].sampler && fragment_program.textures_used[i]
+                && fragment_program.cube_textures[i] != context.fragment_cube_textures[i] && !compatible_view) {
+                const auto &texture = context.bound_textures[i];
+                LOG_ERROR_ONCE("Fragment texture {} has the wrong view type for shader {}: expected cube={}, bound cube={}, GXM type=0x{:08X}, address=0x{:08X}, size={}x{}, format=0x{:08X}, mip count={}",
+                    i, hex_string(fragment_program.hash), fragment_program.cube_textures.test(i), context.fragment_cube_textures.test(i),
+                    static_cast<uint32_t>(texture.texture_type()), texture.data_addr << 2,
+                    gxm::get_width(texture), gxm::get_height(texture), static_cast<uint32_t>(gxm::get_format(texture)), texture.true_mip_count());
+            }
+            const auto &fallback = fragment_program.cube_textures[i] ? default_cube_info : default_image_info;
+            if (!context.fragment_textures[i].sampler && fragment_program.cube_textures[i])
+                LOG_WARN_ONCE("Fragment cube texture {} is unbound for shader {}; using the default white cube",
+                    i, hex_string(fragment_program.hash));
+            image_infos[i] = context.fragment_textures[i].sampler ? context.fragment_textures[i] : fallback;
+            if (context.fragment_textures[i].sampler && compatible_view) {
+                image_infos[i].imageView = prepared_view;
+                image_infos[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+            }
+            write_descrs[i].setImageInfo(image_infos[i]);
         }
         state.device.updateDescriptorSets(fragment_texture_count, write_descrs.data(), 0, nullptr);
     }
@@ -257,10 +338,8 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
 
     int max_stream_idx = -1;
 
-    for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        if (!vkvert->attribute_infos.contains(attribute.regIndex))
-            continue;
-        max_stream_idx = std::max<int>(max_stream_idx, attribute.streamIndex);
+    for (const auto &attribute : vkvert->attribute_bindings) {
+        max_stream_idx = std::max<int>(max_stream_idx, attribute.stream_index);
     }
     max_stream_idx++;
 
@@ -408,8 +487,12 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
 
     void *indices_ptr = indices.get(mem);
-
     context.check_for_macroblock_change(true);
+    prepare_texture_views(context, *context.record.vertex_program.get(mem)->renderer_data, true);
+    prepare_texture_views(context, *gxm_fragment_program.renderer_data, false);
+    context.state.surface_cache.perform_pending_casts(context,
+        context.record.vertex_program.get(mem)->renderer_data->texture_count,
+        gxm_fragment_program.renderer_data->texture_count);
 
     const bool maskupdate = gxm_fragment_program.is_maskupdate;
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
@@ -440,7 +523,8 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // we need to always load the depth-stencil after the first draw
     if (!maskupdate && context.is_first_scene_draw && (context.state.features.support_shader_interlock || context.state.features.use_mask_bit || context.ignore_macroblock)) {
         // update the render pass to load and store the depth and stencil
-        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true, !context.record.color_surface.data);
+        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true, true, !context.record.color_surface.data, false,
+            context.record.color_base_format == SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16);
         context.is_first_scene_draw = false;
     }
 
@@ -491,6 +575,15 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     if (context.current_pipeline == nullptr)
         return;
 
+    if (!maskupdate && !uses_interlock && context.current_color_surface
+        && context.record.front_side_fragment_program_mode != SCE_GXM_FRAGMENT_PROGRAM_DISABLED
+        && !fragment_program_gxp.has_no_effect()
+        && !(fragment_program_gxp.program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED)) {
+        const auto &program = *static_cast<const VKFragmentProgram *>(gxm_fragment_program.renderer_data.get());
+        if (program.blending.blendEnable && program.blending.colorWriteMask)
+            context.current_color_surface->raw_image_valid = false;
+    }
+
     if (config.log_active_shaders) {
         const std::string hash_text_f = hex_string(context.record.fragment_program.get(mem)->renderer_data->hash);
         const std::string hash_text_v = hex_string(context.record.vertex_program.get(mem)->renderer_data->hash);
@@ -535,12 +628,18 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     auto &frag_ublock = context.curr_frag_ublock.base_block;
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.res_multiplier = context.state.res_multiplier;
+    frag_ublock.use_raw_image = context.current_color_surface && context.current_color_surface->raw_image_valid ? 1.0f : 0.0f;
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)
         frag_ublock.res_multiplier *= 2;
     else if (!has_msaa && has_downscale)
         frag_ublock.res_multiplier /= 2;
+
+    frag_ublock.cast_sampler_mask = static_cast<float>(context.curr_frag_ublock.cast_sampler_bits);
+    frag_ublock.cast_phase_mask = static_cast<float>(context.curr_frag_ublock.cast_phase_bits);
+    frag_ublock.inv_frag_width = 1.0f / static_cast<float>(context.render_target->width);
+    frag_ublock.inv_frag_height = 1.0f / static_cast<float>(context.render_target->height);
 
     if (context.curr_frag_ublock.changed || memcmp(&context.prev_frag_ublock, &frag_ublock, sizeof(frag_ublock)) != 0) {
         // TODO: this intermediate step can be avoided
@@ -583,14 +682,17 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // bind the vertex streams
     bind_vertex_streams(context, mem, instance_count, max_index);
 
+    if (context.state.support_gpu_checkpoints)
+        context.render_cmd.setCheckpointNV(context.current_pipeline_checkpoint);
     if (ordered_fetch) {
         if (ordered_indices) {
             count = ordered_indices->count;
             if (count)
                 context.render_cmd.bindIndexBuffer(ordered_indices->buffer, ordered_indices->offset, index_type);
         }
-        const uint32_t vertices_per_primitive = type == SCE_GXM_PRIMITIVE_POINTS ? 1U : type == SCE_GXM_PRIMITIVE_LINES ? 2U
-                                                                                                                        : 3U;
+        const uint32_t vertices_per_primitive = type == SCE_GXM_PRIMITIVE_POINTS ? 1U
+            : type == SCE_GXM_PRIMITIVE_LINES                                    ? 2U
+                                                                                 : 3U;
         for (uint32_t instance = 0; instance < instance_count; ++instance) {
             for (size_t first = 0; first + vertices_per_primitive <= count; first += vertices_per_primitive) {
                 framebuffer_fetch_barrier(context);
@@ -602,6 +704,24 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     }
     if (maskupdate && count && instance_count && context.record.writing_mask < 0.5f)
         context.render_target->mask_may_reject = true;
+
+    if (!maskupdate && count && instance_count) {
+        context.scene_has_drawn = true;
+        if (context.record.front_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED
+            || (context.record.two_sided == SCE_GXM_TWO_SIDED_ENABLED && context.record.back_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED))
+            context.scene_wrote_depth = true;
+        const auto &area = context.curr_renderpass_info.renderArea;
+        if (!context.rendered_area) {
+            context.rendered_area = area;
+        } else {
+            const auto &previous = *context.rendered_area;
+            const int32_t x0 = std::min(previous.offset.x, area.offset.x);
+            const int32_t y0 = std::min(previous.offset.y, area.offset.y);
+            const int32_t x1 = std::max(previous.offset.x + static_cast<int32_t>(previous.extent.width), area.offset.x + static_cast<int32_t>(area.extent.width));
+            const int32_t y1 = std::max(previous.offset.y + static_cast<int32_t>(previous.extent.height), area.offset.y + static_cast<int32_t>(area.extent.height));
+            context.rendered_area = vk::Rect2D{ { x0, y0 }, { static_cast<uint32_t>(x1 - x0), static_cast<uint32_t>(y1 - y0) } };
+        }
+    }
 
     context.vertex_uniform_storage_allocated = false;
     context.fragment_uniform_storage_allocated = false;

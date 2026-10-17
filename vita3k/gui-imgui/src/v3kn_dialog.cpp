@@ -265,7 +265,7 @@ void init_v3kn_user_info(GuiState &gui, EmuEnvState &emuenv) {
     set_pending(pending_avatar, {});
     const auto lang = gui.lang;
     v3kn::Error error;
-    v3kn::init_v3kn_user_info(emuenv, error);
+    v3kn::init_v3kn_user_info(emuenv, error, gui.lang.common.main);
     if (!error.empty()) {
         init_info_message({
             .function = "v3kn_check",
@@ -273,6 +273,12 @@ void init_v3kn_user_info(GuiState &gui, EmuEnvState &emuenv) {
             .level = spdlog::level::err,
             .msg = get_v3kn_error_message(lang, error),
         });
+    }
+
+    if (v3kn::is_v3kn_logged_in()) {
+        v3kn::start_friend_polling(emuenv);
+        v3kn::start_friend_presence(emuenv);
+        v3kn::start_messages_polling(emuenv);
     }
 
     const auto user_info = v3kn::get_v3kn_user_info(emuenv);
@@ -883,6 +889,10 @@ void draw_v3kn_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::CloseCurrentPopup();
         ImGui::SameLine(0, 40.f * SCALE.x);
         if (ImGui::Button(::lang::get(::lang::str::yes).c_str(), SMALL_BUTTON_SIZE)) {
+            v3kn::stop_friend_polling(emuenv.v3kn.friends_state);
+            v3kn::stop_messages_polling(emuenv.v3kn.messages_state);
+            v3kn::cleanup_friend_state(emuenv.v3kn.friends_state);
+            v3kn::cleanup_messages_state(emuenv.v3kn.messages_state);
             user_info = {};
             account_state.selected_server = v3kn::V3knServer::Official;
             v3kn::set_v3kn_logged_in(false);

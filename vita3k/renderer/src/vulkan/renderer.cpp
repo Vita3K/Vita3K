@@ -655,6 +655,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
+            .independentBlend = physical_device_features.independentBlend,
             .fillModeNonSolid = physical_device_features.fillModeNonSolid,
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
@@ -672,7 +673,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
         bool support_external_memory = false;
         bool support_shader_interlock = false;
         bool support_image_view_usage = false;
-        const std::map<std::string_view, bool *> optional_extensions = {
+        std::map<std::string_view, bool *> optional_extensions = {
             { vk::KHRGetMemoryRequirements2ExtensionName, &temp_bool },
             // can be used by vma to improve performance
             { vk::KHRDedicatedAllocationExtensionName, &support_dedicated_allocations },
@@ -710,6 +711,9 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME, &support_unix_fd_import },
 #endif
         };
+
+        if (config.validation_layer)
+            optional_extensions.emplace(vk::NVDeviceDiagnosticCheckpointsExtensionName, &support_gpu_checkpoints);
 
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
             auto it = optional_extensions.find(ext.extensionName.data());
@@ -860,6 +864,8 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             device = physical_device.createDevice(device_info.get());
         }
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
+        device_lost_reported = false;
+        LOG_INFO("Vulkan GPU diagnostic checkpoints: {}", support_gpu_checkpoints ? "enabled (validation requested)" : "unavailable or disabled");
     }
 
     // Get Queues
@@ -930,6 +936,36 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
         };
         cmd_buffer.clearColorImage(default_image.image, vk::ImageLayout::eTransferDstOptimal, white, vkutil::color_subresource_range);
         default_image.transition_to(cmd_buffer, vkutil::ImageLayout::StorageImage);
+        default_cube_image = vkutil::Image(1, 1, vk::Format::eR8G8B8A8Unorm);
+        const vk::ImageCreateInfo cube_info{
+            .flags = vk::ImageCreateFlagBits::eCubeCompatible,
+            .imageType = vk::ImageType::e2D,
+            .format = default_cube_image.format,
+            .extent = { 1, 1, 1 },
+            .mipLevels = 1,
+            .arrayLayers = 6,
+            .samples = vk::SampleCountFlagBits::e1,
+            .tiling = vk::ImageTiling::eOptimal,
+            .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
+        };
+        std::tie(default_cube_image.image, default_cube_image.allocation) = allocator.createImage(cube_info, vkutil::vma_auto_alloc);
+        const vk::ImageSubresourceRange cube_range{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 6 };
+        const vk::ImageViewCreateInfo cube_view{
+            .image = default_cube_image.image,
+            .viewType = vk::ImageViewType::eCube,
+            .format = default_cube_image.format,
+            .subresourceRange = cube_range
+        };
+        default_cube_image.view = device.createImageView(cube_view);
+        default_cube_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst, cube_range);
+        cmd_buffer.clearColorImage(default_cube_image.image, vk::ImageLayout::eTransferDstOptimal, white, cube_range);
+        default_cube_image.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage, cube_range);
+        default_raw_image = vkutil::Image(1, 1, vk::Format::eR16G16B16A16Uint);
+        default_raw_image.init_image(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransferDst);
+        default_raw_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        const vk::ClearColorValue raw_zero{ .uint32 = std::array<uint32_t, 4>{} };
+        cmd_buffer.clearColorImage(default_raw_image.image, vk::ImageLayout::eTransferDstOptimal, raw_zero, vkutil::color_subresource_range);
+        default_raw_image.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
         vkutil::end_single_time_command(device, general_queue, general_command_pool, cmd_buffer);
 
         // create the default sampler
@@ -944,6 +980,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             .maxLod = 0.0f,
         };
         default_image.sampler = device.createSampler(sampler_info);
+        default_cube_image.sampler = device.createSampler(sampler_info);
     }
 
     // create the frame objects
@@ -978,19 +1015,61 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
     return init();
 }
 
+vk::Result VKState::wait_for_fences(vk::ArrayProxy<const vk::Fence> fences, uint64_t timeout) {
+    try {
+        return device.waitForFences(fences, vk::True, timeout);
+    } catch (const vk::DeviceLostError &) {
+        report_device_lost("waitForFences");
+        throw;
+    }
+}
+
+void VKState::report_device_lost(std::string_view operation) {
+    std::lock_guard<std::mutex> lock(queue_mutex);
+    if (device_lost_reported)
+        return;
+    device_lost_reported = true;
+
+    LOG_CRITICAL_SYNC("Vulkan device lost during {}", operation);
+    if (!support_gpu_checkpoints) {
+        LOG_ERROR_SYNC("Vulkan GPU diagnostic checkpoints are unavailable or disabled");
+        return;
+    }
+
+    const auto report_queue = [](vk::Queue queue, std::string_view name) {
+        const auto checkpoints = queue.getCheckpointDataNV();
+        if (checkpoints.empty())
+            LOG_ERROR_SYNC("Vulkan GPU checkpoint: queue={}, no checkpoint data reported", name);
+        for (const auto &checkpoint : checkpoints) {
+            LOG_ERROR_SYNC("Vulkan GPU checkpoint: queue={}, stage={}, pipeline marker={}",
+                name, vk::to_string(checkpoint.stage), fmt::ptr(checkpoint.pCheckpointMarker));
+        }
+    };
+    report_queue(general_queue, "graphics");
+    if (transfer_queue != general_queue)
+        report_queue(transfer_queue, "transfer");
+}
+
 void VKState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
     this->mem = &mem;
 
-    // cleanup(true) aborts the queue to stop the previous app's GPU wait thread.
-    // That thread is joined when its VKContext is destroyed; allow the next
-    // app's context to use the persistent renderer queue again.
+    // cleanup(true) stops the previous app's GPU wait thread and aborts the queue.
+    // Allow the next app's context to use the persistent renderer queue again.
     request_queue.reset();
 
     const bool use_high_accuracy = cfg.current_config.high_accuracy;
     // Recompute session features from device capabilities, not the previous game's choices.
     features.support_shader_interlock = supports_shader_interlock && use_high_accuracy;
+    features.preserve_f16_nan_as_u16 = features.support_shader_interlock && physical_device_features.independentBlend;
     features.direct_fragcolor = !features.support_shader_interlock;
     features.use_texture_viewport = support_standard_layout && !use_high_accuracy;
+
+    LOG_INFO("Vulkan rendering settings for {}: accuracy={}, shader interlock={}, texture viewport={}",
+        game_id, use_high_accuracy ? "High" : "Standard", features.support_shader_interlock, features.use_texture_viewport);
+    LOG_INFO("Vulkan RGBA4444 render surfaces: {}",
+        features.support_shader_interlock ? "RGBA8 fallback (typed storage image required by shader interlock)"
+                                          : (support_native_rgba4_surface ? "native" : "RGBA8 fallback (native surface usages unsupported)"));
+    LOG_INFO("Vulkan raw F16 render surfaces: {}", features.preserve_f16_nan_as_u16);
 
     // shader interlock is more accurate but slower
     if (features.support_shader_interlock) {
@@ -1114,6 +1193,8 @@ void VKState::cleanup(const bool preserve_frontend) {
     // reused by later app sessions when the frontend is preserved.
     if (!preserve_frontend) {
         default_image.destroy();
+        default_cube_image.destroy();
+        default_raw_image.destroy();
         default_buffer.destroy();
     }
 
@@ -1335,6 +1416,7 @@ uint32_t VKState::get_features_mask() {
             bool use_memory_mapping : 1;
             bool use_rgb_attributes : 1;
             bool use_scaled_attributes : 1;
+            bool preserve_f16_nan_as_u16 : 1;
         };
         uint32_t value;
     } features_mask;
@@ -1346,6 +1428,7 @@ uint32_t VKState::get_features_mask() {
     features_mask.use_memory_mapping = features.enable_memory_mapping;
     features_mask.use_rgb_attributes = features.support_rgb_attributes;
     features_mask.use_scaled_attributes = pipeline_cache.support_scaled_vertex_attribute;
+    features_mask.preserve_f16_nan_as_u16 = features.preserve_f16_nan_as_u16;
 
     return features_mask.value;
 }
@@ -1579,7 +1662,13 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
     case MappingMethod::DoubleBuffer: {
         vkutil::Buffer buffer(size + KiB(4));
-        buffer.init_buffer(mapped_memory_flags, vkutil::vma_mapped_alloc);
+        constexpr vma::AllocationCreateInfo double_buffer_alloc{
+            .flags = vma::AllocationCreateFlagBits::eHostAccessRandom | vma::AllocationCreateFlagBits::eMapped,
+            .usage = vma::MemoryUsage::eAutoPreferHost,
+            .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached
+        };
+        buffer.init_buffer(mapped_memory_flags, double_buffer_alloc);
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
@@ -1846,10 +1935,10 @@ namespace renderer::vulkan {
 void VKState::precompile_shader(const ShadersHash &hash) {
     Sha256Hash empty_hash{};
     if (hash.vert != empty_hash) {
-        pipeline_cache.precompile_shader(hash.vert);
+        pipeline_cache.precompile_shader(hash.vert, true);
     }
     if (hash.frag != empty_hash) {
-        pipeline_cache.precompile_shader(hash.frag);
+        pipeline_cache.precompile_shader(hash.frag, false);
     }
 
     programs_count_pre_compiled++;

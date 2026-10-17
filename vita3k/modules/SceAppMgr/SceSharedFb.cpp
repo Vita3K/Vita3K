@@ -107,7 +107,7 @@ EXPORT(int, sceSharedFbDelete) {
 EXPORT(int, sceSharedFbEnd) {
     TRACY_FUNC(sceSharedFbEnd);
     SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
-    Ptr<void> data = (state->info.curbuf == 0) ? state->info.base2 : state->info.base1;
+    Ptr<void> data = state->info.base2;
     // tell the display a new buffer is ready
     SceDisplayFrameBuf frame_buf{
         .size = sizeof(SceDisplayFrameBuf),

@@ -40,8 +40,8 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     constexpr ImU32 DEFAULT_INDICATOR_COLOR = 0xFFFFFFFF; // White
 
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
-    const auto is_notif_pos = !gui.vita_area.start_screen && (gui.vita_area.live_area_screen || gui.vita_area.home_screen) ? 78.f * SCALE.x : 0.f;
-    const auto is_theme_color = gui.vita_area.home_screen || gui.vita_area.live_area_screen || gui.vita_area.start_screen;
+    const auto is_notif_pos = !gui.vita_area.start_screen && gui.vita_area.home_screen ? 78.f * SCALE.x : 0.f;
+    const auto is_theme_color = gui.vita_area.home_screen || gui.vita_area.start_screen;
     const auto indicator_color = gui.information_bar_color.indicator;
     const auto bar_color = gui.information_bar_color.bar;
 
@@ -57,7 +57,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     const auto draw_list = ImGui::GetBackgroundDrawList();
     draw_list->AddRectFilled(VIEWPORT_POS, INFO_BAR_POS_MAX, is_theme_color ? bar_color : DEFAULT_BAR_COLOR, 0.f, ImDrawFlags_RoundCornersAll);
 
-    if (gui.vita_area.home_screen || gui.vita_area.live_area_screen) {
+    if (gui.vita_area.home_screen) {
         const auto HOME_ICON_POS_CENTER = VIEWPORT_POS.x + (INFO_BAR_SIZE.x / 2.f) - (32.f * (static_cast<float>(gui.live_area_current_open_apps_list.size()) / 2.f)) * SCALE.x;
         const auto APP_IS_OPEN = gui.live_area_app_current_open >= 0;
 
@@ -87,7 +87,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
             const ImVec2 ICON_POS_MAX(ICON_POS_MIN.x + ICON_SIZE_SCALE, ICON_POS_MIN.y + ICON_SIZE_SCALE);
             const ImVec2 ICON_CENTER_POS(ICON_POS_MIN.x + (ICON_SIZE_SCALE / 2.f), ICON_POS_MIN.y + (ICON_SIZE_SCALE / 2.f));
             const auto &APPS_OPENED = gui.live_area_current_open_apps_list[a];
-            auto &APP_ICON_TYPE = APPS_OPENED.starts_with("NPXS") && (APPS_OPENED != "NPXS10007") ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+            auto &APP_ICON_TYPE = is_emu_app(APPS_OPENED) ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
 
             // Check if icon exist
             if (APP_ICON_TYPE.contains(APPS_OPENED))
@@ -165,7 +165,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
         draw_list->AddRectFilled(BATTERY_BASE_MIN_POS, BATTERY_BASE_MAX_POS, BATTERY_COLOR);
     draw_list->AddRectFilled(ImVec2(BATTERY_MAX_POS.x - battery_size, BATTERY_HEIGHT_MIN_POS), BATTERY_MAX_POS, BATTERY_COLOR, 2.f * SCALE.x, ImDrawFlags_RoundCornersAll);
 
-    if (gui.imgui_render && !gui.vita_area.start_screen && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && !gui.configuration_menu.settings_dialog && !gui.configuration_menu.custom_settings_dialog && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
+    if (gui.imgui_render && !gui.vita_area.start_screen && !gui.vita_area.user_management && !gui.configuration_menu.settings_dialog && !gui.configuration_menu.custom_settings_dialog && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
         gui.vita_area.information_bar = false;
 
     ImGui::End();

@@ -17,6 +17,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <shader/spirv_recompiler.h>
+#include <shader/uniform_block.h>
 #include <shader/usse_decoder_helpers.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_translator.h>
@@ -84,6 +85,75 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     }
 
     assert(m_b.getTypeClass(m_b.getContainedTypeId(m_b.getTypeId(coord_id))) == spv::OpTypeFloat);
+
+    // Packed surface views contain word-pair offsets expressed at the native resolution.
+    if (dim == 2 && m_spirv_params.frag_coord_id != spv::NoResult
+        && texture_index >= 0 && texture_index < SCE_GXM_MAX_TEXTURE_UNITS && lod_mode != 4) {
+        const auto v2 = type_f32_v[2];
+        const auto boolean = m_b.makeBoolType();
+        const auto u32 = m_b.makeUintType(32);
+        const auto load_uniform = [&](FragUniformFieldId field) {
+            return m_b.createLoad(utils::create_access_chain(m_b, spv::StorageClassUniform,
+                                      m_spirv_params.render_info_id, { m_b.makeIntConstant(field) }),
+                spv::NoPrecision);
+        };
+        const auto sampler_bit = [&](FragUniformFieldId field) {
+            auto bits = m_b.createUnaryOp(spv::OpConvertFToU, u32, load_uniform(field));
+            bits = m_b.createBinOp(spv::OpShiftRightLogical, u32, bits, m_b.makeUintConstant(texture_index));
+            return m_b.createBinOp(spv::OpBitwiseAnd, u32, bits, m_b.makeUintConstant(1));
+        };
+        const auto scale = load_uniform(FRAG_UNIFORM_res_multiplier);
+        auto active = m_b.createBinOp(spv::OpINotEqual, boolean, sampler_bit(FRAG_UNIFORM_cast_sampler_mask), m_b.makeUintConstant(0));
+        active = m_b.createBinOp(spv::OpLogicalAnd, boolean, active,
+            m_b.createBinOp(spv::OpFOrdNotEqual, boolean, scale, m_b.makeFloatConstant(1.0f)));
+        const auto xy = m_b.createOp(spv::OpVectorShuffle, v2, { { true, coord_id }, { true, coord_id }, { false, 0 }, { false, 1 } });
+        const auto frag = m_b.createLoad(m_spirv_params.frag_coord_id, spv::NoPrecision);
+        auto screen = m_b.createOp(spv::OpVectorShuffle, v2, { { true, frag }, { true, frag }, { false, 0 }, { false, 1 } });
+        const auto inverse_size = m_b.createCompositeConstruct(v2, { load_uniform(FRAG_UNIFORM_inv_frag_width), load_uniform(FRAG_UNIFORM_inv_frag_height) });
+        screen = m_b.createBinOp(spv::OpFMul, v2, screen, inverse_size);
+        const auto delta = m_b.createBinOp(spv::OpFSub, v2, xy, screen);
+        const auto scaled_delta = m_b.createBinOp(spv::OpFDiv, v2, delta, m_b.createCompositeConstruct(v2, { scale, scale }));
+        const auto adjusted = m_b.createBinOp(spv::OpFAdd, v2, screen, scaled_delta);
+        const auto absolute_delta = m_b.createBuiltinCall(v2, std_builtins, GLSLstd450FAbs, { delta });
+        const auto component = [&](spv::Id value, int index) {
+            return m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, value, m_b.makeIntConstant(index));
+        };
+        const auto x = component(xy, 0);
+        const auto y = component(xy, 1);
+        const auto image_type = m_b.makeImageType(type_f32, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
+        const auto image = m_b.createUnaryOp(spv::OpImage, image_type, tex);
+        const auto size = m_b.createOp(spv::OpImageQuerySizeLod, m_b.makeVectorType(m_b.makeIntType(32), 2), { image, m_b.makeIntConstant(0) });
+        const auto width = m_b.createUnaryOp(spv::OpConvertSToF, type_f32,
+            m_b.createBinOp(spv::OpVectorExtractDynamic, m_b.makeIntType(32), size, m_b.makeIntConstant(0)));
+        const auto half = m_b.makeFloatConstant(0.5f);
+        const auto two = m_b.makeFloatConstant(2.0f);
+        auto snapped = m_b.createBinOp(spv::OpFMul, type_f32, x, width);
+        snapped = m_b.createBinOp(spv::OpFMul, type_f32, snapped, half);
+        snapped = m_b.createBuiltinCall(type_f32, std_builtins, GLSLstd450Floor, { snapped });
+        snapped = m_b.createBinOp(spv::OpFMul, type_f32, snapped, two);
+        snapped = m_b.createBinOp(spv::OpFAdd, type_f32, snapped,
+            m_b.createUnaryOp(spv::OpConvertUToF, type_f32, sampler_bit(FRAG_UNIFORM_cast_phase_mask)));
+        snapped = m_b.createBinOp(spv::OpFAdd, type_f32, snapped, half);
+        snapped = m_b.createBinOp(spv::OpFDiv, type_f32, snapped, width);
+        const auto threshold = m_b.makeFloatConstant(0.005f);
+        const auto dx = component(absolute_delta, 0);
+        auto new_x = m_b.createTriOp(spv::OpSelect, type_f32,
+            m_b.createBinOp(spv::OpFOrdLessThanEqual, boolean, dx, threshold), component(adjusted, 0), x);
+        new_x = m_b.createTriOp(spv::OpSelect, type_f32,
+            m_b.createBinOp(spv::OpFOrdGreaterThan, boolean, dx, m_b.makeFloatConstant(5e-5f)), new_x, snapped);
+        new_x = m_b.createTriOp(spv::OpSelect, type_f32, active, new_x, x);
+        const auto y_active = m_b.createBinOp(spv::OpLogicalAnd, boolean, active,
+            m_b.createBinOp(spv::OpFOrdLessThanEqual, boolean, component(absolute_delta, 1), threshold));
+        const auto new_y = m_b.createTriOp(spv::OpSelect, type_f32, y_active, component(adjusted, 1), y);
+        const auto new_xy = m_b.createCompositeConstruct(v2, { new_x, new_y });
+        const auto components = m_b.getNumComponents(coord_id);
+        if (components == 3)
+            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { { true, new_xy }, { true, coord_id }, { false, 0 }, { false, 1 }, { false, 4 } });
+        else if (components == 4)
+            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[4], { { true, new_xy }, { true, coord_id }, { false, 0 }, { false, 1 }, { false, 4 }, { false, 5 } });
+        else
+            coord_id = new_xy;
+    }
 
     // the texture viewport is only useful for surfaces and they are never cubes
     // also for the time being ignore sampleProj ops

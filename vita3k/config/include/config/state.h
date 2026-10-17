@@ -105,6 +105,7 @@ struct Config {
         bool fullscreen_hd_res_pixel_perfect = false;
         bool show_touchpad_cursor = true;
         int file_loading_delay = 0;
+        bool thread_scheduler = true;
         bool psn_signed_in = false;
         int sys_button = static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS);
         int sys_lang = static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US);

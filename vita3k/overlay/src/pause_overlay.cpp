@@ -127,7 +127,7 @@ bool pause_overlay::poll_dialog(DialogState &dialog, int date_format, int sys_bu
 void pause_overlay::on_button_pressed(pad_button button_press, bool is_auto_repeat) {
     static_cast<void>(is_auto_repeat);
 
-    if (m_buttons.empty())
+    if (m_buttons.empty() || !m_session_controller.should_show_pause_overlay())
         return;
 
     switch (button_press) {
@@ -146,10 +146,10 @@ void pause_overlay::on_button_pressed(pad_button button_press, bool is_auto_repe
         if (is_confirm_button(button_press)) {
             switch (m_selected_button) {
             case PAUSE_BUTTON_RESUME:
-                m_session_controller.set_pause_reason(app::AppSessionPauseReason::All, false);
+                m_session_controller.set_pause_reason(app::AppSessionPauseReason::User, false);
                 break;
             case PAUSE_BUTTON_EXIT:
-                m_session_controller.set_pause_reason(app::AppSessionPauseReason::All, false);
+                m_session_controller.set_pause_reason(app::AppSessionPauseReason::User, false);
                 m_session_controller.request_stop();
                 break;
             default:

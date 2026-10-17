@@ -53,11 +53,6 @@ void Atrac9Module::on_state_change(const MemState &mem, ModuleData &data, const 
         logical->rate_resampler.reset();
         logical->superframe_staging.clear();
         std::memset(&logical->saved_state, 0, sizeof(logical->saved_state));
-    } else if (data.parent->is_keyed_off) {
-        state->current_byte_position_in_buffer = 0;
-        logical->current_loop_count = 0;
-        state->current_buffer = 0;
-        logical->rate_resampler.reset();
     }
 }
 
@@ -72,6 +67,8 @@ void Atrac9Module::on_param_change(const MemState &mem, ModuleData &data) {
 }
 
 bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const SceNgsAT9Params *params, SceNgsAT9States *state, Atrac9LogicalState *logical, Atrac9RuntimeState *runtime, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+    Voice *const voice = data.parent;
+    VoiceScheduler *const scheduler = &voice->rack->system->voice_scheduler;
     const SceNgsAT9BufferParams &bufparam = params->buffer_params[state->current_buffer];
 
     const bool config_changed = (params->config_data != logical->decoder_config);
@@ -109,7 +106,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
 
                 // we are done
                 scheduler_lock.lock();
-                voice_lock.lock();
+                scheduler->relock_voice_after_callback(voice, voice_lock);
                 return false;
             } else {
                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_SWAPPED_BUFFER, prev_index,
@@ -121,7 +118,8 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         }
 
         scheduler_lock.lock();
-        voice_lock.lock();
+        if (!scheduler->relock_voice_after_callback(voice, voice_lock))
+            return false;
 
         // re-call this function
         return true;
@@ -276,7 +274,8 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
             params->buffer_params[state->current_buffer].buffer.address());
 
         scheduler_lock.lock();
-        voice_lock.lock();
+        if (!scheduler->relock_voice_after_callback(voice, voice_lock))
+            return false;
 
         // flush or we'll get an error next time we want to decode
         runtime->decoder->flush();
@@ -310,7 +309,10 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
     bool is_finished = false;
     // call decode more data until we either have an error or reached end of data
     while (static_cast<int32_t>(logical->decoded_pcm.available_frames()) < data.parent->rack->system->granularity) {
-        if (!decode_more_data(kern, mem, thread_id, data, params, state, logical, runtime, scheduler_lock, voice_lock)) {
+        const bool decoded = decode_more_data(kern, mem, thread_id, data, params, state, logical, runtime, scheduler_lock, voice_lock);
+        if (!voice_lock.owns_lock())
+            return false;
+        if (!decoded) {
             is_finished = true;
             break;
         }

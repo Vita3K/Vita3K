@@ -275,6 +275,10 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         file_path = temp_file_path;
     }
 
+    if (file_path.empty()) {
+        LOG_ERROR("Cannot play media without a readable host path or file callbacks");
+        return -1;
+    }
     player_info->player.queue(file_path.string());
     run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); // may be important for sound
     run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_READY, 0, Ptr<void>(0));

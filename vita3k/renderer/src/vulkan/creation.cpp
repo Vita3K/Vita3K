@@ -24,6 +24,7 @@
 
 #include <gxm/types.h>
 
+#include <util/log.h>
 #include <vkutil/vkutil.h>
 
 #include <mutex>
@@ -153,6 +154,15 @@ VKContext::VKContext(VKState &state, MemState &mem)
 }
 
 VKContext::~VKContext() {
+    // Context-owned descriptor sets and buffers may still be referenced by submitted draws.
+    try {
+        std::lock_guard<std::mutex> lock(state.queue_mutex);
+        state.device.waitIdle();
+    } catch (const vk::DeviceLostError &) {
+        state.report_device_lost("context destruction");
+    } catch (const vk::SystemError &error) {
+        LOG_ERROR("Failed to wait for Vulkan device during context destruction: {}", error.what());
+    }
     for (auto pool : visibility_query_pools)
         state.device.destroy(pool);
     visibility_buffers.clear();
@@ -200,15 +210,18 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
         mask_framebuffer = device.createFramebuffer(mask_info);
     }
 
-    // transition images to their right state
-    vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
-    // color
-    color.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
-    // depth stencil
-    depthstencil.transition_to_discard(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
-    {
+    try {
+        // Presentation records from general_command_pool on another thread.
+        std::lock_guard<std::mutex> pool_lock(state.multithread_pool_mutex);
+        vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.multithread_command_pool);
+        color.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+        depthstencil.transition_to_discard(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
+
         std::lock_guard<std::mutex> lock(state.queue_mutex);
-        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+        vkutil::end_single_time_command(state.device, state.general_queue, state.multithread_command_pool, cmd_buffer);
+    } catch (const vk::DeviceLostError &) {
+        state.report_device_lost("render target initialization");
+        throw;
     }
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;

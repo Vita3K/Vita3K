@@ -37,11 +37,8 @@ struct SlotInfo {
 
 // A folder copied from a PS Vita without mounting it still has its PFS layout
 bool is_encrypted(const fs::path &save_path);
-// Only savedata that came from a PS Vita has the sealedkey needed to encrypt it again
-bool can_export(const fs::path &save_path);
 std::vector<SlotInfo> read_slots(const fs::path &save_path);
 
-bool import_encrypted(const fs::path &src, const fs::path &dst, const std::function<void(float)> &progress, std::string &error);
-bool export_encrypted(const fs::path &src, const fs::path &dst, const std::function<void(float)> &progress, std::string &error);
+bool copy_protected(const fs::path &src, const fs::path &dst, const std::function<void(float)> &progress, std::string &error);
 
 } // namespace savedata

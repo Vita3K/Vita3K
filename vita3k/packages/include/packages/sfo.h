@@ -26,8 +26,10 @@
 #pragma once
 
 #include <io/vfs.h>
+#include <pfsmgr/functions.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility> // pair
 #include <vector>
@@ -88,6 +90,8 @@ struct SfoAppInfo {
 bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
 bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key);
 bool load(SfoFile &sfile, const std::vector<uint8_t> &content);
+std::optional<pfsmgr::SavedataIdentity> read_savedata_identity(const std::filesystem::path &path, std::string &error);
+std::optional<pfsmgr::SavedataIdentity> read_savedata_identity(const std::vector<uint8_t> &bytes, std::string &error);
 
 /**
  * @brief Get the param info object

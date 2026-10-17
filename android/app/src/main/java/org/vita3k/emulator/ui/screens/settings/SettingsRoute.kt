@@ -3,6 +3,8 @@ package org.vita3k.emulator.ui.screens.settings
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -118,6 +120,11 @@ fun SettingsRoute(
     var showOverlayEditor by rememberSaveable(titleId) { mutableStateOf(false) }
     var pendingRestartSettings by remember { mutableStateOf<List<RestartRequiredSetting>?>(null) }
     var closeAfterRestartNotice by remember { mutableStateOf(false) }
+    var pendingIdentityUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var showResetIdentityDialog by rememberSaveable { mutableStateOf(false) }
+    val identityPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        pendingIdentityUri = uri?.toString()
+    }
 
     fun requestStorageFolderChange() {
         val activity = context as? MainActivity ?: return
@@ -202,6 +209,7 @@ fun SettingsRoute(
     }
 
     fun tryBack() {
+        if (viewModel.identityImportBusy) return
         if (hasPendingChanges) showDiscardDialog = true else onBack()
     }
 
@@ -345,6 +353,8 @@ fun SettingsRoute(
                     categories = categories,
                     onChangeStorageFolder = ::requestStorageFolderChange,
                     onResetStorageFolder = { viewModel.resetStorageFolder(onStorageChanged) },
+                    onImportIdentity = { identityPicker.launch(arrayOf("*/*")) },
+                    onResetIdentity = { showResetIdentityDialog = true },
                     onInstallCustomDriver = ::requestCustomDriverInstall,
                     onDownloadCustomDriver = { openUrl(CUSTOM_DRIVER_DOWNLOAD_URL) },
                     onPickCameraImage = ::pickCameraImage,
@@ -374,6 +384,44 @@ fun SettingsRoute(
                 }
             )
         }
+    }
+
+    pendingIdentityUri?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingIdentityUri = null },
+            title = { Text(stringResource(R.string.settings_identity_title)) },
+            text = { Text(stringResource(R.string.settings_identity_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingIdentityUri = null
+                    viewModel.importSavedataIdentity(Uri.parse(uri))
+                }) { Text(stringResource(R.string.settings_identity_import)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingIdentityUri = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
+    if (showResetIdentityDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetIdentityDialog = false },
+            title = { Text(stringResource(R.string.settings_identity_reset)) },
+            text = { Text(stringResource(R.string.settings_identity_reset_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResetIdentityDialog = false
+                    viewModel.resetSavedataIdentity()
+                }) { Text(stringResource(R.string.settings_identity_reset)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetIdentityDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 
     if (showDiscardDialog) {
@@ -602,6 +650,8 @@ private fun SettingsContentPane(
     categories: List<SettingsCategory>,
     onChangeStorageFolder: () -> Unit,
     onResetStorageFolder: () -> Unit,
+    onImportIdentity: () -> Unit,
+    onResetIdentity: () -> Unit,
     onInstallCustomDriver: () -> Unit,
     onDownloadCustomDriver: () -> Unit,
     onPickCameraImage: (Boolean) -> Unit,
@@ -656,6 +706,9 @@ private fun SettingsContentPane(
                 defaultStoragePath = viewModel.defaultStoragePath,
                 onChangeStorageFolder = onChangeStorageFolder,
                 onResetStorageFolder = onResetStorageFolder,
+                onImportIdentity = onImportIdentity,
+                onResetIdentity = onResetIdentity,
+                identityImportBusy = viewModel.identityImportBusy,
                 installedCustomDrivers = viewModel.installedCustomDrivers,
                 customDriverBusy = viewModel.customDriverBusy,
                 onInstallCustomDriver = onInstallCustomDriver,

@@ -52,6 +52,14 @@ struct SpirvShaderParameters {
     // for fragment: fragment inputs (linkage from vertex stage)
     SpirvVarRegBank ins;
 
+    // Bytes populated by fragment input setup, indexed by 32-bit PA word.
+    std::map<std::uint32_t, std::uint8_t> initialized_pa_bytes;
+
+    void mark_initialized_pa(std::uint32_t offset, std::uint32_t byte_count) {
+        for (std::uint32_t byte = 0; byte < byte_count; ++byte)
+            initialized_pa_bytes[offset + byte / 4] |= static_cast<std::uint8_t>(1U << (byte % 4));
+    }
+
     // Mapped to 'sa' (secondary attribute) USSE registers
     SpirvVarRegBank uniforms;
 
@@ -104,6 +112,7 @@ struct SpirvShaderParameters {
     spv::Id thread_buffer;
 
     spv::Id render_info_id;
+    spv::Id frag_coord_id = 0;
 
     // When using shader interlock, specialization constant telling us if the texture is gamma corrected
     spv::Id is_srgb_constant;

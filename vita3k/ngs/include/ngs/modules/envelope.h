@@ -23,6 +23,10 @@
 
 #define SCE_NGS_ENVELOPE_MAX_POINTS 4
 
+constexpr SceInt32 SCE_NGS_ENVELOPE_NO_LOOP = -1;
+constexpr SceInt32 SCE_NGS_ENVELOPE_NO_LOOP_TERMINATE = -2;
+constexpr SceInt32 SCE_NGS_ENVELOPE_NO_LOOP_RELEASE = -3;
+
 enum SceNgsEnvelopeCurveType : uint32_t {
     SCE_NGS_ENVELOPE_LINEAR,
     SCE_NGS_ENVELOPE_CURVED
@@ -53,10 +57,22 @@ struct SceNgsEnvelopeStates {
 
 namespace ngs {
 
+struct EnvelopeLogicalState : ModuleLogicalState {
+    uint32_t point = 0;
+    uint64_t position_units = 0;
+    uint64_t release_units = 0;
+    float release_height = 1.0f;
+    bool releasing = false;
+    bool stopped_without_callback = false;
+};
+
 struct EnvelopeModule : public Module {
 public:
     bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
+    void on_state_change(const MemState &mem, ModuleData &data, VoiceState previous) override;
+    bool finished_triggers_callback(const ModuleData &data) const override;
     uint32_t module_id() const override { return 0x5CE3; }
+    uint32_t get_guest_state_size() const override { return sizeof(SceNgsEnvelopeStates); }
 
     static constexpr uint32_t get_max_parameter_size() {
         return sizeof(SceNgsEnvelopeParams);

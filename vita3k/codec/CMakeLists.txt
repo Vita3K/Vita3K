@@ -7,6 +7,7 @@ add_library(
     src/decoder.cpp
     src/aac.cpp
     src/h264.cpp
+    src/m4v.cpp
     src/mjpeg.cpp
     src/mp3.cpp
     src/pcm.cpp

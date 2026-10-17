@@ -18,9 +18,14 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
+#include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
+#include <span>
 #include <string>
+#include <vector>
 
 struct AVFrame;
 struct AVPacket;
@@ -35,6 +40,7 @@ union DecoderSize {
         uint32_t width;
         uint32_t height;
     };
+
     struct {
         uint32_t samples;
     };
@@ -83,6 +89,116 @@ struct DecoderState {
     virtual ~DecoderState();
 };
 
+std::optional<uint32_t> avc_library_memory_size(uint32_t width, uint32_t height, uint32_t references, uint32_t streams);
+std::optional<uint32_t> m4v_library_memory_size(uint32_t width, uint32_t height, uint32_t references, uint32_t streams);
+std::optional<uint32_t> m4v_input_buffer_capacity(uint32_t width, uint32_t height);
+
+std::optional<std::vector<uint8_t>> h264_nal_to_annexb(std::span<const uint8_t> payload,
+    std::span<const uint8_t> extra0, std::span<const uint8_t> extra1, uint32_t length_size);
+
+struct H264DecodedFrame {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint64_t pts = ~0ull;
+    bool interlaced = false;
+    std::vector<uint8_t> yuv420;
+};
+
+bool h264_frame_to_yuv420(const AVFrame &frame, H264DecodedFrame &output);
+
+enum class H264OutputFormat {
+    yuv420p,
+    nv12,
+    rgba,
+    bgra,
+};
+
+struct VideoCscSurface {
+    std::span<uint8_t> data;
+    uint32_t width;
+    uint32_t height;
+    uint32_t pitch;
+    H264OutputFormat format;
+};
+
+bool video_convert_surface(const VideoCscSurface &source, const VideoCscSurface &destination,
+    uint32_t coefficient, uint8_t alpha);
+
+bool h264_render_frame(const H264DecodedFrame &frame, std::span<uint8_t> destination,
+    uint32_t pitch, uint32_t surface_height, uint32_t width, uint32_t height,
+    H264OutputFormat format, uint8_t alpha);
+
+enum class H264AsyncResult {
+    success,
+    full,
+    invalid_input,
+    decode_error,
+};
+
+enum class M4vColorRange { unknown,
+    limited,
+    full };
+
+class M4vDecodePipeline {
+public:
+    bool submit() {
+        const bool previous_in_flight = in_flight;
+        in_flight = true;
+        return previous_in_flight;
+    }
+    void finish() { in_flight = false; }
+
+private:
+    bool in_flight = false;
+};
+
+struct M4vFrameMetadata {
+    // Zero numerator/denominator means unknown. The colour IDs are FFmpeg/ISO
+    // values, with -1 for unspecified; they are not firmware enum values.
+    int sar_num = 0;
+    int sar_den = 0;
+    int color_primaries = -1;
+    int color_transfer = -1;
+    int color_matrix = -1;
+    // Source range; h264_frame_to_yuv420 converts full-range pixels to limited range.
+    M4vColorRange color_range = M4vColorRange::unknown;
+    uint64_t output_pts = ~0ull;
+};
+
+// Calls must be serialized by the owner. A full result never consumes the input;
+// retry it after taking frames. A decode_error may follow packet consumption:
+// flush before reuse. A successful drain reaches EOF; flush starts a new stream.
+// Packets must include MPEG-4 configuration/VOL data when required by the stream.
+// PTS/DTS use ~0ull for unknown and otherwise carry signed FFmpeg timestamps bitwise.
+class M4vDecoderState {
+public:
+    static constexpr size_t max_queued_frames = 16;
+    static std::unique_ptr<M4vDecoderState> create(uint32_t width, uint32_t height);
+    ~M4vDecoderState();
+    M4vDecoderState(const M4vDecoderState &) = delete;
+    M4vDecoderState &operator=(const M4vDecoderState &) = delete;
+
+    H264AsyncResult send_packet(std::span<const uint8_t> data, uint64_t pts, uint64_t dts);
+    H264AsyncResult input_status();
+    H264AsyncResult drain();
+    bool take_frame(H264DecodedFrame &frame, M4vFrameMetadata *metadata = nullptr);
+    void flush();
+
+private:
+    explicit M4vDecoderState(AVCodecContext *context);
+    H264AsyncResult collect_frames();
+    AVCodecContext *context;
+    struct QueuedFrame {
+        H264DecodedFrame frame;
+        M4vFrameMetadata metadata;
+    };
+    std::deque<QueuedFrame> frames;
+    bool drain_requested = false;
+    bool draining = false;
+    bool drained = false;
+    bool failed = false;
+};
+
 struct H264DecoderOptions {
     uint32_t pts_upper;
     uint32_t pts_lower;
@@ -107,6 +223,8 @@ struct H264DecoderState : public DecoderState {
     bool output_yuvp3;
 
     bool is_stopped = true;
+    bool nal_drained = false;
+    std::deque<H264DecodedFrame> decoded_frames;
 
     static uint32_t buffer_size(DecoderSize size);
 
@@ -119,6 +237,13 @@ struct H264DecoderState : public DecoderState {
     void get_res(uint32_t &width, uint32_t &height);
     void get_pts(uint32_t &upper, uint32_t &lower);
     void set_output_format(bool is_yuv_p3);
+
+    H264AsyncResult send_nal(std::span<const uint8_t> payload, std::span<const uint8_t> extra0,
+        std::span<const uint8_t> extra1, uint32_t length_size, uint64_t pts, uint64_t dts, size_t &produced);
+    H264AsyncResult drain_nal(size_t &produced);
+    bool take_frame(H264DecodedFrame &frame);
+    void clear_frames();
+    H264AsyncResult collect_frames(size_t &produced);
 
     H264DecoderState(uint32_t width, uint32_t height);
     ~H264DecoderState() override;

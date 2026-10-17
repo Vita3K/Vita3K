@@ -42,7 +42,8 @@ inline FilePtr create_file(const fs::path &path, const int open_mode) {
 using DirPtr = std::shared_ptr<_WDIR>;
 
 inline DirPtr create_shared_dir(const fs::path &path) {
-    return DirPtr(_wopendir(path.generic_wstring().c_str()), _wclosedir);
+    auto *dir = _wopendir(path.generic_wstring().c_str());
+    return dir ? DirPtr(dir, _wclosedir) : DirPtr{};
 }
 
 inline std::string get_file_in_dir(const _wdirent *file) {
@@ -63,7 +64,8 @@ inline FilePtr create_file(const fs::path &path, const int open_mode) {
 using DirPtr = std::shared_ptr<DIR>;
 
 inline DirPtr create_shared_dir(const fs::path &path) {
-    return DirPtr(opendir(path.generic_string().c_str()), closedir);
+    auto *dir = opendir(path.generic_string().c_str());
+    return dir ? DirPtr(dir, closedir) : DirPtr{};
 }
 
 inline std::string get_file_in_dir(dirent *file) {

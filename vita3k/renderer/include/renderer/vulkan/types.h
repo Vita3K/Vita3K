@@ -27,7 +27,9 @@ struct MemState;
 namespace renderer::vulkan {
 
 struct VKState;
+struct VKContext;
 struct VKRenderTarget;
+struct ColorSurfaceCacheInfo;
 
 constexpr int MAX_FRAMES_RENDERING = 3;
 constexpr int NB_TEXTURE_STAGING_BUFFERS = 16;
@@ -48,6 +50,10 @@ struct TextureStagingBuffer {
 
 struct TextureCacheEntry {
     vkutil::Image texture;
+    vkutil::Image cube_texture;
+    vk::ImageView flat_view;
+    vk::ComponentMapping swizzle;
+    bool cube_valid = false;
     bool is_cube;
     uint16_t mip_count;
     uint32_t memory_needed;
@@ -63,6 +69,7 @@ struct VKTextureCache : public TextureCache {
 
     std::array<TextureCacheEntry, TextureCacheSize> textures;
     std::vector<vk::Sampler> samplers;
+    std::map<vk::Format, bool> linear_filter_support;
 
     TextureCacheEntry *current_texture = nullptr;
     const SceGxmTexture *gxm_texture = nullptr;
@@ -80,6 +87,8 @@ struct VKTextureCache : public TextureCache {
     void upload_done() override;
 
     void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) override;
+    bool format_supports_linear_filter(vk::Format format);
+    vk::ImageView retrieve_texture_view(VKContext &context, vk::ImageView view, bool is_cube);
 
     void import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) override;
 
@@ -112,6 +121,7 @@ struct FrameObject {
 
     // descriptor for the color surface
     FrameDescriptor color_descriptor;
+    FrameDescriptor typeless_descriptor;
 
     // destroy gpu objects MAX_FRAMES_RENDERING frames later to make sure they are no longer being used
     vkutil::DestroyQueue destroy_queue;
@@ -219,6 +229,9 @@ struct CallbackRequest {
 struct BufferSyncRequest {
     Address location;
     uint32_t size;
+    uint32_t row_stride = 0;
+    uint32_t row_bytes = 0;
+    uint32_t row_count = 0;
 };
 
 // A parallel thread is handling these request and telling other waiting threads
@@ -253,6 +266,10 @@ struct VKContext : public renderer::Context {
 
     vk::DescriptorImageInfo vertex_textures[SCE_GXM_MAX_TEXTURE_UNITS] = {};
     vk::DescriptorImageInfo fragment_textures[SCE_GXM_MAX_TEXTURE_UNITS] = {};
+    SceGxmTexture bound_textures[SCE_GXM_MAX_TEXTURE_UNITS * 2] = {};
+    vk::ImageView compatible_texture_views[SCE_GXM_MAX_TEXTURE_UNITS * 2] = {};
+    TextureInfo vertex_cube_textures;
+    TextureInfo fragment_cube_textures;
 
     bool vertex_uniform_storage_allocated = false;
     bool fragment_uniform_storage_allocated = false;
@@ -297,6 +314,8 @@ struct VKContext : public renderer::Context {
     vk::DescriptorSet last_vert_texture_descriptor;
     uint16_t last_frag_texture_count = ~0;
     vk::DescriptorSet last_frag_texture_descriptor;
+    TextureInfo last_vert_cube_textures;
+    TextureInfo last_frag_cube_textures;
 
     VKRenderTarget *render_target = nullptr;
     vk::Viewport viewport;
@@ -307,22 +326,33 @@ struct VKContext : public renderer::Context {
     vk::RenderPass initial_render_pass;
     vk::RenderPass current_shader_interlock_pass = nullptr;
     vk::Pipeline current_pipeline;
+    // Opaque address of a stable pipeline-cache entry; diagnostics never dereference it.
+    const void *current_pipeline_checkpoint = nullptr;
 
     vk::Framebuffer current_framebuffer;
     vk::Framebuffer current_shader_interlock_framebuffer = nullptr;
+    vk::Extent2D current_framebuffer_extent;
     // we need the format or image for some cases
     vkutil::Image *current_color_base_image;
     vk::Format current_color_format;
     vk::ImageView current_color_view;
+    vk::ImageView current_color_storage_view;
+    ColorSurfaceCacheInfo *current_color_surface = nullptr;
     vk::ImageView current_ds_view;
 
     bool is_recording = false;
     bool in_renderpass = false;
+    bool has_recorded_render_pass = false;
     bool in_maskupdate_pass = false;
     bool refresh_pipeline = false;
     bool is_first_scene_draw = false;
+    bool initial_depth_load = false;
+    bool scene_wrote_depth = false;
+    bool scene_has_drawn = false;
+    bool scene_macroblock_flushed = false;
     vk::ImageAspectFlags initial_depth_stencil_clear;
     uint16_t initialized_macroblocks = 0;
+    std::optional<vk::Rect2D> rendered_area;
     // command buffer used to record the current scene
     vk::CommandBuffer render_cmd{};
     // command buffer used for commands that need to be executed before render_cmd (mostly because they can't be done during a render pass)

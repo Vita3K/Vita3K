@@ -27,6 +27,24 @@
 #endif
 
 #include <io/state.h>
+#include <pfsmgr/functions.h>
+#include <util/log.h>
+
+#include <algorithm>
+#include <cstring>
+#include <limits>
+#include <stdexcept>
+
+FileStats::FileStats(const char *vita, const fs::path &file, int open, std::shared_ptr<pfsmgr::File> pfs)
+    : pfs_file(std::move(pfs))
+    , pfs_offset(std::make_shared<SceOff>(0)) {
+    file_info.vita_loc = vita;
+    file_info.translated = vita;
+    file_info.sys_loc = file;
+    file_info.open_mode = open;
+    file_info.file_mode = SCE_SO_IFREG | SCE_SO_IROTH;
+    file_info.access_mode = SCE_S_IFREG;
+}
 
 static const uint32_t page_size = []() -> uint32_t {
 #ifdef _WIN32
@@ -39,7 +57,8 @@ static const uint32_t page_size = []() -> uint32_t {
 }();
 
 SceOff FileStats::read(void *input_data, const int element_size, const SceSize element_count) const {
-    if (!wrapped_file)
+    const auto lock = lock_operations();
+    if (!is_open())
         return -1;
 
     if (element_size == 0 || element_count == 0)
@@ -54,10 +73,44 @@ SceOff FileStats::read(void *input_data, const int element_size, const SceSize e
         input_addr[i] = 0;
     input_addr[element_size * element_count - 1] = 0;
 
-    return fread(input_data, element_size, element_count, wrapped_file.get());
+    const auto bytes = read_unlocked(input_data, static_cast<size_t>(element_size) * element_count);
+    return bytes < 0 ? bytes : bytes / element_size;
+}
+
+SceOff FileStats::read_unlocked(void *input_data, size_t length) const {
+    if (!pfs_file)
+        return static_cast<SceOff>(fread(input_data, 1, length, wrapped_file.get()));
+    try {
+        if (savedata_access) {
+            const auto session = savedata_access->load_session();
+            if (session) {
+                const auto data = session->read(savedata_relative);
+                if (!data || savedata_access->needs_recovery.load())
+                    throw std::runtime_error("savedata file is unavailable or requires recovery");
+                const auto position = static_cast<uint64_t>(*pfs_offset);
+                if (position >= data->size())
+                    return 0;
+                const auto count = std::min(length, data->size() - static_cast<size_t>(position));
+                std::memcpy(input_data, data->data() + static_cast<size_t>(position), count);
+                *pfs_offset += static_cast<SceOff>(count);
+                return static_cast<SceOff>(count);
+            }
+        }
+        const auto count = pfs_file->read(static_cast<uint64_t>(*pfs_offset), input_data, length);
+        *pfs_offset += static_cast<SceOff>(count);
+        return static_cast<SceOff>(count);
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Cannot read PFS file '{}': {}", file_info.vita_loc, error.what());
+        return -1;
+    }
+}
+
+bool FileStats::has_read_error_unlocked() const {
+    return wrapped_file && std::ferror(wrapped_file.get());
 }
 
 SceOff FileStats::write(const void *data, const SceSize size, const int count) const {
+    const auto lock = lock_operations();
     if (!can_write_file())
         return -1;
 
@@ -65,6 +118,7 @@ SceOff FileStats::write(const void *data, const SceSize size, const int count) c
 }
 
 int FileStats::truncate(const SceSize size) const {
+    const auto lock = lock_operations();
 #ifdef _WIN32
     return _chsize_s(_fileno(get_file_pointer()), size);
 #else
@@ -73,8 +127,36 @@ int FileStats::truncate(const SceSize size) const {
 }
 
 bool FileStats::seek(const SceOff offset, const SceIoSeekMode seek_mode) const {
-    if (!wrapped_file)
+    const auto lock = lock_operations();
+    if (!is_open())
         return false;
+
+    if (pfs_file) {
+        SceOff base = 0;
+        if (seek_mode == SCE_SEEK_CUR)
+            base = *pfs_offset;
+        else if (seek_mode == SCE_SEEK_END) {
+            try {
+                const auto session = savedata_access ? savedata_access->load_session() : nullptr;
+                if (session) {
+                    const auto data = session->read(savedata_relative);
+                    if (!data || savedata_access->needs_recovery.load())
+                        throw std::runtime_error("savedata file is unavailable or requires recovery");
+                    base = static_cast<SceOff>(data->size());
+                } else {
+                    base = static_cast<SceOff>(pfs_file->size());
+                }
+            } catch (const std::runtime_error &error) {
+                LOG_ERROR("Cannot seek PFS file '{}': {}", file_info.vita_loc, error.what());
+                return false;
+            }
+        } else if (seek_mode != SCE_SEEK_SET)
+            return false;
+        if ((offset < 0 && offset < -base) || (offset > 0 && base > std::numeric_limits<SceOff>::max() - offset))
+            return false;
+        *pfs_offset = base + offset;
+        return true;
+    }
 
     auto base = SEEK_SET;
     switch (seek_mode) {
@@ -99,6 +181,9 @@ bool FileStats::seek(const SceOff offset, const SceIoSeekMode seek_mode) const {
 }
 
 SceOff FileStats::tell() const {
+    const auto lock = lock_operations();
+    if (pfs_file)
+        return *pfs_offset;
     if (!wrapped_file)
         return -1;
 

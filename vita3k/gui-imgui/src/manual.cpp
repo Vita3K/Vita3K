@@ -25,6 +25,7 @@
 #include <io/vfs.h>
 
 #include <util/log.h>
+#include <vfs/mounts.h>
 
 #include <stb_image.h>
 
@@ -35,7 +36,6 @@ void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         emuenv.app_path = app_path;
         gui.vita_area.information_bar = false;
         gui.vita_area.home_screen = false;
-        gui.vita_area.live_area_screen = false;
         gui.vita_area.manual = true;
     } else
         LOG_ERROR("Error opening Manual");
@@ -89,7 +89,6 @@ static std::vector<ImVec2> manual_pages_size{};
 
 bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // Reset manual variables
-    constexpr uint32_t MAX_MANUAL_PAGES = 999;
     current_page = 0;
     scroll = 0.f;
     max_scroll.clear();
@@ -100,42 +99,29 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     const auto APP_INDEX = get_app_index(gui, emuenv, app_path);
     if (!APP_INDEX)
         return false;
-    const auto APP_PATH{ emuenv.vita_fs_path / "ux0/app" / app_path };
-    auto manual_path{ fs::path("sce_sys/manual") };
-
-    const auto lang = fmt::format("{:0>2d}", emuenv.cfg.sys_lang);
-    if (fs::exists(APP_PATH / manual_path / lang))
-        manual_path /= lang;
-
     // Load manual images
-    for (uint32_t i = 0; i < MAX_MANUAL_PAGES; i++) {
-        // Get manual page path
-        const auto page_path = manual_path / fmt::format("{:0>3d}.png", i + 1);
-
-        // Read manual image from file buffer and check if it exists
-        vfs::FileBuffer buffer;
-        if (!vfs::read_app_file(buffer, emuenv.vita_fs_path, app_path, page_path))
-            break;
-
-        // Load image data from memory buffer and check if it's valid
-        int32_t width, height;
-        stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-        if (!data) {
-            LOG_ERROR("Invalid manual image for title: {} [{}] in path: {}.", app_path, APP_INDEX->title, page_path);
-            return false;
-        }
-
-        // Add manual image to vector
-        gui.manuals.emplace_back(gui.imgui_state.get(), data, width, height);
-
-        // Store manual page size
-        manual_pages_size.emplace_back(static_cast<float>(width), static_cast<float>(height));
-
-        // Free image data
-        stbi_image_free(data);
+    const bool loaded = pfsmgr::read_manual_pages(emuenv.io, emuenv.vita_fs_path, app_asset_path(app_path), APP_INDEX->title_id,
+        emuenv.cfg.sys_lang, [&](const std::vector<uint8_t> &buffer, unsigned int page) {
+            // Load image data from memory buffer and check if it's valid
+            int32_t width, height;
+            stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+            if (!data) {
+                LOG_ERROR("Invalid manual image for title: {} [{}], page {}.", app_path, APP_INDEX->title, page);
+                return false;
+            }
+            // Add manual image to vector
+            gui.manuals.emplace_back(gui.imgui_state.get(), data, width, height);
+            // Store manual page size
+            manual_pages_size.emplace_back(static_cast<float>(width), static_cast<float>(height));
+            // Free image data
+            stbi_image_free(data);
+            return true;
+        });
+    if (!loaded) {
+        gui.manuals.clear();
+        manual_pages_size.clear();
     }
-
-    return !gui.manuals.empty();
+    return loaded && !gui.manuals.empty();
 }
 
 void draw_manual(GuiState &gui, EmuEnvState &emuenv) {

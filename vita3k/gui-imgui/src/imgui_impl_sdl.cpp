@@ -175,9 +175,9 @@ static ImGuiKey ImGui_ImplSDL3_PhysicalKeyToImGuiKey(input::PhysicalKeyCode phys
     return ImGui_ImplSDL3_KeycodeToImGuiKey(keycode);
 }
 
-bool ImGui_ImplSdl_IsPhysicalKeyPressed(input::PhysicalKeyCode key) {
+bool ImGui_ImplSdl_IsPhysicalKeyPressed(input::PhysicalKeyCode key, bool repeat) {
     const ImGuiKey imgui_key = ImGui_ImplSDL3_PhysicalKeyToImGuiKey(key);
-    return imgui_key != ImGuiKey_None && ImGui::IsKeyPressed(imgui_key);
+    return imgui_key != ImGuiKey_None && ImGui::IsKeyPressed(imgui_key, repeat);
 }
 
 bool ImGui_ImplSdl_IsPhysicalKeyReleased(input::PhysicalKeyCode key) {

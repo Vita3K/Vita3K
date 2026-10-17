@@ -34,7 +34,8 @@ System::System(const Ptr<void> memspace, const uint32_t memspace_size)
     : MempoolObject(memspace, memspace_size)
     , max_voices(0)
     , granularity(0)
-    , sample_rate(0) {}
+    , sample_rate(0)
+    , flags(default_system_flags) {}
 
 bool Patch::is_active() const {
     return output_sub_index != -1;
@@ -463,6 +464,30 @@ void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
     if (!rack)
         return;
 
+    auto &scheduler = system->voice_scheduler;
+    if (scheduler.is_updating) {
+        for (const auto &voice : rack->voices)
+            scheduler.released_voices_during_update.insert(voice.get(mem));
+    }
+
+    for (Rack *other : system->racks) {
+        if (!other || other == rack)
+            continue;
+        for (const auto &voice : other->voices) {
+            Voice *source = voice.get(mem);
+            const std::lock_guard lock(*source->voice_mutex);
+            for (const auto &patches : source->patches) {
+                for (const auto &patch_ptr : patches) {
+                    Patch *patch = patch_ptr.get(mem);
+                    if (patch && std::ranges::contains(rack->voices, patch->dest)) {
+                        patch->output_sub_index = -1;
+                        patch->dest = nullptr;
+                    }
+                }
+            }
+        }
+    }
+
     // remove all queued voices
     for (const auto &voice : rack->voices) {
         Voice *v = voice.get(mem);
@@ -475,6 +500,10 @@ void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
         // no need to free the voice from the rack
         v->~Voice();
     }
+
+    // A module callback can release its own rack before process() has returned.
+    if (scheduler.processing_rack == rack)
+        scheduler.processing_module_keepalive = std::move(rack->modules[scheduler.processing_module_index]);
 
     // remove from system
     vector_utils::erase_first(system->racks, rack);

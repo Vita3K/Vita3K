@@ -40,6 +40,9 @@ namespace ngs {
 // random number of bytes to make sure nothing bad happens
 constexpr uint32_t default_passthrough_parameter_size = 140;
 constexpr uint32_t default_normal_parameter_size = 100;
+constexpr uint32_t system_flag_no_module_param_checking = 0;
+constexpr uint32_t system_flag_module_param_checking = 1u << 0;
+constexpr uint32_t default_system_flags = system_flag_module_param_checking;
 
 struct State;
 struct Voice;
@@ -228,6 +231,7 @@ public:
 
     virtual void set_default_preset(const MemState &mem, ModuleData &data) {}
     virtual bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) = 0;
+    virtual bool finished_triggers_callback(const ModuleData &data) const { return true; }
     virtual uint32_t module_id() const { return 0; }
     virtual uint32_t get_buffer_parameter_size() const = 0;
     virtual uint32_t get_guest_state_size() const { return 0; }
@@ -338,6 +342,7 @@ struct System : public MempoolObject {
     int32_t max_voices;
     int32_t granularity;
     int32_t sample_rate;
+    uint32_t flags;
 
     VoiceScheduler voice_scheduler;
 

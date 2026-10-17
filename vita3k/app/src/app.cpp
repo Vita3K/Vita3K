@@ -18,6 +18,7 @@
 #include <app/functions.h>
 
 #include <audio/state.h>
+#include <bgm_player/functions.h>
 #include <camera/camera.h>
 #include <config/functions.h>
 #include <config/state.h>
@@ -27,12 +28,14 @@
 #include <kernel/state.h>
 #include <packages/license.h>
 #include <packages/sfo.h>
+#include <regmgr/functions.h>
 #include <renderer/functions.h>
 #include <renderer/shaders.h>
 #include <renderer/state.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/net_utils.h>
+#include <vfs/mounts.h>
 
 #include <SDL3/SDL_camera.h>
 #include <SDL3/SDL_gamepad.h>
@@ -213,13 +216,24 @@ bool switch_emulator_path(EmuEnvState &emuenv, const fs::path &vita_fs_path) {
     if (vita_fs_path.empty())
         return false;
 
+    if (emuenv.vita_fs_path != vita_fs_path)
+        regmgr::reset_regmgr(emuenv.regmgr);
     emuenv.vita_fs_path = vita_fs_path;
     emuenv.cfg.set_vita_fs_path(emuenv.vita_fs_path);
 
+    bgm_player::clear_current_bgm();
     ::io_deinit(emuenv.io);
+    pfsmgr::clear_application_mounts(emuenv.io);
+    pfsmgr::clear_shell_mounts(emuenv.io);
     if (!::init(emuenv.io, emuenv.cache_path, emuenv.log_path, emuenv.vita_fs_path, emuenv.cfg.console)) {
         LOG_ERROR("Failed to initialize file system for switched emulator path '{}'.", emuenv.vita_fs_path);
         return false;
+    }
+    regmgr::init_regmgr(emuenv.regmgr, emuenv.vita_fs_path);
+    try {
+        recover_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path);
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Cannot recover savedata identity for switched emulator path: {}", error.what());
     }
 
     load_users(emuenv);
@@ -258,8 +272,8 @@ bool setup_game_launch(EmuEnvState &emuenv, const std::string &app_path, const b
 
     get_license(emuenv, emuenv.io.title_id, emuenv.io.content_id);
     if (update_last_time_used)
-        update_last_time_app_used(emuenv, app_path);
-    set_current_config(emuenv, app_path);
+        update_last_time_app_used(emuenv, emuenv.io.app_path);
+    set_current_config(emuenv, emuenv.io.app_path);
     reset_perf_metrics(emuenv);
     return true;
 }
@@ -276,7 +290,7 @@ void prepare_game_launch_overlay(EmuEnvState &emuenv) {
     renderer.precompile_requested = false;
     renderer.precompile_complete.store(false, std::memory_order_relaxed);
 
-    const auto bg_path = emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / "sce_sys/pic0.png";
+    const auto bg_path = vfs::resolve_app_path(emuenv.vita_fs_path, emuenv.io.app_path, "sce_sys/pic0.png", emuenv.io.title_id);
     if (fs::exists(bg_path))
         renderer.precompile_bg_path = fs_utils::path_to_utf8(bg_path);
 

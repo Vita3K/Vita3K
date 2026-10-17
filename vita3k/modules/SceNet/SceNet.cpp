@@ -18,6 +18,7 @@
 #include "SceNet.h"
 
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 
 #include <net/state.h>
 
@@ -143,7 +144,10 @@ EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) 
         RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
 
     int err = 0;
-    auto newsock = sock->accept(addr, addrlen, err);
+    auto newsock = [&] {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+        return sock->accept(addr, addrlen, err);
+    }();
     if (!newsock)
         RET_NET_ERRNO(err);
 
@@ -168,7 +172,10 @@ EXPORT(int, sceNetConnect, int sid, const SceNetSockaddr *addr, unsigned int add
     TRACY_FUNC(sceNetConnect, sid, addr, addrlen);
     auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
 
-    RET_NET_ERRNO(sock ? sock->connect(addr, addrlen) : SCE_NET_ERROR_EBADF);
+    if (!sock)
+        RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
+    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+    RET_NET_ERRNO(sock->connect(addr, addrlen));
 }
 
 EXPORT(int, sceNetDumpAbort) {

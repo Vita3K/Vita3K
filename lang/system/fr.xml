@@ -58,6 +58,7 @@
 		</custom_config>
 		<path>
 			<open_folder>Ouvrir le dossier</open_folder>
+			<patch>Correctif</patch>
 			<addcont>DLCs</addcont>
 			<license>License</license>
 			<shaders_cache>Cache des shaders</shaders_cache>
@@ -69,6 +70,8 @@
 		</live_area>
 		<delete>
 			<delete_app>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</delete_app>
+			<delete_patch>Supprimer ce correctif ?</delete_patch>
+			<delete_update>Supprimer cette mise à jour ?</delete_update>
 		</delete>
 		<update_history>Historique de mise à jour</update_history>
 		<history_version>Version {}</history_version>
@@ -216,7 +219,93 @@ Merci de patienter.</connecting_please_wait>
 		<silver>Argent</silver>
 		<hours_ago>Il y a {} heures</hours_ago>
 		<minutes_ago>Il y a {} minutes</minutes_ago>
+		<activities>Activités</activities>
+		<like>J'aime</like>
+		<likes_this>{} aime ça.</likes_this>
+		<and_like_this>{} et {} aiment ça.</and_like_this>
+		<people_like_this>{} personnes aiment ça.</people_like_this>
+		<comments>Commentaires {}</comments>
+		<delete_activity>Cette activité va être supprimée.</delete_activity>
+		<delete_comment>Ce commentaire va être supprimé.</delete_comment>
+		<unlike>Je n'aime plus</unlike>
+		<write_comment>Écrire un commentaire</write_comment>
+		<has_earned_platinum_trophy>a obtenu un trophée platine dans "{}" !</has_earned_platinum_trophy>
+		<has_earned_trophy>a obtenu un trophée dans "{}" !</has_earned_trophy>
+		<first_time_playing>joue à "{}" pour la première fois.</first_time_playing>
+		<download_failed>Le téléchargement a échoué.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>Activités de {}</activities_of>
+		<anyone>Tout le monde</anyone>
+		<no_one>Personne</no_one>
+		<cannot_display>Impossible d'afficher plus de pages.</cannot_display>
+		<friends_of_friends>Amis d'amis</friends_of_friends>
+		<friends_only>Amis uniquement</friends_only>
+		<share_range>Niveau de partage :</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Accepter</accept>
+		<players_blocked>Joueurs bloqués</players_blocked>
+		<friend_request_already_canceled>Cette demande d'ami a déjà été annulée.</friend_request_already_canceled>
+		<search_for_player>Rechercher un joueur Vita3K Network et afficher son profil, ou envoyer une demande d'ami.</search_for_player>
+		<friend_requests>Demandes d'ami</friend_requests>
+		<friends>Amis</friends>
+		<could_not_find_online_id>L'ID en ligne est introuvable.</could_not_find_online_id>
+		<there_are_no_players>Aucun joueur.</there_are_no_players>
+		<no_players_found>Aucun joueur trouvé.</no_players_found>
+		<online_id>ID en ligne</online_id>
+		<enter_from_3_to_16_characters>Saisissez entre 3 et 16 caractères.</enter_from_3_to_16_characters>
+		<online_status>État en ligne</online_status>
+		<received>Reçues</received>
+		<search>Recherche</search>
+		<sent>Envoyées</sent>
+		<waiting_for_friend_response>En attente d'une réponse d'un ami.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Mon profil</about_me>
+		<accept>Accepter</accept>
+		<activity>Activité</activity>
+		<warn_block_player>Si vous bloquez ce joueur, vous ne pourrez plus recevoir de messages de sa part.
+Continuer ?</warn_block_player>
+		<warn_block_friend>Si vous bloquez ce joueur, il sera supprimé de votre liste d'amis. Vous ne pourrez plus recevoir de message de sa part.
+Continuer ?</warn_block_friend>
+		<block>Bloquer</block>
+		<blocked>Bloqué.</blocked>
+		<cancel_friend_request>Annuler la demande d'ami</cancel_friend_request>
+		<friend_request_canceled>La demande d'ami va être annulée.</friend_request_canceled>
+		<delete_request>Supprimer la demande</delete_request>
+		<edit_profile>Modifier le profil</edit_profile>
+		<friend_request_already_canceled>Cette demande d'ami a déjà été annulée.</friend_request_already_canceled>
+		<friends>Amis</friends>
+		<is_now_friends_with>est maintenant ami avec {}</is_now_friends_with>
+		<level>Niveau</level>
+		<not_a_friend_yet>Pas encore ami.</not_a_friend_yet>
+		<remove_from_friends>Supprimer de la liste d'amis</remove_from_friends>
+		<player_removed_from_friends>Ce joueur sera supprimé de votre liste d'amis.</player_removed_from_friends>
+		<send_friend_request>Envoyer la demande d'ami</send_friend_request>
+		<send>Envoyer</send>
+		<trophies>Trophées</trophies>
+		<unblock>Débloquer</unblock>
+		<unblock_player>Débloquer ce joueur.</unblock_player>
+		<waiting_friend_response>En attente d'une réponse d'un ami.</waiting_friend_response>
+		<friend_request_from_player>Ce joueur vous a envoyé une demande d'ami.</friend_request_from_player>
+		<you_have_friend_requests>Vous avez reçu des demandes d'ami.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Messages</title>
+		<create_message>+ Créer un message</create_message>
+		<uncheck_all>Décocher tout</uncheck_all>
+		<enter_online_id>Saisissez votre ID en ligne.</enter_online_id>
+		<add>Ajouter</add>
+		<add_recipient>Ajouter un destinataire</add_recipient>
+		<delete>Supprimer</delete>
+		<cancel>Annuler</cancel>
+		<to>À</to>
+	</messages_app>
 
 	<compatibility name="Compatibilité">
 		<states>
@@ -279,13 +368,43 @@ Connecter un contrôleur compatible avec SDL3.</not_connected>
 
 	<indicator>
 		<app_added_home>L'application a été ajoutée à l'écran d'accueil.</app_added_home>
+		<cancel_download>Annuler le téléchargement ?</cancel_download>
+		<cancel_install>Annuler l'installation ?
+Si vous annulez, les fichiers téléchargés pour cette installation seront également supprimés.</cancel_install>
 		<delete_all>Supprimer tout</delete_all>
 		<notif_deleted>Les notifications vont être supprimées.</notif_deleted>
+		<waiting_download>En attente du téléchargement...</waiting_download>
+		<downloading_complete>Téléchargement terminé.</downloading_complete>
 		<install_failed>L'installation a échoué.</install_failed>
+		<player_is_online>{} est maintenant en ligne.</player_is_online>
+		<waiting_install>En attente de l'installation...</waiting_install>
 		<install_complete>Installation terminée.</install_complete>
 		<installing>Installation en cours...</installing>
+		<minutes_left>{} minutes restantes</minutes_left>
 		<no_notif>Aucune notification.</no_notif>
+		<commented_on_activity>Quelqu'un a commenté l'activité de {}.</commented_on_activity>
+		<commented_on_your_activity>Quelqu'un a commenté votre activité.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Quelqu'un a commenté votre activité et l'aime.</commented_and_likes_your_activity>
+		<likes_your_activity>Quelqu'un aime votre activité.</likes_your_activity>
+		<pause_all>Tout en pause</pause_all>
+		<pause>Pause</pause>
+		<paused>En pause</paused>
+		<resume_all>Tout reprendre</resume_all>
+		<resume>Reprendre</resume>
+		<seconds_left>{} secondes restantes</seconds_left>
+		<friend_requests>Vous avez reçu des demandes d'ami.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>Une nouvelle version de l'application est disponible.</new_app_version_available>
+		<latest_version_installed>La version la plus récente de l'application est déjà installée.</latest_version_installed>
+		<downloading_app_update>Téléchargement du fichier de mise à jour de l'application...
+Vous pouvez vérifier la progression du téléchargement dans la liste des notifications.</downloading_app_update>
+		<download>Télécharger</download>
+		<not_enough_space>Le téléchargement a échoué.
+Espace libre insuffisant sur la carte mémoire. Libérez au moins {} sur la carte mémoire, puis essayez de relancer le téléchargement.</not_enough_space>
+		<version>Version {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Précédent</back>
@@ -407,6 +526,23 @@ Continuer ?</close_app_warning>
 	<settings_dialog name="Paramètres">
 		<system name="Système">
 		</system>
+		<emulator name="Émulateur">
+			<import_savedata_identity>Importer l'identité depuis un SFO de sauvegarde</import_savedata_identity>
+			<import_savedata_identity_confirm>Importer l'OpenPSID et l'Account ID de cette sauvegarde ?
+L'identité actuelle sera sauvegardée. Les sauvegardes existantes ne seront pas modifiées mais pourraient ne plus être accessibles. ux0:id.dat sera supprimé et recréé par le shell.</import_savedata_identity_confirm>
+			<import_savedata_identity_running>Fermez l'application en cours avant d'importer une identité.</import_savedata_identity_running>
+			<import_savedata_identity_success>Identité importée. Les nouvelles sauvegardes utiliseront ces identifiants.</import_savedata_identity_success>
+			<import_savedata_identity_memory>Impossible d'importer l'identité : mémoire insuffisante.</import_savedata_identity_memory>
+			<import_savedata_identity_action>Importer</import_savedata_identity_action>
+			<import_savedata_identity_cancel>Annuler</import_savedata_identity_cancel>
+			<reset_savedata_identity>Réinitialiser l'identité</reset_savedata_identity>
+			<reset_savedata_identity_confirm>Générer un nouvel OpenPSID et remettre l'Account ID à zéro ?
+L'identité actuelle sera sauvegardée. Les sauvegardes existantes ne seront pas modifiées mais pourraient ne plus être accessibles. ux0:id.dat sera supprimé et recréé par le shell.</reset_savedata_identity_confirm>
+			<reset_savedata_identity_action>Réinitialiser</reset_savedata_identity_action>
+			<reset_savedata_identity_success>Identité réinitialisée. Les nouvelles sauvegardes utiliseront la nouvelle identité.</reset_savedata_identity_success>
+			<identity_change_running>Fermez l'application en cours avant de modifier l'identité.</identity_change_running>
+			<identity_change_memory>Impossible de modifier l'identité : mémoire insuffisante.</identity_change_memory>
+		</emulator>
 		<network name="Réseau">
 			<ip_address>Adresse IP</ip_address>
 			<subnet_mask>Masque de sous-réseau</subnet_mask>
@@ -417,8 +553,10 @@ Continuer ?</close_app_warning>
 	<sys_apps_title>
 		<browser>Navigateur</browser>
 		<internet_browser>Navigateur Internet</internet_browser>
+		<friends>Amis</friends>
 		<trophies>Trophées</trophies>
 		<trophy_collection>Collection de trophées</trophy_collection>
+		<messages>Messages</messages>
 		<settings>Paramètres</settings>
 		<content_manager>Gestionnaire de contenu</content_manager>
 	</sys_apps_title>

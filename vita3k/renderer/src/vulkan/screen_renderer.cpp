@@ -443,6 +443,8 @@ bool ScreenRenderer::acquire_swapchain_image() {
             need_rebuild = true;
             need_surface_recreate = acquire_result == vk::Result::eErrorSurfaceLostKHR;
         } else {
+            if (acquire_result == vk::Result::eErrorDeviceLost)
+                state.report_device_lost("acquireNextImageKHR");
             LOG_WARN("Failed to get next image. Error: {}", vk::to_string(acquire_result));
         }
 
@@ -455,7 +457,7 @@ bool ScreenRenderer::acquire_swapchain_image() {
         need_rebuild = !surface_matches_window_size();
 
     // wait for the previous frame using this image to finish
-    auto result = state.device.waitForFences(fences[swapchain_image_idx], VK_TRUE, next_image_timeout);
+    auto result = state.wait_for_fences(fences[swapchain_image_idx], next_image_timeout);
     if (result != vk::Result::eSuccess) {
         LOG_ERROR("Could not wait for fences.");
         return false;
@@ -558,11 +560,16 @@ void ScreenRenderer::swap_window() {
     };
 
     vk::Result result;
-    {
+    try {
         std::lock_guard<std::mutex> lock(state.queue_mutex);
         state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
         result = state.general_queue.presentKHR(&present_info);
+    } catch (const vk::DeviceLostError &) {
+        state.report_device_lost("presentation queue submit");
+        throw;
     }
+    if (result == vk::Result::eErrorDeviceLost)
+        state.report_device_lost("queue present");
     if (result == vk::Result::eSuboptimalKHR) {
         need_rebuild = !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {

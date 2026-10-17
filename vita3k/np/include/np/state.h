@@ -22,6 +22,7 @@
 
 #include <mem/util.h> // Address.
 
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <optional>
@@ -87,6 +88,7 @@ struct NpTusState {
 
 struct NpState {
     bool inited = false;
+    std::atomic<bool> activity_inited{ false };
     np_callbacks cbs;
     SceUID state_cb_id;
 

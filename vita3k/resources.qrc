@@ -33,5 +33,6 @@
 		<file>icons/play.png</file>
 		<file>icons/refresh.png</file>
 		<file>icons/stop.png</file>
+		<file>icons/vita_shell.svg</file>
 	</qresource>
 </RCC>

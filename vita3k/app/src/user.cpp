@@ -187,6 +187,7 @@ void delete_user(EmuEnvState &emuenv, const std::string &user_id) {
         emuenv.cfg.user_id.clear();
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         emuenv.io.user_id.clear();
+        emuenv.io.device_paths.user_id.clear();
         emuenv.io.user_name.clear();
     }
 }
@@ -200,6 +201,7 @@ bool activate_user(EmuEnvState &emuenv, const std::string &user_id) {
     }
 
     emuenv.io.user_id = user_id;
+    emuenv.io.device_paths.user_id = user_id;
     emuenv.io.user_name = it->second.name;
     return true;
 }

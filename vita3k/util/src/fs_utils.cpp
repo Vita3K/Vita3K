@@ -22,7 +22,25 @@
 
 #include <chrono>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
 namespace fs_utils {
+
+bool is_plain_component(const fs::path &path) {
+    std::error_code ec;
+    const auto status = fs::symlink_status(path, ec);
+    if (ec || !fs::exists(status) || fs::is_symlink(status))
+        return false;
+#ifdef _WIN32
+    const DWORD attributes = GetFileAttributesW(path.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_REPARSE_POINT))
+        return false;
+#endif
+    return true;
+}
 
 fs::path construct_file_name(const fs::path &base_path, const fs::path &folder_path, const fs::path &file_name, const fs::path &extension) {
     // std's operator/ replaces on a rooted rhs and adds a separator for an empty one, unlike Boost

@@ -8,16 +8,23 @@
 
 #include <vita_shell/functions.h>
 
+#include <io/functions.h>
+#include <regmgr/functions.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <vfs/mounts.h>
 
 #include <pugixml.hpp>
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cctype>
 #include <cstdlib>
+#include <limits>
+#include <mutex>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -27,11 +34,203 @@ namespace vita_shell {
 
 static ThemeState current_theme;
 
-constexpr std::array<std::string_view, 4> system_app_ids = {
+bool set_shell_theme_registry(RegMgrState &regmgr, const std::string &content_id) {
+    const auto registry_path = content_id == "default" ? std::string("vs0:data/internal/theme") : "ux0:theme/" + content_id;
+    uint32_t registry_size = 0;
+    bool wallpaper_available = false;
+    {
+        std::lock_guard registry_lock(regmgr.mutex);
+        const auto category = regmgr.reg_template.find("/CONFIG/THEME/");
+        const auto values = regmgr.system_dreg.find("/CONFIG/THEME/");
+        if (category != regmgr.reg_template.end() && values != regmgr.system_dreg.end() && values->second.contains("current_theme")) {
+            const auto entry = std::find_if(category->second.begin(), category->second.end(), [](const auto &item) {
+                return item.name == "current_theme" && item.type == REG_TYPE_STR;
+            });
+            if (entry != category->second.end())
+                registry_size = entry->size;
+            const auto wallpaper = values->second.find("wallpaper");
+            wallpaper_available = wallpaper != values->second.end() && wallpaper->second.size() >= sizeof(int32_t)
+                && std::any_of(category->second.begin(), category->second.end(), [](const auto &item) {
+                       return item.name == "wallpaper" && item.type == REG_TYPE_INT;
+                   });
+        }
+    }
+    if (registry_size == 0 || registry_path.size() >= registry_size) {
+        LOG_ERROR("Invalid or unavailable current_theme registry entry");
+        return false;
+    }
+    if (!wallpaper_available) {
+        LOG_ERROR("Invalid or unavailable wallpaper registry entry");
+        return false;
+    }
+    std::vector<char> registry_value(registry_size, 0);
+    std::copy(registry_path.begin(), registry_path.end(), registry_value.begin());
+    regmgr::set_str_value(regmgr, "/CONFIG/THEME/", "current_theme", registry_value.data(), registry_size);
+    regmgr::set_int_value(regmgr, "/CONFIG/THEME/", "wallpaper", 2);
+    return true;
+}
+
+bool apply_shell_theme(IOState &io, RegMgrState &regmgr, const fs::path &vita_fs_path, const std::string &content_id) {
+    static std::mutex mutex;
+    static std::atomic_uint64_t sequence{ 0 };
+    const std::lock_guard lock(mutex);
+    const auto shell = vita_fs_path / "ur0" / "shell";
+    const auto target = shell / "theme";
+    fs::path staging;
+    fs::path backup;
+    bool published = false;
+    bool backed_up = false;
+    const auto apply = [&]() -> bool {
+        fs::create_directory(vita_fs_path / "ur0");
+        if (!fs_utils::is_plain_component(vita_fs_path / "ur0")) {
+            LOG_ERROR("Invalid ur0 directory for theme '{}'", content_id);
+            return false;
+        }
+        fs::create_directory(shell);
+        if (!fs_utils::is_plain_component(vita_fs_path / "ur0") || !fs_utils::is_plain_component(shell)) {
+            LOG_ERROR("Invalid ur0 shell directory for theme '{}'", content_id);
+            return false;
+        }
+        const auto status = fs::symlink_status(target);
+        if (fs::exists(status) && (!fs::is_directory(status) || !fs_utils::is_plain_component(target))) {
+            LOG_ERROR("Invalid active theme directory '{}'", target);
+            return false;
+        }
+        for (int attempt = 0; attempt < 128; ++attempt) {
+            const auto candidate = shell / (".vita3k-theme-" + std::to_string(sequence++));
+            if (fs::create_directory(candidate)) {
+                staging = candidate;
+                break;
+            }
+        }
+        if (staging.empty()) {
+            LOG_ERROR("Cannot create staging directory for theme '{}'", content_id);
+            return false;
+        }
+        if (content_id != "default") {
+            if (!pfsmgr::copy_theme_data(io, vita_fs_path, content_id, staging)) {
+                LOG_ERROR("Cannot copy mounted theme '{}'", content_id);
+                return false;
+            }
+            pugi::xml_document document;
+            if (!document.load_file((staging / "theme.xml").c_str()) || !document.child("theme")) {
+                LOG_ERROR("Invalid decrypted theme.xml for '{}'", content_id);
+                return false;
+            }
+            const auto xml_id = document.child("theme").child("InfomationProperty").child("m_contentId").text().as_string();
+            if (*xml_id && content_id != xml_id) {
+                LOG_ERROR("Theme content ID '{}' does not match selected directory '{}'", xml_id, content_id);
+                return false;
+            }
+        }
+        if (fs::exists(status)) {
+            backup = staging;
+            backup += "-backup";
+            if (!fs::create_directory(backup)) {
+                LOG_ERROR("Cannot reserve theme backup directory '{}'", backup);
+                return false;
+            }
+            fs::rename(target, backup / "previous");
+            backed_up = true;
+        }
+        if (content_id != "default") {
+            fs::rename(staging, target);
+            staging.clear();
+            published = true;
+        }
+        if (!set_shell_theme_registry(regmgr, content_id)) {
+            LOG_ERROR("Cannot update current_theme in the registry for '{}'", content_id);
+            return false;
+        }
+        if (!staging.empty()) {
+            std::error_code cleanup_error;
+            fs::remove(staging, cleanup_error);
+            if (cleanup_error)
+                LOG_WARN("Cannot remove theme staging directory '{}': {}", staging, cleanup_error.message());
+            staging.clear();
+        }
+        if (!backup.empty()) {
+            std::error_code cleanup_error;
+            fs::remove_all(backup, cleanup_error);
+            if (cleanup_error)
+                LOG_WARN("Cannot remove theme backup '{}': {}", backup, cleanup_error.message());
+        }
+        return true;
+    };
+    try {
+        if (apply())
+            return true;
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Cannot apply theme '{}' for the Vita Shell: {}", content_id, error.what());
+    }
+    std::error_code cleanup_error;
+    if (published) {
+        fs::remove_all(target, cleanup_error);
+        if (cleanup_error)
+            LOG_ERROR("Cannot remove failed active theme '{}': {}", target, cleanup_error.message());
+    }
+    if (backed_up) {
+        std::error_code restore_error;
+        fs::rename(backup / "previous", target, restore_error);
+        if (restore_error)
+            LOG_ERROR("Cannot restore active theme; original retained at '{}': {}", backup / "previous", restore_error.message());
+    }
+    if (!staging.empty()) {
+        fs::remove_all(staging, cleanup_error);
+        if (cleanup_error)
+            LOG_WARN("Cannot remove theme staging directory '{}': {}", staging, cleanup_error.message());
+    }
+    if (!backup.empty()) {
+        cleanup_error.clear();
+        fs::remove(backup, cleanup_error);
+        if (cleanup_error)
+            LOG_WARN("Theme backup retained at '{}': {}", backup, cleanup_error.message());
+    }
+    return false;
+}
+
+ThemeReader::ThemeReader(const fs::path &directory, bool read_pfs, IOState *io)
+    : directory_(directory) {
+    if (!read_pfs)
+        return;
+    if (!io || !pfsmgr::mount_theme_data(*io, directory, mount_point_, protected_)) {
+        LOG_ERROR("Cannot mount theme '{}'", directory);
+        valid_ = false;
+        return;
+    }
+    io_ = io;
+    owns_mount_ = true;
+}
+
+ThemeReader::~ThemeReader() {
+    if (owns_mount_ && !pfsmgr::unmount_theme_data(*io_, mount_point_))
+        LOG_WARN("Cannot unmount temporary theme '{}'", mount_point_);
+}
+
+bool ThemeReader::read(const fs::path &relative_path, std::vector<uint8_t> &data) const {
+    data.clear();
+    const auto path = relative_path.lexically_normal();
+    if (!valid_ || path.empty() || path.has_root_path() || path == "." || *path.begin() == "..") {
+        LOG_WARN("Invalid or unavailable theme resource '{}'.", relative_path);
+        return false;
+    }
+    if (!io_)
+        return fs_utils::read_data(directory_ / path, data);
+    std::string name = mount_point_;
+    for (const auto &part : path)
+        name += "/" + fs_utils::path_to_utf8(part);
+    const size_t max_size = protected_ ? 64 * 1024 * 1024 : std::numeric_limits<size_t>::max();
+    return read_file_to_buffer(*io_, name.c_str(), directory_.parent_path().parent_path().parent_path(), data, "theme", max_size);
+}
+
+constexpr std::array<std::string_view, 7> system_app_ids = {
     "NPXS10003",
+    "NPXS10006",
     "NPXS10008",
+    "NPXS10014",
     "NPXS10015",
-    "NPXS10026"
+    "NPXS10026",
+    "NPXS19999"
 };
 
 static std::optional<Color> parse_color(std::string value, std::string_view context) {
@@ -130,7 +329,7 @@ static std::optional<std::filesystem::path> resolve_asset_path(const std::filesy
 
     const auto relative_path = fs_utils::utf8_to_path(raw_path).lexically_normal();
     if (relative_path.empty() || relative_path.is_absolute() || relative_path.has_root_path()
-        || relative_path == "." || relative_path == ".." || relative_path.generic_string().starts_with("../"))
+        || relative_path == "." || *relative_path.begin() == "..")
         return std::nullopt;
     return (theme_directory / relative_path).lexically_normal();
 }
@@ -176,7 +375,7 @@ ThemeState load_theme_directory(const std::filesystem::path &theme_directory,
     state.name = state.content_id;
 
     const auto theme_xml_path = theme_directory / "theme.xml";
-    std::vector<char> xml_buffer;
+    std::vector<uint8_t> xml_buffer;
     if (!fs_utils::read_data(theme_xml_path, xml_buffer)) {
         LOG_WARN("Failed to read Vita theme metadata from '{}'.", theme_xml_path);
         return state;
@@ -212,10 +411,13 @@ ThemeState load_theme_directory(const std::filesystem::path &theme_directory,
     if (const auto path = resolve_asset_path(theme_directory, preview_image); path && fs::exists(*path))
         state.package_thumbnail_path = *path;
 
-    const std::array<std::pair<std::string_view, std::string_view>, 4> system_icon_paths = { { { "NPXS10003", "m_browser" },
+    const std::array<std::pair<std::string_view, std::string_view>, 7> system_icon_paths = { { { "NPXS10003", "m_browser" },
+        { "NPXS10006", "m_friend" },
         { "NPXS10008", "m_trophy" },
+        { "NPXS10014", "m_message" },
         { "NPXS10015", "m_settings" },
-        { "NPXS10026", "m_hostCollabo" } } };
+        { "NPXS10026", "m_hostCollabo" },
+        { "NPXS19999", "m_power" } } };
     for (const auto &[title_id, node_name] : system_icon_paths) {
         const auto icon_name = child_text(home.child(node_name.data()), "m_iconFilePath");
         if (icon_name.empty())
@@ -228,6 +430,18 @@ ThemeState load_theme_directory(const std::filesystem::path &theme_directory,
             LOG_WARN("Theme icon '{}' was not found for '{}'.", icon_name, state.content_id);
         }
     }
+
+    const auto load_page_indicator = [&](const std::string_view node_name, std::filesystem::path &target) {
+        const auto icon_name = child_text(home, node_name.data());
+        if (icon_name.empty())
+            return;
+        if (const auto path = resolve_asset_path(theme_directory, icon_name); path && fs::is_regular_file(*path))
+            target = *path;
+        else
+            LOG_WARN("Theme page indicator '{}' was not found for '{}'.", icon_name, state.content_id);
+    };
+    load_page_indicator("m_basePageFilePath", state.page_indicators.base);
+    load_page_indicator("m_curPageFilePath", state.page_indicators.current);
 
     const auto bgm_name = child_text(home, "m_bgmFilePath");
     if (!bgm_name.empty()) {
@@ -357,16 +571,25 @@ static ThemeState build_theme_state(const std::filesystem::path &vita_fs_path,
         return state;
     }
 
-    const auto theme_directory = vita_fs_path / "ux0/theme" / fs_utils::utf8_to_path(content_id);
-    const auto parsed_theme = load_theme_directory(theme_directory);
+    const auto theme_directory = vita_fs_path / "ur0/shell/theme";
+    auto parsed_theme = load_theme_directory(theme_directory);
+    state.loaded = parsed_theme.loaded;
+    if (state.loaded && !parsed_theme.content_id.empty() && parsed_theme.content_id != content_id) {
+        LOG_WARN("Active theme copy contains '{}' but '{}' was requested", parsed_theme.content_id, content_id);
+        state.loaded = false;
+    }
     state.name = parsed_theme.name.empty() ? state.name : parsed_theme.name;
     state.provider = parsed_theme.provider;
     state.content_version = parsed_theme.content_version;
     state.installed_path = parsed_theme.installed_path;
     state.package_thumbnail_path = parsed_theme.package_thumbnail_path;
     state.backgrounds = parsed_theme.backgrounds;
-    if (parsed_theme.bgm.device == "ux0")
+    state.page_indicators = parsed_theme.page_indicators;
+    if (!parsed_theme.bgm.path.empty()) {
         state.bgm = parsed_theme.bgm;
+        state.bgm.device = "ur0";
+        state.bgm.device_path = fs::path("shell/theme") / parsed_theme.bgm.path.lexically_relative(theme_directory);
+    }
     state.information_bar = parsed_theme.information_bar;
     state.start_screen_background = parsed_theme.start_screen_background;
     state.start_date_color = parsed_theme.start_date_color;
@@ -396,6 +619,15 @@ static ThemeState build_theme_state(const std::filesystem::path &vita_fs_path,
 void load_theme(const std::filesystem::path &vita_fs_path,
     const std::filesystem::path &static_assets_path, const std::string &content_id) {
     current_theme = build_theme_state(vita_fs_path, static_assets_path, content_id);
+}
+
+ThemeState prepare_theme(const std::filesystem::path &vita_fs_path,
+    const std::filesystem::path &static_assets_path, const std::string &content_id) {
+    return build_theme_state(vita_fs_path, static_assets_path, content_id);
+}
+
+void clear_theme() {
+    current_theme = {};
 }
 
 const ThemeState &get_theme_state() {

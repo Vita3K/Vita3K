@@ -19,10 +19,14 @@
 
 #include "../SceProcessmgr/SceProcessmgr.h"
 
+#include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/log.h>
 #include <util/tracy.h>
+
+#include <algorithm>
 
 TRACY_MODULE_NAME(SceNgs);
 
@@ -228,15 +232,15 @@ EXPORT(int, sceNgsPatchCreateRouting, SceNgsPatchSetupInfo *patch_info, Ptr<ngs:
 
     // Make the scheduler order this right based on dependencies request
     ngs::Voice *source = patch_info->source.get(emuenv.mem);
+    ngs::Voice *dest = patch_info->dest.get(emuenv.mem);
 
-    if (!source)
+    if (!source || !dest)
         return RET_ERROR(SCE_NGS_ERROR);
 
     *handle = source->rack->system->voice_scheduler.patch(emuenv.mem, patch_info);
 
-    if (!*handle) {
+    if (!*handle)
         return RET_ERROR(SCE_NGS_ERROR);
-    }
 
     return SCE_NGS_OK;
 }
@@ -358,26 +362,43 @@ EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack *rack, Ptr<void> callback) {
     if (!rack)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
-    std::unique_lock<std::recursive_mutex> lock(rack->system->voice_scheduler.mutex);
-    if (!rack->system->voice_scheduler.is_updating) {
-        ngs::release_rack(emuenv.ngs, emuenv.mem, rack->system, rack);
-    } else if (!callback) {
-        // wait for the update to finish
-        // if this is called in an interrupt handler it will softlock ngs
-        // but I don't think this is allowed (and if it is I don't know how to prevent this)
-        LOG_WARN_ONCE("sceNgsRackRelease called in a synchronous way during a ngs update, contact devs if your game softlocks now.");
+    ngs::System *system = rack->system;
+    auto &scheduler = system->voice_scheduler;
+    std::unique_lock<std::recursive_mutex> lock(scheduler.mutex);
+    if (scheduler.pending_rack_releases.contains(rack))
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
 
-        rack->system->voice_scheduler.condvar.wait(lock);
-        ngs::release_rack(emuenv.ngs, emuenv.mem, rack->system, rack);
-    } else {
-        // destroy rack asynchronously
+    if (callback) {
         ngs::OperationPending op;
         op.type = ngs::PendingType::ReleaseRack;
-        op.system = rack->system;
+        op.system = system;
         op.release_data.state = &emuenv.ngs;
         op.release_data.rack = rack;
         op.release_data.callback = callback.address();
-        rack->system->voice_scheduler.operations_pending.push(op);
+        scheduler.pending_rack_releases.insert(rack);
+        scheduler.operations_pending.push(op);
+    } else if (!scheduler.is_updating) {
+        ngs::release_rack(emuenv.ngs, emuenv.mem, system, rack);
+    } else {
+        if (scheduler.updating_thread_id == thread_id) {
+            ngs::release_rack(emuenv.ngs, emuenv.mem, system, rack);
+            return SCE_NGS_OK;
+        }
+
+        while (scheduler.is_updating) {
+            lock.unlock();
+            {
+                ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                lock.lock();
+                if (scheduler.is_updating)
+                    scheduler.condvar.wait(lock);
+                lock.unlock();
+            }
+            lock.lock();
+        }
+        if (!std::ranges::contains(system->racks, rack))
+            return RET_ERROR(SCE_NGS_ERROR_INVALID_HANDLE);
+        ngs::release_rack(emuenv.ngs, emuenv.mem, system, rack);
     }
 
     return SCE_NGS_OK;
@@ -433,7 +454,17 @@ EXPORT(SceInt32, sceNgsSystemRelease, ngs::System *system) {
         if (system->voice_scheduler.is_updating) {
             LOG_WARN_ONCE("sceNgsSystemRelease called during a ngs update, contact devs if your game softlocks now.");
 
-            system->voice_scheduler.condvar.wait(lock);
+            while (system->voice_scheduler.is_updating) {
+                lock.unlock();
+                {
+                    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                    lock.lock();
+                    if (system->voice_scheduler.is_updating)
+                        system->voice_scheduler.condvar.wait(lock);
+                    lock.unlock();
+                }
+                lock.lock();
+            }
         }
     }
 
@@ -442,9 +473,18 @@ EXPORT(SceInt32, sceNgsSystemRelease, ngs::System *system) {
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsSystemSetFlags) {
-    TRACY_FUNC(sceNgsSystemSetFlags);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsSystemSetFlags, ngs::System *system, const SceUInt32 system_flags) {
+    TRACY_FUNC(sceNgsSystemSetFlags, system, system_flags);
+    if (!emuenv.cfg.current_config.ngs_enable)
+        return 0;
+
+    if (!system)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    system->flags = system_flags;
+    LOG_DEBUG("sceNgsSystemSetFlags: flags={:#X}", system_flags);
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsSystemSetParamErrorCallback) {
@@ -463,7 +503,8 @@ EXPORT(SceUInt32, sceNgsSystemUpdate, ngs::System *system) {
         return 0;
     }
 
-    system->voice_scheduler.update(emuenv.kernel, emuenv.mem, thread_id);
+    if (!system->voice_scheduler.update(emuenv.kernel, emuenv.mem, thread_id))
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
 
     return SCE_NGS_OK;
 }
@@ -865,14 +906,8 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice *voice) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    voice->is_keyed_off = true;
-    voice->rack->system->voice_scheduler.off(emuenv.mem, voice);
-
-    // call the finish callback, I got no idea what the module id should be in this case
-    voice->invoke_callback(emuenv.kernel, emuenv.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
-
-    voice->is_keyed_off = false;
-    voice->rack->system->voice_scheduler.stop(emuenv.mem, voice);
+    if (!voice->rack->system->voice_scheduler.off(emuenv.mem, voice))
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
     return SCE_NGS_OK;
 }
 
@@ -1071,6 +1106,9 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice *voice, const SceNgsModul
         *pNumErrors = num_errors;
     }
 
+    if ((voice->rack->system->flags & ngs::system_flag_module_param_checking) == ngs::system_flag_no_module_param_checking)
+        return SCE_NGS_OK;
+
     if (num_errors == 0)
         return SCE_NGS_OK;
     else
@@ -1107,7 +1145,11 @@ EXPORT(SceInt32, sceNgsVoiceUnlockParams, ngs::Voice *voice, const SceUInt32 mod
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if (!data->unlock_params(emuenv.mem)) {
+    const bool params_valid = data->unlock_params(emuenv.mem);
+    if ((voice->rack->system->flags & ngs::system_flag_module_param_checking) == ngs::system_flag_no_module_param_checking)
+        return SCE_NGS_OK;
+
+    if (!params_valid) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 

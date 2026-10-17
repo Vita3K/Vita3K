@@ -245,7 +245,93 @@
 		<silver>Silver（银）</silver>
 		<hours_ago>{}小时前</hours_ago>
 		<minutes_ago>{}分钟前</minutes_ago>
+		<activities>活动</activities>
+		<like>喜欢</like>
+		<likes_this>{}说喜欢。</likes_this>
+		<and_like_this>{}和{}都说喜欢。</and_like_this>
+		<people_like_this>有{}人说喜欢。</people_like_this>
+		<comments>留言 {}</comments>
+		<delete_activity>删除此活动。</delete_activity>
+		<delete_comment>删除此留言。</delete_comment>
+		<unlike>取消喜欢</unlike>
+		<write_comment>撰写留言</write_comment>
+		<has_earned_platinum_trophy>在"{}"获得了白金奖杯！</has_earned_platinum_trophy>
+		<has_earned_trophy>在"{}"获得了奖杯！</has_earned_trophy>
+		<first_time_playing>第一次游玩"{}"。</first_time_playing>
+		<download_failed>无法下载。</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}的活动</activities_of>
+		<anyone>任何人</anyone>
+		<no_one>不公开</no_one>
+		<cannot_display>无法显示更多页面。</cannot_display>
+		<friends_of_friends>朋友的朋友</friends_of_friends>
+		<friends_only>仅限朋友</friends_only>
+		<share_range>公开范围：</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>接受</accept>
+		<players_blocked>封锁中的玩家</players_blocked>
+		<friend_request_already_canceled>此加为朋友请求已被取消。</friend_request_already_canceled>
+		<search_for_player>可搜索Vita3K Network玩家，查看简介或发送加为朋友请求。</search_for_player>
+		<friend_requests>加为朋友请求</friend_requests>
+		<friends>朋友</friends>
+		<could_not_find_online_id>找不到在线ID。</could_not_find_online_id>
+		<there_are_no_players>没有玩家。</there_are_no_players>
+		<no_players_found>找不到玩家。</no_players_found>
+		<online_id>在线ID</online_id>
+		<enter_from_3_to_16_characters>请输入3至16个字符。</enter_from_3_to_16_characters>
+		<online_status>在线情况</online_status>
+		<received>已接收</received>
+		<search>搜索</search>
+		<sent>已发送</sent>
+		<waiting_for_friend_response>等待朋友回应。</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>自我介绍</about_me>
+		<accept>接受</accept>
+		<activity>活动</activity>
+		<warn_block_player>若封锁了此玩家，您将无法再收到此玩家发来的信息。
+要继续吗？</warn_block_player>
+		<warn_block_friend>若封锁了此玩家，此玩家将从朋友中移除。您将无法再收到此玩家发来的信息。
+要继续吗？</warn_block_friend>
+		<block>封锁</block>
+		<blocked>已封锁。</blocked>
+		<cancel_friend_request>取消加为朋友请求</cancel_friend_request>
+		<friend_request_canceled>加为朋友请求将被取消。</friend_request_canceled>
+		<delete_request>删除请求</delete_request>
+		<edit_profile>编辑简介</edit_profile>
+		<friend_request_already_canceled>此加为朋友请求已被取消。</friend_request_already_canceled>
+		<friends>朋友</friends>
+		<is_now_friends_with>现在与 {} 成为好友</is_now_friends_with>
+		<level>级别</level>
+		<not_a_friend_yet>还未成为朋友。</not_a_friend_yet>
+		<remove_from_friends>从朋友中移除</remove_from_friends>
+		<player_removed_from_friends>此玩家将从朋友中移除。</player_removed_from_friends>
+		<send_friend_request>发送加为朋友请求</send_friend_request>
+		<send>发送</send>
+		<trophies>奖杯数</trophies>
+		<unblock>解除封锁</unblock>
+		<unblock_player>解除对此玩家的封锁。</unblock_player>
+		<waiting_friend_response>等待朋友回应。</waiting_friend_response>
+		<friend_request_from_player>收到此玩家发来的加为朋友请求。</friend_request_from_player>
+		<you_have_friend_requests>收到加为朋友的请求。</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>消息</title>
+		<create_message>+ 创建消息</create_message>
+		<uncheck_all>取消全选</uncheck_all>
+		<enter_online_id>请输入在线 ID。</enter_online_id>
+		<add>添加</add>
+		<add_recipient>添加收件人</add_recipient>
+		<delete>删除</delete>
+		<cancel>取消</cancel>
+		<to>收件人</to>
+	</messages_app>
 
 	<compatibility name="兼容性">
 		<states>
@@ -379,13 +465,43 @@
 
 	<indicator>
 		<app_added_home>已将应用程序添加至主画面。</app_added_home>
+		<cancel_download>要取消下载吗？</cancel_download>
+		<cancel_install>要取消安装吗？
+若取消安装，为执行安装而下载的文件也将被删除。</cancel_install>
 		<delete_all>全部删除</delete_all>
 		<notif_deleted>最新资讯将被删除。</notif_deleted>
+		<waiting_download>正在等待下载…</waiting_download>
+		<downloading_complete>下载完毕。</downloading_complete>
 		<install_failed>无法安装。</install_failed>
+		<player_is_online>{}上线了。</player_is_online>
+		<waiting_install>正在等待安装…</waiting_install>
 		<install_complete>安装完毕。</install_complete>
 		<installing>正在安装…</installing>
+		<minutes_left>剩余 {}分钟</minutes_left>
 		<no_notif>没有最新资讯。</no_notif>
+		<commented_on_activity>有人对{}的活动留言。</commented_on_activity>
+		<commented_on_your_activity>有人对您的活动留言。</commented_on_your_activity>
+		<commented_and_likes_your_activity>有人喜欢您的活动并留言。</commented_and_likes_your_activity>
+		<likes_your_activity>有人喜欢您的活动。</likes_your_activity>
+		<pause_all>全部暂停</pause_all>
+		<pause>暂停</pause>
+		<paused>下载暂停</paused>
+		<resume_all>全部继续</resume_all>
+		<resume>继续</resume>
+		<seconds_left>剩余 {}秒</seconds_left>
+		<friend_requests>收到加为朋友的请求。</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>检测到新版本的应用程序。</new_app_version_available>
+		<latest_version_installed>已安装最新版本的应用程序。</latest_version_installed>
+		<downloading_app_update>正在下载应用程序的升级文件…
+可进入最新资讯列表确认下载进度。</downloading_app_update>
+		<download>下载</download>
+		<not_enough_space>无法下载。
+存储卡的空余容量不足。请在存储卡准备{}以上的空余容量后再次下载。</not_enough_space>
+		<version>{}版本</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>返回</back>
