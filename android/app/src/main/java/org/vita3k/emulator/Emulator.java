@@ -71,7 +71,7 @@ public class Emulator extends SDLActivity
     private static final long IME_RESTORE_DELAY_MS = 250L;
     public static final String EXTRA_TITLE_ID = "title_id";
     public static final String EXTRA_GAME_TITLE = "game_title";
-    private static final String APP_RESTART_PARAMETERS = "AppStartParameters";
+    protected static final String APP_RESTART_PARAMETERS = "AppStartParameters";
     static final int FILE_DIALOG_CODE = 545;
     static final int FOLDER_DIALOG_CODE = 546;
     static final int FOLDER_ACCESS_SETTINGS_CODE = 547;
@@ -113,6 +113,10 @@ public class Emulator extends SDLActivity
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         return intent;
+    }
+
+    protected boolean isImGuiFrontend() {
+        return false;
     }
 
     public InputOverlay getmOverlay() {
@@ -161,7 +165,8 @@ public class Emulator extends SDLActivity
                     ((ViewGroup) mSurface.getParent()).addView(overlay);
                 }
                 refreshControllerOverlayScope();
-                refreshUiState(true);
+                if (!isImGuiFrontend())
+                    refreshUiState(true);
             }
         });
         return mSurface;
@@ -214,6 +219,9 @@ public class Emulator extends SDLActivity
         refreshNativeDisplayRotation();
 
         currentGameId = resolveCurrentTitleId(getIntent());
+        if (isImGuiFrontend())
+            return;
+
         String gameTitle = getIntent().getStringExtra(EXTRA_GAME_TITLE);
         sessionViewModel = new EmulationSessionViewModel(getApplication());
         sessionViewModel.initialize(currentGameId, gameTitle);
@@ -234,8 +242,10 @@ public class Emulator extends SDLActivity
     protected void onResume() {
         super.onResume();
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
-        refreshUiState(false);
         refreshNativeDisplayRotation();
+        if (isImGuiFrontend())
+            return;
+        refreshUiState(false);
         updateControllerConnectionState();
         resumeFromBackgroundIfNeeded();
     }
@@ -299,6 +309,9 @@ public class Emulator extends SDLActivity
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (isImGuiFrontend())
+            return super.dispatchKeyEvent(event);
+
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && nativeKeyboardRequested) {
             if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
                 dismissImeFromKeyboard(mTextEdit);

@@ -414,6 +414,9 @@ void SettingsDialog::load_config() {
 
     m_ui->boot_apps_fullscreen->setChecked(emuenv.cfg.boot_apps_full_screen);
     m_ui->show_live_area_screen->setChecked(emuenv.cfg.show_live_area_screen);
+    m_ui->gui_backend_box->clear();
+    m_ui->gui_backend_box->addItems({ QStringLiteral("ImGui"), QStringLiteral("Qt") });
+    m_ui->gui_backend_box->setCurrentIndex(emuenv.cfg.gui_backend == "Qt" ? 1 : 0);
     m_ui->show_compile_shaders->setChecked(emuenv.cfg.show_compile_shaders);
     m_ui->check_for_updates_mode->clear();
     m_ui->check_for_updates_mode->addItem(tr("Check"), static_cast<int>(UPDATE_STARTUP_PROMPT));
@@ -654,6 +657,7 @@ void SettingsDialog::build_desired_config(Config &desired) const {
     desired.demo_mode = m_ui->demo_mode->isChecked();
     desired.boot_apps_full_screen = m_ui->boot_apps_fullscreen->isChecked();
     desired.show_live_area_screen = m_ui->show_live_area_screen->isChecked();
+    desired.gui_backend = m_ui->gui_backend_box->currentText().toStdString();
     desired.show_compile_shaders = m_ui->show_compile_shaders->isChecked();
     desired.check_for_updates_mode = m_ui->check_for_updates_mode->currentData().toInt();
     desired.check_for_updates = desired.check_for_updates_mode != static_cast<int>(UPDATE_STARTUP_OFF);

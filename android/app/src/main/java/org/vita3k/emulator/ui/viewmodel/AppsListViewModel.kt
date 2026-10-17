@@ -80,7 +80,7 @@ class AppsListViewModel(application: Application) : AndroidViewModel(application
         loading = true
         viewModelScope.launch {
             appVersion = AppRepository.getAppVersion()
-            val success = AppRepository.initialize(storagePath)
+            val success = NativeLib.isInitialized() || AppRepository.initialize(storagePath)
             initialized = success
             if (success) {
                 firmwareInstallState = AppRepository.getFirmwareInstallState()

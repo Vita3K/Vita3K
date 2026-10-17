@@ -837,7 +837,7 @@ void GLState::precompile_shader(const ShadersHash &hash) {
 
 void GLState::preclose_action() {}
 
-void GLState::cleanup() {
+void GLState::cleanup(const bool preserve_frontend) {
     set_current();
 
     context = nullptr;
@@ -850,9 +850,11 @@ void GLState::cleanup() {
 
     surface_cache.cleanup();
 
-    screen_renderer.destroy();
-
-    overlay_renderer.destroy();
+    if (!preserve_frontend) {
+        screen_renderer.destroy();
+        overlay_renderer.destroy();
+        frame = nullptr;
+    }
 
     gxp_ptr_map.clear();
     shaders_cache_hashs.clear();
@@ -862,8 +864,11 @@ void GLState::cleanup() {
     programs_count_pre_compiled = 0;
     should_display = false;
     render_abort = false;
-
-    frame = nullptr;
+    precompile_queue.clear();
+    precompile_requested = false;
+    precompile_complete.store(false, std::memory_order_relaxed);
+    precompile_progress = 0;
+    precompile_total = 0;
 }
 
 } // namespace renderer::gl
