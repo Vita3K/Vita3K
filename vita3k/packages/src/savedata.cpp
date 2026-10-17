@@ -90,8 +90,13 @@ std::vector<SlotInfo> read_slots(const fs::path &save_path) {
 
 // Both directions write next to the destination first, so a failure never leaves a half written folder behind
 static bool run_to_temp(const fs::path &dst, const std::function<int(const std::filesystem::path &, std::ostream &)> &job, std::string &error) {
-    const fs::path tmp = fs_utils::path_concat(dst, ".tmp");
-    fs::remove_all(tmp);
+    boost::system::error_code ec;
+    const fs::path tmp = fs::unique_path(fs_utils::path_concat(dst, ".%%%%%%%%.tmp"), ec);
+    if (ec || !fs::create_directory(tmp, ec)) {
+        error = ec ? ec.message() : "Failed to create " + tmp.string();
+        LOG_ERROR("Savedata conversion failed: {}", error);
+        return false;
+    }
 
     std::ostringstream log;
     int result = -1;
