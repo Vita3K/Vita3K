@@ -74,6 +74,7 @@
     </property>
     <addaction name="vita_themes_action"/>
     <addaction name="trophy_collection_action"/>
+    <addaction name="save_data_manager_action"/>
     <addaction name="user_management_action"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -240,6 +241,11 @@
   <action name="trophy_collection_action">
    <property name="text">
     <string>Trophy Collection</string>
+   </property>
+  </action>
+  <action name="save_data_manager_action">
+   <property name="text">
+    <string>Save Data Manager</string>
    </property>
   </action>
   <action name="vita_themes_action">

@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 TRACY_MODULE_NAME(SceAppUtil);
 
@@ -247,6 +248,131 @@ std::string construct_slotparam_path(const unsigned int data) {
     return construct_savedata0_path("SlotParam_" + std::to_string(data), "bin");
 }
 
+// sdslot.dat: magic at 0x0, per-slot flag at 0x200 + id, slot param at 0x400 + id * 0x400
+static constexpr uint32_t SDSLOT_MAX_SLOTS = 256;
+static constexpr uint32_t SDSLOT_FLAG_BASE = 0x200;
+static constexpr uint32_t SDSLOT_DATA_BASE = 0x400;
+static constexpr uint32_t SDSLOT_BLOCK_SIZE = 0x400;
+static constexpr uint32_t SDSLOT_PARAM_SIZE = sizeof(SceAppUtilSaveDataSlotParam);
+static constexpr size_t SDSLOT_TOTAL_SIZE = SDSLOT_DATA_BASE + static_cast<size_t>(SDSLOT_MAX_SLOTS) * SDSLOT_BLOCK_SIZE;
+
+static constexpr uint8_t SDSLOT_MAGIC[10] = { 'S', 'D', 'S', 'L', 0, 0, 0, 0, 0, 1 };
+
+static_assert(SDSLOT_PARAM_SIZE == 844);
+
+static std::string construct_sdslot_path() {
+    return construct_savedata0_path("sce_sys/sdslot", "dat");
+}
+
+static SceOff sdslot_flag_offset(uint32_t slot_id) {
+    return static_cast<SceOff>(SDSLOT_FLAG_BASE) + slot_id;
+}
+
+static SceOff sdslot_data_offset(uint32_t slot_id) {
+    return static_cast<SceOff>(SDSLOT_DATA_BASE) + static_cast<SceOff>(slot_id) * SDSLOT_BLOCK_SIZE;
+}
+
+static void sdslot_load_existing(EmuEnvState &emuenv, std::vector<uint8_t> &buf, const char *export_name) {
+    const auto fd = open_file(emuenv.io, construct_sdslot_path().c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
+    const SceOff size = seek_file(fd, 0, SCE_SEEK_END, emuenv.io, export_name);
+    seek_file(fd, 0, SCE_SEEK_SET, emuenv.io, export_name);
+    read_file(buf.data(), emuenv.io, fd, static_cast<SceSize>(std::clamp<SceOff>(size, 0, SDSLOT_TOTAL_SIZE)), export_name);
+    close_file(emuenv.io, fd, export_name);
+}
+
+static void sdslot_import_legacy(EmuEnvState &emuenv, std::vector<uint8_t> &buf, const char *export_name) {
+    for (uint32_t i = 0; i < SDSLOT_MAX_SLOTS; i++) {
+        const auto fd = open_file(emuenv.io, construct_slotparam_path(i).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
+        if (fd < 0)
+            continue;
+        if (read_file(buf.data() + sdslot_data_offset(i), emuenv.io, fd, SDSLOT_PARAM_SIZE, export_name) == static_cast<int>(SDSLOT_PARAM_SIZE))
+            buf[sdslot_flag_offset(i)] = 1;
+        close_file(emuenv.io, fd, export_name);
+    }
+}
+
+// The VFS ignores SCE_O_TRUNC, so a file of the wrong size is removed before being rewritten.
+static bool sdslot_ensure_file(EmuEnvState &emuenv, const char *export_name) {
+    const auto path = construct_sdslot_path();
+    const auto fd = open_file(emuenv.io, path.c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
+    const bool exists = fd >= 0;
+    if (exists) {
+        const SceOff size = seek_file(fd, 0, SCE_SEEK_END, emuenv.io, export_name);
+        close_file(emuenv.io, fd, export_name);
+        if (size == static_cast<SceOff>(SDSLOT_TOTAL_SIZE))
+            return true;
+    }
+
+    std::vector<uint8_t> buf(SDSLOT_TOTAL_SIZE, 0);
+    if (exists) {
+        sdslot_load_existing(emuenv, buf, export_name);
+        remove_file(emuenv.io, path.c_str(), emuenv.vita_fs_path, export_name);
+    } else {
+        sdslot_import_legacy(emuenv, buf, export_name);
+    }
+    std::memcpy(buf.data(), SDSLOT_MAGIC, sizeof(SDSLOT_MAGIC));
+
+    const auto out = open_file(emuenv.io, path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
+    if (out < 0)
+        return false;
+    const int written = write_file(out, buf.data(), static_cast<SceSize>(buf.size()), emuenv.io, export_name);
+    close_file(emuenv.io, out, export_name);
+    return written == static_cast<int>(buf.size());
+}
+
+bool sdslot_read_slot_param(EmuEnvState &emuenv, uint32_t slot_id, SceAppUtilSaveDataSlotParam *param, const char *export_name) {
+    if (slot_id >= SDSLOT_MAX_SLOTS)
+        return false;
+
+    const auto fd = open_file(emuenv.io, construct_sdslot_path().c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
+    if (fd < 0) {
+        const auto legacy_fd = open_file(emuenv.io, construct_slotparam_path(slot_id).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
+        if (legacy_fd < 0)
+            return false;
+        const int n = read_file(param, emuenv.io, legacy_fd, SDSLOT_PARAM_SIZE, export_name);
+        close_file(emuenv.io, legacy_fd, export_name);
+        return n == static_cast<int>(SDSLOT_PARAM_SIZE);
+    }
+
+    uint8_t flag = 0;
+    seek_file(fd, sdslot_flag_offset(slot_id), SCE_SEEK_SET, emuenv.io, export_name);
+    read_file(&flag, emuenv.io, fd, sizeof(flag), export_name);
+    int n = 0;
+    if (flag != 0) {
+        seek_file(fd, sdslot_data_offset(slot_id), SCE_SEEK_SET, emuenv.io, export_name);
+        n = read_file(param, emuenv.io, fd, SDSLOT_PARAM_SIZE, export_name);
+    }
+    close_file(emuenv.io, fd, export_name);
+    return n == static_cast<int>(SDSLOT_PARAM_SIZE);
+}
+
+static bool sdslot_write_slot(EmuEnvState &emuenv, uint32_t slot_id, const void *data, const char *export_name) {
+    if (slot_id >= SDSLOT_MAX_SLOTS || !sdslot_ensure_file(emuenv, export_name))
+        return false;
+
+    const auto fd = open_file(emuenv.io, construct_sdslot_path().c_str(), SCE_O_WRONLY, emuenv.vita_fs_path, export_name);
+    if (fd < 0)
+        return false;
+    std::vector<uint8_t> block(SDSLOT_BLOCK_SIZE, 0);
+    if (data)
+        std::memcpy(block.data(), data, SDSLOT_PARAM_SIZE);
+    const uint8_t flag = data ? 1 : 0;
+    seek_file(fd, sdslot_flag_offset(slot_id), SCE_SEEK_SET, emuenv.io, export_name);
+    bool ok = write_file(fd, &flag, sizeof(flag), emuenv.io, export_name) == sizeof(flag);
+    seek_file(fd, sdslot_data_offset(slot_id), SCE_SEEK_SET, emuenv.io, export_name);
+    ok &= write_file(fd, block.data(), SDSLOT_BLOCK_SIZE, emuenv.io, export_name) == static_cast<int>(SDSLOT_BLOCK_SIZE);
+    close_file(emuenv.io, fd, export_name);
+    return ok;
+}
+
+static bool sdslot_write_slot_param(EmuEnvState &emuenv, uint32_t slot_id, const SceAppUtilSaveDataSlotParam *param, const char *export_name) {
+    return sdslot_write_slot(emuenv, slot_id, param, export_name);
+}
+
+static bool sdslot_delete_slot(EmuEnvState &emuenv, uint32_t slot_id, const char *export_name) {
+    return sdslot_write_slot(emuenv, slot_id, nullptr, export_name);
+}
+
 EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataDataRemove, slot, files, fileNum, mountPoint);
 
@@ -262,7 +388,7 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceA
     }
 
     if (slot && files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT) {
-        remove_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), emuenv.vita_fs_path, export_name);
+        sdslot_delete_slot(emuenv, slot->id, export_name);
     }
 
     return 0;
@@ -314,11 +440,8 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         tm local = {};
 
         if (!slot->slotParam) {
-            fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
-            if (fd < 0)
+            if (!sdslot_read_slot_param(emuenv, slot->id, slot_param, export_name))
                 return 0;
-            read_file(slot_param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-            close_file(emuenv.io, fd, export_name);
         }
 
         SAFE_LOCALTIME(&time, &local);
@@ -329,9 +452,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         modified_time.minute = local.tm_min;
         modified_time.second = local.tm_sec;
         slot_param->modifiedTime = modified_time;
-        fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
-        write_file(fd, slot_param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
-        close_file(emuenv.io, fd, export_name);
+        sdslot_write_slot_param(emuenv, slot->id, slot_param, export_name);
     }
 
     return 0;
@@ -372,25 +493,20 @@ EXPORT(int, sceAppUtilSaveDataMount) {
 
 EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotCreate, slotId, param, mountPoint);
-    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
-    close_file(emuenv.io, fd, export_name);
+    sdslot_write_slot_param(emuenv, slotId, param, export_name);
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotDelete, unsigned int slotId, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotDelete, slotId, mountPoint);
-    remove_file(emuenv.io, construct_slotparam_path(slotId).c_str(), emuenv.vita_fs_path, export_name);
+    sdslot_delete_slot(emuenv, slotId, export_name);
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotGetParam, slotId, param, mountPoint);
-    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
-    if (fd < 0)
+    if (!sdslot_read_slot_param(emuenv, slotId, param, export_name))
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    read_file(param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-    close_file(emuenv.io, fd, export_name);
     param->status = 0;
     return 0;
 }
@@ -416,13 +532,12 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
             slotList[i].emptyParam = Ptr<SceAppUtilSaveDataSlotEmptyParam>(0);
         }
 
-        const auto fd = open_file(emuenv.io, construct_slotparam_path(i).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
+        SceAppUtilSaveDataSlotParam param{};
+        const bool exist = sdslot_read_slot_param(emuenv, i, &param, export_name);
         switch (cond->type) {
         case SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EXIST_SLOT:
-            if (fd > 0) {
+            if (exist) {
                 if (slotList) {
-                    SceAppUtilSaveDataSlotParam param{};
-                    read_file(&param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
                     slotList[result->hitNum].userParam = param.userParam;
                     slotList[result->hitNum].status = param.status;
                     slotList[result->hitNum].id = i;
@@ -431,7 +546,7 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
             }
             break;
         case SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EMPTY_SLOT:
-            if (fd < 0) {
+            if (!exist) {
                 if (slotList)
                     slotList[result->hitNum].id = i;
                 result->hitNum++;
@@ -439,9 +554,6 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
             break;
         default: break;
         }
-
-        if (fd > 0)
-            close_file(emuenv.io, fd, export_name);
     }
 
     return 0;
@@ -449,11 +561,10 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
 
 EXPORT(SceInt32, sceAppUtilSaveDataSlotSetParam, SceAppUtilSaveDataSlotId slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotSetParam, slotId, param, mountPoint);
-    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY, emuenv.vita_fs_path, export_name);
-    if (fd < 0)
+    SceAppUtilSaveDataSlotParam existing{};
+    if (!sdslot_read_slot_param(emuenv, slotId, &existing, export_name))
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
-    close_file(emuenv.io, fd, export_name);
+    sdslot_write_slot_param(emuenv, slotId, param, export_name);
     return 0;
 }
 
