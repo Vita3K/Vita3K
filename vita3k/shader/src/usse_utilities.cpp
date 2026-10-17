@@ -1599,6 +1599,14 @@ spv::Id convert_to_int(spv::Builder &b, const SpirvUtilFunctions &utils, spv::Id
         opr = b.createBuiltinCall(opr_type, utils.std_builtins, GLSLstd450Round, { opr });
     }
 
+    if (type != DataType::INT32 && type != DataType::UINT32 && type != DataType::C10) {
+        const float range_max = get_int_normalize_range_constants(type);
+        const float range_min = is_uint ? 0.0f : -(range_max + 1.0f);
+        const auto range_begin = create_constant_vector_or_scalar(b, b.makeFloatConstant(range_min), comp_count);
+        const auto range_end = create_constant_vector_or_scalar(b, b.makeFloatConstant(range_max), comp_count);
+        opr = b.createBuiltinCall(opr_type, utils.std_builtins, GLSLstd450FClamp, { opr, range_begin, range_end });
+    }
+
     if (!is_uint) {
         opr = b.createUnaryOp(spv::OpConvertFToS, target_type, opr);
     } else {
