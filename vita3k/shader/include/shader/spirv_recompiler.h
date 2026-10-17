@@ -31,7 +31,7 @@ namespace shader {
 static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;
 static constexpr int MASK_TEXTURE_SLOT_IMAGE = 1;
 static constexpr int COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE = 3;
-static constexpr uint32_t CURRENT_VERSION = 13;
+static constexpr uint32_t CURRENT_VERSION = 14;
 // fragment shader using the rendering surface as a storage image (because of shader interlock) have a line
 // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATIO_ID) const bool is_srgb = false;
 // Setting this constant to true performs gamma correction in the shader
@@ -65,6 +65,11 @@ struct GeneratedShader {
     std::string glsl;
     usse::SpirvCode spirv;
 };
+
+// Return the component of the fragment shader output stored in a single component color surface when it
+// is not the first one, or -1 otherwise. The generated shader moves this component to the first one, so
+// shaders for these surfaces must be cached separately.
+int get_single_component_output_index(const SceGxmProgram &program, SceGxmColorFormat color_format);
 
 // Dump generated SPIR-V disassembly up to this point
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
