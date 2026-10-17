@@ -5,6 +5,10 @@
 address_ranges                  pass
 affinity_mask_values            fail     # the CPU fields of thread info, threads ignore their core
 affinity_migrate                fail     # the CPU fields of thread info, threads ignore their core
+affinity_widen                  fail     # threads are never READY or STANDBY and ignore their core
+app_free_sizes                  fail     # the app's code, data, stack and TLS aren't memory blocks, free sizes to the page
+app_memory_blocks               fail     # the app's code, data, stacks and TLS aren't memory blocks with their types
+app_memory_ranges               fail     # the app's own memory isn't in memory blocks, the find ignores its size
 atomics                         pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
 cache_mount                     fail     # sceAppUtilCacheMount's init and mount checks, cache0: before a mount
@@ -23,13 +27,18 @@ callback_owner_end              pass
 callback_priority_requeue       fail     # waits stay queued during callbacks, so a cancel counts and ends them
 callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
 callback_stack                  fail     # callbacks don't run inside callbacks
+callback_wait_requeue           fail     # a wait goes back by its old priority after a callback
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
 cb_waits                        fail     # sceKernelWaitMultipleEvents
+ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
+ceiling_unlock_order            fail     # a mutex ceiling doesn't raise its owner's priority
+ceiling_waiter                  fail     # a mutex ceiling doesn't raise its owner's priority
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass
 cond_errors                     fail     # condition variable unknown UID errors and close
 cond_mutex_delete               pass
+cond_relock_requeue             fail     # a condition waiter taking its mutex back reports the condition, no requeue on a priority change
 cond_rwlock_edges               pass
 cond_semantics                  fail     # a signaled condition waiter whose timeout passes while it waits for the mutex
 cond_signal                     pass
@@ -48,12 +57,16 @@ delay_wait_id                   fail     # a delaying thread reports wait UID 0
 delete_with_waiters             pass
 directories                     fail     # directory mode, not empty and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
+display_framebuf_blocks         crash    # no framebuffer base alignment check, a framebuffer in a freed block crashes
+display_framebuf_free           skip     # whether the renderer crashes on a freed framebuffer depends on timing
 event_bit_mask                  pass
 event_bits                      pass
 event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
 event_flag_multi_waiters        pass
+event_flag_requeue_clear        fail     # no requeue on a priority change
+event_flag_single_waiter        pass
 event_flag_waits                pass
 event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
@@ -63,15 +76,36 @@ fiber_vfp                       fail     # libfiber doesn't load without firmwar
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
+gxm_context_memory              timeout  # sceGxmDestroyContext hangs on Vulkan
+gxm_map_alias_close             crash    # an opened block is its original, the unmap of a freed block's range crashes
+gxm_map_alias_pages             crash    # an opened block is its original, the unmap of a freed block's range crashes
+gxm_map_app_memory              fail     # the app's code maps
+gxm_map_block_types             crash    # read only and device blocks and blocks for code map, the unmap of a freed block crashes
+gxm_map_many                    fail     # a map over others gives INVALID_POINTER instead of DRIVER
 gxm_map_memory                  fail     # attribute, alignment, range and overlap checks, a map before sceGxmInitialize
 gxm_map_no_block                crash    # unmapping a range in no block
+gxm_map_opened                  fail     # an opened block is its original, so the two don't map at once
+gxm_map_original_free           crash    # an opened block is its original, the unmap of a freed block's range crashes
+gxm_map_size_zero               fail     # unmaps by an address inside a mapping, size 0 maps
+gxm_map_thread_stack_delete     crash    # a deleted thread's mapped stack is freed, and the unmap crashes
+gxm_map_uninitialized           fail     # the map calls don't check that libgxm is initialized
+gxm_map_usse_free               fail     # a USSE mapping doesn't keep its block, lookups of a freed block give 0x80024700
+gxm_render_target_memory        crash    # render target sizes and driver memory blocks, a width of 0 aborts
+gxm_shader_patcher_memory       timeout  # patcher regions are ignored, a NULL host alloc callback jumps to 0
+gxm_surface_memory              fail     # surface data alignment checks
+gxm_sync_objects                fail     # sync objects before sceGxmInitialize and their limit
+gxm_texture_memory              fail     # texture data, stride and palette alignment checks
+gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
 head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
 info                            pass
 info_fields                     fail     # lightweight condition info, rwlock waiter counts
 info_sizes                      fail     # the size the info calls leave in the struct, reader/writer lock info sizes
+local_ready_requeue             fail     # threads are never READY or STANDBY
+lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
 lw_cond_errors                  fail     # lightweight condition variable info by UID
+lw_cond_relock_requeue          fail     # lightweight condition waits report no condition and count no waiter
 lw_cond_semantics               fail     # lightweight condition info counts no waiters, a signaled waiter whose timeout passes
 lw_mutex                        pass
 lw_mutex_errors                 pass
@@ -81,16 +115,31 @@ lw_work_layout                  fail     # UID values in the work area, locking 
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_alignment              pass
 memblock_base_block             pass
+memblock_find_gaps              fail     # lookups past a block give 0x80024700, the find ignores its size
+memblock_find_ranges            fail     # the find ignores its size, info by range is unimplemented
 memblock_for_vm                 pass
 memblock_for_vm_domain          pass
+memblock_for_vm_refree          fail     # the find ignores its size, a block for code opens by its name
 memblock_for_vm_space           pass
 memblock_free_sizes             pass
+memblock_free_steps             fail     # free sizes count each block's own size
+memblock_info_sizes             fail     # the info calls don't check their struct size
+memblock_kind_sizes             fail     # thread stacks don't count in the free sizes
+memblock_many                   fail     # blocks take only their own size and all of it comes back
 memblock_neighbors              fail     # skips itself as blocks are never next to each other, a find over two blocks gives the first
 memblock_open                   fail     # every flag is taken, and an open gives the original block at its address instead of a new mapping
+memblock_open_count             fail     # an open returns its original's UID
+memblock_open_lifetime          fail     # an open returns its original's UID, sceKernelCloseMemBlock does nothing
+memblock_open_name_reuse        fail     # an open returns its original's UID, sceKernelCloseMemBlock does nothing
+memblock_open_names             fail     # ENABLE_OPEN names aren't unique or cut to 31 characters
+memblock_open_types             fail     # every block type opens
 memblock_opt_attrs              pass
 memblock_opt_effects            fail     # memory block UIDs aren't process UIDs, sceKernelOpenMemBlock, what PHYCONT takes
 memblock_placement              fail     # lookups past a block, the errors when memory runs out
+memblock_readonly_out           fail     # opened blocks are writable, no write check on output parameters
+memblock_threads                fail     # thread stacks don't count in the free sizes, lookups of a freed block give 0x80024700
 memblock_types_all              pass
+memblock_uid_kinds              fail     # sceKernelCloseMemBlock does nothing, other kinds of UID give INVALID_UID
 memblock_vaddr_paddr            pass
 misc_edges                      fail     # two openable objects with the same name
 module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
@@ -104,11 +153,14 @@ msgpipe_failed_sizes            fail     # failed try calls in FULL mode or whil
 msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe
 msgpipe_order                   fail     # a send reaches only one waiting receiver
 msgpipe_receiver_leaves         fail     # bytes sent to a waiting receive stay in the pipe
+msgpipe_receiver_requeue        fail     # a receiver takes part of a FULL receive at once, no requeue on a priority change
+msgpipe_sender_requeue          fail     # senders put their bytes in behind a head that doesn't fit, no requeue on a priority change
 msgpipe_vectors                 pass
 msgpipe_waits                   pass
 mspace                          fail     # sceClib memory space info
 multi_events                    fail     # waiting on several events, callbacks registered to events
 multi_events_errors             fail     # waiting on several events with unknown UIDs
+multi_events_requeue            fail     # sceKernelWaitMultipleEvents
 multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
 mutex_ceiling                   fail     # mutex priority ceilings
@@ -118,11 +170,22 @@ name_lookup                     fail     # opening gives the object's own UID, o
 nonblocking_wait_preempt        fail     # threads ignore their core and priority
 object_limits                   fail     # no limit on the number of objects
 open                            fail     # opening an object that isn't openable
+open_close_kinds                fail     # an open returns the creating UID, close does nothing
+open_name_rules                 fail     # openable names, NAME_TOO_LONG at 32 characters
+open_uid_limits                 fail     # no limit on opened UIDs
+opened_last_close_waiter        fail     # a delete ends an object that is still open
+opened_outlives_delete          fail     # a delete ends an object that is still open
+opened_uid_reports              fail     # opened UIDs aren't UIDs of their own
+opened_waiters                  fail     # a delete ends an object that is still open
+out_past_block_end              fail     # no write check on output parameters, lookups of a freed block give 0x80024700
+outside_mask_rerun              fail     # threads ignore their core
 owner_end                       pass
 owner_end_more                  pass
 poll_calls                      fail     # a poll takes a count a queued waiter waits for, the bits failed polls write
 preempt_latency                 fail     # threads ignore their core and priority
+preempt_migrate                 fail     # threads ignore their core
 preempt_status                  fail     # threads ignore their core and priority
+priority_change_args            fail     # a start doesn't reset a changed priority
 priority_change_preempt         fail     # threads ignore their core and priority
 priority_inheritance            fail     # threads ignore their core and priority
 priority_queue_areas            fail     # threads ignore their core and priority
@@ -130,40 +193,57 @@ priority_requeue_others         fail     # waiters keep their place in a priorit
 queue_area_bounds               fail     # threads ignore their core and priority
 queue_order                     fail     # priority changes while waiting
 queue_order_matrix              fail     # a waiter whose priority changes keeps its place in a priority queue
+readonly_in                     fail     # timer and simple event names, the mutex ceiling from its option struct
+readonly_out_info               fail     # no write check on output parameters
+readonly_out_values             fail     # no write check on output parameters
+readonly_timeouts               fail     # no write check on timeouts
 ready_changes                   fail     # threads ignore their core and priority
 ready_cpu_field                 fail     # the CPU fields of thread info, threads ignore their core
 ready_queue_order               fail     # threads ignore their core and priority
+release_errors_waiters          fail     # the waiting count a semaphore cancel writes, a read unlock by another thread
 release_preempt                 fail     # threads ignore their core and priority
+release_preempt_more            fail     # wakes don't preempt the waker
+remote_change_preempt           fail     # threads are never STANDBY and ignore their core
 remote_priority_change          fail     # threads ignore their core and priority
+requeue_lower_same              fail     # no requeue on a priority change
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_attr_bits                pass
 rwlock_counts                   fail     # read unlocks by a thread without a read lock
 rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
+rwlock_requeue_writers          fail     # waiting writers don't go before readers, no requeue on a priority change
 rwlock_wake_order               fail     # rwlock info counts no waiters
 savedata_slot_id                fail     # save data slot ID range checks
+self_lower_order                fail     # a thread that lowers itself doesn't go to the head of its new priority
 self_priority_drop              fail     # threads ignore their core and priority
 sema_errors                     crash    # closing unknown UIDs, a NULL name
 sema_head_leaves                fail     # a semaphore wait takes a count past an earlier waiter that needs more
 sema_mutex_edges                pass
 sema_poll_negative              pass
+sema_requeue_wake               fail     # a waiter gets a count behind a head that doesn't fit, no requeue on a priority change
 sema_waits                      pass
 semaphore                       pass
 shader_patcher_callback         fail     # a library callback's caller gets its FPSCR and TPIDRURW back after it
+shared_raise_cores              fail     # threads are never READY and ignore their core
+shared_ready_raise              fail     # threads are never READY and ignore their core
 simple_event                    pass
+simple_event_auto_waiters       pass
 simple_event_cancel             fail     # simple event cancels with a set pattern, the user data a cancel leaves
 simple_event_errors             fail     # simple event info, close and delete of unknown UIDs
 simple_event_info               fail     # simple event info
 simple_event_null_pointers      pass
 simple_event_wait_null          pass
 stagnant_mask                   pass
+standby_changes                 fail     # threads are never STANDBY
 standby_handover_order          skip     # threads ignore their core and priority, so the order is a race of about 1 ms
 standby_merge                   fail     # threads ignore their core and priority
 standby_merge_irq               fail     # threads ignore their core and priority
+start_delay_cores               fail     # threads ignore their core
 stat_mode                       fail     # file and directory stat modes, attributes and directory sizes
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
 suspend_for_vm_edges            pass
+suspend_for_vm_handoff          pass
 suspend_for_vm_notify           fail     # a thread a ForVM suspend holds shows a notified callback's pc
 suspend_ready_order             fail     # threads ignore their core and priority
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
@@ -181,6 +261,7 @@ thread_create_current_priority  pass
 thread_create_edges             pass
 thread_delete_lookup            pass
 thread_edges                    pass
+thread_end_restart              pass
 thread_end_waits                pass
 thread_errors                   pass
 thread_event_handler            fail     # unknown thread and handler errors
@@ -204,6 +285,8 @@ thread_run_order                fail     # threads ignore their core and priorit
 thread_signal                   pass
 thread_signal_timeout           pass
 thread_signal_wait_id           pass
+thread_stack_block_free         fail     # thread stacks and TLS aren't memory blocks
+thread_stack_blocks             fail     # thread stacks aren't memory blocks
 thread_stack_fill               fail     # the stack free size is the room below the stack pointer
 thread_stack_free               fail     # the stack free size is the room below the stack pointer, not a high-water mark
 thread_stack_free_scan          fail     # the stack free size is the room below the stack pointer, not a scan of the stack
@@ -213,6 +296,7 @@ thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
+timeout_left_kinds              fail     # sceKernelWaitMultipleEvents
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass
@@ -224,14 +308,19 @@ timer_info_cancel               fail     # timer info fields
 timer_modes                     fail     # sceKernelSetTimerTime
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
+timer_waiters                   fail     # a manual reset timer's bit after its event, a pulse wakes one waiter
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority
 tls                             crash    # TLS key 256 and slots by thread UID
+tls_blocks                      fail     # TLS isn't a memory block
 tls_process_id                  fail     # thread info doesn't report the process ID
 tls_start_slots                 pass
 uid                             pass
 uid_class                       pass
+uid_class_kinds                 fail     # memory block UIDs have the thread class
 uid_semantics                   fail     # opening gives a new UID
+unmapped_in                     crash    # no pointer checks, an unmapped option struct crashes
+unmapped_out                    crash    # no write check on output parameters, an unmapped pointer crashes
 vblank_wake_core                fail     # threads ignore their core and priority
 wait_delete_timeout             pass
 wait_info_retries               fail     # a woken thread reports RUNNING instead of READY, bytes sent to a waiting receive stay in the pipe
@@ -240,8 +329,14 @@ wait_own_end                    pass
 wait_priority_change            fail     # a waiter changed to any priority goes behind the others at it
 wait_zero_timeout               fail     # multiple event waits with a timeout of 0
 wake_all_order                  fail     # threads ignore their core and priority
+wake_batch_cores                fail     # threads ignore their core
+wake_busy_cores                 fail     # threads are never READY or STANDBY and ignore their core
 wake_core_origin                fail     # threads ignore their core and priority
+wake_core_ties                  fail     # threads are never STANDBY and ignore their core
 wake_handoff                    fail     # a waiter woken by a set or an unlock still reports its wait for a while
 wake_kinds_order                fail     # threads ignore their core and priority
 wake_ready_areas                fail     # threads ignore their core and priority
+wake_spread                     fail     # threads ignore their core
+wake_target_core                fail     # threads ignore their core
+wake_waker_core                 fail     # threads ignore their core
 yield_order                     fail     # threads ignore their core and priority
