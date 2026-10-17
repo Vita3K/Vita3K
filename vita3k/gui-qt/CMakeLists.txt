@@ -19,6 +19,7 @@ add_library(gui-qt STATIC
     src/live_area_widget.cpp
     src/log_widget.cpp
     src/persistent_settings.cpp
+    src/patch_manager_dialog.cpp
     src/pkg_install_dialog.cpp
     src/physical_key_qt.cpp
     src/qt_utils.cpp
@@ -64,6 +65,7 @@ add_library(gui-qt STATIC
     include/gui-qt/live_area_widget.h
     include/gui-qt/log_widget.h
     include/gui-qt/persistent_settings.h
+    include/gui-qt/patch_manager_dialog.h
     include/gui-qt/pkg_install_dialog.h
     include/gui-qt/physical_key_qt.h
     include/gui-qt/qt_utils.h
@@ -108,6 +110,7 @@ target_link_libraries(gui-qt PUBLIC
     kernel
     motion
     packages
+    patch
     renderer
     touch
     gxm

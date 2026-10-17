@@ -18,6 +18,7 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include <string>
 #include <util/types.h>
 #include <vector>
@@ -39,3 +40,7 @@ std::vector<std::string> get_args(std::string inst, char open, char close);
 std::vector<std::string> get_args(std::string inst);
 
 uint32_t translate(std::string &inst, std::vector<uint32_t> &args);
+
+std::optional<uint64_t> parse_hex(std::string_view text);
+std::optional<std::vector<uint8_t>> parse_value(const std::string &text);
+bool parse_address(const std::string &address, uint8_t &seg, uint32_t &offset);
