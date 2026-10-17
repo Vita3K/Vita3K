@@ -566,7 +566,20 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             upload_format = get_matching_decompressed_format(base_format);
         }
 
-        upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
+        const void *upload_pixels = pixels;
+        if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5 && is_u5u5u5u1(fmt) == is_vulkan) {
+            // Vulkan uploads A1R5G5B5 (1-bit field in bit 15, always supported), OpenGL uses
+            // GL_UNSIGNED_SHORT_5_5_5_1 (1-bit field in bit 0, also available in GLES).
+            // Only the upload is converted, exports keep the guest layout.
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 2);
+            if (is_vulkan)
+                convert_u5u5u5u1_to_u1u5u5u5(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            else
+                convert_u1u5u5u5_to_u5u5u5u1(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            upload_pixels = texture_data_decompressed.data();
+        }
+
+        upload_texture_impl(upload_format, width, height, mip_index, upload_pixels, upload_type, pixels_per_stride);
         if (export_textures)
             export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
 
