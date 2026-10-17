@@ -24,6 +24,7 @@
 #include <vkutil/objects.h>
 
 #include <optional>
+#include <tuple>
 
 struct SwsContext;
 
@@ -172,7 +173,8 @@ private:
     lru::Queue<ColorSurfaceCacheInfo> color_surface_queue;
     lru::Queue<DepthStencilSurfaceCacheInfo> ds_surface_queue;
 
-    std::map<std::pair<vk::ImageView, vk::ImageView>, Framebuffer> framebuffer_array;
+    // key: color, depth-stencil and mask views
+    std::map<std::tuple<vk::ImageView, vk::ImageView, vk::ImageView>, Framebuffer> framebuffer_array;
 
     // used with check_for_surface
     // contains the addresses of the surfaces that are the target

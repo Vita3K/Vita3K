@@ -306,6 +306,16 @@ struct VKContext : public renderer::Context {
     bool in_renderpass = false;
     bool refresh_pipeline = false;
     bool is_first_scene_draw = false;
+    // the mask of the render target holds the background mask of the current scene
+    bool mask_initialized = false;
+    // a mask update happened since the render pass began, the next mask test needs a new render pass
+    bool mask_updated = false;
+    // a draw other than a mask update happened since the render pass began
+    bool non_mask_draw_in_pass = false;
+    // load/store operations of the current render pass (see PipelineCache::retrieve_render_pass)
+    bool current_pass_loads_ds = false;
+    bool current_pass_stores_ds = false;
+    bool current_pass_keeps_mask = false;
     // command buffer used to record the current scene
     vk::CommandBuffer render_cmd{};
     // command buffer used for commands that need to be executed before render_cmd (mostly because they can't be done during a render pass)
@@ -338,6 +348,10 @@ struct VKContext : public renderer::Context {
     void start_recording(bool first_in_scene = false);
     void start_render_pass(bool create_descriptor_set = true);
     void stop_render_pass();
+    // mask bit emulation: clear the mask before the scene draws, order mask accesses
+    void prepare_mask();
+    void mask_barrier();
+    void restart_render_pass_for_mask();
     void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit = true);
 
     // check (when the render target has macroblock set) if we are drawing to another block
@@ -353,6 +367,10 @@ struct VKRenderTarget : public renderer::RenderTarget {
     uint16_t height;
     vkutil::Image color;
     vkutil::Image depthstencil;
+    // mask bit, one per pixel (only used when the mask bit is emulated)
+    vkutil::Image mask;
+    // a scene of this render target updated the mask after drawing: keep the depth-stencil between passes
+    bool uses_mask = false;
 
     uint64_t last_used_frame = 0;
 

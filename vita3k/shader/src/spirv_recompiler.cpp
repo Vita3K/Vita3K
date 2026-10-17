@@ -40,6 +40,7 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -681,13 +682,17 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     }
 
     if (features.use_mask_bit) {
-        const spv::Id mask = create_builtin_sampler(b, features, translation_state, "f_mask");
-        translation_state.mask_id = mask;
-
         if (translation_state.is_vulkan) {
+            // the mask is the second color attachment of the render pass, read as input attachment 1
+            const spv::Id image_type = b.makeImageType(b.makeFloatType(32), spv::DimSubpassData, false, false, false, 2, spv::ImageFormatUnknown);
+            const spv::Id mask = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, "f_mask");
+            translation_state.mask_id = mask;
+            b.addDecoration(mask, spv::DecorationInputAttachmentIndex, 1);
             b.addDecoration(mask, spv::DecorationBinding, 1);
             b.addDecoration(mask, spv::DecorationDescriptorSet, 1);
         } else {
+            const spv::Id mask = create_builtin_sampler(b, features, translation_state, "f_mask");
+            translation_state.mask_id = mask;
             b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
         }
     }
@@ -1108,6 +1113,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             b.addDecoration(spv_params.is_srgb_constant, spv::DecorationSpecId, (int)GAMMA_CORRECTION_SPECIALIZATION_ID);
             b.addName(spv_params.is_srgb_constant, "is_srgb");
         }
+
+        if (features.use_mask_bit && translation_state.is_vulkan) {
+            // layout (constant_id = MASK_SPECIALIZATION_ID) const bool use_mask = false;
+            spv_params.is_mask_constant = b.makeBoolConstant(false, true);
+            b.addDecoration(spv_params.is_mask_constant, spv::DecorationSpecId, (int)MASK_SPECIALIZATION_ID);
+            b.addName(spv_params.is_mask_constant, "use_mask");
+        }
     }
 
     spv_params.render_info_id = translation_state.render_info_id;
@@ -1452,6 +1464,43 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::NoPrecision, b.makeVoidType(), "frag_output_finalize", {}, {},
         decorations, &frag_fin_block);
 
+    if (features.use_mask_bit) {
+        // Discard masked fragments, before anything is written (color storage images included)
+        std::optional<spv::Builder::If> use_mask;
+        if (parameters.is_mask_constant != spv::NoResult)
+            use_mask.emplace(parameters.is_mask_constant, spv::SelectionControlMaskNone, b);
+
+        spv::Id i32 = b.makeIntegerType(32, true);
+        spv::Id v2i32 = b.makeVectorType(i32, 2);
+        spv::Id sampled_type = b.makeFloatType(32);
+        spv::Id v4 = b.makeVectorType(sampled_type, 4);
+        spv::Id rezero = b.makeFloatConstant(0.5f);
+        spv::Id pred2;
+        if (translate_state.is_vulkan) {
+            // input attachment (r8): read the current pixel
+            spv::Id coord_0 = b.makeIntConstant(0);
+            coord_0 = b.makeCompositeConstant(v2i32, { coord_0, coord_0 });
+            spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), coord_0 });
+            texel = b.createCompositeExtract(texel, sampled_type, 0);
+            pred2 = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), texel, rezero);
+        } else {
+            spv::Id current_coord = translate_state.frag_coord_id;
+            current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
+            current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { { true, current_coord }, { true, current_coord }, { false, 0 }, { false, 1 } });
+
+            spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
+            spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
+            spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeVectorType(b.makeBoolType(), 4), { texel, zero });
+            pred2 = b.createUnaryOp(spv::OpAll, b.makeBoolType(), pred);
+        }
+        spv::Builder::If cond_builder(pred2, spv::SelectionControlMaskNone, b);
+        b.makeStatementTerminator(spv::OpKill, "discard");
+        cond_builder.makeEndIf();
+
+        if (use_mask)
+            use_mask->makeEndIf();
+    }
+
     const SceGxmParameterType param_type = program.get_fragment_output_type();
     auto vertex_varyings_ptr = program.vertex_varyings();
 
@@ -1546,26 +1595,6 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
             b.createStore(color, out_u16_raw);
         }
-    }
-
-    if (features.use_mask_bit) {
-        // Discard masked fragments
-        spv::Id current_coord = translate_state.frag_coord_id;
-        spv::Id i32 = b.makeIntegerType(32, true);
-        spv::Id v2i32 = b.makeVectorType(i32, 2);
-        current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
-        current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { { true, current_coord }, { true, current_coord }, { false, 0 }, { false, 1 } });
-
-        spv::Id sampled_type = b.makeFloatType(32);
-        spv::Id v4 = b.makeVectorType(sampled_type, 4);
-        spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
-        spv::Id rezero = b.makeFloatConstant(0.5f);
-        spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
-        spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeVectorType(b.makeBoolType(), 4), { texel, zero });
-        spv::Id pred2 = b.createUnaryOp(spv::OpAll, b.makeBoolType(), pred);
-        spv::Builder::If cond_builder(pred2, spv::SelectionControlMaskNone, b);
-        b.makeStatementTerminator(spv::OpKill, "discard");
-        cond_builder.makeEndIf();
     }
 
     b.makeReturn(false);
@@ -1825,7 +1854,8 @@ static void generate_update_mask_body(spv::Builder &b, TranslationState &transla
 
     const spv::Id out = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, v4, "out_color");
     translate_state.interfaces.push_back(out);
-    b.addDecoration(out, spv::DecorationLocation, 0);
+    // on Vulkan the mask is the second color attachment, the color attachment is left untouched
+    b.addDecoration(out, spv::DecorationLocation, translate_state.is_vulkan ? 1 : 0);
 
     b.createStore(mask_v, out);
 }
@@ -2075,7 +2105,8 @@ GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &sha
     bool force_shader_debug, const std::function<bool(const std::string &ext, const std::string &dump)> &dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
-    translation_state.is_maskupdate = maskupdate;
+    // the vertex program paired with a mask update fragment program is a normal one
+    translation_state.is_maskupdate = maskupdate && program.is_fragment();
     translation_state.is_target_glsl = (target == Target::GLSLOpenGL);
     translation_state.is_vulkan = (target == Target::SpirVVulkan);
     translation_state.hints = &hints;
