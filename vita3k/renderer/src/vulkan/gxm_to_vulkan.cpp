@@ -476,6 +476,14 @@ vk::Format translate_format(SceGxmColorBaseFormat format) {
         return {};
     }
 }
+
+vk::Format translate_surface_format(SceGxmColorBaseFormat base_format, bool support_native_rgba4, bool use_shader_interlock) {
+    // Interlock uses a typed rgba8 storage image; SPIR-V has no rgba4 image format.
+    if (base_format == SCE_GXM_COLOR_BASE_FORMAT_U4U4U4U4 && (!support_native_rgba4 || use_shader_interlock))
+        return vk::Format::eR8G8B8A8Unorm;
+
+    return translate_format(base_format);
+}
 } // namespace color
 
 namespace texture {
