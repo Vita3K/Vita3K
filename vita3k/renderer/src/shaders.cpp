@@ -154,6 +154,38 @@ Sha256Hash get_fragment_shader_hash(const SceGxmProgram &program, const Sha256Ha
     return variant_hash;
 }
 
+// The fragment shader moves the component stored in a single component surface to the red channel
+// (see shader::get_single_component_output_index), translate the write mask and blending to match
+SceGxmBlendInfo get_single_component_blend_info(const SceGxmBlendInfo &blend, int output_index) {
+    SceGxmBlendInfo result = blend;
+
+    const SceGxmColorMask stored_mask = (output_index == 3) ? SCE_GXM_COLOR_MASK_A : SCE_GXM_COLOR_MASK_G;
+    result.colorMask = (blend.colorMask & stored_mask) ? SCE_GXM_COLOR_MASK_R : SCE_GXM_COLOR_MASK_NONE;
+
+    if (output_index == 3) {
+        // the stored alpha is blended by the color equation of the red channel, and the destination alpha is in red
+        const auto alpha_to_color_factor = [](SceGxmBlendFactor factor) {
+            switch (factor) {
+            case SCE_GXM_BLEND_FACTOR_DST_ALPHA:
+                return SCE_GXM_BLEND_FACTOR_DST_COLOR;
+            case SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
+                return SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+            case SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE:
+                // the alpha component of this factor is one
+                return SCE_GXM_BLEND_FACTOR_ONE;
+            default:
+                return factor;
+            }
+        };
+
+        result.colorFunc = blend.alphaFunc;
+        result.colorSrc = alpha_to_color_factor(blend.alphaSrc);
+        result.colorDst = alpha_to_color_factor(blend.alphaDst);
+    }
+
+    return result;
+}
+
 template <typename R>
 static R load_shader_generic(const fs::path &shader_path) {
     std::size_t read_size = 0;

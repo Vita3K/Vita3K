@@ -119,6 +119,29 @@ vk::BlendOp translate_blend_func(const SceGxmBlendFunc blend_func) {
     }
 }
 
+vk::PipelineColorBlendAttachmentState translate_blending(const SceGxmBlendInfo &blend) {
+    vk::ColorComponentFlags color_mask{};
+    if (blend.colorMask & SCE_GXM_COLOR_MASK_R)
+        color_mask |= vk::ColorComponentFlagBits::eR;
+    if (blend.colorMask & SCE_GXM_COLOR_MASK_G)
+        color_mask |= vk::ColorComponentFlagBits::eG;
+    if (blend.colorMask & SCE_GXM_COLOR_MASK_B)
+        color_mask |= vk::ColorComponentFlagBits::eB;
+    if (blend.colorMask & SCE_GXM_COLOR_MASK_A)
+        color_mask |= vk::ColorComponentFlagBits::eA;
+
+    return vk::PipelineColorBlendAttachmentState{
+        .blendEnable = (blend.colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend.alphaFunc != SCE_GXM_BLEND_FUNC_NONE),
+        .srcColorBlendFactor = translate_blend_factor(blend.colorSrc),
+        .dstColorBlendFactor = translate_blend_factor(blend.colorDst),
+        .colorBlendOp = translate_blend_func(blend.colorFunc),
+        .srcAlphaBlendFactor = translate_blend_factor(blend.alphaSrc),
+        .dstAlphaBlendFactor = translate_blend_factor(blend.alphaDst),
+        .alphaBlendOp = translate_blend_func(blend.alphaFunc),
+        .colorWriteMask = color_mask
+    };
+}
+
 vk::PrimitiveTopology translate_primitive(SceGxmPrimitiveType primitive) {
     switch (primitive) {
     case SCE_GXM_PRIMITIVE_TRIANGLES:

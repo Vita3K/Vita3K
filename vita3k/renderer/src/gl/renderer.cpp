@@ -57,7 +57,7 @@ GLContext::GLContext()
     std::memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlock));
 }
 
-static GLenum translate_blend_func(SceGxmBlendFunc src) {
+GLenum translate_blend_func(SceGxmBlendFunc src) {
     R_PROFILE(__func__);
 
     switch (src) {
@@ -76,7 +76,7 @@ static GLenum translate_blend_func(SceGxmBlendFunc src) {
     }
 }
 
-static GLenum translate_blend_factor(SceGxmBlendFactor src) {
+GLenum translate_blend_factor(SceGxmBlendFactor src) {
     R_PROFILE(__func__);
 
     switch (src) {
@@ -407,6 +407,10 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glEnable(GL_SCISSOR_TEST);
     }
+
+    // the blending of single component surfaces depends on the surface
+    if (context.record.fragment_program)
+        sync_blending(context.record, mem);
 }
 
 static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_TO_GL_FORMAT = {

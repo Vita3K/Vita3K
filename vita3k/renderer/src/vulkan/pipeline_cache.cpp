@@ -864,6 +864,8 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     };
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
+    // must outlive the pipeline creation, color_blending only points to it
+    vk::PipelineColorBlendAttachmentState single_component_blending;
     if (support_coherent_framebuffer_fetch && gxm_fragment_shader->is_frag_color_used())
         color_blending.flags = vk::PipelineColorBlendStateCreateFlagBits::eRasterizationOrderAttachmentAccessEXT;
 
@@ -876,8 +878,14 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         };
         color_blending.setAttachments(blending);
     } else {
-        const vk::PipelineColorBlendAttachmentState &blending = fragment_program.blending;
-        color_blending.setAttachments(blending);
+        // the blending of single component surfaces depends on the surface
+        const int single_component_index = shader::get_single_component_output_index(*gxm_fragment_shader, hints.color_format);
+        if (single_component_index >= 0 && fragment_program.has_blend) {
+            single_component_blending = translate_blending(get_single_component_blend_info(fragment_program.blend, single_component_index));
+            color_blending.setAttachments(single_component_blending);
+        } else {
+            color_blending.setAttachments(fragment_program.blending);
+        }
     }
 
     vk::PipelineLayout pipeline_layout = pipeline_layouts[vertex_program.texture_count][fragment_program.texture_count];
