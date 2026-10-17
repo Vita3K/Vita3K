@@ -17,6 +17,7 @@
 
 #include <renderer/functions.h>
 #include <renderer/profile.h>
+#include <renderer/shaders.h>
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
@@ -432,6 +433,20 @@ void sync_blending(const GxmRecordState &state, const MemState &mem) {
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         gxm_fragment_program.renderer_data.get());
+
+    const int single_component_index = shader::get_single_component_output_index(*gxm_fragment_program.program.get(mem), state.color_surface.colorFormat);
+    if (single_component_index >= 0 && fragment_program.has_blend) {
+        const SceGxmBlendInfo blend = get_single_component_blend_info(fragment_program.blend, single_component_index);
+        glColorMask((blend.colorMask & SCE_GXM_COLOR_MASK_R) ? GL_TRUE : GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        if ((blend.colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend.alphaFunc != SCE_GXM_BLEND_FUNC_NONE)) {
+            glEnable(GL_BLEND);
+            glBlendEquationSeparate(translate_blend_func(blend.colorFunc), translate_blend_func(blend.alphaFunc));
+            glBlendFuncSeparate(translate_blend_factor(blend.colorSrc), translate_blend_factor(blend.colorDst), translate_blend_factor(blend.alphaSrc), translate_blend_factor(blend.alphaDst));
+        } else {
+            glDisable(GL_BLEND);
+        }
+        return;
+    }
 
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {

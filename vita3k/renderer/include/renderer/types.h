@@ -189,6 +189,9 @@ struct ShaderProgram {
 };
 
 struct FragmentProgram : ShaderProgram {
+    // kept because the blending of single component surfaces is translated per surface
+    bool has_blend = false;
+    SceGxmBlendInfo blend{};
 };
 
 struct VertexProgram : ShaderProgram {
