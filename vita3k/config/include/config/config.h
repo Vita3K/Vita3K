@@ -193,6 +193,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "warn-missing-firmware", true, warn_missing_firmware)                                    \
     code(bool, "check-for-updates", true, check_for_updates)                                            \
     code(int, "check-for-updates-mode", static_cast<int>(UPDATE_STARTUP_PROMPT), check_for_updates_mode)\
+    code(int, "skipped-update-build", 0, skipped_update_build)                                          \
     code(int, "file-loading-delay", 0, file_loading_delay)                                              \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \

@@ -245,23 +245,23 @@ Java_org_vita3k_emulator_NativeLib_getCompatibilityDatabaseVersion(JNIEnv *env, 
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_vita3k_emulator_NativeLib_installCompatibilityDatabase(JNIEnv *env, jclass, jbyteArray zip_bytes, jstring version_str) {
+Java_org_vita3k_emulator_NativeLib_installCompatibilityDatabase(JNIEnv *env, jclass, jbyteArray archive_bytes, jstring version_str) {
     auto *emuenv = get_emuenv();
-    if (!emuenv || !zip_bytes || !version_str)
+    if (!emuenv || !archive_bytes || !version_str)
         return JNI_FALSE;
 
-    const jsize zip_size = env->GetArrayLength(zip_bytes);
-    if (zip_size <= 0)
+    const jsize archive_size = env->GetArrayLength(archive_bytes);
+    if (archive_size <= 0)
         return JNI_FALSE;
 
-    std::vector<uint8_t> zip_data(static_cast<size_t>(zip_size));
-    env->GetByteArrayRegion(zip_bytes, 0, zip_size, reinterpret_cast<jbyte *>(zip_data.data()));
+    std::vector<uint8_t> archive_data(static_cast<size_t>(archive_size));
+    env->GetByteArrayRegion(archive_bytes, 0, archive_size, reinterpret_cast<jbyte *>(archive_data.data()));
 
     const std::string version = jstring_to_string(env, version_str);
     const bool ok = compat::install_db(
         emuenv->compat,
         std::filesystem::path(emuenv->cache_path.string()),
-        std::span<const uint8_t>(zip_data.data(), zip_data.size()),
+        std::span<const uint8_t>(archive_data.data(), archive_data.size()),
         version);
 
     return ok ? JNI_TRUE : JNI_FALSE;
