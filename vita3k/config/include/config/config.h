@@ -160,6 +160,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "export-as-png", true, export_as_png)                                                    \
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
+    code(bool, "enable-cheats", true, enable_cheats)                                                    \
     code(bool, "show-live-area-screen", false, show_live_area_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
