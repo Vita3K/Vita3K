@@ -220,7 +220,93 @@
 		<silver>Серебро</silver>
 		<hours_ago>{} час. назад</hours_ago>
 		<minutes_ago>{} мин. назад</minutes_ago>
+		<activities>События</activities>
+		<like>Нравится</like>
+		<likes_this>Это нравится пользователю {}.</likes_this>
+		<and_like_this>Это нравится пользователям {} и {}.</and_like_this>
+		<people_like_this>Это нравится {} пользователям.</people_like_this>
+		<comments>Комментарии {}</comments>
+		<delete_activity>Это событие будет удалено.</delete_activity>
+		<delete_comment>Этот комментарий будет удален.</delete_comment>
+		<unlike>Не нравится</unlike>
+		<write_comment>Добавить комментарий</write_comment>
+		<has_earned_platinum_trophy>получил(-а) платиновый приз в "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>получил(-а) приз в "{}"!</has_earned_trophy>
+		<first_time_playing>впервые играет в "{}".</first_time_playing>
+		<download_failed>Не удалось выполнить загрузку.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>События {}</activities_of>
+		<anyone>Все</anyone>
+		<no_one>Никто</no_one>
+		<cannot_display>Невозможно отобразить дополнительные страницы.</cannot_display>
+		<friends_of_friends>Друзья Друзей</friends_of_friends>
+		<friends_only>Только Друзья</friends_only>
+		<share_range>Степень доступа:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Принимать</accept>
+		<players_blocked>Заблокированные игроки</players_blocked>
+		<friend_request_already_canceled>Запрос на добавление Друга уже отменен.</friend_request_already_canceled>
+		<search_for_player>Найдите игрока в сети Vita3K Network и просмотрите профиль игрока или отправьте запрос на дружбу.</search_for_player>
+		<friend_requests>Запросы на добавление Друга</friend_requests>
+		<friends>Друзья</friends>
+		<could_not_find_online_id>Не удалось найти сетевой идентификатор.</could_not_find_online_id>
+		<there_are_no_players>Нет игроков.</there_are_no_players>
+		<no_players_found>Игроки не найдены.</no_players_found>
+		<online_id>Сетевой идентификатор</online_id>
+		<enter_from_3_to_16_characters>Введите от 3 до 16 символов.</enter_from_3_to_16_characters>
+		<online_status>Статус в сети</online_status>
+		<received>Полученные</received>
+		<search>Поиск</search>
+		<sent>Отправленные</sent>
+		<waiting_for_friend_response>Ожидание ответа Друга.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Про меня</about_me>
+		<accept>Принимать</accept>
+		<activity>Cобытие</activity>
+		<warn_block_player>Если заблокировать этого игрока, то вы больше не сможете получать сообщения от этого игрока.
+Продолжить?</warn_block_player>
+		<warn_block_friend>Если заблокировать этого игрока, то он будет удален из Друзей. Вы больше не сможете получать сообщения от этого игрока.
+Продолжить?</warn_block_friend>
+		<block>Блокировать</block>
+		<blocked>Заблокирован.</blocked>
+		<cancel_friend_request>Отменить запрос на добавление Друга</cancel_friend_request>
+		<friend_request_canceled>Запрос на добавление Друга будет отменен.</friend_request_canceled>
+		<delete_request>Удалить запрос</delete_request>
+		<edit_profile>Изменить профиль</edit_profile>
+		<friend_request_already_canceled>Запрос на добавление Друга уже отменен.</friend_request_already_canceled>
+		<friends>Друзья</friends>
+		<is_now_friends_with>теперь дружит с {}</is_now_friends_with>
+		<level>Уровень</level>
+		<not_a_friend_yet>Пока еще не Друг.</not_a_friend_yet>
+		<remove_from_friends>Удалить из Друзей</remove_from_friends>
+		<player_removed_from_friends>Этот игрок будет удален из списка Друзей.</player_removed_from_friends>
+		<send_friend_request>Отправить запрос на добавление Друга</send_friend_request>
+		<send>Отправить</send>
+		<trophies>Призы</trophies>
+		<unblock>Разблокировать</unblock>
+		<unblock_player>Разблокируйте этого игрока.</unblock_player>
+		<waiting_friend_response>Ожидание ответа Друга.</waiting_friend_response>
+		<friend_request_from_player>У вас есть запрос на добавление Друга от этого игрока.</friend_request_from_player>
+		<you_have_friend_requests>У вас есть запросы на добавление Друга.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Сообщения</title>
+		<create_message>+ Создать сообщение</create_message>
+		<uncheck_all>Снять все отметки</uncheck_all>
+		<enter_online_id>Введите сетевой идентификатор.</enter_online_id>
+		<add>Добавить</add>
+		<add_recipient>Добавить получателя</add_recipient>
+		<delete>Удалить</delete>
+		<cancel>Отмена</cancel>
+		<to>Кому</to>
+	</messages_app>
 
 	<compatibility name="Совместимость">
 		<states>
@@ -322,13 +408,43 @@
 
 	<indicator>
 		<app_added_home>Приложение добавлено на начальный экран.</app_added_home>
+		<cancel_download>Отменить эту операцию загрузки?</cancel_download>
+		<cancel_install>Отменить эту операцию установки?
+В случае отмены также будут удалены файлы, загруженные для этой операции установки.</cancel_install>
 		<delete_all>Удалить все</delete_all>
 		<notif_deleted>Уведомления будут удалены.</notif_deleted>
+		<waiting_download>Ожидание загрузки...</waiting_download>
+		<downloading_complete>Загрузка завершена.</downloading_complete>
 		<install_failed>Не удалось выполнить установку.</install_failed>
+		<player_is_online>{} присутствует(-ют) в сети.</player_is_online>
+		<waiting_install>Ожидание установки...</waiting_install>
 		<install_complete>Установка завершена.</install_complete>
 		<installing>Идет установка...</installing>
+		<minutes_left>Осталось минут: {}</minutes_left>
 		<no_notif>Уведомления отсутствуют.</no_notif>
+		<commented_on_activity>Кто-то прокомментировал событие с {}.</commented_on_activity>
+		<commented_on_your_activity>Кто-то прокомментировал событие с вами.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Кому-то понравилось событие с вами, и он оставил комментарий.</commented_and_likes_your_activity>
+		<likes_your_activity>Кому-то понравилось событие с вами.</likes_your_activity>
+		<pause_all>Приостановить все</pause_all>
+		<pause>Приостановить</pause>
+		<paused>Приостановлено</paused>
+		<resume_all>Продолжить все</resume_all>
+		<resume>Продолжить</resume>
+		<seconds_left>Осталось секунд: {}</seconds_left>
+		<friend_requests>У вас есть запросы на добавление Друга.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>Имеется новая версия приложения.</new_app_version_available>
+		<latest_version_installed>Самая последняя версия приложения уже установлена.</latest_version_installed>
+		<downloading_app_update>Загрузка файла обновления приложения...
+Ход выполнения загрузки можно просмотреть в списке уведомлений.</downloading_app_update>
+		<download>Загрузить</download>
+		<not_enough_space>Не удалось выполнить загрузку.
+На карте памяти недостаточно свободного места. Освободите на карте памяти не менее {} места, после чего повторите попытку загрузки.</not_enough_space>
+		<version>Версия {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Назад</back>

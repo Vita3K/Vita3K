@@ -15,9 +15,11 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <cpu/state.h>
+#include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
+#include <module/ipmi_client.h>
 #include <module/module.h>
-
-#include "modules/module_parent.h"
 
 #include <util/tracy.h>
 
@@ -83,8 +85,12 @@ EXPORT(int, _ZN4IPMI6Client6Config24estimateClientMemorySizeEv) {
 // IPMI::Client::create(IPMI::Client**, IPMI::Client::Config const*, void*, void*)
 EXPORT(int, _ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_, Ptr<void> *client, void const *config, Ptr<void> user_data, Ptr<void> client_memory) {
     TRACY_FUNC(_ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_, client, config, user_data, client_memory);
-    *client_memory.cast<Ptr<void>>().get(emuenv.mem) = get_client_vtable(emuenv.kernel, emuenv.mem);
-    *client = client_memory;
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    const SceInt32 result = initialize_ipmi_client(emuenv.kernel, caller->cpu->mem, client, client_memory);
+    if (result != SCE_KERNEL_OK)
+        return RET_ERROR(result);
     STUBBED("Stubed");
     return 0;
 }

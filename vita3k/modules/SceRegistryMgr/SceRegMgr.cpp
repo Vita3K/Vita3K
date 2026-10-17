@@ -17,6 +17,7 @@
 
 #include <module/module.h>
 
+#include <kernel/types.h>
 #include <regmgr/functions.h>
 #include <regmgr/types.h>
 
@@ -109,9 +110,7 @@ EXPORT(int, sceRegMgrResetRegistryLv) {
 
 EXPORT(int, sceRegMgrSetKeyBin, const char *category, const char *name, const void *buf, SceSize bufSize) {
     TRACY_FUNC(sceRegMgrSetKeyBin, category, name, buf, bufSize);
-    regmgr::set_bin_value(emuenv.regmgr, category, name, buf, bufSize);
-
-    return 0;
+    return regmgr::set_bin_value(emuenv.regmgr, category, name, buf, bufSize) ? 0 : RET_ERROR(SCE_KERNEL_ERROR_ERROR);
 }
 
 EXPORT(int, sceRegMgrSetKeyInt, const char *category, const char *name, const SceInt32 buf) {
@@ -123,9 +122,7 @@ EXPORT(int, sceRegMgrSetKeyInt, const char *category, const char *name, const Sc
 
 EXPORT(int, sceRegMgrSetKeyStr, const char *category, const char *name, char *buf, const SceSize bufSize) {
     TRACY_FUNC(sceRegMgrSetKeyStr, category, name, buf, bufSize);
-    regmgr::set_str_value(emuenv.regmgr, category, name, buf, bufSize);
-
-    return 0;
+    return regmgr::set_str_value(emuenv.regmgr, category, name, buf, bufSize) ? 0 : RET_ERROR(SCE_KERNEL_ERROR_ERROR);
 }
 
 EXPORT(int, sceRegMgrSetKeys, const char *category, const Keys *keys, const SceInt32 elementsNumber) {

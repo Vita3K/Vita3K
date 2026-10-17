@@ -38,8 +38,9 @@ static constexpr uint32_t screen_vertex_count = 4;
 
 using screen_vertices_t = screen_vertex[screen_vertex_count];
 
-SinglePassScreenFilter::SinglePassScreenFilter(ScreenRenderer &screen)
-    : ScreenFilter(screen) {}
+SinglePassScreenFilter::SinglePassScreenFilter(ScreenRenderer &screen, bool alpha_blend)
+    : ScreenFilter(screen)
+    , alpha_blend(alpha_blend) {}
 
 SinglePassScreenFilter::~SinglePassScreenFilter() {
     vk::Device device = screen.state.device;
@@ -167,7 +168,13 @@ void SinglePassScreenFilter::create_graphics_pipeline() {
         .rasterizationSamples = vk::SampleCountFlagBits::e1
     };
     vk::PipelineColorBlendAttachmentState blend_attachment{
-        .blendEnable = VK_FALSE,
+        .blendEnable = alpha_blend ? VK_TRUE : VK_FALSE,
+        .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+        .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+        .colorBlendOp = vk::BlendOp::eAdd,
+        .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+        .dstAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+        .alphaBlendOp = vk::BlendOp::eAdd,
         .colorWriteMask = vkutil::default_color_mask
     };
     vk::PipelineColorBlendStateCreateInfo color_blending{};
@@ -207,7 +214,7 @@ std::string_view SinglePassScreenFilter::get_vertex_name() {
 }
 
 std::string_view SinglePassScreenFilter::get_fragment_name() {
-    return "render_main.frag.spv";
+    return alpha_blend ? "render_main_alpha.frag.spv" : "render_main.frag.spv";
 }
 
 void SinglePassScreenFilter::init() {
@@ -271,7 +278,7 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         // set viewport and scissor
         vk::Rect2D vk_scissor{
             .offset = { 0, 0 },
-            .extent = screen.extent
+            .extent = screen.composing ? screen.composition_extent : screen.extent
         };
         screen.current_cmd_buffer.setScissor(0, vk_scissor);
         vk::Viewport vk_viewport{
@@ -282,7 +289,12 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
         constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
         const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect && screen.state.fullscreen && !(screen.extent.width % DEFAULT_RES_WIDTH) && !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
-        if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
+        if (screen.composing) {
+            vk_viewport.width = static_cast<float>(screen.composition_extent.width);
+            vk_viewport.height = static_cast<float>(screen.composition_extent.height);
+            vk_viewport.x = 0.0f;
+            vk_viewport.y = 0.0f;
+        } else if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
             // Match the aspect ratio to the screen size.
             vk_viewport.width = static_cast<float>(screen.extent.width);
             vk_viewport.height = static_cast<float>(screen.extent.height);

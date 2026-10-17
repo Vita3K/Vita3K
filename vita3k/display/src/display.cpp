@@ -18,6 +18,7 @@
 #include <display/functions.h>
 
 #include <cheat/functions.h>
+#include <config/state.h>
 #include <ctrl/functions.h>
 #include <dialog/state.h>
 #include <display/state.h>
@@ -41,7 +42,7 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
     DisplayState &display = emuenv.display;
 
     const cheat::JitInvalidate invalidate_jit = [&emuenv](uint32_t address, size_t size) {
-        emuenv.kernel.invalidate_jit_cache(address, size);
+        emuenv.kernel.invalidate_jit_cache(emuenv.mem, address, size);
     };
 
     while (!display.abort.load()) {
@@ -73,7 +74,14 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
 
             // Cheat codes are re-applied on every vblank, the same way the Vita cheat plugins do.
             // The pad is read here rather than taken from the game, which may stop reading it while a button is held.
-            cheat::set_buttons(emuenv.cheat, ctrl_peek_buttons(emuenv, 1));
+            const auto buttons = ctrl_peek_buttons(emuenv, 1);
+            cheat::set_buttons(emuenv.cheat, buttons);
+            auto power_buttons = buttons;
+            if (emuenv.cfg.current_config.pstv_mode) {
+                for (int port = 2; port <= SCE_CTRL_MAX_WIRELESS_NUM; ++port)
+                    power_buttons |= ctrl_peek_buttons(emuenv, port);
+            }
+            update_power_ps_button(emuenv, power_buttons);
             cheat::apply(emuenv.cheat, emuenv.mem, invalidate_jit);
 
             // Notify Vblank callback in each VBLANK start, skipping the deleted ones
@@ -181,6 +189,7 @@ DisplayFrameInfo *predict_next_image(EmuEnvState &emuenv, Address sync_object) {
 void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame) {
     auto &display = emuenv.display;
     std::lock_guard<std::mutex> lock(display.display_info_mutex);
+    display.sce_frame = frame;
     Address sync_object = display.current_sync_object;
 
     if (!display.predicting) {
@@ -192,7 +201,11 @@ void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame) {
         if (pred_frame.sync_object != sync_object)
             continue;
 
-        if (memcmp(&pred_frame.frame_info, &frame, sizeof(DisplayFrameInfo)) == 0)
+        const auto &predicted = pred_frame.frame_info;
+        if (predicted.base == frame.base && predicted.pitch == frame.pitch
+            && predicted.pixelformat == frame.pixelformat
+            && predicted.image_size.x == frame.image_size.x && predicted.image_size.y == frame.image_size.y
+            && predicted.owner_pid == frame.owner_pid && predicted.software_pixels == frame.software_pixels)
             // we got what we expected, fine
             return;
 
@@ -227,6 +240,9 @@ void DisplayState::deinit() {
         const std::lock_guard<std::mutex> guard(display_info_mutex);
         sce_frame = {};
         next_rendered_frame = {};
+        background_frame = {};
+        active_display_pid = 0;
+        process_frames.clear();
     }
 
     predicted_frames.clear();

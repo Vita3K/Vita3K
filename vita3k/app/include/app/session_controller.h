@@ -42,6 +42,12 @@ enum class AppSessionPauseReason : uint32_t {
     All = 0xFFFFFFFF
 };
 
+constexpr bool show_pause_overlay(uint32_t reasons) {
+    const auto user = static_cast<uint32_t>(AppSessionPauseReason::User);
+    const auto hidden = static_cast<uint32_t>(AppSessionPauseReason::Menu) | static_cast<uint32_t>(AppSessionPauseReason::Background);
+    return (reasons & user) != 0 && (reasons & hidden) == 0;
+}
+
 enum class AppSessionStopReason {
     UserRequest,
     Relaunch,
@@ -56,6 +62,7 @@ public:
     bool has_active_session() const;
     bool is_running() const;
     bool is_paused() const;
+    bool should_show_pause_overlay() const;
 
     bool begin_launch(const AppLaunchRequest &launch_request, bool update_last_time_used = true);
     bool initialize_renderer(renderer::FrameHost &frame);

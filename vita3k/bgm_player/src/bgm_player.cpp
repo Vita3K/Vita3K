@@ -22,8 +22,12 @@
 #include <cubeb/cubeb.h>
 
 #include <io/VitaIoDevice.h>
+#include <io/device.h>
 #include <io/state.h>
-#include <io/vfs.h>
+
+#include <fstream>
+#include <limits>
+#include <stdexcept>
 
 namespace bgm_player {
 
@@ -44,9 +48,13 @@ struct PcmData {
 
 struct At9Stream {
     std::shared_ptr<Atrac9DecoderState> decoder;
+    std::shared_ptr<BgmSource> source;
     std::vector<uint8_t> es_data;
-    uint32_t data_size = 0;
-    uint32_t current_pos = 0;
+    uint64_t data_size = 0;
+    uint64_t data_offset = 0;
+    uint64_t current_pos = 0;
+    uint64_t buffer_pos = 0;
+    size_t buffer_size = 0;
     uint32_t super_frame_size = 0;
     uint32_t channels = 0;
     uint32_t sample_per_frame = 0;
@@ -81,7 +89,28 @@ static uint32_t decode_next_frame(At9Stream *at9_stream) {
 
     auto &write_buffer = pcm_data.buffers[pcm_data.write_buffer_index];
     DecoderSize size{};
-    const uint8_t *frame_data = at9_stream->es_data.data() + at9_stream->current_pos;
+    if (at9_stream->current_pos < at9_stream->buffer_pos
+        || at9_stream->current_pos - at9_stream->buffer_pos >= at9_stream->buffer_size
+        || at9_stream->buffer_size - static_cast<size_t>(at9_stream->current_pos - at9_stream->buffer_pos) < at9_stream->super_frame_size) {
+        const auto remaining = at9_stream->data_size - at9_stream->current_pos;
+        const auto read_size = static_cast<size_t>(std::min<uint64_t>(remaining, 64 * 1024 + at9_stream->super_frame_size));
+        at9_stream->es_data.resize(read_size + at9_stream->super_frame_size, 0);
+        std::fill(at9_stream->es_data.begin() + read_size, at9_stream->es_data.end(), 0);
+        try {
+            if (at9_stream->source->read(at9_stream->current_pos + at9_stream->data_offset, at9_stream->es_data.data(), read_size) != read_size) {
+                LOG_ERROR("Failed to read BGM: unexpected end of file");
+                at9_stream->initialized = false;
+                return 0;
+            }
+        } catch (const std::runtime_error &error) {
+            LOG_ERROR("Failed to read BGM: {}", error.what());
+            at9_stream->initialized = false;
+            return 0;
+        }
+        at9_stream->buffer_pos = at9_stream->current_pos;
+        at9_stream->buffer_size = read_size;
+    }
+    const uint8_t *frame_data = at9_stream->es_data.data() + static_cast<size_t>(at9_stream->current_pos - at9_stream->buffer_pos);
 
     if (!at9_stream->decoder->send(frame_data)
         || !at9_stream->decoder->receive(write_buffer.data.data(), &size)) {
@@ -91,6 +120,11 @@ static uint32_t decode_next_frame(At9Stream *at9_stream) {
     }
 
     uint32_t es_size_used = std::min(at9_stream->decoder->get_es_size(), at9_stream->super_frame_size);
+    if (es_size_used == 0) {
+        LOG_ERROR("BGM decoder consumed no input");
+        at9_stream->initialized = false;
+        return 0;
+    }
     at9_stream->current_pos += es_size_used;
 
     if (at9_stream->channels == 1) {
@@ -212,19 +246,19 @@ static void state_callback(cubeb_stream *stream, void *user_ptr, cubeb_state sta
 
 // Function to stop the background music
 void stop_bgm() {
-    if (!stream) {
-        return;
-    }
-
-    cubeb_stream_stop(stream);
+    if (stream)
+        cubeb_stream_stop(stream);
 
     // Reset the stream state
     {
         // We lock the mutex to protect access to the stream state
         std::lock_guard<std::mutex> lock(at9_stream.mutex);
         at9_stream.es_data.clear();
+        at9_stream.source.reset();
         at9_stream.data_size = 0;
         at9_stream.current_pos = 0;
+        at9_stream.buffer_pos = 0;
+        at9_stream.buffer_size = 0;
         at9_stream.initialized = false;
         at9_stream.pcm_data.write_buffer_index = 0;
         at9_stream.pcm_data.next_audio_buffer = 0;
@@ -237,11 +271,9 @@ void stop_bgm() {
 
 // Function to destroy the Cubeb context
 void destroy_bgm_player() {
+    clear_current_bgm();
     if (!stream)
         return;
-
-    // Stop the Background Music
-    stop_bgm();
 
     {
         // We lock the mutex to protect access to stop_requested and other variables
@@ -398,30 +430,44 @@ struct At9Header {
 // Size of the AT9 header
 static constexpr uint32_t AT9_HEADER_SIZE = sizeof(At9Header);
 
-static bool init_bgm_streaming(uint8_t *at9_data, uint32_t size) {
-    if (size < sizeof(At9Header)) {
+static bool init_bgm_streaming(const std::shared_ptr<BgmSource> &source) {
+    if (!source || source->size() <= sizeof(At9Header)) {
         LOG_ERROR("AT9 header too small");
         return false;
     }
 
-    // Set the header pointer to the start of the AT9 data
-    const At9Header &header = *reinterpret_cast<const At9Header *>(at9_data);
-    at9_data += sizeof(At9Header);
-    size -= sizeof(At9Header);
+    At9Header header{};
+    try {
+        if (source->read(0, &header, sizeof(header)) != sizeof(header)) {
+            LOG_ERROR("Failed to read AT9 header: unexpected end of file");
+            return false;
+        }
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Failed to read AT9 header: {}", error.what());
+        return false;
+    }
 
     {
         std::lock_guard<std::mutex> lock(at9_stream.mutex);
 
         // initialize the At9Stream structure
         at9_stream.decoder = std::make_shared<Atrac9DecoderState>(header.fmt.config_data);
-        at9_stream.es_data.insert(at9_stream.es_data.end(), at9_data, at9_data + size);
-        at9_stream.data_size = size;
+        at9_stream.source = source;
+        at9_stream.data_offset = sizeof(header);
+        at9_stream.data_size = source->size() - sizeof(header);
+        at9_stream.current_pos = 0;
+        at9_stream.buffer_pos = 0;
+        at9_stream.buffer_size = 0;
         at9_stream.super_frame_size = at9_stream.decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
         at9_stream.channels = at9_stream.decoder->get(DecoderQuery::CHANNELS);
         at9_stream.sample_per_frame = at9_stream.decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME);
-        if (at9_stream.channels != 1 && at9_stream.channels != 2) {
-            LOG_ERROR("Unsupported BGM channel count: {}.", at9_stream.channels);
+        if ((at9_stream.channels != 1 && at9_stream.channels != 2)
+            || at9_stream.super_frame_size == 0 || at9_stream.super_frame_size > 64 * 1024
+            || at9_stream.sample_per_frame == 0) {
+            LOG_ERROR("Unsupported BGM stream parameters: channels={}, superframe={}, samples={}",
+                at9_stream.channels, at9_stream.super_frame_size, at9_stream.sample_per_frame);
             at9_stream.decoder.reset();
+            at9_stream.source.reset();
             at9_stream.es_data.clear();
             at9_stream.data_size = 0;
             at9_stream.initialized = false;
@@ -444,9 +490,59 @@ static bool init_bgm_streaming(uint8_t *at9_data, uint32_t size) {
 }
 
 static std::pair<std::string, std::string> current_path_bgm = { "pd0", "data/systembgm/initialsetup.at9" };
+static std::shared_ptr<BgmSource> current_bgm_source;
+static bool custom_bgm_source = false;
+void clear_current_bgm() {
+    stop_bgm();
+    current_bgm_source.reset();
+    custom_bgm_source = false;
+}
+
 void set_current_bgm_path(const std::pair<std::string, std::string> &path) {
     current_path_bgm = path;
+    current_bgm_source.reset();
+    custom_bgm_source = false;
 }
+
+void set_current_bgm_source(std::shared_ptr<BgmSource> source) {
+    current_bgm_source = std::move(source);
+    custom_bgm_source = true;
+}
+
+class HostBgmSource final : public BgmSource {
+public:
+    explicit HostBgmSource(const fs::path &path)
+        : input_(path, std::ios::binary | std::ios::ate) {
+        if (!input_ || input_.tellg() < 0)
+            return;
+        size_ = static_cast<uint64_t>(input_.tellg());
+        valid_ = true;
+    }
+
+    bool valid() const { return valid_; }
+    uint64_t size() const override { return size_; }
+
+    size_t read(uint64_t offset, void *data, size_t length) override {
+        if (offset > size_ || length > size_ - offset
+            || offset > static_cast<uint64_t>(std::numeric_limits<std::streamoff>::max())
+            || length > static_cast<size_t>(std::numeric_limits<std::streamsize>::max())) {
+            LOG_ERROR("Invalid BGM read range: offset={}, length={}, size={}", offset, length, size_);
+            return 0;
+        }
+        input_.clear();
+        input_.seekg(static_cast<std::streamoff>(offset));
+        if (!input_.read(static_cast<char *>(data), static_cast<std::streamsize>(length))) {
+            LOG_ERROR("Cannot read BGM file at offset {}", offset);
+            return 0;
+        }
+        return length;
+    }
+
+private:
+    std::ifstream input_;
+    uint64_t size_ = 0;
+    bool valid_ = false;
+};
 
 bool init_bgm(const fs::path &pref_path, const bool is_enable) {
     VitaIoDevice device = VitaIoDevice::_INVALID;
@@ -467,19 +563,20 @@ bool init_bgm(const fs::path &pref_path, const bool is_enable) {
     if (!is_enable)
         return false;
 
-    // Attempt to read the AT9 file from the specified path
-    vfs::FileBuffer at9_buffer;
-    if (!vfs::read_file(device, at9_buffer, pref_path, path)) {
-        if (device == VitaIoDevice::pd0)
-            LOG_WARN("Failed to read AT9 file from {}:{}, install Preinst Firmware for fix it", current_path_bgm.first, path);
-        else
-            LOG_ERROR("Failed to read AT9 file from {}:{}", current_path_bgm.first, path);
-
+    std::shared_ptr<BgmSource> source = current_bgm_source;
+    if (!custom_bgm_source) {
+        auto host_source = std::make_shared<HostBgmSource>(device::construct_emulated_path(device, path, pref_path));
+        if (!host_source->valid()) {
+            LOG_ERROR("Failed to open AT9 file {}:{}", current_path_bgm.first, path);
+            return false;
+        }
+        source = std::move(host_source);
+    } else if (!source) {
+        LOG_ERROR("Protected theme BGM is unavailable: {}:{}", current_path_bgm.first, path);
         return false;
     }
 
-    // Initialize the Background Music Streaming
-    if (!init_bgm_streaming(at9_buffer.data(), at9_buffer.size())) {
+    if (!init_bgm_streaming(source)) {
         LOG_ERROR("Failed to initialize AT9 decoder");
         return false;
     }

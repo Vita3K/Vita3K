@@ -38,6 +38,7 @@
 #include <overlay/display_manager.h>
 
 #include <algorithm>
+#include <cstring>
 #include <mutex>
 #include <string_view>
 #include <unordered_set>
@@ -655,6 +656,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
+            .independentBlend = physical_device_features.independentBlend,
             .fillModeNonSolid = physical_device_features.fillModeNonSolid,
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
@@ -672,7 +674,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
         bool support_external_memory = false;
         bool support_shader_interlock = false;
         bool support_image_view_usage = false;
-        const std::map<std::string_view, bool *> optional_extensions = {
+        std::map<std::string_view, bool *> optional_extensions = {
             { vk::KHRGetMemoryRequirements2ExtensionName, &temp_bool },
             // can be used by vma to improve performance
             { vk::KHRDedicatedAllocationExtensionName, &support_dedicated_allocations },
@@ -710,6 +712,9 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME, &support_unix_fd_import },
 #endif
         };
+
+        if (config.validation_layer)
+            optional_extensions.emplace(vk::NVDeviceDiagnosticCheckpointsExtensionName, &support_gpu_checkpoints);
 
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
             auto it = optional_extensions.find(ext.extensionName.data());
@@ -860,6 +865,8 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             device = physical_device.createDevice(device_info.get());
         }
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
+        device_lost_reported = false;
+        LOG_INFO("Vulkan GPU diagnostic checkpoints: {}", support_gpu_checkpoints ? "enabled (validation requested)" : "unavailable or disabled");
     }
 
     // Get Queues
@@ -930,6 +937,36 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
         };
         cmd_buffer.clearColorImage(default_image.image, vk::ImageLayout::eTransferDstOptimal, white, vkutil::color_subresource_range);
         default_image.transition_to(cmd_buffer, vkutil::ImageLayout::StorageImage);
+        default_cube_image = vkutil::Image(1, 1, vk::Format::eR8G8B8A8Unorm);
+        const vk::ImageCreateInfo cube_info{
+            .flags = vk::ImageCreateFlagBits::eCubeCompatible,
+            .imageType = vk::ImageType::e2D,
+            .format = default_cube_image.format,
+            .extent = { 1, 1, 1 },
+            .mipLevels = 1,
+            .arrayLayers = 6,
+            .samples = vk::SampleCountFlagBits::e1,
+            .tiling = vk::ImageTiling::eOptimal,
+            .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
+        };
+        std::tie(default_cube_image.image, default_cube_image.allocation) = allocator.createImage(cube_info, vkutil::vma_auto_alloc);
+        const vk::ImageSubresourceRange cube_range{ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 6 };
+        const vk::ImageViewCreateInfo cube_view{
+            .image = default_cube_image.image,
+            .viewType = vk::ImageViewType::eCube,
+            .format = default_cube_image.format,
+            .subresourceRange = cube_range
+        };
+        default_cube_image.view = device.createImageView(cube_view);
+        default_cube_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst, cube_range);
+        cmd_buffer.clearColorImage(default_cube_image.image, vk::ImageLayout::eTransferDstOptimal, white, cube_range);
+        default_cube_image.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage, cube_range);
+        default_raw_image = vkutil::Image(1, 1, vk::Format::eR16G16B16A16Uint);
+        default_raw_image.init_image(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransferDst);
+        default_raw_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        const vk::ClearColorValue raw_zero{ .uint32 = std::array<uint32_t, 4>{} };
+        cmd_buffer.clearColorImage(default_raw_image.image, vk::ImageLayout::eTransferDstOptimal, raw_zero, vkutil::color_subresource_range);
+        default_raw_image.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
         vkutil::end_single_time_command(device, general_queue, general_command_pool, cmd_buffer);
 
         // create the default sampler
@@ -944,6 +981,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             .maxLod = 0.0f,
         };
         default_image.sampler = device.createSampler(sampler_info);
+        default_cube_image.sampler = device.createSampler(sampler_info);
     }
 
     // create the frame objects
@@ -978,19 +1016,61 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
     return init();
 }
 
+vk::Result VKState::wait_for_fences(vk::ArrayProxy<const vk::Fence> fences, uint64_t timeout) {
+    try {
+        return device.waitForFences(fences, vk::True, timeout);
+    } catch (const vk::DeviceLostError &) {
+        report_device_lost("waitForFences");
+        throw;
+    }
+}
+
+void VKState::report_device_lost(std::string_view operation) {
+    std::lock_guard<std::mutex> lock(queue_mutex);
+    if (device_lost_reported)
+        return;
+    device_lost_reported = true;
+
+    LOG_CRITICAL_SYNC("Vulkan device lost during {}", operation);
+    if (!support_gpu_checkpoints) {
+        LOG_ERROR_SYNC("Vulkan GPU diagnostic checkpoints are unavailable or disabled");
+        return;
+    }
+
+    const auto report_queue = [](vk::Queue queue, std::string_view name) {
+        const auto checkpoints = queue.getCheckpointDataNV();
+        if (checkpoints.empty())
+            LOG_ERROR_SYNC("Vulkan GPU checkpoint: queue={}, no checkpoint data reported", name);
+        for (const auto &checkpoint : checkpoints) {
+            LOG_ERROR_SYNC("Vulkan GPU checkpoint: queue={}, stage={}, pipeline marker={}",
+                name, vk::to_string(checkpoint.stage), fmt::ptr(checkpoint.pCheckpointMarker));
+        }
+    };
+    report_queue(general_queue, "graphics");
+    if (transfer_queue != general_queue)
+        report_queue(transfer_queue, "transfer");
+}
+
 void VKState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
     this->mem = &mem;
 
-    // cleanup(true) aborts the queue to stop the previous app's GPU wait thread.
-    // That thread is joined when its VKContext is destroyed; allow the next
-    // app's context to use the persistent renderer queue again.
+    // cleanup(true) stops the previous app's GPU wait thread and aborts the queue.
+    // Allow the next app's context to use the persistent renderer queue again.
     request_queue.reset();
 
     const bool use_high_accuracy = cfg.current_config.high_accuracy;
     // Recompute session features from device capabilities, not the previous game's choices.
     features.support_shader_interlock = supports_shader_interlock && use_high_accuracy;
+    features.preserve_f16_nan_as_u16 = features.support_shader_interlock && physical_device_features.independentBlend;
     features.direct_fragcolor = !features.support_shader_interlock;
     features.use_texture_viewport = support_standard_layout && !use_high_accuracy;
+
+    LOG_INFO("Vulkan rendering settings for {}: accuracy={}, shader interlock={}, texture viewport={}",
+        game_id, use_high_accuracy ? "High" : "Standard", features.support_shader_interlock, features.use_texture_viewport);
+    LOG_INFO("Vulkan RGBA4444 render surfaces: {}",
+        features.support_shader_interlock ? "RGBA8 fallback (typed storage image required by shader interlock)"
+                                          : (support_native_rgba4_surface ? "native" : "RGBA8 fallback (native surface usages unsupported)"));
+    LOG_INFO("Vulkan raw F16 render surfaces: {}", features.preserve_f16_nan_as_u16);
 
     // shader interlock is more accurate but slower
     if (features.support_shader_interlock) {
@@ -1114,6 +1194,8 @@ void VKState::cleanup(const bool preserve_frontend) {
     // reused by later app sessions when the frontend is preserved.
     if (!preserve_frontend) {
         default_image.destroy();
+        default_cube_image.destroy();
+        default_raw_image.destroy();
         default_buffer.destroy();
     }
 
@@ -1182,10 +1264,32 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
     should_display = false;
 
     DisplayFrameInfo frame;
+    DisplayFrameInfo background;
     {
         std::lock_guard<std::mutex> guard(display.display_info_mutex);
         frame = display.next_rendered_frame;
+        background = display.background_frame;
     }
+
+    const uint32_t max_image_size = physical_device.getProperties().limits.maxImageDimension2D;
+    const auto valid_dimensions = [max_image_size](const DisplayFrameInfo &info) {
+        return info.image_size.x > 0 && info.image_size.y > 0
+            && static_cast<uint32_t>(info.image_size.x) <= max_image_size
+            && static_cast<uint32_t>(info.image_size.y) <= max_image_size;
+    };
+    const auto valid_software_frame = [&valid_dimensions](const DisplayFrameInfo &info) {
+        if (!info.software_pixels || !valid_dimensions(info))
+            return false;
+        const uint64_t bytes = uint64_t(info.image_size.x) * uint64_t(info.image_size.y) * 4;
+        return bytes <= info.software_pixels->size();
+    };
+    const bool has_background = valid_software_frame(background);
+    if (background.software_pixels && !has_background)
+        LOG_ERROR_ONCE("Ignoring invalid captured background framebuffer");
+    const bool has_frame = frame.software_pixels ? valid_software_frame(frame)
+                                                 : bool(frame.base) && valid_dimensions(frame) && frame.pitch >= static_cast<uint32_t>(frame.image_size.x);
+    if ((frame.software_pixels || frame.base) && !has_frame)
+        LOG_ERROR_ONCE("Ignoring invalid captured foreground framebuffer");
 
     update_overlays();
     bool has_overlays = false;
@@ -1195,7 +1299,7 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
         overlay_manager->unlock_shared();
     }
 
-    if (!frame.base && !has_overlays)
+    if (!has_frame && !has_background && !has_overlays)
         return;
 
     if (!screen_renderer.acquire_swapchain_image())
@@ -1239,56 +1343,74 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
             screen_renderer.swapchain_image_idx);
     }
 
-    if (frame.base) {
+    vk::ImageView surface_handle;
+    vk::ImageLayout layout = vk::ImageLayout::eGeneral;
+    Viewport viewport{};
+    if (has_frame) {
         // Check if the surface exists
-        Viewport viewport;
         viewport.width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
         viewport.height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
 
-        vk::ImageLayout layout = vk::ImageLayout::eGeneral;
-        vk::ImageView surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-            frame.base, frame.pitch, viewport);
+        if (!frame.software_pixels)
+            surface_handle = surface_cache.sourcing_color_surface_for_presentation(frame.base, frame.pitch, viewport);
+    }
 
-        if (!surface_handle) {
-            vkutil::Image &vita_surface = screen_renderer.vita_surface[screen_renderer.swapchain_image_idx];
-            if (frame.image_size.x != vita_surface.width || frame.image_size.y != vita_surface.height) {
-                // re-create the image
-                vita_surface.destroy();
-                vita_surface = vkutil::Image(frame.image_size.x, frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
-                vita_surface.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
-            }
+    const bool upload_foreground = has_frame && !surface_handle;
+    const vk::DeviceSize background_size = has_background
+        ? vk::DeviceSize(background.image_size.x) * background.image_size.y * 4
+        : 0;
+    const uint32_t upload_pitch = frame.software_pixels ? static_cast<uint32_t>(frame.image_size.x) : frame.pitch;
+    const vk::DeviceSize foreground_size = upload_foreground ? vk::DeviceSize(upload_pitch) * frame.image_size.y * 4 : 0;
+    if (background_size || foreground_size) {
+        screen_renderer.ensure_surface_staging_capacity(background_size + foreground_size);
+        auto &buffer = screen_renderer.vita_surface_staging[screen_renderer.swapchain_image_idx];
+        auto *staging = static_cast<uint8_t *>(buffer.mapped_data);
+        if (has_background)
+            std::memcpy(staging, background.software_pixels->data(), static_cast<size_t>(background_size));
+        if (upload_foreground) {
+            const void *pixels = frame.software_pixels ? frame.software_pixels->data() : frame.base.get(mem);
+            std::memcpy(staging + background_size, pixels, static_cast<size_t>(foreground_size));
+        }
+        allocator.flushAllocation(buffer.allocation, 0, background_size + foreground_size);
+    }
 
-            // copy surface to staging buffer
-            const vk::DeviceSize texture_data_size = frame.pitch * frame.image_size.y * 4;
-            memcpy(screen_renderer.vita_surface_staging_info.pMappedData, frame.base.get(mem), texture_data_size);
-
-            // copy staging buffer to image
-            auto &cmd_buffer = screen_renderer.current_cmd_buffer;
-            vita_surface.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
-            vk::BufferImageCopy region{
-                .bufferOffset = 0,
-                .bufferRowLength = frame.pitch,
-                .bufferImageHeight = static_cast<uint32_t>(frame.image_size.y),
-                .imageSubresource = vkutil::color_subresource_layer,
-                .imageOffset = { 0, 0, 0 },
-                .imageExtent = { static_cast<uint32_t>(frame.image_size.x), static_cast<uint32_t>(frame.image_size.y), 1 }
-            };
-            cmd_buffer.copyBufferToImage(screen_renderer.vita_surface_staging, vita_surface.image, vk::ImageLayout::eTransferDstOptimal, region);
-
-            vita_surface.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
-
-            surface_handle = vita_surface.view;
-            viewport = {
-                .offset_x = 0,
-                .offset_y = 0,
-                .width = static_cast<uint32_t>(frame.image_size.x),
-                .height = static_cast<uint32_t>(frame.image_size.y),
-                .texture_width = static_cast<uint32_t>(frame.image_size.x),
-                .texture_height = static_cast<uint32_t>(frame.image_size.y)
-            };
-            layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    const auto upload = [&](const DisplayFrameInfo &info, vkutil::Image &image, uint32_t pitch, vk::DeviceSize offset) {
+        if (!image.image || info.image_size.x != image.width || info.image_size.y != image.height) {
+            image.destroy();
+            image = vkutil::Image(info.image_size.x, info.image_size.y, vk::Format::eR8G8B8A8Unorm);
+            image.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
         }
 
+        auto &cmd_buffer = screen_renderer.current_cmd_buffer;
+        image.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        vk::BufferImageCopy region{
+            .bufferOffset = offset,
+            .bufferRowLength = pitch,
+            .bufferImageHeight = static_cast<uint32_t>(info.image_size.y),
+            .imageSubresource = vkutil::color_subresource_layer,
+            .imageOffset = { 0, 0, 0 },
+            .imageExtent = { static_cast<uint32_t>(info.image_size.x), static_cast<uint32_t>(info.image_size.y), 1 }
+        };
+        cmd_buffer.copyBufferToImage(screen_renderer.vita_surface_staging[screen_renderer.swapchain_image_idx].buffer,
+            image.image, vk::ImageLayout::eTransferDstOptimal, region);
+        image.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+        return Viewport{
+            .offset_x = 0, .offset_y = 0, .width = static_cast<uint32_t>(info.image_size.x), .height = static_cast<uint32_t>(info.image_size.y), .texture_width = static_cast<uint32_t>(info.image_size.x), .texture_height = static_cast<uint32_t>(info.image_size.y)
+        };
+    };
+
+    if (upload_foreground) {
+        auto &image = screen_renderer.vita_surface[screen_renderer.swapchain_image_idx];
+        viewport = upload(frame, image, upload_pitch, background_size);
+        surface_handle = image.view;
+        layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    }
+
+    if (has_background) {
+        auto &image = screen_renderer.background_surface[screen_renderer.swapchain_image_idx];
+        const Viewport background_viewport = upload(background, image, static_cast<uint32_t>(background.image_size.x), 0);
+        screen_renderer.compose(image.view, background_viewport, surface_handle, layout, viewport);
+    } else if (has_frame) {
         screen_renderer.render(surface_handle, layout, viewport);
     } else if (has_overlays) {
         screen_renderer.begin_default_render_pass();
@@ -1319,9 +1441,25 @@ std::vector<uint32_t> VKState::dump_frame(DisplayState &display, uint32_t &width
     DisplayFrameInfo frame;
     {
         std::lock_guard<std::mutex> guard(display.display_info_mutex);
-        frame = display.next_rendered_frame;
+        frame = display.background_frame.software_pixels ? display.background_frame : display.next_rendered_frame;
     }
 
+    if (frame.software_pixels) {
+        if (frame.image_size.x <= 0 || frame.image_size.y <= 0) {
+            width = height = 0;
+            return {};
+        }
+        const uint64_t count = uint64_t(frame.image_size.x) * uint64_t(frame.image_size.y);
+        if (count > frame.software_pixels->size() / sizeof(uint32_t)) {
+            width = height = 0;
+            return {};
+        }
+        width = static_cast<uint32_t>(frame.image_size.x);
+        height = static_cast<uint32_t>(frame.image_size.y);
+        std::vector<uint32_t> pixels(static_cast<size_t>(count));
+        std::memcpy(pixels.data(), frame.software_pixels->data(), pixels.size() * sizeof(uint32_t));
+        return pixels;
+    }
     width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
     height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
     return surface_cache.dump_frame(frame.base, width, height, frame.pitch);
@@ -1335,6 +1473,7 @@ uint32_t VKState::get_features_mask() {
             bool use_memory_mapping : 1;
             bool use_rgb_attributes : 1;
             bool use_scaled_attributes : 1;
+            bool preserve_f16_nan_as_u16 : 1;
         };
         uint32_t value;
     } features_mask;
@@ -1346,6 +1485,7 @@ uint32_t VKState::get_features_mask() {
     features_mask.use_memory_mapping = features.enable_memory_mapping;
     features_mask.use_rgb_attributes = features.support_rgb_attributes;
     features_mask.use_scaled_attributes = pipeline_cache.support_scaled_vertex_attribute;
+    features_mask.preserve_f16_nan_as_u16 = features.preserve_f16_nan_as_u16;
 
     return features_mask.value;
 }
@@ -1579,7 +1719,13 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
     case MappingMethod::DoubleBuffer: {
         vkutil::Buffer buffer(size + KiB(4));
-        buffer.init_buffer(mapped_memory_flags, vkutil::vma_mapped_alloc);
+        constexpr vma::AllocationCreateInfo double_buffer_alloc{
+            .flags = vma::AllocationCreateFlagBits::eHostAccessRandom | vma::AllocationCreateFlagBits::eMapped,
+            .usage = vma::MemoryUsage::eAutoPreferHost,
+            .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached
+        };
+        buffer.init_buffer(mapped_memory_flags, double_buffer_alloc);
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
@@ -1846,10 +1992,10 @@ namespace renderer::vulkan {
 void VKState::precompile_shader(const ShadersHash &hash) {
     Sha256Hash empty_hash{};
     if (hash.vert != empty_hash) {
-        pipeline_cache.precompile_shader(hash.vert);
+        pipeline_cache.precompile_shader(hash.vert, true);
     }
     if (hash.frag != empty_hash) {
-        pipeline_cache.precompile_shader(hash.frag);
+        pipeline_cache.precompile_shader(hash.frag, false);
     }
 
     programs_count_pre_compiled++;

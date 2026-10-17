@@ -33,6 +33,7 @@
 #endif
 
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <net/state.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -266,7 +267,11 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
 
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    auto ret = getaddrinfo(parsed.hostname.c_str(), port.c_str(), &hints, &result);
+    int ret;
+    {
+        ThreadHostWait host_wait(thread);
+        ret = getaddrinfo(parsed.hostname.c_str(), port.c_str(), &hints, &result);
+    }
     if (ret < 0) {
         if (!emuenv.cfg.http_enable) {
             LOG_WARN("getaddrinfo failed, but http is disabled, asume we still got it");
@@ -300,7 +305,10 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
         return connId;
     }
 
-    ret = connect(sockfd, result->ai_addr, result->ai_addrlen);
+    {
+        ThreadHostWait host_wait(thread);
+        ret = connect(sockfd, result->ai_addr, result->ai_addrlen);
+    }
     if (ret < 0) {
         LOG_ERROR("connect({},...) = {}, errno={}({})", sockfd, ret, errno, strerror(errno));
         return RET_ERROR(SCE_HTTP_ERROR_RESOLVER_ENOHOST);
@@ -1010,10 +1018,13 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     int reqBytesSent = 0;
     do {
         int bytes = 0;
-        if (conn->second.isSecure)
-            bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
-        else
-            bytes = write(conn->second.sockfd, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
+        {
+            ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+            if (conn->second.isSecure)
+                bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
+            else
+                bytes = write(conn->second.sockfd, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
+        }
 
         if (bytes < 0) {
             LOG_ERROR("ERROR writing GET message to socket");
@@ -1031,10 +1042,13 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         SceSize dataSent = 0;
         auto dataBytes = 0;
         do {
-            if (conn->second.isSecure)
-                dataBytes = SSL_write((SSL *)tmpl->second.ssl, postData + dataSent, size - dataSent);
-            else
-                dataBytes = write(conn->second.sockfd, postData + dataSent, size - dataSent);
+            {
+                ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                if (conn->second.isSecure)
+                    dataBytes = SSL_write((SSL *)tmpl->second.ssl, postData + dataSent, size - dataSent);
+                else
+                    dataBytes = write(conn->second.sockfd, postData + dataSent, size - dataSent);
+            }
 
             if (dataBytes < 0) {
                 LOG_ERROR("ERROR writing POST data to socket");
@@ -1063,17 +1077,23 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     int totalReceived = 0;
     do {
         int bytes = 0;
-        if (conn->second.isSecure)
-            bytes = SSL_read((SSL *)tmpl->second.ssl, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
-        else
-            bytes = read(conn->second.sockfd, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
+        {
+            ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+            if (conn->second.isSecure)
+                bytes = SSL_read((SSL *)tmpl->second.ssl, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
+            else
+                bytes = read(conn->second.sockfd, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
+        }
         if (bytes < 0) {
             if (bytes == -1) {
                 if (errno == EWOULDBLOCK) {
                     if (attempts > emuenv.cfg.http_read_end_attempts)
                         break; // we can assume there is no more data to read
                     LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
+                    {
+                        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
+                    }
                     attempts++;
                     continue;
                 } else {
@@ -1090,7 +1110,10 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
                 if (attempts > emuenv.cfg.http_timeout_attempts)
                     break; // Give up
                 LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
-                std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+                {
+                    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+                }
                 attempts++;
                 continue;
             }
@@ -1141,17 +1164,23 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     while (remainingToRead != 0) {
         int bytes = 0;
-        if (conn->second.isSecure)
-            bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + totalReceived, remainingToRead);
-        else
-            bytes = read(conn->second.sockfd, reqResponse + totalReceived, remainingToRead);
+        {
+            ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+            if (conn->second.isSecure)
+                bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + totalReceived, remainingToRead);
+            else
+                bytes = read(conn->second.sockfd, reqResponse + totalReceived, remainingToRead);
+        }
         if (bytes < 0) {
             if (bytes == -1) {
                 if (errno == EWOULDBLOCK) {
                     if (attempts > emuenv.cfg.http_read_end_attempts)
                         break; // we can assume there is no more data to read
                     LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
+                    {
+                        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
+                    }
                     attempts++;
                     continue;
                 } else {
@@ -1167,7 +1196,10 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
             if (attempts > emuenv.cfg.http_timeout_attempts)
                 break; // Give up
             LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
-            std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+            {
+                ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+            }
             attempts++;
             continue;
         }

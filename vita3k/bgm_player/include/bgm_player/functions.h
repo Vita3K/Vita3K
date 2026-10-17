@@ -17,12 +17,23 @@
 
 #pragma once
 
+#include <cstdint>
+#include <memory>
 #include <util/fs.h>
 
 namespace bgm_player {
 
+class BgmSource {
+public:
+    virtual ~BgmSource() = default;
+    virtual uint64_t size() const = 0;
+    virtual size_t read(uint64_t offset, void *data, size_t length) = 0;
+};
+
 void destroy_bgm_player();
+void clear_current_bgm();
 bool init_bgm(const fs::path &pref_path, const bool is_enable);
+void set_current_bgm_source(std::shared_ptr<BgmSource> source);
 void init_bgm_player(const float vol);
 void set_bgm_volume(const float vol);
 void set_current_bgm_path(const std::pair<std::string, std::string> &path);

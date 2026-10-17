@@ -278,6 +278,34 @@ static std::string transform_installed_app_id(std::string &value, const fs::path
     return {};
 }
 
+static std::string transform_installed_app_path(std::string &value, const fs::path &vita_fs_path) {
+    const auto separator = value.find(':');
+    if (separator == std::string::npos)
+        return transform_installed_app_id(value, vita_fs_path / "ux0" / "app");
+
+    if (value == "vs0:vsh/shell") {
+        std::error_code error;
+        const bool exists = fs::is_regular_file(vita_fs_path / "vs0" / "vsh" / "shell" / "shell.self", error);
+        if (error)
+            return "Failed to inspect shell executable: " + error.message();
+        return exists ? std::string{} : "Shell executable not found";
+    }
+
+    const std::string device = value.substr(0, separator);
+    const std::string prefix = device + ":app/";
+    if ((device != "ux0" && device != "vs0" && device != "pd0") || !value.starts_with(prefix))
+        return "Expected an application path such as ux0:app/TITLE_ID or vs0:app/TITLE_ID";
+
+    std::string app_id = value.substr(prefix.size());
+    if (app_id.empty() || app_id == "." || app_id == ".." || app_id.find_first_of("/\\:") != std::string::npos)
+        return "Invalid application path " + value;
+    const auto error = transform_installed_app_id(app_id, vita_fs_path / device / "app");
+    if (!error.empty())
+        return error;
+    value = prefix + app_id;
+    return {};
+}
+
 static fs::path check_path(const fs::path &output_path) {
     if (output_path.filename() != "config.yml") {
         if (!output_path.has_extension()) // assume it is a folder
@@ -400,8 +428,14 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         },
         "installed app title ID"
     };
-    input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->transform(installed_app_transformer)->group("Input");
+    const CLI::Validator installed_app_path_transformer{
+        [&cfg](std::string &value) {
+            return transform_installed_app_path(value, cfg.get_vita_fs_path());
+        },
+        "installed app ID or device path"
+    };
+    input->add_option("--installed-path,-r", command_line.run_app_path, "Installed app ID or device path to run (e.g. vs0:app/NPXS10015)")
+        ->default_str({})->transform(installed_app_path_transformer)->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")

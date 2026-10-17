@@ -25,6 +25,10 @@ struct DisplayState;
 struct EmuEnvState;
 struct DisplayFrameInfo;
 
+constexpr bool valid_vblank_wait_count(int count) {
+    return count > 0 && count <= 0xffff;
+}
+
 void start_sync_thread(EmuEnvState &emuenv);
 void wait_vblank(DisplayState &display, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb);
 // if the result is not nullptr, contain the predicted frame (pointer needs to be freed later)

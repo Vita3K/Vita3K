@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FilterList
@@ -92,6 +93,7 @@ fun AppsListScreen(
     selectedAppIds: Set<String>,
     resolveAvailableActions: (AppInfo) -> Set<AppAction>,
     onAppSelected: (AppInfo) -> Unit,
+    onShellLaunch: () -> Unit,
     onRunAppAction: (AppInfo, AppAction) -> Unit,
     onPrepareAppActions: (AppInfo) -> Unit,
     onShowAppInfo: (AppInfo) -> Unit,
@@ -174,6 +176,9 @@ fun AppsListScreen(
                                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.apps_list_cd_delete_selected))
                             }
                         } else {
+                            IconButton(enabled = initialized && !loading && !actionInProgress, onClick = onShellLaunch) {
+                                Icon(Icons.Default.Apps, contentDescription = stringResource(R.string.apps_list_shell))
+                            }
                             IconButton(onClick = { showSearchBar = true }) {
                                 Icon(Icons.Default.Search, contentDescription = stringResource(R.string.apps_list_cd_search))
                             }

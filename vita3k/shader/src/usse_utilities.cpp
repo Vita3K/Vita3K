@@ -655,10 +655,11 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
 
     spv::Id buffer_idx_val;
     if (buffer_idx == -1) {
-        // buffer index is in the upper 4 bits of addr
-        buffer_idx_val = b.createBinOp(spv::OpShiftRightLogical, i32, addr, b.makeIntConstant(28));
-        // remove the buffer index bits from the address
-        addr = b.createBinOp(spv::OpBitwiseAnd, i32, addr, b.makeIntConstant((1 << 28) - 1));
+        // Recover the nearest buffer base, retaining signed offsets such as -4.
+        const spv::Id biased = b.createBinOp(spv::OpIAdd, i32, addr, b.makeIntConstant(1 << 27));
+        buffer_idx_val = b.createBinOp(spv::OpShiftRightLogical, i32, biased, b.makeIntConstant(28));
+        const spv::Id index_bits = b.createBinOp(spv::OpShiftLeftLogical, i32, buffer_idx_val, b.makeIntConstant(28));
+        addr = b.createBinOp(spv::OpISub, i32, addr, index_bits);
     } else {
         buffer_idx_val = b.makeIntConstant(buffer_idx);
     }
@@ -666,7 +667,7 @@ void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params,
     spv::Id buffer_address = utils::create_access_chain(b, spv::StorageClassUniform, params.render_info_id, { b.makeIntConstant(params.buffer_addresses_id), buffer_idx_val });
     buffer_address = b.createLoad(buffer_address, spv::NoPrecision);
     // add the offset from the base address
-    buffer_address = add_uvec2_uint(b, buffer_address, addr);
+    buffer_address = add_uvec2_int(b, buffer_address, addr);
 
     if (component_size == sizeof(uint32_t)) {
         int buffer_idx_vec4 = 0;
@@ -1282,11 +1283,14 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &f
 }
 
 void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest,
-    spv::Id source, std::uint8_t dest_mask, int off) {
+    spv::Id source, std::uint8_t dest_mask, int off, bool raw_f16_lanes) {
     if (source == spv::NoResult) {
         LOG_WARN("Source invalid");
         return;
     }
+
+    if (raw_f16_lanes)
+        dest.type = DataType::UINT16;
 
     // Check for INDEX bank. INDEX bank are optimized to store an integer
     if (dest.bank == RegisterBank::INDEX || dest.bank == RegisterBank::PREDICATE) {
@@ -1386,9 +1390,16 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
         std::vector<spv::Id> composites;
         spv::Id vec_comp_type = utils::unwrap_type(b, b.getTypeId(source));
         int source_value_taken_count = 0;
+        int last_swizz_on = 4;
+        if (raw_f16_lanes) {
+            if (!dest_mask)
+                return;
+            while (!(dest_mask & (1 << (last_swizz_on - 1))))
+                --last_swizz_on;
+        }
 
         // We need to pack source
-        for (auto i = 0; i < 4 - nearest_swizz_on; i += num_comp_in_float) {
+        for (auto i = 0; i < last_swizz_on - nearest_swizz_on; i += num_comp_in_float) {
             // Shuffle to get the type out
             std::vector<spv::Id> ops;
             for (auto j = 0; j < num_comp_in_float; j++) {
@@ -1632,6 +1643,23 @@ spv::Id add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::Id to_add) {
     upper = b.createBinOp(spv::OpIAdd, u32, upper, carry);
     lower = b.createCompositeExtract(lower_add, u32, 0);
     return b.createCompositeConstruct(uvec2, { lower, upper });
+}
+
+spv::Id add_uvec2_int(spv::Builder &b, spv::Id vec, spv::Id to_add_signed) {
+    if (b.isConstant(to_add_signed) && b.getConstantScalar(to_add_signed) == 0)
+        return vec;
+
+    const spv::Id u32 = b.makeUintType(32);
+    const spv::Id i32 = b.makeIntType(32);
+    const spv::Id sum = add_uvec2_uint(b, vec, to_add_signed);
+    if (b.isUintType(b.getTypeId(to_add_signed)))
+        to_add_signed = b.createUnaryOp(spv::OpBitcast, i32, to_add_signed);
+
+    spv::Id sign = b.createBinOp(spv::OpShiftRightArithmetic, i32, to_add_signed, b.makeIntConstant(31));
+    sign = b.createUnaryOp(spv::OpBitcast, u32, sign);
+    spv::Id upper = b.createCompositeExtract(sum, u32, 1);
+    upper = b.createBinOp(spv::OpIAdd, u32, upper, sign);
+    return b.createCompositeInsert(upper, sum, b.getTypeId(sum), 1);
 }
 
 } // namespace shader::usse::utils

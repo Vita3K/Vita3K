@@ -17,6 +17,38 @@ execute_process(
 	OUTPUT_VARIABLE GIT_HASH
 	OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+set(GIT_MASTER_COUNT 0)
+if(NOT GIT_HASH STREQUAL "")
+	execute_process(
+		COMMAND git fetch --quiet https://github.com/Vita3K/Vita3K.git master
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		RESULT_VARIABLE GIT_MASTER_FETCH_RESULT)
+	if(GIT_MASTER_FETCH_RESULT EQUAL 0)
+		execute_process(
+			COMMAND git merge-base HEAD FETCH_HEAD
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+			OUTPUT_VARIABLE GIT_MASTER_BASE
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			RESULT_VARIABLE GIT_MASTER_BASE_RESULT)
+		if(GIT_MASTER_BASE_RESULT EQUAL 0 AND NOT GIT_MASTER_BASE STREQUAL "")
+			execute_process(
+				COMMAND git rev-list --count ${GIT_MASTER_BASE}
+				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+				OUTPUT_VARIABLE GIT_MASTER_COUNT
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+				RESULT_VARIABLE GIT_MASTER_COUNT_RESULT)
+			if(NOT GIT_MASTER_COUNT_RESULT EQUAL 0)
+				set(GIT_MASTER_COUNT 0)
+				message(WARNING "Failed to count commits at the upstream merge base; updater will use branch commit counts.")
+			endif()
+		else()
+			message(WARNING "Failed to find the upstream merge base; updater will use branch commit counts.")
+		endif()
+	else()
+		message(WARNING "Failed to fetch upstream master; updater will use branch commit counts.")
+	endif()
+endif()
+
 # Value is different when is PR
 if("$ENV{GITHUB_EVENT_NAME}" STREQUAL "pull_request")
 	set(GIT_BRANCH "$ENV{GITHUB_HEAD_REF}")
@@ -40,6 +72,9 @@ execute_process(COMMAND ${CMD}
 	OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 set(VITA3K_OFFICIAL_UPDATE_BUILD 0)
+include(${CMAKE_SOURCE_DIR}/cmake/limule-update.cmake)
+is_limule_update_build(VITA3K_LIMULE_UPDATE_BUILD "${GIT_REPO}" "${GIT_BRANCH}"
+	"$ENV{GITHUB_EVENT_NAME}" "$ENV{GITHUB_REF}" "$ENV{GITHUB_REPOSITORY}")
 
 if (NOT GIT_REPO STREQUAL "")
 	string(FIND ${GIT_REPO} "git@github.com:" IS_GIT_SSH)
@@ -66,6 +101,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/vita3k/config/gitver.h
 	"#define APP_VER_HI ${VITA3K_APP_VER_HI}\n"
 	"#define APP_VER_MID ${VITA3K_APP_VER_MID}\n"
 	"#define APP_VER_LO ${VITA3K_APP_VER_LO}\n"
+	"#define APP_MASTER_NUMBER ${GIT_MASTER_COUNT}\n"
 	"#define APP_NUMBER ${GIT_COUNT}\n"
 )
 
@@ -158,6 +194,7 @@ add_subdirectory(kernel)
 add_subdirectory(lang)
 add_subdirectory(mem)
 add_subdirectory(patch)
+add_subdirectory(pfsmgr)
 add_subdirectory(module)
 add_subdirectory(modules)
 add_subdirectory(motion)
@@ -172,6 +209,7 @@ add_subdirectory(shader)
 add_subdirectory(threads)
 add_subdirectory(touch)
 add_subdirectory(util)
+add_subdirectory(vfs)
 add_subdirectory(vita_shell)
 add_subdirectory(gdbstub)
 add_subdirectory(packages)
@@ -233,7 +271,7 @@ if(WIN32)
 	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
 endif()
 
-target_link_libraries(vita3k PRIVATE app audio cheat compat config ctrl dialog display gui-imgui ime lang gdbstub gxm io miniz modules motion packages patch pugixml::pugixml renderer sdl sdl-frontend shader touch util vita_shell psvpfsparser)
+target_link_libraries(vita3k PRIVATE app audio cheat compat config ctrl dialog display gui-imgui ime lang gdbstub gxm io miniz modules motion packages patch vfs pugixml::pugixml renderer sdl sdl-frontend shader touch util vita_shell)
 if(HAS_QT)
 	target_link_libraries(vita3k PRIVATE gui-qt)
 endif()

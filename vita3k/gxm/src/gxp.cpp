@@ -103,6 +103,33 @@ int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num
     return (num_comp + (4 / param_size - 1)) * param_size / 4;
 }
 
+bool has_attribute_symbols(const SceGxmProgram &program) {
+    const auto parameters = program.program_parameters();
+    return std::any_of(parameters, parameters + program.parameter_count, [](const SceGxmProgramParameter &parameter) {
+        return parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE;
+    });
+}
+
+bool is_attribute_used(const SceGxmProgram &program, const SceGxmProgramParameter &parameter) {
+    if (!program.is_vertex() || parameter.semantic == SCE_GXM_PARAMETER_SEMANTIC_INDEX || parameter.semantic == SCE_GXM_PARAMETER_SEMANTIC_INSTANCE)
+        return true;
+
+    // The metadata only describes the first 64 PA registers.
+    if (parameter.resource_index >= 64)
+        return true;
+
+    // Use symbol boundaries rather than assuming a packing/array stride for the PA range.
+    uint32_t end_register = 64;
+    const auto parameters = program.program_parameters();
+    for (uint32_t i = 0; i < program.parameter_count; ++i) {
+        const auto &next = parameters[i];
+        if (next.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && next.resource_index > parameter.resource_index)
+            end_register = std::min(end_register, next.resource_index);
+    }
+    const uint64_t mask = end_register == 64 ? ~uint64_t{ 0 } : (uint64_t{ 1 } << (end_register - parameter.resource_index)) - 1;
+    return ((program.vertex_varyings()->attrib_pa_regs >> parameter.resource_index) & mask) != 0;
+}
+
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter) {
     if (parameter.array_size > 1) {
         return GenericParameterType::Array;

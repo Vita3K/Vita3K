@@ -64,11 +64,17 @@ public:
 #endif
 
     std::unique_ptr<ScreenFilter> filter;
+    std::unique_ptr<BilinearScreenFilter> composition_background;
+    std::unique_ptr<BilinearScreenFilter> composition_foreground;
+    vk::RenderPass composition_render_pass;
+    std::vector<vkutil::Image> composition_images;
+    std::vector<vk::Framebuffer> composition_framebuffers;
+    vk::Extent2D composition_extent;
+    bool composing = false;
 
     std::vector<vkutil::Image> vita_surface;
-    vma::Allocation vita_surface_staging_alloc;
-    vma::AllocationInfo vita_surface_staging_info;
-    vk::Buffer vita_surface_staging;
+    std::vector<vkutil::Image> background_surface;
+    std::vector<vkutil::Buffer> vita_surface_staging;
 
     vk::CommandBuffer current_cmd_buffer;
 
@@ -91,8 +97,11 @@ public:
     bool acquire_swapchain_image();
     void begin_default_render_pass();
     void render(vk::ImageView image_view, vk::ImageLayout layout, const Viewport &viewport);
+    void compose(vk::ImageView background, const Viewport &background_viewport,
+        vk::ImageView foreground, vk::ImageLayout foreground_layout, const Viewport &foreground_viewport);
     void swap_window();
     void set_filter(const std::string_view &filter);
+    void ensure_surface_staging_capacity(vk::DeviceSize size);
 
 private:
     void create_render_pass();

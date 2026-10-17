@@ -30,7 +30,7 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state);
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state);
 IMGUI_API void ImGui_ImplSdl_RenderDrawData(ImGui_State *state);
 IMGUI_API bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event);
-IMGUI_API bool ImGui_ImplSdl_IsPhysicalKeyPressed(input::PhysicalKeyCode key);
+IMGUI_API bool ImGui_ImplSdl_IsPhysicalKeyPressed(input::PhysicalKeyCode key, bool repeat = true);
 IMGUI_API bool ImGui_ImplSdl_IsPhysicalKeyReleased(input::PhysicalKeyCode key);
 
 IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data, int width, int height);

@@ -90,6 +90,8 @@ AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) 
     if (!adapter)
         return nullptr;
     AudioOutPortPtr port = adapter->open_port(nb_channels, freq, nb_sample);
+    if (!port)
+        return nullptr;
     set_volume(*port, port->volume);
     return port;
 }

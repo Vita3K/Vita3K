@@ -38,7 +38,7 @@ public:
     ~ScreenRenderer();
 
     bool init(const fs::path &static_assets);
-    void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo = 0);
+    void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo = 0, GLuint front_texture = 0, const float *front_uvs = nullptr);
 
     void destroy();
 
@@ -46,6 +46,9 @@ public:
     // For homebrew that does not use GXM
     GLuint get_resident_texture() const {
         return m_screen_texture;
+    }
+    GLuint get_background_texture() const {
+        return m_background_texture;
     }
 
     void set_filter(ScreenFilter new_filter);
@@ -76,15 +79,18 @@ private:
     // upscales the source into the intermediate target, then sharpens it onto the screen
     void render_fsr(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const SceFVector2 &texture_size, GLuint default_fbo);
     void setup_vertex_attributes(GLuint program);
+    void set_uvs(const float *uvs);
 
     ScreenFilter m_filter = ScreenFilter::BILINEAR;
 
     GLuint m_vao{ 0 };
     GLuint m_vbo{ 0 };
     SharedGLObject m_render_shader_nofilter;
+    SharedGLObject m_render_shader_layer;
     SharedGLObject m_render_shader_fxaa;
     SharedGLObject m_render_shader_bicubic;
     GLuint m_screen_texture{ 0 };
+    GLuint m_background_texture{ 0 };
     GLuint m_sampler_linear{ 0 };
     GLuint m_sampler_nearest{ 0 };
 

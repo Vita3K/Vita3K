@@ -29,7 +29,7 @@ EXPORT(int, ksceDebugPrintKernelPanic) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceDebugPrintf, const char *fmt, module::vargs args) {
+EXPORT(int, ksceDebugPrintf, Ptr<const char> fmt, module::vargs args) {
     TRACY_FUNC(ksceDebugPrintf, fmt);
     return CALL_EXPORT(sceClibPrintf, fmt, args);
 }

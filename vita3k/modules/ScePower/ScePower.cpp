@@ -17,6 +17,10 @@
 
 #include <module/module.h>
 
+#include <ctrl/state.h>
+#include <kernel/callback.h>
+#include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <util/tracy.h>
 #include <util/types.h>
 
@@ -214,9 +218,24 @@ EXPORT(int, scePowerIsSuspendRequired) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, scePowerRegisterCallback) {
-    TRACY_FUNC(scePowerRegisterCallback);
-    return UNIMPLEMENTED();
+EXPORT(int, scePowerRegisterCallback, SceUID callback_id) {
+    TRACY_FUNC(scePowerRegisterCallback, callback_id);
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    const auto callback = emuenv.kernel.objects.find<Callback>(callback_id);
+    const auto owner = callback ? emuenv.kernel.get_thread(callback->thread_id) : nullptr;
+    if (!caller || !owner || &caller->cpu->mem != &owner->cpu->mem)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+    const auto identity = emuenv.kernel.get_process_identity(caller->cpu->mem);
+    if (!identity) {
+        LOG_ERROR("Cannot register Power callback {} without a process identity", callback_id);
+        return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
+    }
+    const std::lock_guard lock(emuenv.ctrl.power_callback_mutex);
+    if (!emuenv.ctrl.power_callbacks.emplace(callback_id, identity->is_firmware_app()).second)
+        return RET_ERROR(SCE_POWER_ERROR_ALREADY_REGISTERED);
+    LOG_WARN_ONCE("Power callbacks currently support PS button events only; battery and suspend notifications are not implemented");
+    LOG_DEBUG("Registered Power callback {} for process {}", callback_id, identity->pid);
+    return 0;
 }
 
 EXPORT(int, scePowerRequestColdReset) {
@@ -297,7 +316,15 @@ EXPORT(int, scePowerSetUsingWireless, SceBool enabled) {
     return 0;
 }
 
-EXPORT(int, scePowerUnregisterCallback) {
-    TRACY_FUNC(scePowerUnregisterCallback);
-    return UNIMPLEMENTED();
+EXPORT(int, scePowerUnregisterCallback, SceUID callback_id) {
+    TRACY_FUNC(scePowerUnregisterCallback, callback_id);
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    const auto callback = emuenv.kernel.objects.find<Callback>(callback_id);
+    const auto owner = callback ? emuenv.kernel.get_thread(callback->thread_id) : nullptr;
+    if (!caller || !owner || &caller->cpu->mem != &owner->cpu->mem)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+    const std::lock_guard lock(emuenv.ctrl.power_callback_mutex);
+    if (!emuenv.ctrl.power_callbacks.erase(callback_id))
+        return RET_ERROR(SCE_POWER_ERROR_CALLBACK_NOT_REGISTERED);
+    return 0;
 }

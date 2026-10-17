@@ -33,7 +33,7 @@ void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
         std::memcpy(Ptr<uint8_t>(addr).get(mem), ARM_BREAKPOINT, sizeof(ARM_BREAKPOINT));
     }
     breakpoints.emplace(addr, bk);
-    parent.invalidate_jit_cache(addr, 4);
+    parent.invalidate_jit_cache(mem, addr, 4);
 }
 
 void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
@@ -42,7 +42,7 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
         auto last = breakpoints[addr];
         std::memcpy(Ptr<uint8_t>(addr).get(mem), &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
         breakpoints.erase(addr);
-        parent.invalidate_jit_cache(addr, 4);
+        parent.invalidate_jit_cache(mem, addr, 4);
     }
 }
 

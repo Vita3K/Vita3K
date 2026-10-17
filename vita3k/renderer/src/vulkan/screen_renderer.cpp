@@ -228,6 +228,10 @@ bool ScreenRenderer::setup() {
 
     filter = std::make_unique<BilinearScreenFilter>(*this);
     filter->init();
+    composition_background = std::make_unique<BilinearScreenFilter>(*this);
+    composition_background->init();
+    composition_foreground = std::make_unique<BilinearScreenFilter>(*this, true);
+    composition_foreground->init();
 
     return true;
 }
@@ -322,12 +326,24 @@ void ScreenRenderer::create_swapchain() {
             std::string filter_name{ filter->get_name() };
             filter.reset();
             set_filter(filter_name);
+            composition_background = std::make_unique<BilinearScreenFilter>(*this);
+            composition_background->init();
+            composition_foreground = std::make_unique<BilinearScreenFilter>(*this, true);
+            composition_foreground->init();
         } else {
             filter->on_resize();
         }
     }
 
     create_layout_sync();
+    vita_surface.resize(swapchain_size);
+    background_surface.resize(swapchain_size);
+    vita_surface_staging.resize(swapchain_size);
+    for (size_t i = swapchain_size; i < composition_framebuffers.size(); ++i)
+        if (composition_framebuffers[i])
+            state.device.destroy(composition_framebuffers[i]);
+    composition_framebuffers.resize(swapchain_size);
+    composition_images.resize(swapchain_size);
 }
 
 void ScreenRenderer::destroy_swapchain() {
@@ -349,15 +365,23 @@ void ScreenRenderer::cleanup() {
     state.device.waitIdle();
 
     filter.reset();
+    composition_background.reset();
+    composition_foreground.reset();
+
+    for (auto fb : composition_framebuffers)
+        if (fb)
+            state.device.destroy(fb);
+    composition_framebuffers.clear();
+    composition_images.clear();
+    background_surface.clear();
+    state.device.destroy(composition_render_pass);
+    composition_render_pass = nullptr;
 
     for (auto &img : vita_surface)
         img.destroy();
     vita_surface.clear();
 
-    if (vita_surface_staging) {
-        state.allocator.destroyBuffer(vita_surface_staging, vita_surface_staging_alloc);
-        vita_surface_staging = nullptr;
-    }
+    vita_surface_staging.clear();
 
     for (vk::Framebuffer fb : swapchain_framebuffers)
         state.device.destroy(fb);
@@ -394,6 +418,64 @@ void ScreenRenderer::cleanup() {
     command_buffers.clear();
 
     destroy_surface();
+}
+
+void ScreenRenderer::compose(vk::ImageView background, const Viewport &background_viewport,
+    vk::ImageView foreground, vk::ImageLayout foreground_layout, const Viewport &foreground_viewport) {
+    const uint32_t idx = swapchain_image_idx;
+    const uint32_t width = foreground ? foreground_viewport.width : background_viewport.width;
+    const uint32_t height = foreground ? foreground_viewport.height : background_viewport.height;
+    auto &image = composition_images[idx];
+    if (!image.image || image.width != width || image.height != height) {
+        if (composition_framebuffers[idx])
+            state.device.destroy(composition_framebuffers[idx]);
+        image.destroy();
+        image = vkutil::Image(width, height, surface_format.format);
+        image.init_image(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+        vk::FramebufferCreateInfo info{
+            .renderPass = composition_render_pass,
+            .width = width,
+            .height = height,
+            .layers = 1
+        };
+        info.setAttachments(image.view);
+        composition_framebuffers[idx] = state.device.createFramebuffer(info);
+    }
+
+    composition_extent = vk::Extent2D{ width, height };
+    composing = true;
+    composition_background->render(true, background, vk::ImageLayout::eShaderReadOnlyOptimal, background_viewport);
+    if (foreground)
+        composition_foreground->render(true, foreground, foreground_layout, foreground_viewport);
+
+    const vk::MemoryBarrier vertex_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead
+    };
+    current_cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eVertexInput,
+        {}, vertex_barrier, {}, {});
+
+    image.transition_to_discard(current_cmd_buffer, vkutil::ImageLayout::ColorAttachment);
+    vk::RenderPassBeginInfo pass_info{
+        .renderPass = composition_render_pass,
+        .framebuffer = composition_framebuffers[idx],
+        .renderArea = { .offset = { 0, 0 }, .extent = composition_extent }
+    };
+    vk::ClearValue clear_color{ .color = { std::array<float, 4>{ 0.f, 0.f, 0.f, 1.f } } };
+    pass_info.setClearValues(clear_color);
+    current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
+    composition_background->render(false, background, vk::ImageLayout::eShaderReadOnlyOptimal, background_viewport);
+    // Prototype: straight per-pixel alpha; the Vita's hardware merge mode is not yet established.
+    if (foreground)
+        composition_foreground->render(false, foreground, foreground_layout, foreground_viewport);
+    current_cmd_buffer.endRenderPass();
+    composing = false;
+    image.transition_to(current_cmd_buffer, vkutil::ImageLayout::SampledImage);
+
+    const Viewport composed_viewport{
+        .offset_x = 0, .offset_y = 0, .width = width, .height = height, .texture_width = width, .texture_height = height
+    };
+    render(image.view, vk::ImageLayout::eShaderReadOnlyOptimal, composed_viewport);
 }
 
 void ScreenRenderer::destroy_surface() {
@@ -443,6 +525,8 @@ bool ScreenRenderer::acquire_swapchain_image() {
             need_rebuild = true;
             need_surface_recreate = acquire_result == vk::Result::eErrorSurfaceLostKHR;
         } else {
+            if (acquire_result == vk::Result::eErrorDeviceLost)
+                state.report_device_lost("acquireNextImageKHR");
             LOG_WARN("Failed to get next image. Error: {}", vk::to_string(acquire_result));
         }
 
@@ -455,7 +539,7 @@ bool ScreenRenderer::acquire_swapchain_image() {
         need_rebuild = !surface_matches_window_size();
 
     // wait for the previous frame using this image to finish
-    auto result = state.device.waitForFences(fences[swapchain_image_idx], VK_TRUE, next_image_timeout);
+    auto result = state.wait_for_fences(fences[swapchain_image_idx], next_image_timeout);
     if (result != vk::Result::eSuccess) {
         LOG_ERROR("Could not wait for fences.");
         return false;
@@ -558,11 +642,16 @@ void ScreenRenderer::swap_window() {
     };
 
     vk::Result result;
-    {
+    try {
         std::lock_guard<std::mutex> lock(state.queue_mutex);
         state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
         result = state.general_queue.presentKHR(&present_info);
+    } catch (const vk::DeviceLostError &) {
+        state.report_device_lost("presentation queue submit");
+        throw;
     }
+    if (result == vk::Result::eErrorDeviceLost)
+        state.report_device_lost("queue present");
     if (result == vk::Result::eSuboptimalKHR) {
         need_rebuild = !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
@@ -675,10 +764,15 @@ void ScreenRenderer::create_render_pass() {
 
     default_render_pass = state.device.createRenderPass(pass_info);
 
+    color_attachment.setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
+    composition_render_pass = state.device.createRenderPass(pass_info);
+
     // renderpass after post processing filter
     color_attachment
         .setLoadOp(vk::AttachmentLoadOp::eLoad)
-        .setInitialLayout(vk::ImageLayout::eGeneral);
+        .setInitialLayout(vk::ImageLayout::eGeneral)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
     post_filter_render_pass = state.device.createRenderPass(pass_info);
 
 #ifdef __ANDROID__
@@ -692,14 +786,15 @@ void ScreenRenderer::create_render_pass() {
 
 void ScreenRenderer::create_surface_image() {
     vita_surface.resize(swapchain_size);
+}
 
-    vk::BufferCreateInfo buffer_info{
-        // make sure it is big enough
-        .size = 1024 * 720 * sizeof(uint32_t),
-        .usage = vk::BufferUsageFlagBits::eTransferSrc,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
-    std::tie(vita_surface_staging, vita_surface_staging_alloc) = state.allocator.createBuffer(buffer_info, vkutil::vma_mapped_alloc, vita_surface_staging_info);
+void ScreenRenderer::ensure_surface_staging_capacity(vk::DeviceSize size) {
+    auto &staging = vita_surface_staging[swapchain_image_idx];
+    if (staging.buffer && size <= staging.size)
+        return;
+    // acquire_swapchain_image already waited for this image's fence.
+    staging = vkutil::Buffer(std::max<vk::DeviceSize>(size, 1024 * 720 * sizeof(uint32_t)));
+    staging.init_buffer(vk::BufferUsageFlagBits::eTransferSrc, vkutil::vma_mapped_alloc);
 }
 
 bool ScreenRenderer::ensure_swapchain() {

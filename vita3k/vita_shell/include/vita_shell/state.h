@@ -18,6 +18,24 @@
 
 namespace vita_shell {
 
+enum class ThemeImage { Package,
+    Home,
+    Lock };
+
+struct ThemeInfo {
+    std::string title;
+    std::string provided;
+    std::tm updated{};
+    size_t size = 0;
+    std::string version;
+    std::map<ThemeImage, std::string> preview;
+};
+
+struct ThemeCatalog {
+    std::map<std::string, ThemeInfo> info;
+    std::vector<std::pair<std::string, std::time_t>> list;
+};
+
 struct Color {
     uint8_t r{ 255 };
     uint8_t g{ 255 };
@@ -41,6 +59,11 @@ struct InformationBarState {
     std::optional<Color> indicator_color;
     std::optional<Color> notice_font_color;
     std::map<NoticeIcon, std::filesystem::path> notice_icons;
+};
+
+struct HomePageIndicators {
+    std::filesystem::path base;
+    std::filesystem::path current;
 };
 
 enum class StartDateLayout : int32_t {
@@ -68,6 +91,7 @@ struct ThemeState {
     ThemeBgm bgm;
     Color text_color{};
     InformationBarState information_bar;
+    HomePageIndicators page_indicators;
     std::filesystem::path start_screen_background;
     std::optional<Color> start_date_color;
     std::optional<Color> start_notice_background_color;

@@ -35,4 +35,4 @@ extern const SysmoduleInternalPaths sysmodule_internal_paths;
 
 bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv);
 bool is_lle_module(const std::string &module_name, EmuEnvState &emuenv);
-bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id);
+bool is_module_loaded(KernelState &kernel, const MemState &mem, SceSysmoduleModuleId module_id);

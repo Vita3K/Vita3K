@@ -19,6 +19,7 @@ import org.vita3k.emulator.ui.viewmodel.AppsListViewModel
 import org.vita3k.emulator.ui.viewmodel.InstallViewModel
 import org.vita3k.emulator.ui.viewmodel.SettingsViewModel
 import org.vita3k.emulator.ui.viewmodel.UserManagementViewModel
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
     private val appsListViewModel: AppsListViewModel by viewModels()
@@ -134,6 +135,7 @@ class MainActivity : AppCompatActivity() {
                         settingsViewModel = settingsViewModel,
                         userManagementViewModel = userManagementViewModel,
                         onAppLaunch = { app -> launchApp(app.titleId, app.title) },
+                        onShellLaunch = { launchShell() },
                         onCreateAppShortcut = { app -> createAppShortcut(app) }
                     )
                 }
@@ -212,6 +214,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchApp(titleId: String, appTitle: String) {
         emulatorLauncher.launch(Emulator.createLaunchIntent(this, titleId, appTitle))
+    }
+
+    private fun launchShell() {
+        val shellPath = File(NativeLib.getCurrentEmulatorPath(), "vs0/vsh/shell/shell.self")
+        if (!shellPath.isFile || !shellPath.canRead()) {
+            Log.e("Vita3K", "Vita system shell is missing or inaccessible: $shellPath")
+            Toast.makeText(this, R.string.apps_list_shell_unavailable, Toast.LENGTH_LONG).show()
+            return
+        }
+
+        launchApp("vs0:vsh/shell", getString(R.string.apps_list_shell))
     }
 
     private fun createAppShortcut(app: AppInfo) {

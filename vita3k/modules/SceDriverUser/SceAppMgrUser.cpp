@@ -17,38 +17,110 @@
 
 #include "SceAppMgrUser.h"
 
+#include <config/config.h>
 #include <emuenv/app_util.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/io.h>
+#include <io/vfs.h>
+#include <kernel/state.h>
 #include <packages/functions.h>
+#include <packages/sfo.h>
 
 #include <modules/module_parent.h>
 #include <util/find.h>
 
+#include <cstddef>
+#include <cstring>
+#include <type_traits>
+
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceAppMgrUser);
 
-struct SceAppMgrSaveDataDataDelete {
-    int size;
-    unsigned int slotId;
-    Ptr<SceAppUtilSaveDataSlotParam> slotParam;
-    uint8_t reserved[32];
-    Ptr<SceAppUtilSaveDataDataSaveItem> files;
-    int fileNum;
-    SceAppUtilMountPoint *mountPoint;
+struct SceAppMgrInfobarState {
+    uint8_t visibility;
+    uint8_t color;
+    uint8_t transparency;
+    uint8_t reserved;
 };
 
-struct SceAppMgrSaveDataData {
-    int size;
-    unsigned int slotId;
-    Ptr<SceAppUtilSaveDataSlotParam> slotParam;
-    uint8_t reserved[32];
-    Ptr<SceAppUtilSaveDataDataSaveItem> files;
-    int fileNum;
-    SceAppUtilMountPoint *mountPoint;
-    unsigned int *requiredSizeKiB;
+struct SceAppMgrAppStatus {
+    SceUInt32 launchSourceProcessId;
+    SceUInt32 launchMode;
+    SceUInt32 protectionMode;
+    char appName[32];
+    SceUInt32 paramDeliveryHandled;
+    SceUID appId;
+    SceUID processId;
+    SceUInt32 activated;
+    SceUInt32 processRunRequested;
+    SceUInt32 networkDisconnectionWarningDialogEnabled;
+    SceUInt32 launchSourceAppId;
+    SceAppMgrInfobarState infobar;
+    SceUInt32 launchArgumentMarker;
+    char bgmProxyAppName[32];
+    uint8_t launchOrigin;
+    uint8_t budgetType;
+    uint8_t padding_72[2];
+    uint32_t processAttr;
+    uint32_t systemOrientation;
+    uint32_t recommendedOrientationActivated;
 };
+
+static_assert(sizeof(SceAppMgrInfobarState) == 4);
+static_assert(sizeof(SceAppMgrAppStatus) == 0x80);
+static_assert(offsetof(SceAppMgrAppStatus, appName) == 0x0c);
+static_assert(offsetof(SceAppMgrAppStatus, paramDeliveryHandled) == 0x2c);
+static_assert(offsetof(SceAppMgrAppStatus, appId) == 0x30);
+static_assert(offsetof(SceAppMgrAppStatus, processId) == 0x34);
+static_assert(offsetof(SceAppMgrAppStatus, activated) == 0x38);
+static_assert(offsetof(SceAppMgrAppStatus, processRunRequested) == 0x3c);
+static_assert(offsetof(SceAppMgrAppStatus, networkDisconnectionWarningDialogEnabled) == 0x40);
+static_assert(offsetof(SceAppMgrAppStatus, launchSourceAppId) == 0x44);
+static_assert(offsetof(SceAppMgrAppStatus, infobar) == 0x48);
+static_assert(offsetof(SceAppMgrAppStatus, launchArgumentMarker) == 0x4c);
+static_assert(offsetof(SceAppMgrAppStatus, bgmProxyAppName) == 0x50);
+static_assert(offsetof(SceAppMgrAppStatus, launchOrigin) == 0x70);
+static_assert(offsetof(SceAppMgrAppStatus, budgetType) == 0x71);
+static_assert(offsetof(SceAppMgrAppStatus, processAttr) == 0x74);
+static_assert(offsetof(SceAppMgrAppStatus, systemOrientation) == 0x78);
+static_assert(offsetof(SceAppMgrAppStatus, recommendedOrientationActivated) == 0x7c);
+
+static void set_compat_app_status(SceAppMgrAppStatus &status, const std::string &title_id) {
+    // Preserve the existing shell boot workaround until per-application state is emulated.
+    // Firmware produces boolean values at 0x38 and 0x3c; these placeholders are not real state.
+    status = {};
+    status.launchSourceProcessId = 2;
+    status.launchMode = 2;
+    status.protectionMode = 1;
+    strncpy(status.appName, title_id.c_str(), sizeof(status.appName));
+    status.paramDeliveryHandled = 2;
+    status.activated = 2;
+    status.processRunRequested = 2;
+    status.networkDisconnectionWarningDialogEnabled = 2;
+    status.launchSourceAppId = 2;
+    status.infobar.visibility = 2;
+    status.launchArgumentMarker = 2;
+    strncpy(status.bgmProxyAppName, title_id.c_str(), sizeof(status.bgmProxyAppName));
+    status.launchOrigin = 1;
+    status.budgetType = 2;
+    status.processAttr = 1;
+    status.systemOrientation = 2;
+    status.recommendedOrientationActivated = 2;
+}
+
+static void set_secondary_app_status(SceAppMgrAppStatus &status, const SecondaryAppStatus &app) {
+    static_assert(sizeof(status) == sizeof(app.status));
+    static_assert(std::is_trivially_copyable_v<SceAppMgrAppStatus> && std::is_trivially_copyable_v<AppMgrLaunchStatus>);
+    static_assert(offsetof(SceAppMgrAppStatus, activated) == offsetof(AppMgrLaunchStatus, activated));
+    static_assert(offsetof(SceAppMgrAppStatus, processRunRequested) == offsetof(AppMgrLaunchStatus, process_run_requested));
+    static_assert(offsetof(SceAppMgrAppStatus, infobar) == offsetof(AppMgrLaunchStatus, infobar));
+    static_assert(offsetof(SceAppMgrAppStatus, launchArgumentMarker) == offsetof(AppMgrLaunchStatus, launch_argument_marker));
+    static_assert(offsetof(SceAppMgrAppStatus, bgmProxyAppName) == offsetof(AppMgrLaunchStatus, bgm_proxy_app_name));
+    static_assert(offsetof(SceAppMgrAppStatus, launchOrigin) == offsetof(AppMgrLaunchStatus, launch_origin));
+    static_assert(offsetof(SceAppMgrAppStatus, systemOrientation) == offsetof(AppMgrLaunchStatus, system_orientation));
+    std::memcpy(&status, &app.status, sizeof(status));
+}
 
 EXPORT(SceInt32, _sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
     TRACY_FUNC(_sceAppMgrGetAppState, appState, sizeofSceAppMgrAppState, buildVersion);
@@ -77,19 +149,21 @@ EXPORT(int, sceAppMgrAddContMount) {
 
 EXPORT(int, sceAppMgrAppDataMount, int mountId, char *mountPoint) {
     TRACY_FUNC(sceAppMgrAppDataMount, mountId, mountPoint);
-    STUBBED("Using strcpy");
+    if (!mountPoint)
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    STUBBED("Path redirection without mount lifecycle");
     switch (mountId) {
     case 0x64: // photo0:
         strcpy(mountPoint, "ux0:picture");
         break;
     case 0x65: // psnfriend
-        fmt::format_to(mountPoint, "ur0:user/{}/psnfriend{}", emuenv.io.user_id, '\0');
+        strcpy(mountPoint, "friend0:");
         break;
     case 0x66: // psnmsg
-        fmt::format_to(mountPoint, "ur0:user/{}/psnmsg{}", emuenv.io.user_id, '\0');
+        strcpy(mountPoint, "psnmsg0:");
         break;
     case 0x67: // near
-        fmt::format_to(mountPoint, "ur0:user/{}/near{}", emuenv.io.user_id, '\0');
+        strcpy(mountPoint, "near0:");
         break;
     case 0x69: // music0:
         strcpy(mountPoint, "ux0:music");
@@ -102,15 +176,15 @@ EXPORT(int, sceAppMgrAppDataMount, int mountId, char *mountPoint) {
         break;
     default:
         LOG_WARN("Unknown mountId {}", log_hex(mountId));
-        break;
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
 
     return 0;
 }
 
-EXPORT(int, sceAppMgrAppDataMountById) {
-    TRACY_FUNC(sceAppMgrAppDataMountById);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrAppDataMountById, int mountId, Ptr<const char> id, Ptr<char> mountPoint) {
+    TRACY_FUNC(sceAppMgrAppDataMountById, mountId, id.address(), mountPoint.address());
+    return CALL_EXPORT(_sceAppMgrAppDataMountById, mountId, id, mountPoint);
 }
 
 EXPORT(int, sceAppMgrAppMount) {
@@ -118,15 +192,14 @@ EXPORT(int, sceAppMgrAppMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrAppParamGetInt) {
-    TRACY_FUNC(sceAppMgrAppParamGetInt);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrAppParamGetInt, int pid, int param, Ptr<SceInt32> value) {
+    TRACY_FUNC(sceAppMgrAppParamGetInt, pid, param, value);
+    return appmgr_get_app_param_int(emuenv, thread_id, pid, param, value);
 }
 
-EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, char *string, SceSize length) {
+EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, Ptr<char> string, SceSize length) {
     TRACY_FUNC(sceAppMgrAppParamGetString, pid, param, string, length);
-    sceAppMgrAppParamGetStringOptParam opt{ length, 0, 0, 0 };
-    return CALL_EXPORT(_sceAppMgrAppParamGetString, pid, param, string, &opt);
+    return appmgr_get_app_param_string(emuenv, thread_id, pid, param, string, length);
 }
 
 EXPORT(int, sceAppMgrAppParamSetString) {
@@ -186,14 +259,14 @@ EXPORT(int, sceAppMgrDestroyAppByName) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrDrmClose) {
-    TRACY_FUNC(sceAppMgrDrmClose);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrDrmClose, const SceAppMgrDrmOpenParam *param) {
+    TRACY_FUNC(sceAppMgrDrmClose, param);
+    return CALL_EXPORT(_sceAppMgrDrmClose, param);
 }
 
-EXPORT(int, sceAppMgrDrmOpen) {
-    TRACY_FUNC(sceAppMgrDrmOpen);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrDrmOpen, const SceAppMgrDrmOpenParam *param) {
+    TRACY_FUNC(sceAppMgrDrmOpen, param);
+    return CALL_EXPORT(_sceAppMgrDrmOpen, param);
 }
 
 EXPORT(int, sceAppMgrForceUmount) {
@@ -201,9 +274,9 @@ EXPORT(int, sceAppMgrForceUmount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGameDataMount) {
-    TRACY_FUNC(sceAppMgrGameDataMount);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGameDataMount, Ptr<const char> source, Ptr<const char> patch, Ptr<const void> license, Ptr<char> mountPoint) {
+    TRACY_FUNC(sceAppMgrGameDataMount, source.address(), patch.address(), license.address(), mountPoint.address());
+    return CALL_EXPORT(_sceAppMgrGameDataMount, source, patch, license, mountPoint);
 }
 
 EXPORT(int, sceAppMgrGetAppInfo) {
@@ -247,9 +320,12 @@ EXPORT(int, sceAppMgrGetCurrentBgmState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetCurrentBgmState2) {
-    TRACY_FUNC(sceAppMgrGetCurrentBgmState2);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGetCurrentBgmState2, AppMgrBgmState *state) {
+    TRACY_FUNC(sceAppMgrGetCurrentBgmState2, state);
+    if (!state)
+        return RET_ERROR(SCE_APPMGR_ERROR_NULL_POINTER);
+    *state = get_appmgr_bgm_state(emuenv);
+    return STUBBED("Single-process BGM; application IDs and permissions are not emulated");
 }
 
 EXPORT(int, sceAppMgrGetDevInfo, const char *dev, uint64_t *max_size, uint64_t *free_size) {
@@ -340,9 +416,9 @@ EXPORT(int, sceAppMgrGetRecommendedScreenOrientation) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetRunningAppIdListForShell) {
-    TRACY_FUNC(sceAppMgrGetRunningAppIdListForShell);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGetRunningAppIdListForShell, Ptr<SceInt32> app_ids, SceUInt32 count) {
+    TRACY_FUNC(sceAppMgrGetRunningAppIdListForShell, app_ids, count);
+    return appmgr_get_running_app_id_list(emuenv, thread_id, app_ids, count);
 }
 
 EXPORT(int, sceAppMgrGetSaveDataInfo) {
@@ -355,9 +431,16 @@ EXPORT(int, sceAppMgrGetSaveDataInfoForSpecialExport) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetStatusByAppId) {
-    TRACY_FUNC(sceAppMgrGetStatusByAppId);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGetStatusByAppId, int id, SceAppMgrAppStatus *appStatus) {
+    TRACY_FUNC(sceAppMgrGetStatusByAppId, id, appStatus);
+    if (!appStatus)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    if (const auto app = find_secondary_app_by_id(emuenv, id)) {
+        set_secondary_app_status(*appStatus, *app);
+        return 0;
+    }
+    set_compat_app_status(*appStatus, emuenv.io.title_id);
+    return STUBBED("Returning compatibility status without looking up app ID");
 }
 
 EXPORT(int, sceAppMgrGetStatusById) {
@@ -365,9 +448,25 @@ EXPORT(int, sceAppMgrGetStatusById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetStatusByName) {
-    TRACY_FUNC(sceAppMgrGetStatusByName);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGetStatusByName, const char *appName, SceAppMgrAppStatus *appStatus) {
+    TRACY_FUNC(sceAppMgrGetStatusByName, appName, appStatus);
+    if (appName && strnlen(appName, sizeof(SceAppMgrAppStatus::appName)) == sizeof(SceAppMgrAppStatus::appName))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+    if (!appStatus)
+        return RET_ERROR(SCE_APPMGR_ERROR_NULL_POINTER);
+    LOG_DEBUG_IF(appName, "name: {}", appName);
+    if (appName) {
+        if (const auto app = find_secondary_app_by_name(emuenv, appName)) {
+            set_secondary_app_status(*appStatus, *app);
+            return 0;
+        }
+    }
+    if (appName && emuenv.io.title_id != appName) {
+        *appStatus = {};
+        return RET_ERROR(SCE_APPMGR_ERROR_APP_NOT_FOUND);
+    }
+    set_compat_app_status(*appStatus, emuenv.io.title_id);
+    return STUBBED("Returning compatibility status for the current application");
 }
 
 EXPORT(int, sceAppMgrGetSystemDataFilePlayReady) {
@@ -433,14 +532,15 @@ EXPORT(int, sceAppMgrLaunchAppByName2ndStage) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrLaunchAppByNameForShell) {
-    TRACY_FUNC(sceAppMgrLaunchAppByNameForShell);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrLaunchAppByNameForShell, int flags, Ptr<const char> name, Ptr<const char> param) {
+    TRACY_FUNC(sceAppMgrLaunchAppByNameForShell, flags, name, param);
+    return appmgr_launch_app_by_name_for_shell(emuenv, thread_id, flags, name, param);
 }
 
-EXPORT(int, sceAppMgrLaunchAppByPath4) {
-    TRACY_FUNC(sceAppMgrLaunchAppByPath4);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrLaunchAppByPath4, Ptr<const char> path, Ptr<const char> title_id,
+    SceUInt32 budget_size, Ptr<const char> param, SceUInt32 process_attr, Ptr<const void> option) {
+    TRACY_FUNC(sceAppMgrLaunchAppByPath4, path, title_id, budget_size, param, process_attr, option);
+    return appmgr_launch_app_by_path(emuenv, thread_id, path, title_id, budget_size, param, process_attr, option);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByUri) {
@@ -518,28 +618,25 @@ EXPORT(int, sceAppMgrPspSaveDataRootMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrReceiveEvent) {
-    TRACY_FUNC(sceAppMgrReceiveEvent);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrReceiveEvent, SceAppMgrEvent *event) {
+    TRACY_FUNC(sceAppMgrReceiveEvent, event);
+    return CALL_EXPORT(_sceAppMgrReceiveEvent, event);
 }
 
 EXPORT(int, sceAppMgrReceiveEventNum, SceUInt32 *eventNum) {
     TRACY_FUNC(sceAppMgrReceiveEventNum, eventNum);
-
-    // Vita3K does not yet manage events
-    *eventNum = 0;
-
-    return STUBBED("Set eventNum to 0");
+    return CALL_EXPORT(_sceAppMgrReceiveEventNum, eventNum);
 }
 
 EXPORT(int, sceAppMgrReceiveNotificationRequestForShell) {
     TRACY_FUNC(sceAppMgrReceiveNotificationRequestForShell);
-    return UNIMPLEMENTED();
+    STUBBED("No shell notification available");
+    return static_cast<int>(0x80802024u);
 }
 
-EXPORT(int, sceAppMgrReceiveShellEvent) {
-    TRACY_FUNC(sceAppMgrReceiveShellEvent);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrReceiveShellEvent, Ptr<SceAppMgrShellEvent> event) {
+    TRACY_FUNC(sceAppMgrReceiveShellEvent, event);
+    return appmgr_receive_shell_event(emuenv, thread_id, event);
 }
 
 EXPORT(int, sceAppMgrReceiveSystemEvent, SceAppMgrSystemEvent *systemEvent) {
@@ -553,17 +650,19 @@ EXPORT(int, sceAppMgrSaveDataAddMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataDataRemove, Ptr<SceAppMgrSaveDataDataDelete> data) {
+EXPORT(int, sceAppMgrSaveDataDataRemove, SceAppMgrSaveDataDataDelete *data) {
     TRACY_FUNC(sceAppMgrSaveDataDataRemove, data);
-    for (int i = 0; i < data.get(emuenv.mem)->fileNum; i++) {
-        const auto file = fs::path(construct_savedata0_path(data.get(emuenv.mem)->files.get(emuenv.mem)[i].dataPath.get(emuenv.mem)));
-        if (fs::is_regular_file(file)) {
-            remove_file(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
-        } else
-            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
-    }
-
-    return 0;
+    if (!data || data->size != sizeof(*data) || (data->file_count && !data->files)
+        || (data->slot_id != UINT32_MAX && data->slot_id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    SceAppUtilSaveDataFileSlot slot{};
+    slot.id = data->slot_id;
+    slot.slotParam = data->slot_param;
+    const auto result = execute_savedata_data_remove(emuenv, data->slot_id == UINT32_MAX ? nullptr : &slot,
+        data->files.get(emuenv.mem), data->file_count, &data->mount_point, export_name);
+    if (result == static_cast<int>(SCE_APPUTIL_ERROR_PARAMETER))
+        return RET_ERROR(SCE_APPMGR_ERROR_SAVEDATA_INVALID_PARAMETER);
+    return result != 0 ? RET_ERROR(result) : 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataDataRemove2) {
@@ -571,41 +670,19 @@ EXPORT(int, sceAppMgrSaveDataDataRemove2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataDataSave, Ptr<SceAppMgrSaveDataData> data) {
+EXPORT(int, sceAppMgrSaveDataDataSave, SceAppMgrSaveDataData *data) {
     TRACY_FUNC(sceAppMgrSaveDataDataSave, data);
-    SceUID fd;
-
-    for (int i = 0; i < data.get(emuenv.mem)->fileNum; i++) {
-        auto files = data.get(emuenv.mem)->files.get(emuenv.mem);
-
-        const auto file_path = construct_savedata0_path(files[i].dataPath.get(emuenv.mem));
-        switch (files[i].mode) {
-        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY:
-            create_dir(emuenv.io, file_path.c_str(), 0777, emuenv.vita_fs_path, export_name);
-            break;
-        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE:
-            if (files[i].buf) {
-                fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
-                seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, emuenv.io, export_name);
-                write_file(fd, files[i].buf.get(emuenv.mem), files[i].bufSize, emuenv.io, export_name);
-                close_file(emuenv.io, fd, export_name);
-            }
-            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, emuenv.vita_fs_path, export_name);
-            truncate_file(fd, files[i].bufSize + files[i].offset, emuenv.io, export_name);
-            close_file(emuenv.io, fd, export_name);
-            break;
-        case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
-        default:
-            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
-            seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, emuenv.io, export_name);
-            if (files[i].buf.get(emuenv.mem)) {
-                write_file(fd, files[i].buf.get(emuenv.mem), files[i].bufSize, emuenv.io, export_name);
-            }
-            close_file(emuenv.io, fd, export_name);
-            break;
-        }
-    }
-    return 0;
+    if (!data || data->size != sizeof(*data) || (data->file_count && !data->files)
+        || (data->slot_id != UINT32_MAX && data->slot_id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    SceAppUtilSaveDataFileSlot slot{};
+    slot.id = data->slot_id;
+    slot.slotParam = data->slot_param;
+    const auto result = execute_savedata_data_save(emuenv, data->slot_id == UINT32_MAX ? nullptr : &slot,
+        data->files.get(emuenv.mem), data->file_count, &data->mount_point, &data->required_size_kib, export_name);
+    if (result == static_cast<int>(SCE_APPUTIL_ERROR_PARAMETER))
+        return RET_ERROR(SCE_APPMGR_ERROR_SAVEDATA_INVALID_PARAMETER);
+    return result != 0 ? RET_ERROR(result) : 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataDataSave2) {
@@ -613,9 +690,16 @@ EXPORT(int, sceAppMgrSaveDataDataSave2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataGetQuota) {
-    TRACY_FUNC(sceAppMgrSaveDataGetQuota);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSaveDataGetQuota, SceAppMgrSaveDataQuota *data) {
+    TRACY_FUNC(sceAppMgrSaveDataGetQuota, data);
+    if (!data || data->size != sizeof(*data))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    std::string savedata_max_size;
+    if (!sfo::get_data_by_key(savedata_max_size, emuenv.sfo_handle, "SAVEDATA_MAX_SIZE"))
+        savedata_max_size = "0";
+    data->quota_size_kib = static_cast<SceSize>(std::strtoul(savedata_max_size.c_str(), nullptr, 10));
+    data->used_size_kib = vfs::get_directory_used_size(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.vita_fs_path) / KiB(1);
+    return 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataMount) {
@@ -623,14 +707,24 @@ EXPORT(int, sceAppMgrSaveDataMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataSlotCreate) {
-    TRACY_FUNC(sceAppMgrSaveDataSlotCreate);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSaveDataSlotCreate, SceAppMgrSaveDataSlot *data) {
+    TRACY_FUNC(sceAppMgrSaveDataSlotCreate, data);
+    if (!data || data->size != sizeof(*data) || data->slot_id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    const auto result = write_savedata_slot(emuenv, data->slot_id, &data->param, SaveDataSlotWriteMode::CreateOnly, nullptr, export_name);
+    if (result == static_cast<int>(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_EXISTS))
+        return RET_ERROR(SCE_APPMGR_ERROR_SAVEDATA_SLOT_EXISTS);
+    return result != 0 ? RET_ERROR(result) : 0;
 }
 
-EXPORT(int, sceAppMgrSaveDataSlotDelete) {
-    TRACY_FUNC(sceAppMgrSaveDataSlotDelete);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSaveDataSlotDelete, SceAppMgrSaveDataSlotDelete *data) {
+    TRACY_FUNC(sceAppMgrSaveDataSlotDelete, data);
+    if (!data || data->size != sizeof(*data) || data->slot_id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    const auto result = write_savedata_slot(emuenv, data->slot_id, nullptr, SaveDataSlotWriteMode::DeleteExisting, nullptr, export_name);
+    if (result == static_cast<int>(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND))
+        return RET_ERROR(SCE_APPMGR_ERROR_SAVEDATA_SLOT_NOT_FOUND);
+    return result != 0 ? RET_ERROR(result) : 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotFileClose) {
@@ -648,9 +742,16 @@ EXPORT(int, sceAppMgrSaveDataSlotFileOpen) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataSlotGetParam) {
-    TRACY_FUNC(sceAppMgrSaveDataSlotGetParam);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSaveDataSlotGetParam, SceAppMgrSaveDataSlot *data) {
+    TRACY_FUNC(sceAppMgrSaveDataSlotGetParam, data);
+    if (!data || data->size != sizeof(*data) || data->slot_id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    const auto result = read_savedata_slot(emuenv, data->slot_id, data->param, export_name);
+    if (result == SaveDataSlotReadResult::NotFound)
+        return RET_ERROR(SCE_APPMGR_ERROR_SAVEDATA_SLOT_NOT_FOUND);
+    if (result == SaveDataSlotReadResult::Error)
+        return RET_ERROR(SCE_ERROR_ERRNO_EIO);
+    return 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotGetStatus) {
@@ -663,9 +764,14 @@ EXPORT(int, sceAppMgrSaveDataSlotInit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveDataSlotSetParam) {
-    TRACY_FUNC(sceAppMgrSaveDataSlotSetParam);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSaveDataSlotSetParam, SceAppMgrSaveDataSlot *data) {
+    TRACY_FUNC(sceAppMgrSaveDataSlotSetParam, data);
+    if (!data || data->size != sizeof(*data) || data->slot_id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    const auto result = write_savedata_slot(emuenv, data->slot_id, &data->param, SaveDataSlotWriteMode::Set, nullptr, export_name);
+    if (result == static_cast<int>(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND))
+        return RET_ERROR(SCE_APPMGR_ERROR_SAVEDATA_SLOT_NOT_FOUND);
+    return result != 0 ? RET_ERROR(result) : 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataSlotSetStatus) {
@@ -698,9 +804,9 @@ EXPORT(int, sceAppMgrSendSystemEvent2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSetBackRenderPortOwner) {
-    TRACY_FUNC(sceAppMgrSetBackRenderPortOwner);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSetBackRenderPortOwner, SceInt32 app_id) {
+    TRACY_FUNC(sceAppMgrSetBackRenderPortOwner, app_id);
+    return appmgr_set_back_render_port_owner(emuenv, thread_id, app_id);
 }
 
 EXPORT(int, sceAppMgrSetBgmProxyApp) {
@@ -753,9 +859,9 @@ EXPORT(int, sceAppMgrSystemParamGetString) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrThemeDataMount) {
-    TRACY_FUNC(sceAppMgrThemeDataMount);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrThemeDataMount, Ptr<const char> contentId, Ptr<const void> option1, Ptr<const void> option2, Ptr<char> mountPoint) {
+    TRACY_FUNC(sceAppMgrThemeDataMount, contentId.address(), option1.address(), option2.address(), mountPoint.address());
+    return CALL_EXPORT(_sceAppMgrThemeDataMount, contentId, option1, option2, mountPoint);
 }
 
 EXPORT(int, sceAppMgrTrophyMount) {
@@ -768,9 +874,9 @@ EXPORT(int, sceAppMgrTrophyMountById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrUmount) {
-    TRACY_FUNC(sceAppMgrUmount);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrUmount, Ptr<const char> mountPoint) {
+    TRACY_FUNC(sceAppMgrUmount, mountPoint.address());
+    return CALL_EXPORT(_sceAppMgrUmount, mountPoint);
 }
 
 EXPORT(int, sceAppMgrUmountByPid) {
@@ -785,26 +891,28 @@ EXPORT(int, sceAppMgrUpdateSaveDataParam) {
 
 EXPORT(int, sceAppMgrWorkDirMount, int mountId, char *mountPoint) {
     TRACY_FUNC(sceAppMgrWorkDirMount, mountId, mountPoint);
-    STUBBED("using strcpy");
+    if (!mountPoint)
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    STUBBED("Path redirection without mount lifecycle");
     switch (mountId) {
     case 0xC8:
-        strcpy(mountPoint, "ur0:temp/sqlite/");
+        strcpy(mountPoint, "sqlite0:/");
         break;
     case 0xC9:
-        strcpy(mountPoint, "ur0:temp/attach/");
+        strcpy(mountPoint, "attach0:/");
         break;
     case 0xCA:
         strcpy(mountPoint, "ux0:pspemu/");
         break;
     case 0xCC:
-        strcpy(mountPoint, "ur0:temp/checkout/");
+        strcpy(mountPoint, "checkout0:/");
         break;
     case 0xCE:
-        strcpy(mountPoint, "ur0:temp/webbrowser/");
+        strcpy(mountPoint, "webbrowser0:/");
         break;
     default:
         LOG_WARN("Unknown mount id: {}", log_hex(mountId));
-        break;
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
 
     return 0;

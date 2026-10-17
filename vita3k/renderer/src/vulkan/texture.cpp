@@ -27,7 +27,9 @@
 #include <util/align.h>
 #include <vkutil/vkutil.h>
 
+#include <algorithm>
 #include <mutex>
+#include <string_view>
 
 namespace renderer::vulkan {
 
@@ -61,13 +63,18 @@ VKTextureCache::VKTextureCache(VKState &state)
 
 void VKTextureCache::cleanup() {
     for (auto &entry : textures) {
+        state.device.destroy(entry.flat_view);
+        entry.flat_view = nullptr;
         if (entry.texture.image)
             entry.texture.destroy();
+        entry.cube_texture.destroy();
+        entry.cube_valid = false;
     }
 
     for (auto &sampler : samplers)
         state.device.destroy(sampler);
     samplers.clear();
+    linear_filter_support.clear();
 
     for (auto &staging : staging_buffers) {
         staging.buffer.destroy();
@@ -98,6 +105,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     const SceGxmTextureFormat format = gxm::get_format(texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
     if (gxm::is_paletted_format(base_format) && texture.palette_addr == 0) {
+        if (!is_vertex)
+            context.curr_frag_ublock.set_cast_sampler_bit(static_cast<int>(index), false, false);
         LOG_WARN("Ignoring null palette texture");
         return;
     }
@@ -128,9 +137,32 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     if (lookup_result.has_value()) {
         // get the sampler now
-        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);
+        const bool supports_linear = context.state.texture_cache.format_supports_linear_filter(lookup_result->format);
+        context.state.texture_cache.cache_and_bind_sampler(texture, !supports_linear);
     } else {
-        context.state.texture_cache.cache_and_bind_texture(texture, mem);
+        if (!context.state.texture_cache.cache_and_bind_texture(texture, mem)) {
+            auto &image_info = is_vertex
+                ? context.vertex_textures[index - SCE_GXM_MAX_TEXTURE_UNITS]
+                : context.fragment_textures[index];
+            image_info = vk::DescriptorImageInfo{};
+            if (is_vertex)
+                context.last_vert_texture_count = ~0;
+            else {
+                context.last_frag_texture_count = ~0;
+                context.curr_frag_ublock.set_cast_sampler_bit(static_cast<int>(index), false, false);
+            }
+            if (context.state.features.use_texture_viewport) {
+                const TextureViewport default_viewport{};
+                if (is_vertex) {
+                    context.curr_vert_ublock.set_viewport_ratio(index - SCE_GXM_MAX_TEXTURE_UNITS, default_viewport.ratio);
+                    context.curr_vert_ublock.set_viewport_offset(index - SCE_GXM_MAX_TEXTURE_UNITS, default_viewport.offset);
+                } else {
+                    context.curr_frag_ublock.set_viewport_ratio(index, default_viewport.ratio);
+                    context.curr_frag_ublock.set_viewport_offset(index, default_viewport.offset);
+                }
+            }
+            return;
+        }
         auto &image = context.state.texture_cache.current_texture->texture;
         lookup_result = TextureLookupResult{
             image.view,
@@ -140,12 +172,18 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     }
 
     const vk::ImageLayout layout = vkutil::get_underlying_layout(lookup_result->layout);
+    context.bound_textures[index] = texture;
+    if (!is_vertex)
+        context.curr_frag_ublock.set_cast_sampler_bit(static_cast<int>(index), lookup_result->is_typeless_cast, lookup_result->cast_phase_hi);
+    auto &cube_textures = is_vertex ? context.vertex_cube_textures : context.fragment_cube_textures;
+    cube_textures.set(index % SCE_GXM_MAX_TEXTURE_UNITS,
+        texture.texture_type() == SCE_GXM_TEXTURE_CUBE || texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const vk::Sampler sampler = context.state.texture_cache.get_retrieved_sampler();
 
     vk::DescriptorImageInfo &image_info = is_vertex
         ? context.vertex_textures[index - SCE_GXM_MAX_TEXTURE_UNITS]
         : context.fragment_textures[index];
-    if (image_info.sampler != sampler || image_info.imageView != lookup_result->view) {
+    if (image_info.sampler != sampler || image_info.imageView != lookup_result->view || image_info.imageLayout != layout) {
         image_info = vk::DescriptorImageInfo{
             .sampler = sampler,
             .imageView = lookup_result->view,
@@ -203,13 +241,16 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
 
             vk::SubmitInfo submit_info{};
             submit_info.setCommandBuffers(context->cmdbuffers_to_submit);
-            {
+            try {
                 std::lock_guard<std::mutex> lock(state.queue_mutex);
                 state.general_queue.submit(submit_info, current_fence);
+            } catch (const vk::DeviceLostError &) {
+                state.report_device_lost("texture upload queue submit");
+                throw;
             }
             context->cmdbuffers_to_submit.clear();
 
-            auto result = state.device.waitForFences(current_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            auto result = state.wait_for_fences(current_fence, std::numeric_limits<uint64_t>::max());
             if (result != vk::Result::eSuccess) {
                 LOG_ERROR("Could not wait for fences.");
                 assert(false);
@@ -230,7 +271,7 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
             }
         } else {
             // wait for the fence, but don't reset it
-            auto result = state.device.waitForFences(staging_buffer->waiting_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            auto result = state.wait_for_fences(staging_buffer->waiting_fence, std::numeric_limits<uint64_t>::max());
             if (result != vk::Result::eSuccess) {
                 LOG_ERROR("Could not wait for fences.");
                 assert(false);
@@ -394,6 +435,12 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     if (gxm_texture.gamma_mode)
         vk_format = linear_to_srgb(vk_format);
 
+    state.frame().destroy_queue.add(current_texture->flat_view);
+    if (current_texture->cube_texture.image)
+        state.frame().destroy_queue.add_image(current_texture->cube_texture);
+    current_texture->cube_texture = vkutil::Image();
+    current_texture->cube_valid = false;
+    current_texture->swizzle = swizzle;
     current_texture->mip_count = mip_count;
     current_texture->is_cube = is_cube;
     uint32_t memory_needed = get_image_memory_upper_bound(gxm_texture, vk_format, base_format);
@@ -429,7 +476,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
         .arrayLayers = is_cube ? 6U : 1U,
         .samples = vk::SampleCountFlagBits::e1,
         .tiling = vk::ImageTiling::eOptimal,
-        .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
+        .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc,
         .sharingMode = vk::SharingMode::eExclusive,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
@@ -546,6 +593,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 }
 
 void VKTextureCache::upload_done() {
+    current_texture->cube_valid = false;
     // transition the texture back to read only
     vk::ImageSubresourceRange range{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -559,6 +607,129 @@ void VKTextureCache::upload_done() {
     // this should not be necessary
     cmd_buffer = nullptr;
     is_texture_transfer_ready = false;
+}
+
+vk::ImageView VKTextureCache::retrieve_texture_view(VKContext &context, vk::ImageView view, bool is_cube) {
+    const auto it = std::find_if(textures.begin(), textures.end(), [view](const TextureCacheEntry &entry) {
+        return entry.texture.view == view;
+    });
+    if (it == textures.end() || !view) {
+        LOG_ERROR_ONCE("Cannot create a compatible texture view outside the texture cache");
+        return nullptr;
+    }
+    auto &entry = *it;
+    if (entry.is_cube == is_cube)
+        return view;
+    if (!is_cube) {
+        if (!entry.flat_view) {
+            const vk::ImageViewCreateInfo view_info{
+                .image = entry.texture.image,
+                .viewType = vk::ImageViewType::e2D,
+                .format = entry.texture.format,
+                .components = entry.swizzle,
+                .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, entry.mip_count, 0, 1 }
+            };
+            entry.flat_view = state.device.createImageView(view_info);
+        }
+        return entry.flat_view;
+    }
+    if (entry.cube_valid)
+        return entry.cube_texture.view;
+
+    const bool resize_faces = entry.texture.width != entry.texture.height;
+    vk::Format cube_format = entry.texture.format;
+    if (resize_faces) {
+        // Compressed formats cannot be blit destinations; decode while resizing instead.
+        if (vk::isCompressed(cube_format)) {
+            const std::string_view numeric_format = vk::componentNumericFormat(cube_format, 0);
+            cube_format = numeric_format == "SRGB" ? vk::Format::eR8G8B8A8Srgb
+                                                   : (numeric_format == "UNORM" ? vk::Format::eR8G8B8A8Unorm : vk::Format::eR16G16B16A16Sfloat);
+        }
+        const auto source_features = state.physical_device.getFormatProperties(entry.texture.format).optimalTilingFeatures;
+        const auto destination_features = state.physical_device.getFormatProperties(cube_format).optimalTilingFeatures;
+        if (!(source_features & vk::FormatFeatureFlagBits::eBlitSrc) || !(destination_features & vk::FormatFeatureFlagBits::eBlitDst)) {
+            LOG_ERROR_ONCE("Cannot resize a {} texture ({}x{}) into {} cube faces: blitting is unsupported",
+                vk::to_string(entry.texture.format), entry.texture.width, entry.texture.height, vk::to_string(cube_format));
+            return nullptr;
+        }
+    }
+
+    auto &cube = entry.cube_texture;
+    const vk::ImageSubresourceRange cube_range{ vk::ImageAspectFlagBits::eColor, 0, entry.mip_count, 0, 6 };
+    if (!cube.image) {
+        const uint32_t face_size = std::max(entry.texture.width, entry.texture.height);
+        cube = vkutil::Image(face_size, face_size, cube_format);
+        const vk::ImageCreateInfo image_info{
+            .flags = vk::ImageCreateFlagBits::eCubeCompatible,
+            .imageType = vk::ImageType::e2D,
+            .format = cube.format,
+            .extent = { cube.width, cube.height, 1 },
+            .mipLevels = entry.mip_count,
+            .arrayLayers = 6,
+            .samples = vk::SampleCountFlagBits::e1,
+            .tiling = vk::ImageTiling::eOptimal,
+            .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
+        };
+        std::tie(cube.image, cube.allocation) = state.allocator.createImage(image_info, vkutil::vma_auto_alloc);
+        const vk::ImageViewCreateInfo view_info{
+            .image = cube.image,
+            .viewType = vk::ImageViewType::eCube,
+            .format = cube.format,
+            .components = entry.swizzle,
+            .subresourceRange = cube_range
+        };
+        cube.view = state.device.createImageView(view_info);
+    }
+
+    if (context.in_renderpass)
+        context.stop_render_pass();
+    const auto cmd = context.render_cmd;
+    // SampledImage's shared barriers cover fragment/compute sampling, not vertex sampling.
+    const vk::MemoryBarrier vertex_reads{
+        .srcAccessMask = vk::AccessFlagBits::eShaderRead,
+        .dstAccessMask = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite
+    };
+    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eVertexShader, vk::PipelineStageFlagBits::eTransfer, {}, vertex_reads, {}, {});
+    const vk::ImageSubresourceRange source_range{ vk::ImageAspectFlagBits::eColor, 0, entry.mip_count, 0, 1 };
+    entry.texture.transition_to(cmd, vkutil::ImageLayout::TransferSrc, source_range);
+    cube.transition_to_discard(cmd, vkutil::ImageLayout::TransferDst, cube_range);
+    // A 2D binding has only one face: preserve it without reading five nonexistent guest faces.
+    for (uint32_t mip = 0; mip < entry.mip_count; ++mip) {
+        for (uint32_t face = 0; face < 6; ++face) {
+            if (resize_faces) {
+                const vk::ImageBlit blit{
+                    .srcSubresource = { vk::ImageAspectFlagBits::eColor, mip, 0, 1 },
+                    .srcOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{}, vk::Offset3D{ static_cast<int32_t>(std::max(1U, entry.texture.width >> mip)), static_cast<int32_t>(std::max(1U, entry.texture.height >> mip)), 1 } },
+                    .dstSubresource = { vk::ImageAspectFlagBits::eColor, mip, face, 1 },
+                    .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{}, vk::Offset3D{ static_cast<int32_t>(std::max(1U, cube.width >> mip)), static_cast<int32_t>(std::max(1U, cube.height >> mip)), 1 } }
+                };
+                cmd.blitImage(entry.texture.image, vk::ImageLayout::eTransferSrcOptimal, cube.image, vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eNearest);
+            } else {
+                const vk::ImageCopy copy{
+                    .srcSubresource = { vk::ImageAspectFlagBits::eColor, mip, 0, 1 },
+                    .dstSubresource = { vk::ImageAspectFlagBits::eColor, mip, face, 1 },
+                    .extent = { std::max(1U, cube.width >> mip), std::max(1U, cube.height >> mip), 1 }
+                };
+                cmd.copyImage(entry.texture.image, vk::ImageLayout::eTransferSrcOptimal, cube.image, vk::ImageLayout::eTransferDstOptimal, copy);
+            }
+        }
+    }
+    entry.texture.transition_to(cmd, vkutil::ImageLayout::SampledImage, source_range);
+    cube.transition_to(cmd, vkutil::ImageLayout::SampledImage, cube_range);
+    const vk::MemoryBarrier vertex_samples{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eShaderRead
+    };
+    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eVertexShader, {}, vertex_samples, {}, {});
+    entry.cube_valid = true;
+    return cube.view;
+}
+
+bool VKTextureCache::format_supports_linear_filter(vk::Format format) {
+    const auto [it, inserted] = linear_filter_support.try_emplace(format, false);
+    if (inserted)
+        it->second = static_cast<bool>(state.physical_device.getFormatProperties(format).optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    return it->second;
 }
 
 void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {
@@ -586,7 +757,7 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
     vk::SamplerCreateInfo sampler_info{
         .magFilter = texture::translate_filter(mag_filter),
         .minFilter = texture::translate_filter(min_filter),
-        .mipmapMode = texture.mip_filter ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest,
+        .mipmapMode = texture.mip_filter && !no_linear ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest,
         .addressModeU = texture::translate_address_mode(uaddr),
         .addressModeV = texture::translate_address_mode(vaddr),
         .addressModeW = vk::SamplerAddressMode::eRepeat,
@@ -626,8 +797,14 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     vkutil::Image &image = current_texture->texture;
     // In case the cache is full, no need to put the previous image in the destroy queue
     // because of texture importation, we must be careful when destroying an image
+    state.frame().destroy_queue.add(current_texture->flat_view);
     if (image.image)
         state.frame().destroy_queue.add_image(image);
+
+    if (current_texture->cube_texture.image)
+        state.frame().destroy_queue.add_image(current_texture->cube_texture);
+    current_texture->cube_texture = vkutil::Image();
+    current_texture->cube_valid = false;
 
     vk::Format vk_format = texture::translate_format(base_format);
     if (is_srgb)
@@ -651,7 +828,7 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
         .arrayLayers = is_cube ? 6U : 1U,
         .samples = vk::SampleCountFlagBits::e1,
         .tiling = vk::ImageTiling::eOptimal,
-        .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
+        .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc,
         .sharingMode = vk::SharingMode::eExclusive,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
@@ -689,6 +866,7 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     if (swap_rb)
         std::swap(swizzle.r, swizzle.b);
 
+    current_texture->swizzle = swizzle;
     vk::ImageViewCreateInfo view_info{
         .image = image.image,
         .viewType = is_cube ? vk::ImageViewType::eCube : vk::ImageViewType::e2D,

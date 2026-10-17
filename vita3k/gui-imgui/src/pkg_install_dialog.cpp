@@ -21,16 +21,138 @@
 #include <gui-imgui/functions.h>
 #include <host/dialog/filesystem.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
-#include <rif2zrif.h>
 #include <util/bytes.h>
 #include <util/log.h>
 
 #include <algorithm>
+#include <fstream>
+#include <mutex>
 #include <thread>
 
 namespace gui {
+
+static std::atomic<float> update_install_progress{ 0.f };
+static std::thread update_install_thread;
+static std::mutex update_install_mutex;
+static std::string update_install_title;
+
+static bool get_update_zrif(EmuEnvState &emuenv, const std::string &content_id, std::string &zrif) {
+    constexpr size_t title_id_offset = 7;
+    constexpr size_t title_id_size = 9;
+    if (content_id.size() < title_id_offset + title_id_size) {
+        LOG_ERROR("Invalid update content ID for license lookup: '{}'", content_id);
+        return false;
+    }
+
+    const auto title_id = content_id.substr(title_id_offset, title_id_size);
+    const auto license_path = emuenv.vita_fs_path / "ux0/license" / title_id / fmt::format("{}.rif", content_id);
+    if (!fs::exists(license_path)) {
+        LOG_WARN("License not found for update content ID: {}", content_id);
+        return false;
+    }
+
+    std::ifstream license_file(license_path, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!license_file) {
+        LOG_ERROR("Failed to open update license: {}", license_path);
+        return false;
+    }
+    zrif = rif2zrif(license_file);
+    return !zrif.empty();
+}
+
+void update_install(GuiState &gui, EmuEnvState &emuenv, const std::string &id) {
+    const auto it = gui.updates_install.find(id);
+    if (it == gui.updates_install.end()) {
+        LOG_ERROR("Update install state not found for '{}'.", id);
+        return;
+    }
+    if (it->second.state != UpdateState::WAITING_INSTALL) {
+        LOG_WARN("Update '{}' is not ready to install (state {}).", id, static_cast<int>(it->second.state));
+        return;
+    }
+    if (!fs::exists(it->second.pkg_path)) {
+        LOG_ERROR("Update package is missing: {}", it->second.pkg_path);
+        queue_notice_info("update_failed", id);
+        return;
+    }
+
+    std::string zrif;
+    if (!get_update_zrif(emuenv, it->second.content_id, zrif)) {
+        gui.file_menu.license_install_dialog = true;
+        return;
+    }
+
+    update_install_title = gui.new_update_infos.contains(id) ? gui.new_update_infos.at(id).title : id;
+    it->second.state = UpdateState::INSTALLING;
+    gui.vita_area.pkg_install = true;
+    pkg_install(gui, emuenv, it->second.pkg_path, zrif, id);
+}
+
+void pkg_install(GuiState &gui, EmuEnvState &emuenv, const fs::path &pkg_path, const std::string &zrif, const std::string &id) {
+    std::lock_guard lock(update_install_mutex);
+    if (update_install_thread.joinable())
+        update_install_thread.join();
+
+    gui.vita_area.pkg_install = true;
+    update_install_progress = 0.f;
+    const auto progress_callback = [](float progress) { update_install_progress = progress; };
+    update_install_thread = std::thread([&gui, &emuenv, pkg_path, zrif, id, progress_callback]() mutable {
+        auto license = zrif;
+        const bool installed = install_pkg(pkg_path, emuenv, license, progress_callback);
+        if (installed)
+            queue_notice_info("update_success", id);
+        else
+            queue_notice_info("update_failed", id);
+
+        std::error_code error;
+        fs::remove_all(pkg_path.parent_path(), error);
+        if (error)
+            LOG_ERROR("Failed to remove installed update package directory '{}': {}", pkg_path.parent_path(), error.message());
+    });
+}
+
+void destroy_pkg_install_thread() {
+    std::lock_guard lock(update_install_mutex);
+    if (update_install_thread.joinable())
+        update_install_thread.join();
+}
+
+void draw_pkg_install(GuiState &gui, EmuEnvState &emuenv) {
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 viewport_pos(viewport.logical_x, viewport.logical_y);
+    const ImVec2 viewport_size(viewport.logical_width, viewport.logical_height);
+    const ImVec2 scale(viewport.scale_x * viewport.manual_dpi_scale, viewport.scale_y * viewport.manual_dpi_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::SetNextWindowPos(viewport_pos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(viewport_size, ImGuiCond_Always);
+    ImGui::Begin("##pkg_install", &gui.vita_area.pkg_install, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+
+    const ImVec2 panel_size(616.f * scale.x, 236.f * scale.y);
+    ImGui::SetNextWindowPos(ImVec2(viewport_pos.x + (viewport_size.x - panel_size.x) / 2.f, viewport_pos.y + (viewport_size.y - panel_size.y) / 2.f), ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 15.f * scale.x);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 2.f * scale.x);
+    ImGui::BeginChild("##pkg_install_child", panel_size, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration);
+
+    ImGui::SetCursorPos(ImVec2(178.f * scale.x, ImGui::GetCursorPosY() + 30.f * scale.y));
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", update_install_title.c_str());
+    ImGui::SetCursorPos(ImVec2(178.f * scale.x, ImGui::GetCursorPosY() + 30.f * scale.y));
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.indicator["installing"].c_str());
+    const float progress_width = 502.f * scale.x;
+    ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (progress_width / 2.f), ImGui::GetCursorPosY() + 30.f * scale.y));
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
+    ImGui::ProgressBar(update_install_progress.load() / 100.f, ImVec2(progress_width, 15.f * scale.x), "");
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * scale.y);
+    TextColoredCentered(GUI_COLOR_TEXT, std::to_string(static_cast<uint32_t>(update_install_progress.load())).append("%").c_str());
+    ImGui::PopStyleColor();
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+    ImGui::End();
+    ImGui::PopStyleVar(2);
+}
 
 void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
@@ -211,7 +333,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     delete_license_file = false;
                 }
                 if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
-                    init_user_app(gui, emuenv, emuenv.app_info.app_title_id);
+                    init_user_app(gui, emuenv, "ux0:app/" + emuenv.app_info.app_title_id);
                     select_app(gui, emuenv, emuenv.app_info.app_title_id);
                 }
                 update_notice_info(gui, emuenv, "content");

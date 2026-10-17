@@ -209,7 +209,8 @@ bool is_lle_module(const std::string &module_name, EmuEnvState &emuenv) {
     return false;
 }
 
-bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id) {
+bool is_module_loaded(KernelState &kernel, const MemState &mem, SceSysmoduleModuleId module_id) {
     std::lock_guard<std::mutex> guard(kernel.mutex);
-    return kernel.loaded_sysmodules.contains(module_id);
+    const auto process = kernel.loaded_sysmodules.find(&mem);
+    return process != kernel.loaded_sysmodules.end() && process->second.contains(module_id);
 }

@@ -41,7 +41,7 @@
     extern const ImportFn import_##name = make_bridge<&export_##name>(#name, &export_##name); \
     DECL_EXPORT(ret, name, ##__VA_ARGS__)
 
-#define DECL_VAR_EXPORT(name) Address export_##name(EmuEnvState &emuenv)
+#define DECL_VAR_EXPORT(name) std::optional<ExportedVariable> export_##name(EmuEnvState &emuenv, MemState &mem)
 #define VAR_EXPORT(name)                                         \
     DECL_VAR_EXPORT(name);                                       \
     extern const ImportVarFactory import_##name = export_##name; \

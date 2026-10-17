@@ -202,7 +202,93 @@
 		<silver>실버</silver>
 		<hours_ago>{} 시간 전</hours_ago>
 		<minutes_ago>{} 분 전</minutes_ago>
+		<activities>활동</activities>
+		<like>좋아요</like>
+		<likes_this>{}님이 좋아합니다.</likes_this>
+		<and_like_this>{}님과 {}님이 좋아합니다.</and_like_this>
+		<people_like_this>{} 명이 좋아합니다.</people_like_this>
+		<comments>코멘트 {}</comments>
+		<delete_activity>이 활동을 삭제합니다.</delete_activity>
+		<delete_comment>이 코멘트를 삭제합니다.</delete_comment>
+		<unlike>취소</unlike>
+		<write_comment>코멘트 쓰기</write_comment>
+		<has_earned_platinum_trophy>님이 "{}"에서 플래티넘 트로피를 획득했습니다!</has_earned_platinum_trophy>
+		<has_earned_trophy>님이 "{}"에서 트로피를 획득했습니다!</has_earned_trophy>
+		<first_time_playing>님이 "{}"(을)를 처음으로 플레이하고 있습니다.</first_time_playing>
+		<download_failed>다운로드하지 못했습니다.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}님의 활동</activities_of>
+		<anyone>누구나</anyone>
+		<no_one>공개하지 않음</no_one>
+		<cannot_display>더 이상 페이지를 표시할 수 없습니다.</cannot_display>
+		<friends_of_friends>친구의 친구</friends_of_friends>
+		<friends_only>친구</friends_only>
+		<share_range>공개 범위:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>수락</accept>
+		<players_blocked>차단한 플레이어</players_blocked>
+		<friend_request_already_canceled>이 친구 요청은 이미 취소되었습니다.</friend_request_already_canceled>
+		<search_for_player>Vita3K Network 플레이어를 검색하여 프로필을 보거나 친구 요청을 보낼 수 있습니다.</search_for_player>
+		<friend_requests>친구 요청</friend_requests>
+		<friends>친구</friends>
+		<could_not_find_online_id>온라인 ID가 검색되지 않습니다.</could_not_find_online_id>
+		<there_are_no_players>플레이어가 없습니다.</there_are_no_players>
+		<no_players_found>플레이어가 검색되지 않습니다.</no_players_found>
+		<online_id>온라인 ID</online_id>
+		<enter_from_3_to_16_characters>3~16 문자 이내로 입력해 주십시오.</enter_from_3_to_16_characters>
+		<online_status>온라인 상태</online_status>
+		<received>받음</received>
+		<search>검색</search>
+		<sent>보냄</sent>
+		<waiting_for_friend_response>친구의 답을 기다리고 있습니다.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>자기소개</about_me>
+		<accept>수락</accept>
+		<activity>활동</activity>
+		<warn_block_player>이 플레이어를 차단하면 이 플레이어로부터의 메시지를 받을 수 없게 됩니다.
+계속하시겠습니까?</warn_block_player>
+		<warn_block_friend>이 플레이어를 차단하면 이 플레이어가 친구에서 제외됩니다. 또한 이 플레이어로부터의 메시지를 받을 수 없게 됩니다.
+계속하시겠습니까?</warn_block_friend>
+		<block>차단하기</block>
+		<blocked>차단중입니다.</blocked>
+		<cancel_friend_request>친구 요청 취소하기</cancel_friend_request>
+		<friend_request_canceled>친구 요청을 취소합니다.</friend_request_canceled>
+		<delete_request>요청 삭제하기</delete_request>
+		<edit_profile>프로필 편집하기</edit_profile>
+		<friend_request_already_canceled>이 친구 요청은 이미 취소되었습니다.</friend_request_already_canceled>
+		<friends>친구</friends>
+		<is_now_friends_with>이제 {}님과 친구가 되었습니다</is_now_friends_with>
+		<level>레벨</level>
+		<not_a_friend_yet>아직 친구가 아닙니다.</not_a_friend_yet>
+		<remove_from_friends>친구에서 제외하기</remove_from_friends>
+		<player_removed_from_friends>이 플레이어를 친구에서 제외합니다.</player_removed_from_friends>
+		<send_friend_request>친구 요청 보내기</send_friend_request>
+		<send>보내기</send>
+		<trophies>트로피 수</trophies>
+		<unblock>차단 해제하기</unblock>
+		<unblock_player>이 플레이어를 차단 해제합니다.</unblock_player>
+		<waiting_friend_response>친구의 답을 기다리고 있습니다.</waiting_friend_response>
+		<friend_request_from_player>이 플레이어로부터 친구 요청이 들어왔습니다.</friend_request_from_player>
+		<you_have_friend_requests>친구 요청이 들어왔습니다.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>메시지</title>
+		<create_message>+ 메시지 만들기</create_message>
+		<uncheck_all>모두 선택 해제</uncheck_all>
+		<enter_online_id>온라인 ID를 입력하세요.</enter_online_id>
+		<add>추가</add>
+		<add_recipient>받는 사람 추가</add_recipient>
+		<delete>삭제</delete>
+		<cancel>취소</cancel>
+		<to>받는 사람</to>
+	</messages_app>
 
 	<compatibility name="호환성">
 	</compatibility>
@@ -232,13 +318,43 @@
 
 	<indicator>
 		<app_added_home>홈 화면에 애플리케이션이 추가되었습니다.</app_added_home>
+		<cancel_download>이 다운로드를 취소하시겠습니까?</cancel_download>
+		<cancel_install>이 설치를 취소하시겠습니까?
+취소하면 설치를 위해 다운로드한 파일도 삭제됩니다.</cancel_install>
 		<delete_all>모두 삭제</delete_all>
 		<notif_deleted>알림을 삭제합니다.</notif_deleted>
+		<waiting_download>다운로드 대기중입니다...</waiting_download>
+		<downloading_complete>다운로드했습니다.</downloading_complete>
 		<install_failed>설치하지 못했습니다.</install_failed>
+		<player_is_online>{}님이 로그인했습니다.</player_is_online>
+		<waiting_install>설치 대기중입니다...</waiting_install>
 		<install_complete>설치했습니다.</install_complete>
 		<installing>설치중입니다...</installing>
+		<minutes_left>남은 시간 {} 분</minutes_left>
 		<no_notif>알림이 없습니다.</no_notif>
+		<commented_on_activity>{}님의 활동에 대해 코멘트가 있습니다.</commented_on_activity>
+		<commented_on_your_activity>고객님의 활동에 대해 코멘트가 있습니다.</commented_on_your_activity>
+		<commented_and_likes_your_activity>고객님의 활동에 대해 코멘트와 좋아요가 있습니다.</commented_and_likes_your_activity>
+		<likes_your_activity>고객님의 활동을 좋아합니다.</likes_your_activity>
+		<pause_all>모두 일시 정지</pause_all>
+		<pause>일시 정지</pause>
+		<paused>일시 정지중</paused>
+		<resume_all>모두 재개</resume_all>
+		<resume>재개</resume>
+		<seconds_left>남은 시간 {} 초</seconds_left>
+		<friend_requests>친구 요청이 들어왔습니다.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>새 버전의 애플리케이션이 있습니다.</new_app_version_available>
+		<latest_version_installed>최신 버전의 애플리케이션이 설치되어 있습니다.</latest_version_installed>
+		<downloading_app_update>애플리케이션 업데이트 파일을 다운로드 중입니다...
+다운로드 진행상태는 알림 리스트에서 확인하실 수 있습니다.</downloading_app_update>
+		<download>다운로드</download>
+		<not_enough_space>다운로드하지 못했습니다.
+메모리 카드의 빈 용량이 부족합니다. 메모리 스틱에 {} 이상의 빈 용량을 확보한 후 다시 다운로드해 주십시오.</not_enough_space>
+		<version>버전 {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>돌아가기</back>

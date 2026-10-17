@@ -764,8 +764,10 @@ EXPORT(void, sceNetCtlTerm) {
         emuenv.netctl.adhocCondVar.notify_all();
     }
 
-    if (emuenv.netctl.adhocThread.joinable())
+    if (emuenv.netctl.adhocThread.joinable()) {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
         emuenv.netctl.adhocThread.join();
+    }
 
     emuenv.netctl.adhocState = SCE_NET_CTL_STATE_DISCONNECTED;
     emuenv.netctl.adhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;

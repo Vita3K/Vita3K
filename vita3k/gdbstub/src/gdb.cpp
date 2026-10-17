@@ -513,8 +513,8 @@ static std::string log_stack_traceback(EmuEnvState &state, CPUState &cpu) {
         if (!Ptr<uint32_t>(addr).valid(state.mem))
             continue;
         const Address value = *Ptr<uint32_t>(addr).get(state.mem);
-        if (const auto mod = state.kernel.find_module_by_addr(value))
-            fmt::format_to(std::back_inserter(str), "0x{:X} (module: {})\n", value, mod->module_name);
+        if (const auto mod = state.kernel.find_module_by_addr(state.mem, value))
+            fmt::format_to(std::back_inserter(str), "0x{:X} (module: {})\n", value, mod->info.module_name);
     }
     return str;
 }

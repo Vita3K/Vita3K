@@ -21,6 +21,15 @@
 
 #include <kernel/types.h>
 
+struct SceKernelSystemSwVersion {
+    uint32_t size;
+    char version_string[28];
+    uint32_t version;
+    uint32_t unknown;
+};
+static_assert(sizeof(SceKernelSystemSwVersion) == 0x28);
+
+DECL_EXPORT(int, sceKernelGetSystemSwVersion, Ptr<SceKernelSystemSwVersion> info);
 DECL_EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option);
 DECL_EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes);
 DECL_EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStartModuleOpt *pOpt, int *pRes);

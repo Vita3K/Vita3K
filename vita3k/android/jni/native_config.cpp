@@ -25,6 +25,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <lang/state.h>
+#include <packages/sfo.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <util/log.h>
@@ -666,6 +667,75 @@ Java_org_vita3k_emulator_NativeLib_getCurrentEmulatorPath(JNIEnv *env, jclass) {
 
     const std::string vita_fs_path = emuenv->vita_fs_path.generic_string();
     return env->NewStringUTF(vita_fs_path.c_str());
+}
+
+JNIEXPORT void JNICALL
+Java_org_vita3k_emulator_NativeLib_importSavedataIdentity(JNIEnv *env, jclass, jbyteArray sfo_bytes) {
+    auto *emuenv = get_emuenv();
+    auto *controller = get_app_session_controller();
+    if (!emuenv || !controller || !sfo_bytes) {
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "Emulator is not initialized");
+        return;
+    }
+    if (controller->has_active_session()) {
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "Close the running application before importing an identity");
+        return;
+    }
+
+    try {
+        const auto size = env->GetArrayLength(sfo_bytes);
+        if (size > 1024 * 1024)
+            throw std::runtime_error("The selected SFO is too large");
+        std::vector<uint8_t> bytes(static_cast<size_t>(size));
+        if (size > 0) {
+            env->GetByteArrayRegion(sfo_bytes, 0, size, reinterpret_cast<jbyte *>(bytes.data()));
+            if (env->ExceptionCheck())
+                return;
+        }
+        std::string identity_error;
+        const auto identity = sfo::read_savedata_identity(bytes, identity_error);
+        if (!identity) {
+            env->ThrowNew(env->FindClass("java/lang/RuntimeException"), identity_error.c_str());
+            return;
+        }
+        if (controller->has_active_session()) {
+            env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "Close the running application before importing an identity");
+            return;
+        }
+        if (!app::import_savedata_identity(emuenv->regmgr, emuenv->vita_fs_path, *identity, identity_error))
+            env->ThrowNew(env->FindClass("java/lang/RuntimeException"), identity_error.c_str());
+    } catch (const std::bad_alloc &) {
+        LOG_ERROR("Cannot import savedata identity: out of memory");
+        env->ThrowNew(env->FindClass("java/lang/RuntimeException"), "Cannot import savedata identity: out of memory");
+    } catch (const std::exception &error) {
+        LOG_ERROR("Cannot import savedata identity: {}", error.what());
+        env->ThrowNew(env->FindClass("java/lang/RuntimeException"), error.what());
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_org_vita3k_emulator_NativeLib_resetSavedataIdentity(JNIEnv *env, jclass) {
+    auto *emuenv = get_emuenv();
+    auto *controller = get_app_session_controller();
+    if (!emuenv || !controller) {
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "Emulator is not initialized");
+        return;
+    }
+    if (controller->has_active_session()) {
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "Close the running application before changing the identity");
+        return;
+    }
+    try {
+        std::string error;
+        if (!app::reset_savedata_identity(emuenv->regmgr, emuenv->vita_fs_path, error))
+            env->ThrowNew(env->FindClass("java/lang/RuntimeException"), error.c_str());
+    } catch (const std::bad_alloc &) {
+        LOG_ERROR("Cannot reset savedata identity: out of memory");
+        env->ThrowNew(env->FindClass("java/lang/RuntimeException"), "Cannot reset savedata identity: out of memory");
+    } catch (const std::exception &error) {
+        LOG_ERROR("Cannot reset savedata identity: {}", error.what());
+        env->ThrowNew(env->FindClass("java/lang/RuntimeException"), error.what());
+    }
 }
 
 JNIEXPORT jboolean JNICALL

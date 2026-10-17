@@ -34,13 +34,16 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
 
     std::vector<char> buffer(KiB(1));
 
-    const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), emuenv.mem).get(emuenv.mem);
-    const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), emuenv.mem, messages);
+    MemState &mem = thread->cpu->mem;
+    const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), mem).get(mem);
+    const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), mem, messages);
 
     LOG_INFO("file {}, line {}, {}", filename, line, buffer.data());
 
-    if (do_stop)
-        emuenv.kernel.request_process_exit(0);
+    if (do_stop) {
+        if (const SceInt32 error = emuenv.kernel.request_process_exit(thread_id, 0))
+            return error;
+    }
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -69,8 +72,9 @@ EXPORT(int, sceDbgLoggingHandler, const char *pFile, int line, int severity, con
 
     std::vector<char> buffer(KiB(1));
 
-    const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), emuenv.mem).get(emuenv.mem);
-    const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), emuenv.mem, messages);
+    MemState &mem = thread->cpu->mem;
+    const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), mem).get(mem);
+    const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), mem, messages);
 
     if (result) {
         output += fmt::format(" {}", buffer.data());

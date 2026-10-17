@@ -2,6 +2,8 @@ add_library(
 	display
 	STATIC
 	include/display/state.h
+	include/display/guest_frame.h
+	include/display/process_frames.h
 	include/display/functions.h
 	src/display.cpp
 )

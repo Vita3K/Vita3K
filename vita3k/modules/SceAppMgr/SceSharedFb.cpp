@@ -18,11 +18,17 @@
 #include "../SceDisplay/SceDisplay.h"
 #include <module/module.h>
 
+#include "SceAppMgr.h"
+
+#include <display/state.h>
 #include <gxm/types.h>
 
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 
 #include <util/tracy.h>
+
+#include <atomic>
 
 TRACY_MODULE_NAME(SceSharedFB);
 
@@ -53,6 +59,8 @@ typedef struct SceSharedFbInfo { // size is 0x58
 
 struct SharedFbState {
     SceSharedFbInfo info;
+    std::atomic<bool> primary_registered{ false };
+    std::atomic<bool> primary_vsync{ false };
 };
 
 LIBRARY_INIT(SceSharedFb) {
@@ -70,6 +78,7 @@ EXPORT(int, _sceSharedFbOpen, int smth) {
 EXPORT(int, sceSharedFbBegin, int id, SceSharedFbInfo *info) {
     TRACY_FUNC(sceSharedFbBegin, id, info);
     SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
+    state->primary_vsync.store(info->vsync != 0);
     state->info.curbuf = 1;
     *info = state->info;
     return 0;
@@ -96,6 +105,7 @@ EXPORT(int, sceSharedFbCreate, int smth) {
             .color_format = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR,
             .curbuf = 1,
         };
+        state->primary_registered.store(true);
     }
     return 1;
 }
@@ -107,7 +117,7 @@ EXPORT(int, sceSharedFbDelete) {
 EXPORT(int, sceSharedFbEnd) {
     TRACY_FUNC(sceSharedFbEnd);
     SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
-    Ptr<void> data = (state->info.curbuf == 0) ? state->info.base2 : state->info.base1;
+    Ptr<void> data = state->info.base2;
     // tell the display a new buffer is ready
     SceDisplayFrameBuf frame_buf{
         .size = sizeof(SceDisplayFrameBuf),
@@ -126,8 +136,38 @@ EXPORT(int, sceSharedFbGetInfo, int id, SceSharedFbInfo *info) {
     return 0;
 }
 
-EXPORT(int, sceSharedFbGetRenderingInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceSharedFbGetRenderingInfo, SceUID pid) {
+    TRACY_FUNC(sceSharedFbGetRenderingInfo, pid);
+    constexpr SceInt32 permission_denied = static_cast<SceInt32>(0x80010058U);
+    constexpr SceInt32 not_registered = static_cast<SceInt32>(0x80200004U);
+    constexpr SceInt32 not_rendering = static_cast<SceInt32>(0x80200005U);
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    const auto caller_identity = emuenv.kernel.get_process_identity(caller->cpu->mem);
+    if (!caller_identity || !caller_identity->is_firmware_app())
+        return permission_denied;
+
+    const auto primary = emuenv.kernel.get_process_identity(emuenv.mem);
+    if (primary && primary->pid == pid) {
+        const auto *state = emuenv.kernel.obj_store.get<SharedFbState>();
+        if (!state || !state->primary_registered.load())
+            return not_registered;
+        return state->primary_vsync.load() ? 0 : not_rendering;
+    }
+    if (!is_secondary_process_id(emuenv, pid))
+        return not_registered;
+
+    // Secondary SharedFb is not implemented; a published display frame is the available readiness signal.
+    LOG_WARN_ONCE("Secondary SharedFb rendering readiness is approximated using published display frames");
+    const std::lock_guard lock(emuenv.display.display_info_mutex);
+    const auto frame = emuenv.display.process_frames.find(pid);
+    if (frame == emuenv.display.process_frames.end() || !frame->second.software_pixels) {
+        LOG_INFO_ONCE("SharedFb is waiting for the first display frame of secondary process {}", pid);
+        return not_rendering;
+    }
+    LOG_INFO_ONCE("SharedFb detected a display frame for secondary process {}", pid);
+    return 0;
 }
 
 EXPORT(int, sceSharedFbGetShellRenderPort) {

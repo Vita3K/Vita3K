@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "../SceRtc/SceRtc.h"
+#include "rtc_guest.h"
 #include <module/module.h>
 
 #include <rtc/rtc.h>
@@ -345,24 +346,24 @@ EXPORT(unsigned int, sceRtcGetTickResolution) {
     return VITA_CLOCKS_PER_SEC;
 }
 
-EXPORT(int, sceRtcGetTime_t, SceDateTime *datePtr, uint32_t *timePtr) {
+EXPORT(int, sceRtcGetTime_t, Ptr<const SceDateTime> datePtr, Ptr<uint32_t> timePtr) {
     TRACY_FUNC(sceRtcGetTime_t, datePtr, timePtr);
-    if (datePtr == nullptr || timePtr == nullptr) {
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("{}: unknown thread {}", export_name, thread_id);
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
-
-    *timePtr = static_cast<std::uint32_t>((__RtcPspTimeToTicks(datePtr) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC);
-    return 0;
+    return rtc_guest::get_time(thread->cpu->mem, datePtr, timePtr);
 }
 
-EXPORT(int, sceRtcGetTime64_t, SceDateTime *datePtr, uint64_t *timePtr) {
+EXPORT(int, sceRtcGetTime64_t, Ptr<const SceDateTime> datePtr, Ptr<uint64_t> timePtr) {
     TRACY_FUNC(sceRtcGetTime64_t, datePtr, timePtr);
-    if (datePtr == nullptr || timePtr == nullptr) {
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("{}: unknown thread {}", export_name, thread_id);
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
-
-    *timePtr = (__RtcPspTimeToTicks(datePtr) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
-    return 0;
+    return rtc_guest::get_time(thread->cpu->mem, datePtr, timePtr);
 }
 
 // This is the # of microseconds between January 1, 0001 and January 1, 1601 (for Win32 FILETIME.)

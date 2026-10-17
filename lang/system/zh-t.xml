@@ -247,7 +247,93 @@
 		<silver>Silver（銀）</silver>
 		<hours_ago>{}小時前</hours_ago>
 		<minutes_ago>{}分鐘前</minutes_ago>
+		<activities>行動</activities>
+		<like>喜歡</like>
+		<likes_this>{}說喜歡。</likes_this>
+		<and_like_this>{}和{}都說喜歡。</and_like_this>
+		<people_like_this>有{}人說喜歡。</people_like_this>
+		<comments>留言 {}</comments>
+		<delete_activity>刪除此行動。</delete_activity>
+		<delete_comment>刪除此留言。</delete_comment>
+		<unlike>收回</unlike>
+		<write_comment>撰寫留言</write_comment>
+		<has_earned_platinum_trophy>在"{}"獲得了白金獎盃！</has_earned_platinum_trophy>
+		<has_earned_trophy>在"{}"獲得了獎盃！</has_earned_trophy>
+		<first_time_playing>第一次遊玩"{}"。</first_time_playing>
+		<download_failed>無法下載。</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}的行動</activities_of>
+		<anyone>任何人</anyone>
+		<no_one>不公開</no_one>
+		<cannot_display>無法顯示更多網頁。</cannot_display>
+		<friends_of_friends>好友的好友為止</friends_of_friends>
+		<friends_only>好友為止</friends_only>
+		<share_range>公開範圍：</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>接受</accept>
+		<players_blocked>封鎖中的玩者</players_blocked>
+		<friend_request_already_canceled>此加入好友請求已被取消。</friend_request_already_canceled>
+		<search_for_player>可搜尋Vita3K Network的玩者，查看個人資料或傳送加入好友請求。</search_for_player>
+		<friend_requests>加入好友請求</friend_requests>
+		<friends>好友</friends>
+		<could_not_find_online_id>找不到線上ID。</could_not_find_online_id>
+		<there_are_no_players>找不到玩者。</there_are_no_players>
+		<no_players_found>找不到玩者。</no_players_found>
+		<online_id>線上ID</online_id>
+		<enter_from_3_to_16_characters>必須由3至16個字組成。</enter_from_3_to_16_characters>
+		<online_status>登入狀態</online_status>
+		<received>已接收</received>
+		<search>搜尋</search>
+		<sent>已傳送</sent>
+		<waiting_for_friend_response>正在等候好友回應。</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>自我介紹</about_me>
+		<accept>接受</accept>
+		<activity>行動</activity>
+		<warn_block_player>封鎖此玩者後，會無法繼續接收此玩者發出的訊息。
+確定要繼續嗎?</warn_block_player>
+		<warn_block_friend>封鎖此玩者後，會從好友中移除此玩者。而且將無法繼續接收此玩者發出的訊息。
+確定要繼續嗎?</warn_block_friend>
+		<block>封鎖</block>
+		<blocked>已封鎖。</blocked>
+		<cancel_friend_request>取消加入好友請求</cancel_friend_request>
+		<friend_request_canceled>取消加入好友請求。</friend_request_canceled>
+		<delete_request>刪除請求</delete_request>
+		<edit_profile>編輯個人資料</edit_profile>
+		<friend_request_already_canceled>此加入好友請求已被取消。</friend_request_already_canceled>
+		<friends>好友</friends>
+		<is_now_friends_with>現在與 {} 成為好友</is_now_friends_with>
+		<level>等級</level>
+		<not_a_friend_yet>還未成為好友。</not_a_friend_yet>
+		<remove_from_friends>從好友中移除</remove_from_friends>
+		<player_removed_from_friends>從好友中移除此玩者。</player_removed_from_friends>
+		<send_friend_request>傳送加入好友請求</send_friend_request>
+		<send>傳送</send>
+		<trophies>獎盃總數</trophies>
+		<unblock>解除封鎖</unblock>
+		<unblock_player>解除對此玩者的封鎖。</unblock_player>
+		<waiting_friend_response>正在等候好友回應。</waiting_friend_response>
+		<friend_request_from_player>收到此玩者的加入好友請求。</friend_request_from_player>
+		<you_have_friend_requests>收到加入好友的請求。</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>訊息</title>
+		<create_message>+ 建立訊息</create_message>
+		<uncheck_all>取消全選</uncheck_all>
+		<enter_online_id>請輸入線上 ID。</enter_online_id>
+		<add>新增</add>
+		<add_recipient>新增收件者</add_recipient>
+		<delete>刪除</delete>
+		<cancel>取消</cancel>
+		<to>收件者</to>
+	</messages_app>
 
 	<compatibility name="相容性">
 		<states>
@@ -381,13 +467,43 @@
 
 	<indicator>
 		<app_added_home>已追加應用程式至主頁畫面。</app_added_home>
+		<cancel_download>確定要取消下載嗎？</cancel_download>
+		<cancel_install>確定要取消安裝嗎?
+若取消安裝，為了執行安裝而下載的檔案也會被刪除。</cancel_install>
 		<delete_all>全部刪除</delete_all>
 		<notif_deleted>刪除最新資訊。</notif_deleted>
+		<waiting_download>下載等候中……</waiting_download>
+		<downloading_complete>已下載。</downloading_complete>
 		<install_failed>無法安裝。</install_failed>
+		<player_is_online>{}已在線上。</player_is_online>
+		<waiting_install>安裝等候中……</waiting_install>
 		<install_complete>已安裝。</install_complete>
 		<installing>安裝中……</installing>
+		<minutes_left>剩下 {}分鐘</minutes_left>
 		<no_notif>找不到最新資訊。</no_notif>
+		<commented_on_activity>有人對{}的行動留言。</commented_on_activity>
+		<commented_on_your_activity>有人對您的行動留言。</commented_on_your_activity>
+		<commented_and_likes_your_activity>有人喜歡您的行動並留言。</commented_and_likes_your_activity>
+		<likes_your_activity>有人喜歡您的行動。</likes_your_activity>
+		<pause_all>全部暫停</pause_all>
+		<pause>暫停</pause>
+		<paused>下載暫停</paused>
+		<resume_all>全部繼續</resume_all>
+		<resume>繼續</resume>
+		<seconds_left>剩下 {}秒</seconds_left>
+		<friend_requests>收到加入好友的請求。</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>發現新版的應用程式。</new_app_version_available>
+		<latest_version_installed>已安裝最新版本的應用程式。</latest_version_installed>
+		<downloading_app_update>應用程式的更新檔案下載中……
+下載進度可進入最新資訊一覽確認。</downloading_app_update>
+		<download>下載</download>
+		<not_enough_space>無法下載。
+記憶卡的可用容量不足。請在記憶卡準備{}以上的可用容量後再次下載。</not_enough_space>
+		<version>{} 版本</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>返回</back>

@@ -17,6 +17,8 @@ set(GUI_SOURCES
 	src/gui.cpp
 	src/lang.cpp
 	src/home_screen.cpp
+	src/friend.cpp
+	src/friend_profile.cpp
 	src/ime.cpp
 	src/imgui_impl_sdl_gl3.cpp
 	src/imgui_impl_sdl_vulkan.cpp
@@ -29,6 +31,7 @@ set(GUI_SOURCES
 	src/main_menubar.cpp
 	src/main_window.cpp
 	src/manual.cpp
+	src/messages.cpp
 	src/mutexes_dialog.cpp
 	src/pkg_install_dialog.cpp
 	src/popups.cpp
@@ -41,6 +44,7 @@ set(GUI_SOURCES
 	src/trophy_collection.cpp
 	src/user_management.cpp
 	src/online_storage.cpp
+	src/patch_check.cpp
 	src/v3kn_dialog.cpp
 	src/overlay_dialog.cpp
 	src/controls_dialog.cpp
@@ -62,9 +66,13 @@ endif()
 
 add_library(gui-imgui STATIC ${GUI_SOURCES})
 
+if(VITA3K_LIMULE_UPDATE_BUILD)
+	target_compile_definitions(gui-imgui PRIVATE USE_VITA3K_UPDATE)
+endif()
+
 target_include_directories(gui-imgui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
 target_link_libraries(gui-imgui PUBLIC app bgm_player compat config dialog emuenv host::dialog ime imgui lang regmgr np v3kn vita_shell)
-target_link_libraries(gui-imgui PRIVATE audio camera cpu ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil concurrentqueue sdl)
+target_link_libraries(gui-imgui PRIVATE audio camera cpu ctrl kernel miniz motion pugixml::pugixml stb renderer packages SDL3::SDL3 touch updater vfs vkutil concurrentqueue sdl)
 # Link macOS frameworks for Objective-C++ code
 if(APPLE)
 	target_link_libraries(gui-imgui PRIVATE

@@ -19,7 +19,6 @@
 #include <gui-qt/qt_utils.h>
 #include <packages/license.h>
 #include <packages/sfo.h>
-#include <rif2zrif.h>
 #include <util/string_utils.h>
 
 #include <fstream>

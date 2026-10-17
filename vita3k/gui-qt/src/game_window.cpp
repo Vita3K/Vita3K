@@ -165,6 +165,9 @@ GameWindow::GameWindow(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_set
 
 GameWindow::~GameWindow() {
     stop_ui_updates();
+    m_emuenv.touch.renderer_focused = false;
+    m_emuenv.touch.mouse_button_left = false;
+    m_emuenv.touch.mouse_button_right = false;
     destroy_render_context();
 }
 

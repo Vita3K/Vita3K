@@ -149,6 +149,18 @@ bool USSETranslatorVisitor::vmov(
         return false;
     }
 
+    const auto holds_raw_lanes = [](RegisterBank bank) {
+        return bank == RegisterBank::TEMP || bank == RegisterBank::PRIMATTR || bank == RegisterBank::SECATTR || bank == RegisterBank::OUTPUT
+            || bank == RegisterBank::INDEXED1 || bank == RegisterBank::INDEXED2;
+    };
+    bool raw_f16_lanes = move_data_type == DataType::F16 && (!is_conditional || compare_op != spv::OpAny)
+        && holds_raw_lanes(inst.opr.dest.bank) && holds_raw_lanes(inst.opr.src1.bank)
+        && (!is_conditional || holds_raw_lanes(inst.opr.src2.bank));
+    for (int i = 0; i < 4; ++i) {
+        if ((dest_mask & (1 << i)) && inst.opr.src1.swizzle[i] >= SwizzleChannel::C_0)
+            raw_f16_lanes = false;
+    }
+
     // Recompile
 
     m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
@@ -188,8 +200,16 @@ bool USSETranslatorVisitor::vmov(
 
     LOG_DISASM("{}", disasm_str);
 
+    Operand move_src1 = inst.opr.src1;
+    Operand move_src2 = inst.opr.src2;
+    if (raw_f16_lanes) {
+        // A half-word copy must not round-trip through a float and canonicalize NaN payloads.
+        move_src1.type = DataType::UINT16;
+        move_src2.type = DataType::UINT16;
+    }
+
     spv::Id source_to_compare_with_0 = spv::NoResult;
-    spv::Id source_1 = load(inst.opr.src1, dest_mask, src1_repeat_offset);
+    spv::Id source_1 = load(move_src1, dest_mask, src1_repeat_offset);
     spv::Id source_2 = spv::NoResult;
     spv::Id result = spv::NoResult;
 
@@ -200,7 +220,7 @@ bool USSETranslatorVisitor::vmov(
 
     if (is_conditional) {
         source_to_compare_with_0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
-        source_2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
+        source_2 = load(move_src2, dest_mask, src2_repeat_offset);
         spv::Id result_type = m_b.getTypeId(source_2);
         spv::Id v0_comp_type = is_test_unsigned ? m_b.makeUintType(32) : (is_test_signed ? m_b.makeIntType(32) : m_b.makeFloatType(32));
         spv::Id v0_type = utils::make_vector_or_scalar_type(m_b, v0_comp_type, m_b.getNumComponents(source_2));
@@ -269,7 +289,7 @@ bool USSETranslatorVisitor::vmov(
         result = source_1;
     }
 
-    store(inst.opr.dest, result, dest_mask, dest_repeat_offset);
+    store(inst.opr.dest, result, dest_mask, dest_repeat_offset, raw_f16_lanes);
 
     END_REPEAT()
 
@@ -520,7 +540,83 @@ bool USSETranslatorVisitor::vpck(
         source = utils::convert_to_int(m_b, m_util_funcs, source, inst.opr.dest.type, scale);
     }
 
-    store(inst.opr.dest, source, dest_mask, dest_repeat_offset);
+    const int type_size = get_data_type_size(inst.opr.dest.type);
+    const uint32_t base_reg = (inst.opr.dest.num + dest_repeat_offset) & 0xFFFFFF;
+    const auto byte_key = [&](uint32_t word) {
+        return (static_cast<uint32_t>(inst.opr.dest.bank) << 24) | (word & 0xFFFFFF);
+    };
+    const auto bytes_written = [&](uint32_t word) -> std::uint8_t {
+        const auto ite = m_vpck_written_bytes.find(byte_key(word));
+        std::uint8_t written = (ite == m_vpck_written_bytes.end()) ? 0 : ite->second;
+        if (inst.opr.dest.bank == RegisterBank::PRIMATTR) {
+            const auto input = m_spirv_params.initialized_pa_bytes.find(word);
+            if (input != m_spirv_params.initialized_pa_bytes.end())
+                written |= input->second;
+        }
+        return written;
+    };
+
+    Imm4 store_mask = dest_mask;
+    if (is_integer_data_type(inst.opr.dest.type) && type_size < 4) {
+        const int pack = (type_size == 1) ? 4 : 2;
+        Imm4 expanded = 0;
+        for (int s = 0; s < 4; s += pack) {
+            Imm4 slot_bits = ((1 << pack) - 1) << s;
+            if (dest_mask & slot_bits)
+                expanded |= slot_bits;
+        }
+
+        Imm4 zero_lanes = 0;
+        for (int i = 0; i < 4; i++) {
+            if (!(expanded & (1 << i)) || (dest_mask & (1 << i)))
+                continue;
+            const uint32_t byte_off = i * type_size;
+            const std::uint8_t lane_bytes = static_cast<std::uint8_t>(((1u << type_size) - 1) << (byte_off % 4));
+            if ((bytes_written(base_reg + byte_off / 4) & lane_bytes) == 0)
+                zero_lanes |= static_cast<Imm4>(1 << i);
+        }
+        const Imm4 target_mask = dest_mask | zero_lanes;
+
+        if (zero_lanes != 0) {
+            spv::Id comp_type = m_b.isScalar(source) ? m_b.getTypeId(source) : m_b.getContainedTypeId(m_b.getTypeId(source));
+            spv::Id zero_val = m_b.isUintType(comp_type) ? m_b.makeUintConstant(0) : m_b.makeIntConstant(0);
+
+            std::vector<spv::Id> comps;
+            int src_idx = 0;
+            for (int i = 0; i < 4; i++) {
+                if (!(target_mask & (1 << i)))
+                    continue;
+                if (dest_mask & (1 << i)) {
+                    if (m_b.getNumComponents(source) == 1)
+                        comps.push_back(source);
+                    else
+                        comps.push_back(m_b.createCompositeExtract(source, comp_type, src_idx));
+                    src_idx++;
+                } else {
+                    comps.push_back(zero_val);
+                }
+            }
+
+            if (comps.size() == 1) {
+                source = comps[0];
+            } else {
+                source = m_b.createCompositeConstruct(utils::make_vector_or_scalar_type(m_b, comp_type, static_cast<int>(comps.size())), comps);
+            }
+            store_mask = target_mask;
+        }
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (!(store_mask & (1 << i)))
+            continue;
+        const uint32_t byte_off = i * type_size;
+        const std::uint8_t lane_bytes = static_cast<std::uint8_t>(((type_size >= 4) ? 0xFu : ((1u << type_size) - 1)) << (byte_off % 4));
+        m_vpck_written_bytes[byte_key(base_reg + byte_off / 4)] |= lane_bytes;
+    }
+
+    m_store_from_vpck = true;
+    store(inst.opr.dest, source, store_mask, dest_repeat_offset);
+    m_store_from_vpck = false;
     END_REPEAT()
 
     reset_repeat_multiplier();

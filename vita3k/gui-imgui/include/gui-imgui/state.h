@@ -26,7 +26,9 @@
 #include <lang/state.h>
 #include <np/state.h>
 #include <sdl/sdl_window.h>
+#include <util/fs.h>
 #include <util/log.h>
+#include <vita_shell/state.h>
 
 #include <array>
 
@@ -37,7 +39,9 @@
 #include <gui-imgui/imgui_impl_sdl_state.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <functional>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -46,6 +50,9 @@
 #include <vector>
 
 struct GuiState;
+namespace pfsmgr {
+class Mounts;
+}
 struct EmuEnvState;
 
 namespace renderer {
@@ -126,15 +133,21 @@ struct VitaAreaState {
     bool app_information = false;
     bool content_manager = false;
     bool connecting_please_wait = false;
+    bool friends = false;
+    bool friend_profile = false;
+    bool friend_activity = false;
     bool home_screen = false;
     bool information_bar = false;
-    bool live_area_screen = false;
+    bool pkg_install = false;
+    bool messages = false;
     bool manual = false;
     bool online_storage = false;
     bool please_wait = false;
     bool settings = false;
     bool start_screen = false;
     bool trophy_collection = false;
+    bool update_history_info = false;
+    uint32_t update_history_button = 0;
     bool user_management = false;
 };
 
@@ -207,16 +220,75 @@ struct InfoBarColor {
     ImU32 notice_font = 0xFFFFFFFF;
 };
 
+struct Notification {
+    std::string app_id;
+    std::string title;
+    std::string message;
+    double start_time = 0.0;
+    bool active = false;
+};
+
+struct AppUpdateInfo {
+    std::string titleid;
+    std::string version;
+    uint64_t size = 0;
+    std::string url;
+    std::string content_id;
+    std::string title;
+};
+
+enum class UpdateState {
+    NONE,
+    DOWNLOADING,
+    WAITING_INSTALL,
+    INSTALLING,
+    SUCCESS,
+    FAILED
+};
+
+struct UpdateInstall {
+    std::string content_id;
+    fs::path pkg_path;
+    UpdateState state = UpdateState::NONE;
+};
+
 enum NoticeIcon {
     NO,
     NEW
 };
 
+enum class PageIndicator {
+    BASE,
+    CUR,
+};
+
 enum ThemePreviewType {
-    PACKAGE,
     HOME,
     LOCK,
 };
+
+namespace gui {
+struct ThemePreviewRequest {
+    std::string content_id;
+    std::string path;
+};
+
+struct ThemePreviewLoader {
+    struct Result {
+        std::string content_id;
+        IconData image;
+    };
+    std::mutex mutex;
+    std::condition_variable changed;
+    std::vector<Result> ready;
+    std::thread thread;
+    std::atomic_bool quit = false;
+
+    ThemePreviewLoader(const fs::path &vita_fs_path, IOState &io, std::vector<ThemePreviewRequest> requests);
+    ~ThemePreviewLoader();
+    void commit(GuiState &gui);
+};
+} // namespace gui
 
 inline const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LANG = {
     { SCE_SYSTEM_PARAM_LANG_DANISH, "Dansk" },
@@ -287,8 +359,17 @@ struct GuiState {
 
     std::map<std::string, ImGui_Texture> users_avatar;
     std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_infos;
+    std::map<std::string, ImGui_Texture> friends_panel;
+    std::map<std::string, ImGui_Texture> friends_avatar;
+    std::unordered_map<std::string, ImU32> friends_panel_bg_color;
+    std::optional<ImU32> self_panel_bg_color;
     ImGui_Texture v3kn_avatar;
     ImGui_Texture v3kn_panel;
+    ImGui_Texture friend_profile_panel;
+    std::string friend_profile_panel_online_id;
+    std::optional<ImU32> friend_profile_panel_bg_color;
+    ImGui_Texture friend_profile_avatar;
+    std::string friend_profile_avatar_online_id;
 
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
@@ -317,12 +398,22 @@ struct GuiState {
 
     std::vector<std::string> live_area_current_open_apps_list;
     int32_t live_area_app_current_open = -1;
+    std::string live_area_app_closing;
+    std::string pending_app_deletion;
 
+    float bg_transition_alpha = 1.f;
     std::uint64_t current_theme_bg = 0;
-    std::map<std::string, std::map<ThemePreviewType, ImGui_Texture>> themes_preview;
+    std::map<std::string, ImGui_Texture> themes_package;
+    std::map<ThemePreviewType, ImGui_Texture> theme_preview;
+    std::string theme_preview_id;
+    std::optional<gui::ThemePreviewLoader> theme_preview_loader;
+    std::optional<std::future<std::optional<vita_shell::ThemeCatalog>>> theme_catalog_loader;
+    std::string theme_catalog_error;
+    std::map<std::string, ImGui_Texture> vita_icons;
     std::vector<ImGui_Texture> theme_backgrounds;
     std::vector<ImVec4> theme_backgrounds_font_color;
     std::map<NoticeIcon, ImGui_Texture> theme_information_bar_notice;
+    std::map<PageIndicator, ImGui_Texture> theme_page_indicator;
 
     std::map<time_t, ImGui_Texture> notice_info_icon;
 
@@ -343,6 +434,14 @@ struct GuiState {
     ImGui_Texture start_background;
 
     std::map<std::string, ImGui_Texture> apps_background;
+
+    std::map<std::string, AppUpdateInfo> new_update_infos;
+    std::map<std::string, bool> app_has_update;
+    std::map<std::string, UpdateInstall> updates_install;
+    std::mutex update_state_mutex;
+    std::jthread update_check_thread;
+    std::mutex notifications_mutex;
+    std::vector<Notification> notifications;
 
     InfoBarColor information_bar_color;
 

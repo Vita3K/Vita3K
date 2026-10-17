@@ -20,11 +20,13 @@
 #include <util/fs.h>
 #include <util/types.h>
 
+#include <memory>
 #include <string>
 
 struct KernelState;
 struct MemState;
 struct KernelModule;
 
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path);
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path, bool capture_shared_initial_segments = false);
+SceUID load_self_from_initial_segments(KernelState &kernel, MemState &mem, const std::shared_ptr<KernelModule> &source);
 int unload_self(KernelState &kernel, MemState &mem, KernelModule &module);

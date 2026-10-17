@@ -44,6 +44,8 @@ QString restart_required_setting_label(config::RestartRequiredSetting setting) {
         return QCoreApplication::translate("SettingsDialogTooltips", "Vulkan Validation Layer");
     case config::RestartRequiredSetting::DisableMaskBit:
         return QCoreApplication::translate("SettingsDialogTooltips", "Disable Mask Bit Emulation");
+    case config::RestartRequiredSetting::ThreadScheduler:
+        return QCoreApplication::translate("SettingsDialogTooltips", "Thread Scheduler");
     }
 
     return {};

@@ -28,6 +28,7 @@ std::array<ControllerBinding, 15> get_controller_bindings_ext(EmuEnvState &emuen
 SceCtrlExternalInputMode get_type_of_controller(CtrlState &state, int port);
 // Reads the pad the way sceCtrlPeekBufferPositive does, without a guest call.
 SceUInt32 ctrl_peek_buttons(EmuEnvState &emuenv, int port);
+void update_power_ps_button(EmuEnvState &emuenv, SceUInt32 buttons);
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext);
 void refresh_controllers(CtrlState &state, EmuEnvState &emuenv);
 void update_keyboard_state(EmuEnvState &emuenv, const std::function<bool(input::PhysicalKeyCode)> &key_held);

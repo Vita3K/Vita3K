@@ -281,6 +281,12 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 
     bool is_4th_component_1 = false;
 
+    const auto store_input = [&](spv::Id source, int word_offset) {
+        utils::store(b, parameters, utils, features, dest, source, dest_mask, word_offset);
+        if (translation_state.is_fragment && bank == RegisterBank::PRIMATTR)
+            parameters.mark_initialized_pa(offset + word_offset, static_cast<std::uint32_t>(std::min(total_var_comp, 4U) * get_data_type_size(dest.type)));
+    };
+
     if (total_var_comp != 1 && b.isArrayType(b.getContainedTypeId(b.getTypeId(var)))) {
         spv::Id arr_type = b.getContainedTypeId(b.getTypeId(var));
         spv::Id comp_type = b.getContainedTypeId(arr_type);
@@ -292,7 +298,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         for (auto i = 0; i < b.getNumTypeComponents(arr_type); i++) {
             spv::Id elm = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassInput, comp_type),
                 { var, b.makeIntConstant(i) });
-            utils::store(b, parameters, utils, features, dest, b.createLoad(elm, spv::NoPrecision), dest_mask, 0 + i * 4);
+            store_input(b.createLoad(elm, spv::NoPrecision), i * 4);
         }
     } else {
         get_dest_mask();
@@ -330,7 +336,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
             var = b.createVectorInsertDynamic(var, b.getTypeId(var), one, b.makeUintConstant(3));
         }
 
-        utils::store(b, parameters, utils, features, dest, var, dest_mask, 0);
+        store_input(var, 0);
     }
 
     return var;
@@ -364,6 +370,29 @@ static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureStat
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
 
     return sampler;
+}
+
+// Storage images bypass the sRGB conversion of attachment and sampled-image accesses.
+static spv::Id srgb_encode_rgb(spv::Builder &b, utils::SpirvUtilFunctions &utils, spv::Id rgb) {
+    const spv::Id v3 = b.makeVectorType(b.makeFloatType(32), 3);
+    const spv::Id bv3 = b.makeVectorType(b.makeBoolType(), 3);
+    const spv::Id lo = b.createBinOp(spv::OpVectorTimesScalar, v3, rgb, b.makeFloatConstant(12.92f));
+    spv::Id hi = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, utils::make_uniform_vector_from_type(b, v3, 1.0f / 2.4f) });
+    hi = b.createBinOp(spv::OpVectorTimesScalar, v3, hi, b.makeFloatConstant(1.055f));
+    hi = b.createBinOp(spv::OpFSub, v3, hi, utils::make_uniform_vector_from_type(b, v3, 0.055f));
+    const spv::Id cond = b.createBinOp(spv::OpFOrdLessThanEqual, bv3, rgb, utils::make_uniform_vector_from_type(b, v3, 0.0031308f));
+    return b.createTriOp(spv::OpSelect, v3, cond, lo, hi);
+}
+
+static spv::Id srgb_decode_rgb(spv::Builder &b, utils::SpirvUtilFunctions &utils, spv::Id rgb) {
+    const spv::Id v3 = b.makeVectorType(b.makeFloatType(32), 3);
+    const spv::Id bv3 = b.makeVectorType(b.makeBoolType(), 3);
+    const spv::Id lo = b.createBinOp(spv::OpVectorTimesScalar, v3, rgb, b.makeFloatConstant(1.0f / 12.92f));
+    spv::Id hi = b.createBinOp(spv::OpFAdd, v3, rgb, utils::make_uniform_vector_from_type(b, v3, 0.055f));
+    hi = b.createBinOp(spv::OpVectorTimesScalar, v3, hi, b.makeFloatConstant(1.0f / 1.055f));
+    hi = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { hi, utils::make_uniform_vector_from_type(b, v3, 2.4f) });
+    const spv::Id cond = b.createBinOp(spv::OpFOrdLessThanEqual, bv3, rgb, utils::make_uniform_vector_from_type(b, v3, 0.04045f));
+    return b.createTriOp(spv::OpSelect, v3, cond, lo, hi);
 }
 
 static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
@@ -650,6 +679,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 b.setPrecision(tex_query_info.sampler, spv::DecorationRelaxedPrecision);
             tex_query_infos.push_back(tex_query_info);
 
+            const auto input_type = store_type == DataType::UNK ? tex_query_info.component_type : store_type;
+            parameters.mark_initialized_pa(pa_offset, static_cast<std::uint32_t>(tex_query_info.component_count * get_data_type_size(input_type)));
             pa_offset += size;
         }
     }
@@ -754,8 +785,30 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             spv::Id coord_0 = b.makeIntConstant(0);
             const spv::Id ivec2 = b.makeVectorType(b.makeIntType(32), 2);
             coord_0 = b.makeCompositeConstant(ivec2, { coord_0, coord_0 });
-            source = b.createOp(spv::OpImageRead, v4, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
-            b.setPrecision(source, precision);
+            if (translation_state.is_vulkan && features.preserve_f16_nan_as_u16) {
+                const spv::Id raw_type = b.makeImageType(b.makeUintType(32), spv::DimSubpassData, false, false, false, 2, spv::ImageFormatUnknown);
+                const spv::Id raw_data = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, raw_type, "last_frag_data_raw");
+                b.addDecoration(raw_data, spv::DecorationInputAttachmentIndex, 1);
+                b.addDecoration(raw_data, spv::DecorationBinding, 4);
+                b.addDecoration(raw_data, spv::DecorationDescriptorSet, 1);
+                const spv::Id raw_ptr = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) });
+                const spv::Id raw_cond = b.createBinOp(spv::OpFOrdGreaterThan, b.makeBoolType(), b.createLoad(raw_ptr, spv::NoPrecision), b.makeFloatConstant(0.5f));
+                spv::Builder::If raw_builder(raw_cond, spv::SelectionControlMaskNone, b);
+                source = b.createOp(spv::OpImageRead, b.makeVectorType(b.makeUintType(32), 4), { b.createLoad(raw_data, spv::NoPrecision), coord_0 });
+                const auto normal_type = target_to_store.type;
+                target_to_store.type = DataType::UINT16;
+                store_source_result(true);
+                target_to_store.type = normal_type;
+                raw_builder.makeBeginElse();
+                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
+                b.setPrecision(source, precision);
+                store_source_result();
+                raw_builder.makeEndIf();
+                source = spv::NoResult;
+            } else {
+                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(last_frag_data, spv::NoPrecision), coord_0 });
+                b.setPrecision(source, precision);
+            }
 
             translation_state.last_frag_data_id = last_frag_data;
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
@@ -782,18 +835,33 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
                 color_attachment_raw = create_builtin_sampler_for_raw(b, features, translation_state, "f_colorAttachment_rawUI");
                 if (translation_state.is_vulkan) {
-                    b.addDecoration(color_attachment_raw, spv::DecorationBinding, 2);
+                    b.addDecoration(color_attachment_raw, spv::DecorationBinding, 3);
                     b.addDecoration(color_attachment_raw, spv::DecorationDescriptorSet, 1);
                 } else {
                     b.addDecoration(color_attachment_raw, spv::DecorationBinding, COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE);
                 }
                 translation_state.color_attachment_raw_id = color_attachment_raw;
 
-                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), utils::create_access_chain(b, spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
+                const spv::Id load_normal_ptr = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) });
+                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), b.createLoad(load_normal_ptr, spv::NoPrecision), b.makeFloatConstant(0.5f));
                 spv::Builder::If cond_builder(load_normal_cond, spv::SelectionControlMaskNone, b);
 
                 source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
-                store_source_result();
+                if (translation_state.is_vulkan) {
+                    const spv::Id normal_source = source;
+                    spv::Builder::If srgb_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
+                    const spv::Id v3 = b.makeVectorType(f32, 3);
+                    spv::Id rgb = b.createOp(spv::OpVectorShuffle, v3, { { true, source }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 } });
+                    rgb = srgb_decode_rgb(b, utils, rgb);
+                    source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
+                    store_source_result();
+                    srgb_builder.makeBeginElse();
+                    source = normal_source;
+                    store_source_result();
+                    srgb_builder.makeEndIf();
+                } else {
+                    store_source_result();
+                }
                 cond_builder.makeBeginElse();
                 color_attachment = color_attachment_raw;
                 source = b.createOp(spv::OpImageRead, uiv4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
@@ -812,12 +880,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     // if (is_srgb)
                     spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
 
-                    // perform gamma correction:
-                    // source.xyz = pow(source.xyz, vec3(2.2));
                     const spv::Id v3 = b.makeVectorType(f32, 3);
                     spv::Id rgb = b.createOp(spv::OpVectorShuffle, v3, { { true, source }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 } });
-                    const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 2.2f);
-                    rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
+                    rgb = srgb_decode_rgb(b, utils, rgb);
                     b.setPrecision(rgb, precision);
                     source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
@@ -843,8 +908,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 }
 
 // For uniform buffer resigned in registers
-static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int start, const int vec4_count) {
+static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int start, const int scalar_count) {
     int start_in_vec4_granularity = start / 4;
+    const int vec4_count = scalar_count / 4;
 
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
         spv::Id to_copy = utils::create_access_chain(builder, spv::StorageClassStorageBuffer, block, { builder.createLoad(ite, spv::NoPrecision) });
@@ -879,6 +945,15 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
             builder.createStore(to_copy_2, dest_friend);
         }
     });
+
+    for (int i = 0; i < scalar_count % 4; i++) {
+        const int dest_offset = start + vec4_count * 4 + i;
+        const spv::Id source = utils::create_access_chain(builder, spv::StorageClassStorageBuffer, block,
+            { builder.makeIntConstant(vec4_count), builder.makeIntConstant(i) });
+        const spv::Id dest = utils::create_access_chain(builder, spv::StorageClassPrivate, sa_bank,
+            { builder.makeIntConstant(dest_offset / 4), builder.makeIntConstant(dest_offset % 4) });
+        builder.createStore(builder.createLoad(source, spv::NoPrecision), dest);
+    }
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
@@ -1063,7 +1138,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32 };
+        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32, f32, f32, f32, f32 };
         if (uniform_buffer_count > 0)
             uniform_composition.push_back(buffer_addresses_type);
         if (uniform_texture_count > 0) {
@@ -1087,6 +1162,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_FRAG_UNIFORM_MEMBER(writing_mask);
         ADD_FRAG_UNIFORM_MEMBER(use_raw_image);
         ADD_FRAG_UNIFORM_MEMBER(res_multiplier);
+        ADD_FRAG_UNIFORM_MEMBER(cast_sampler_mask);
+        ADD_FRAG_UNIFORM_MEMBER(cast_phase_mask);
+        ADD_FRAG_UNIFORM_MEMBER(inv_frag_width);
+        ADD_FRAG_UNIFORM_MEMBER(inv_frag_height);
 
 #undef ADD_FRAG_UNIFORM_MEMBER
         // the resolution multiplier does not require a high precision
@@ -1127,19 +1206,22 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (const auto &buffer : program_input.uniform_buffers) {
         int host_idx = convert_buffer_idx_to_host(buffer.index);
         if (buffer.reg_block_size > 0) {
+            if (buffer.reg_start_offset >= REG_SA_COUNT) {
+                LOG_ERROR("Uniform buffer {} starts outside the secondary attribute registers at {}", buffer.index, buffer.reg_start_offset);
+                continue;
+            }
+            const uint32_t copy_size = std::min(buffer.reg_block_size, REG_SA_COUNT - buffer.reg_start_offset);
             if (features.enable_memory_mapping) {
                 Operand dest{
                     .num = static_cast<uint16_t>(buffer.reg_start_offset),
                     .bank = RegisterBank::SECATTR,
                     .type = DataType::F32,
                 };
-                const uint32_t copy_size = std::min(buffer.reg_block_size, REG_SA_COUNT - buffer.reg_start_offset);
                 usse::utils::buffer_address_access(b, spv_params, utils, features, dest, 0, b.makeIntConstant(0), sizeof(uint32_t), copy_size, host_idx);
             } else {
-                const uint32_t reg_block_size_in_f32v = std::min<uint32_t>(buffer.reg_block_size + 3, REG_SA_COUNT) / 4;
                 const auto spv_buffer = utils::create_access_chain(b, spv::StorageClassStorageBuffer, spv_params.buffer_container,
                     { b.makeIntConstant(spv_params.buffers.at(host_idx).index_in_container) });
-                copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, reg_block_size_in_f32v);
+                copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, copy_size);
             }
         }
     }
@@ -1364,7 +1446,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            }
                        },
                        [&](const AttributeInputSource &s) {
-                           add_var_to_reg(input, s.name, s.semantic, true, s.regformat, in_fcount_allocated / 4, s.index);
+                           if (s.is_used)
+                               add_var_to_reg(input, s.name, s.semantic, true, s.regformat, in_fcount_allocated / 4, s.index);
                            in_fcount_allocated += ((input.array_size * input.component_count + 3) / 4 * 4);
                        } },
             input.source);
@@ -1377,7 +1460,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             spv_params.samplers.emplace(REG_SA_COUNT + sampler.first, sampler.second);
     }
 
-    if (!translation_state.is_fragment && (in_fcount_allocated == 0) && (program.primary_reg_count != 0)) {
+    if (!translation_state.is_fragment && (in_fcount_allocated == 0) && (program.primary_reg_count != 0) && !gxp::has_attribute_symbols(program)) {
         // Using hint to create attribute. Looks like attribute with F32 types are stripped, otherwise
         // whole shader symbols are kept...
         if (translation_state.hints->attributes) {
@@ -1440,8 +1523,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    if (translation_state.is_fragment)
+    if (translation_state.is_fragment) {
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
+        if (translation_state.is_vulkan)
+            spv_params.frag_coord_id = translation_state.frag_coord_id;
+    }
 
     return spv_params;
 }
@@ -1614,7 +1700,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         precision = spv::NoPrecision;
 
     int reg_off = 0;
-    if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {
+    if (!program.is_native_color() && (vertex_varyings_ptr->output_param_type == 1 || vertex_varyings_ptr->output_param_type == 3)) {
         reg_off = vertex_varyings_ptr->fragment_output_start;
         if (reg_off != 0) {
             LOG_INFO("Non zero pa offset: {} at {}", reg_off, translate_state.hash.c_str());
@@ -1639,14 +1725,11 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             // if (is_srgb)
             spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
 
-            // perform inverse gamma correction:
-            // color.xyz = pow(color.xyz, vec3(1/2.2));
             const spv::Id f32 = b.makeFloatType(32);
             const spv::Id v4 = b.makeVectorType(f32, 4);
             const spv::Id v3 = b.makeVectorType(f32, 3);
             spv::Id rgb = b.createOp(spv::OpVectorShuffle, v3, { { true, color }, { true, color }, { false, 0 }, { false, 1 }, { false, 2 } });
-            const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 1 / 2.2f);
-            rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
+            rgb = srgb_encode_rgb(b, utils, rgb);
             color = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, color }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
 
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
@@ -1660,10 +1743,14 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         }
 
         if (features.preserve_f16_nan_as_u16) {
+            const spv::Id raw_ptr = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) });
+            const spv::Id raw_cond = b.createBinOp(spv::OpFOrdGreaterThan, b.makeBoolType(), b.createLoad(raw_ptr, spv::NoPrecision), b.makeFloatConstant(0.5f));
+            spv::Builder::If raw_builder(raw_cond, spv::SelectionControlMaskNone, b);
             color_val_operand.type = DataType::UINT16;
             color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
 
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_raw_id, spv::NoPrecision), translated_id, color });
+            raw_builder.makeEndIf();
         }
     } else {
         spv::Id out = b.createVariable(precision, spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");

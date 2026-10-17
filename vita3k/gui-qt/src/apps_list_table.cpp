@@ -22,7 +22,9 @@
 #include <gui-qt/apps_list_table.h>
 
 #include <config/settings.h>
+#include <io/vfs.h>
 #include <util/log.h>
+#include <vfs/appmeta.h>
 
 #include <QActionGroup>
 #include <QDateTime>
@@ -396,10 +398,14 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
         const QPersistentModelIndex icon_index = model()->index(row, static_cast<int>(AppsListColumn::Icon));
         pending_icon_loads.push_back(icon_item);
 
-        icon_item->set_icon_load_func([this, icon_index, resolved_icon]() {
-            QThreadPool::globalInstance()->start([this, icon_index, resolved_icon]() {
+        icon_item->set_icon_load_func([this, icon_index, resolved_icon, vita_fs_path, app_path = app.path, title_id = app.title_id]() {
+            QThreadPool::globalInstance()->start([this, icon_index, resolved_icon, vita_fs_path, app_path, title_id]() {
                 QImage img;
-                if (!resolved_icon.empty())
+                vfs::FileBuffer icon_data;
+                if (vfs::read_app_icon(icon_data, vita_fs_path, app_path, title_id)
+                    && icon_data.size() <= static_cast<size_t>(std::numeric_limits<int>::max()))
+                    img.loadFromData(icon_data.data(), static_cast<int>(icon_data.size()));
+                if (img.isNull() && !resolved_icon.empty())
                     img.load(QString::fromStdString(resolved_icon));
 
                 QMetaObject::invokeMethod(
@@ -479,7 +485,7 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
             new SortableItem(QString::fromStdString(app.parental_level),
                 QVariant(parental_level_sort_key(app.parental_level))));
 
-        const QString app_dir = gui::utils::to_qt_path(vita_fs_path / "ux0/app" / app.path);
+        const QString app_dir = gui::utils::to_qt_path(vfs::get_app_base_path(vita_fs_path, app.path));
         const auto size_it = m_size_cache.find(app.path);
         const quint64 cached_size = (size_it != m_size_cache.end()) ? size_it->second : 0;
         auto *size_item = new SortableItem(

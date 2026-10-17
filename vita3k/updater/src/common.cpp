@@ -6,10 +6,14 @@
 namespace updater {
 
 std::string release_api_url() {
+    if (is_limule_update_build)
+        return "https://api.github.com/repos/Zangetsu38/Vita3K/releases/tags/continuous";
     return "https://api.github.com/repos/Vita3K/Vita3K/releases/tags/continuous";
 }
 
 std::string release_page_url() {
+    if (is_limule_update_build)
+        return "https://github.com/Zangetsu38/Vita3K/releases/tag/continuous";
     return "https://github.com/Vita3K/Vita3K/releases/tag/continuous";
 }
 

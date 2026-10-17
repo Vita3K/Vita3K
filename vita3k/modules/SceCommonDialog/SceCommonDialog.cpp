@@ -24,6 +24,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <kernel/types.h>
 #include <lang/state.h>
 #include <net/state.h>
 #include <packages/functions.h>
@@ -104,9 +105,10 @@ EXPORT(int, sceCommonDialog_B7D4C911) {
     return 2;
 }
 
-EXPORT(int, sceCommonDialogGetWorkerThreadId) {
+EXPORT(SceUID, sceCommonDialogGetWorkerThreadId) {
     TRACY_FUNC(sceCommonDialogGetWorkerThreadId);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("sceCommonDialogGetWorkerThreadId: thread_id={}", thread_id);
+    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 }
 
 EXPORT(int, sceCommonDialogIsRunning) {
@@ -941,6 +943,7 @@ static bool ensure_slot_index(EmuEnvState &emuenv, const char *export_name) {
 static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const char *export_name) {
     emuenv.common_dialog.savedata.title[index].clear();
     emuenv.common_dialog.savedata.subtitle[index].clear();
+    emuenv.common_dialog.savedata.details[index].clear();
     emuenv.common_dialog.savedata.icon_texture[index] = {};
     emuenv.common_dialog.savedata.has_date[index] = false;
     emuenv.common_dialog.savedata.slot_info[index].isExist = 0;
@@ -948,8 +951,15 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
     icon_buf_tmp.clear();
 
     SceAppUtilSaveDataSlotParam slot_param{};
-    const bool slot_exists = sdslot_read_slot_param(emuenv, emuenv.common_dialog.savedata.slot_id[index], &slot_param, export_name);
-    if (!slot_exists) {
+    const auto slot_id = emuenv.common_dialog.savedata.slot_id[index];
+    const auto slot_result = slot_id < SCE_APPUTIL_SAVEDATA_SLOT_MAX
+        ? read_savedata_slot(emuenv, slot_id, slot_param, export_name)
+        : SaveDataSlotReadResult::NotFound;
+    if (slot_result == SaveDataSlotReadResult::Error) {
+        LOG_ERROR("{}: failed to read save slot {}", export_name, emuenv.common_dialog.savedata.slot_id[index]);
+        return;
+    }
+    if (slot_result == SaveDataSlotReadResult::NotFound) {
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         if (empty_param) {
             emuenv.common_dialog.savedata.title[index] = empty_param->title ? empty_param->title.get(emuenv.mem) : lang::get(lang::str::new_saved_data);
@@ -957,25 +967,21 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
             SceUChar8 *iconBuf = empty_param->iconBuf.cast<SceUChar8>().get(emuenv.mem);
             const auto iconBufSize = empty_param->iconBufSize;
             if (iconPath && (std::strlen(iconPath) > 0)) {
-                auto device = device::get_device(iconPath);
-                const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
-                vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.vita_fs_path, thumbnail_path);
+                read_file_to_buffer(emuenv.io, iconPath, emuenv.vita_fs_path, icon_buf_tmp, export_name);
             } else if (iconBuf && (iconBufSize > 0)) {
                 icon_buf_tmp.insert(icon_buf_tmp.end(), iconBuf, iconBuf + iconBufSize);
             }
         }
     } else {
-        vfs::FileBuffer thumbnail_buffer;
         emuenv.common_dialog.savedata.slot_info[index].isExist = 1;
-        emuenv.common_dialog.savedata.title[index] = slot_param.title;
-        emuenv.common_dialog.savedata.subtitle[index] = slot_param.subTitle;
-        emuenv.common_dialog.savedata.details[index] = slot_param.detail;
+        emuenv.common_dialog.savedata.title[index].assign(slot_param.title, std::find(std::begin(slot_param.title), std::end(slot_param.title), '\0'));
+        emuenv.common_dialog.savedata.subtitle[index].assign(slot_param.subTitle, std::find(std::begin(slot_param.subTitle), std::end(slot_param.subTitle), '\0'));
+        emuenv.common_dialog.savedata.details[index].assign(slot_param.detail, std::find(std::begin(slot_param.detail), std::end(slot_param.detail), '\0'));
         emuenv.common_dialog.savedata.date[index] = slot_param.modifiedTime;
         emuenv.common_dialog.savedata.has_date[index] = true;
-        auto device = device::get_device(slot_param.iconPath);
-        auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
-        vfs::read_file(device, thumbnail_buffer, emuenv.vita_fs_path, thumbnail_path);
-        icon_buf_tmp = thumbnail_buffer;
+        const std::string icon_path(slot_param.iconPath, std::find(std::begin(slot_param.iconPath), std::end(slot_param.iconPath), '\0'));
+        if (!icon_path.empty())
+            read_file_to_buffer(emuenv.io, icon_path.c_str(), emuenv.vita_fs_path, icon_buf_tmp, export_name);
     }
 }
 

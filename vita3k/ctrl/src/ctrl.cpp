@@ -22,7 +22,9 @@
 #include <config/state.h>
 #include <display/functions.h>
 #include <display/state.h>
+#include <kernel/callback.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <touch/functions.h>
 #include <util/log.h>
 
@@ -363,6 +365,46 @@ SceUInt32 ctrl_peek_buttons(EmuEnvState &emuenv, int port) {
     SceUInt8 lx, ly, rx, ry;
     retrieve_ctrl_data(emuenv, port, false, false, false, buttons, lx, ly, rx, ry);
     return buttons;
+}
+
+void update_power_ps_button(EmuEnvState &emuenv, SceUInt32 buttons) {
+    constexpr SceInt32 ps_hold = 0x10000000;
+    constexpr SceInt32 ps_press = 0x20000000;
+    auto &state = emuenv.ctrl;
+    const std::lock_guard lock(state.power_callback_mutex);
+    if (state.overlay_input_intercepted.load(std::memory_order_relaxed) || emuenv.drop_inputs) {
+        state.ps_pressed = false;
+        state.ps_hold_sent = false;
+        return;
+    }
+    const bool pressed = (buttons & SCE_CTRL_PSBUTTON) != 0;
+    const auto now = std::chrono::steady_clock::now();
+    SceInt32 event = 0;
+    if (pressed && !state.ps_pressed) {
+        state.ps_press_started = now;
+        state.ps_hold_sent = false;
+    } else if (pressed && !state.ps_hold_sent && now - state.ps_press_started >= std::chrono::seconds(1)) {
+        event = ps_hold;
+        state.ps_hold_sent = true;
+    } else if (!pressed && state.ps_pressed && !state.ps_hold_sent) {
+        event = ps_press;
+    }
+    state.ps_pressed = pressed;
+    if (!event)
+        return;
+    LOG_DEBUG("Power PS button {}", event == ps_hold ? "held" : "pressed");
+    for (auto it = state.power_callbacks.begin(); it != state.power_callbacks.end();) {
+        const auto callback = emuenv.kernel.objects.find<Callback>(it->first);
+        const auto owner = callback ? emuenv.kernel.get_thread(callback->thread_id) : nullptr;
+        if (!owner) {
+            LOG_WARN("Removing Power callback {} because its owner no longer exists", it->first);
+            it = state.power_callbacks.erase(it);
+            continue;
+        }
+        if (it->second)
+            owner->notify_callback(*callback, event);
+        ++it;
+    }
 }
 
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext) {

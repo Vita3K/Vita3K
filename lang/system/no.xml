@@ -170,7 +170,93 @@ Vennligst vent.</connecting_please_wait>
 		<hidden_trophy>Skjult trophy</hidden_trophy>
 		<one_hour_ago>1 time siden</one_hour_ago>
 		<one_minute_ago>1 minutt sidan</one_minute_ago>
+		<activities>Aktiviteter</activities>
+		<like>Liker</like>
+		<likes_this>{} liker dette.</likes_this>
+		<and_like_this>{} og {} liker dette.</and_like_this>
+		<people_like_this>{} personer liker dette.</people_like_this>
+		<comments>Kommentarer {}</comments>
+		<delete_activity>Denne aktiviteten vil bli slettet.</delete_activity>
+		<delete_comment>Denne kommentaren vil bli slettet.</delete_comment>
+		<unlike>Liker ikke</unlike>
+		<write_comment>Skriv kommentar</write_comment>
+		<has_earned_platinum_trophy>har oppnådd et platina-trophy i "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>har oppnådd et trophy i "{}"!</has_earned_trophy>
+		<first_time_playing>spiller "{}" for første gang.</first_time_playing>
+		<download_failed>Kunne ikke laste ned.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}s Aktiviteter</activities_of>
+		<anyone>Alle</anyone>
+		<no_one>Ingen</no_one>
+		<cannot_display>Kan ikke vise flere sider.</cannot_display>
+		<friends_of_friends>Venners venner</friends_of_friends>
+		<friends_only>Kun venner</friends_only>
+		<share_range>Del med:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Godta</accept>
+		<players_blocked>Spillere blokkert</players_blocked>
+		<friend_request_already_canceled>Denne venneforespørselen har allerede blitt avbrutt.</friend_request_already_canceled>
+		<search_for_player>Søk etter en Vita3K Network-spiller og se spillerens profil, eller send en venneforespørsel.</search_for_player>
+		<friend_requests>Venneforespørsler</friend_requests>
+		<friends>Venner</friends>
+		<could_not_find_online_id>Fant ikke online-ID.</could_not_find_online_id>
+		<there_are_no_players>Det er ingen spillere.</there_are_no_players>
+		<no_players_found>Finner ingen spillere.</no_players_found>
+		<online_id>Online-ID</online_id>
+		<enter_from_3_to_16_characters>Skriv inn mellom 3 og 16 tegn.</enter_from_3_to_16_characters>
+		<online_status>Online status</online_status>
+		<received>Mottatt</received>
+		<search>Søk</search>
+		<sent>Sendt</sent>
+		<waiting_for_friend_response>Venter på svar på venneforespørsel.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Om meg</about_me>
+		<accept>Godta</accept>
+		<activity>Aktivitet</activity>
+		<warn_block_player>Hvis du blokkerer denne spilleren, vil du ikke lenger kunne motta meldinger fra denne spilleren.
+Vil du fortsette?</warn_block_player>
+		<warn_block_friend>Hvis du blokkerer denne spilleren, vil spilleren bli fjernet fra venner. Du vil ikke lenger kunne motta meldinger fra denne spilleren.
+Vil du fortsette?</warn_block_friend>
+		<block>Blokker</block>
+		<blocked>Blokkert.</blocked>
+		<cancel_friend_request>Avbryt venneforespørsel</cancel_friend_request>
+		<friend_request_canceled>Venneforespørselen vil bli avbrutt.</friend_request_canceled>
+		<delete_request>Slett forespørsel</delete_request>
+		<edit_profile>Rediger profil</edit_profile>
+		<friend_request_already_canceled>Denne venneforespørselen har allerede blitt avbrutt.</friend_request_already_canceled>
+		<friends>Venner</friends>
+		<is_now_friends_with>er nå venner med {}</is_now_friends_with>
+		<level>Nivå</level>
+		<not_a_friend_yet>Ikke en venn ennå.</not_a_friend_yet>
+		<remove_from_friends>Fjern fra venner</remove_from_friends>
+		<player_removed_from_friends>Denne spilleren vil bli fjernet fra venner.</player_removed_from_friends>
+		<send_friend_request>Send venneforespørsel</send_friend_request>
+		<send>Send</send>
+		<trophies>Trophies</trophies>
+		<unblock>Fjern blokkering</unblock>
+		<unblock_player>Fjern blokkering for denne spilleren.</unblock_player>
+		<waiting_friend_response>Venter på svar på venneforespørsel.</waiting_friend_response>
+		<friend_request_from_player>Du har en venneforespørsel fra denne spilleren.</friend_request_from_player>
+		<you_have_friend_requests>Du har venneforespørsler.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Meldinger</title>
+		<create_message>+ Opprett en melding</create_message>
+		<uncheck_all>Fjern alle markeringer</uncheck_all>
+		<enter_online_id>Skriv inn online-ID.</enter_online_id>
+		<add>Legg til</add>
+		<add_recipient>Legg til mottaker</add_recipient>
+		<delete>Slett</delete>
+		<cancel>Avbryt</cancel>
+		<to>Til</to>
+	</messages_app>
 
 	<content_manager name="Innholdsadministrator">
 		<application name="Programmer">
@@ -197,13 +283,43 @@ Vennligst vent.</connecting_please_wait>
 
 	<indicator>
 		<app_added_home>Programmet har blitt lagt til hjem-skjermen.</app_added_home>
+		<cancel_download>Vil du avbryte nedlastingen?</cancel_download>
+		<cancel_install>Vil du avbryte installasjonen?
+Hvis du avbryter, vil også filene som ble lastet ned for denne installasjonen bli slettet.</cancel_install>
 		<delete_all>Slett alt</delete_all>
 		<notif_deleted>Varslingene vil bli slettet.</notif_deleted>
+		<waiting_download>Venter på å laste ned...</waiting_download>
+		<downloading_complete>Nedlasting fullført.</downloading_complete>
 		<install_failed>Kunne ikke installere.</install_failed>
+		<player_is_online>{} er nå på nettet.</player_is_online>
+		<waiting_install>Venter på å installere...</waiting_install>
 		<install_complete>Installering fullført.</install_complete>
 		<installing>Installerer...</installing>
+		<minutes_left>{} minutter gjenstår</minutes_left>
 		<no_notif>Det er ingen varslinger.</no_notif>
+		<commented_on_activity>Noen kommenterte {}s aktivitet.</commented_on_activity>
+		<commented_on_your_activity>Noen kommenterte aktiviteten din.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Noen kommenterte og liker aktiviteten din.</commented_and_likes_your_activity>
+		<likes_your_activity>Noen liker aktiviteten din.</likes_your_activity>
+		<pause_all>Pause Alt</pause_all>
+		<pause>Pause</pause>
+		<paused>Pause</paused>
+		<resume_all>Gjenoppta alle</resume_all>
+		<resume>Gjenoppta</resume>
+		<seconds_left>{} sekunder gjenstår</seconds_left>
+		<friend_requests>Du har venneforespørsler.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>En ny versjon av programmet er tilgjengelig.</new_app_version_available>
+		<latest_version_installed>Den siste versjonen av programmet er allerede installert.</latest_version_installed>
+		<downloading_app_update>Laster ned programoppdateringsfilen...
+Du kan kontrollere nedlastingsfremdriften på varslingslisten.</downloading_app_update>
+		<download>Nedlast</download>
+		<not_enough_space>Kunne ikke laste ned.
+Det er ikke nok ledig plass på minnekortet. Opprett minst {} ledig plass på minnekortet, og prøv deretter å laste ned på nytt.</not_enough_space>
+		<version>Versjon {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Tilbake</back>

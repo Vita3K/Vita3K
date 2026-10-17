@@ -130,7 +130,7 @@ public class Emulator extends SDLActivity
     @Keep
     public void setCurrentGameId(String gameId){
         runOnUiThread(() -> {
-            currentGameId = gameId != null ? gameId : "";
+            currentGameId = overlayGameId(gameId);
             refreshControllerOverlayScope();
             if (sessionViewModel != null) {
                 String runningAppTitle = "";
@@ -222,7 +222,7 @@ public class Emulator extends SDLActivity
         applyImmersiveMode();
         refreshNativeDisplayRotation();
 
-        currentGameId = resolveCurrentTitleId(getIntent());
+        currentGameId = overlayGameId(resolveCurrentTitleId(getIntent()));
         if (isImGuiFrontend())
             return;
 
@@ -1220,6 +1220,12 @@ public class Emulator extends SDLActivity
     private boolean hasLaunchRequest(Intent intent) {
         return intent != null
                 && (hasRestartParameters(intent) || !resolveCurrentTitleId(intent).isEmpty());
+    }
+
+    private static String overlayGameId(String appPath) {
+        if ("vs0:vsh/shell".equals(appPath))
+            return "NPXS19999";
+        return appPath != null ? appPath : "";
     }
 
     private boolean hasRestartParameters(Intent intent) {

@@ -17,7 +17,9 @@
 
 #include <module/module.h>
 
+#include <cpu/state.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 
 #include <cstring>
@@ -353,12 +355,18 @@ EXPORT(int, ksceKernelCpuDcacheWritebackInvalidateRange) {
 }
 
 EXPORT(int, ksceKernelCpuIcacheInvalidateRange, Address addr, uint32_t size) {
-    emuenv.kernel.invalidate_jit_cache(addr, size);
+    const ThreadStatePtr caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    emuenv.kernel.invalidate_jit_cache(caller->cpu->mem, addr, size);
     return 0;
 }
 
 EXPORT(int, ksceKernelCpuIcacheAndL2WritebackInvalidateRange, Address addr, uint32_t size) {
-    emuenv.kernel.invalidate_jit_cache(addr, size);
+    const ThreadStatePtr caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    emuenv.kernel.invalidate_jit_cache(caller->cpu->mem, addr, size);
     return 0;
 }
 

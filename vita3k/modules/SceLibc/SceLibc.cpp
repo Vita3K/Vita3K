@@ -188,9 +188,18 @@ EXPORT(int, _Wctomb) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, __aeabi_atexit) {
-    TRACY_FUNC(__aeabi_atexit);
-    return UNIMPLEMENTED();
+static int register_libc_exit_handler(EmuEnvState &emuenv, SceUID thread_id, Ptr<void> function, Ptr<void> object, Ptr<void> dso) {
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("Cannot register libc exit handler: unknown thread {}", thread_id);
+        return -1;
+    }
+    return emuenv.kernel.register_libc_exit_handler(thread->cpu->mem, { function, object, dso }) ? 0 : -1;
+}
+
+EXPORT(int, __aeabi_atexit, Ptr<void> object, Ptr<void> function, Ptr<void> dso) {
+    TRACY_FUNC(__aeabi_atexit, object, function, dso);
+    return register_libc_exit_handler(emuenv, thread_id, function, object, dso);
 }
 
 EXPORT(int, __at_quick_exit) {
@@ -198,14 +207,20 @@ EXPORT(int, __at_quick_exit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, __cxa_atexit) {
-    TRACY_FUNC(__cxa_atexit);
-    return UNIMPLEMENTED();
+EXPORT(int, __cxa_atexit, Ptr<void> function, Ptr<void> object, Ptr<void> dso) {
+    TRACY_FUNC(__cxa_atexit, function, object, dso);
+    return register_libc_exit_handler(emuenv, thread_id, function, object, dso);
 }
 
-EXPORT(int, __cxa_finalize) {
-    TRACY_FUNC(__cxa_finalize);
-    return UNIMPLEMENTED();
+EXPORT(void, __cxa_finalize, Ptr<void> dso) {
+    TRACY_FUNC(__cxa_finalize, dso);
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("Cannot finalize libc exit handlers: unknown thread {}", thread_id);
+        return;
+    }
+    while (const auto handler = emuenv.kernel.take_libc_exit_handler(thread->cpu->mem, dso))
+        thread->call_guest(handler->function.address(), { handler->object.address() });
 }
 
 EXPORT(int, __cxa_guard_abort) {
@@ -225,9 +240,12 @@ EXPORT(int, __cxa_guard_release) {
 
 EXPORT(void, __cxa_set_dso_handle_main, Ptr<void> dso) {
     TRACY_FUNC(__cxa_set_dso_handle_main, dso);
-    // LOG_WARN("__cxa_set_dso_handle_main(dso=*0x%x)", dso);
-    emuenv.kernel.libc_dso_handle_main = dso;
-    // return UNIMPLEMENTED();
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("Cannot set libc main DSO handle: unknown thread {}", thread_id);
+        return;
+    }
+    emuenv.kernel.set_libc_dso_handle_main(thread->cpu->mem, dso);
 }
 
 EXPORT(int, __set_exidx_main) {
@@ -253,7 +271,7 @@ EXPORT(int, _sceLdTlsUnregisterModuleInfo) {
 EXPORT(Ptr<int>, _sceLibcErrnoLoc) {
     TRACY_FUNC(_sceLibcErrnoLoc);
     // tls key from disasmed source
-    auto res = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, TLS_LIBC_ERRNO);
+    auto res = emuenv.kernel.get_thread_tls_addr(thread_id, TLS_LIBC_ERRNO);
     return res.cast<int>();
 }
 
@@ -856,9 +874,24 @@ EXPORT(int, memcmp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(void, memcpy, void *destination, const void *source, uint32_t num) {
+EXPORT(Ptr<void>, memcpy, Ptr<void> destination, Ptr<const void> source, uint32_t num) {
     TRACY_FUNC(memcpy, destination, source, num);
-    memcpy(destination, source, num);
+    if (!num)
+        return destination;
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("memcpy: unknown thread {}", thread_id);
+        return {};
+    }
+    MemState &mem = thread->cpu->mem;
+    if (emuenv.kernel.is_primary_address_space(mem))
+        std::memcpy(destination.get(mem), source.get(mem), num);
+    else if (!copy_guest_memory(mem, destination.address(), source.address(), num)) {
+        LOG_ERROR("memcpy: invalid or overlapping secondary memory ranges");
+        thread->exit(static_cast<SceInt32>(SCE_KERNEL_ERROR_ILLEGAL_ADDR));
+        return {};
+    }
+    return destination;
 }
 
 EXPORT(int, memcpy_s) {
@@ -866,9 +899,24 @@ EXPORT(int, memcpy_s) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(void, memmove, void *destination, const void *source, uint32_t num) {
+EXPORT(Ptr<void>, memmove, Ptr<void> destination, Ptr<const void> source, uint32_t num) {
     TRACY_FUNC(memmove, destination, source, num);
-    memmove(destination, source, num);
+    if (!num)
+        return destination;
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("memmove: unknown thread {}", thread_id);
+        return {};
+    }
+    MemState &mem = thread->cpu->mem;
+    if (emuenv.kernel.is_primary_address_space(mem))
+        std::memmove(destination.get(mem), source.get(mem), num);
+    else if (!move_guest_memory(mem, destination.address(), source.address(), num)) {
+        LOG_ERROR("memmove: invalid secondary memory ranges");
+        thread->exit(static_cast<SceInt32>(SCE_KERNEL_ERROR_ILLEGAL_ADDR));
+        return {};
+    }
+    return destination;
 }
 
 EXPORT(int, memmove_s) {
@@ -876,9 +924,24 @@ EXPORT(int, memmove_s) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(void, memset, Ptr<void> str, int c, uint32_t n) {
+EXPORT(Ptr<void>, memset, Ptr<void> str, int c, uint32_t n) {
     TRACY_FUNC(memset, str, c, n);
-    memset(str.get(emuenv.mem), c, n);
+    if (!n)
+        return str;
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("memset: unknown thread {}", thread_id);
+        return {};
+    }
+    MemState &mem = thread->cpu->mem;
+    if (emuenv.kernel.is_primary_address_space(mem))
+        std::memset(str.get(mem), c, n);
+    else if (!fill_guest_memory(mem, str.address(), static_cast<uint8_t>(c), n)) {
+        LOG_ERROR("memset: invalid secondary memory range at {} of size {}", log_hex(str.address()), log_hex(n));
+        thread->exit(static_cast<SceInt32>(SCE_KERNEL_ERROR_ILLEGAL_ADDR));
+        return {};
+    }
+    return str;
 }
 
 EXPORT(int, mktime) {
@@ -972,7 +1035,7 @@ EXPORT(int, printf, const char *format, module::vargs args) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    const int result = utils::snprintf(buffer.data(), buffer.size(), format, *(thread->cpu), emuenv.mem, args);
+    const int result = utils::snprintf(buffer.data(), buffer.size(), format, *(thread->cpu), thread->cpu->mem, args);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -1128,7 +1191,7 @@ EXPORT(int, snprintf, char *s, size_t n, const char *format, module::vargs args)
     TRACY_FUNC(snprintf, s, n, format);
 
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    return utils::snprintf(s, n, format, *(thread->cpu), emuenv.mem, args);
+    return utils::snprintf(s, n, format, *(thread->cpu), thread->cpu->mem, args);
 }
 
 EXPORT(int, snprintf_s) {

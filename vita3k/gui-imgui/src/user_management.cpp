@@ -144,13 +144,8 @@ void open_user(GuiState &gui, EmuEnvState &emuenv) {
     gui.vita_area.start_screen = true;
 
 #ifdef USE_VITA3K_UPDATE
-    if (emuenv.cfg.check_for_updates) {
-        std::thread update_vita3k_thread([&gui]() {
-            if (init_vita3k_update(gui))
-                gui.help_menu.vita3k_update = true;
-        });
-        update_vita3k_thread.detach();
-    }
+    if (emuenv.cfg.check_for_updates)
+        start_vita3k_update_check();
 #endif
 }
 

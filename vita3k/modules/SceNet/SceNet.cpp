@@ -17,7 +17,9 @@
 
 #include "SceNet.h"
 
+#include <cpu/state.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 
 #include <net/state.h>
 
@@ -119,12 +121,14 @@ std::string to_debug_str<SceNetSocketOption>(const MemState &mem, SceNetSocketOp
 
 static int ret_net_errno(EmuEnvState &emuenv, int thread_id, int ret) {
     if (ret < 0) {
-        auto addr = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, TLS_NET_ERRNO);
-        if (addr) {
-            auto inner_ptr = addr.get(emuenv.mem);
-            if (inner_ptr)
-                *reinterpret_cast<int *>(inner_ptr) = ret & 0xff;
+        const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+        if (!thread) {
+            LOG_ERROR("Cannot set network errno for unknown thread {}", thread_id);
+            return ret;
         }
+        auto addr = emuenv.kernel.get_thread_tls_addr(thread->cpu->mem, thread_id, TLS_NET_ERRNO);
+        if (addr)
+            *addr.cast<int>().get(thread->cpu->mem) = ret & 0xff;
     }
 
     return ret;
@@ -143,7 +147,10 @@ EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) 
         RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
 
     int err = 0;
-    auto newsock = sock->accept(addr, addrlen, err);
+    auto newsock = [&] {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+        return sock->accept(addr, addrlen, err);
+    }();
     if (!newsock)
         RET_NET_ERRNO(err);
 
@@ -168,7 +175,10 @@ EXPORT(int, sceNetConnect, int sid, const SceNetSockaddr *addr, unsigned int add
     TRACY_FUNC(sceNetConnect, sid, addr, addrlen);
     auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
 
-    RET_NET_ERRNO(sock ? sock->connect(addr, addrlen) : SCE_NET_ERROR_EBADF);
+    if (!sock)
+        RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
+    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+    RET_NET_ERRNO(sock->connect(addr, addrlen));
 }
 
 EXPORT(int, sceNetDumpAbort) {
@@ -262,7 +272,7 @@ EXPORT(int, sceNetEpollWaitCB) {
 EXPORT(Ptr<int>, sceNetErrnoLoc) {
     TRACY_FUNC(sceNetErrnoLoc);
     // TLS id was taken from disasm source
-    auto addr = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, TLS_NET_ERRNO);
+    auto addr = emuenv.kernel.get_thread_tls_addr(thread_id, TLS_NET_ERRNO);
     return addr.cast<int>();
 }
 

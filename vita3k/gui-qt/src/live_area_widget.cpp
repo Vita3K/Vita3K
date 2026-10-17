@@ -19,8 +19,13 @@
 
 #include <gui-qt/live_area_widget.h>
 
+#include <app/state.h>
 #include <config/state.h>
 #include <emuenv/state.h>
+#include <io/vfs.h>
+#include <util/log.h>
+#include <vfs/appmeta.h>
+#include <vfs/mounts.h>
 
 #include <pugixml.hpp>
 
@@ -37,6 +42,8 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <limits>
+#include <mutex>
 
 static constexpr qreal REF_W = 960.0;
 static constexpr qreal REF_H = 544.0;
@@ -137,18 +144,26 @@ LiveAreaWidget::LiveAreaWidget(EmuEnvState &emuenv, const std::string &app_path,
     : QWindow(parent)
     , m_emuenv(emuenv)
     , m_app_path(app_path)
+    , m_title_id(app_path)
     , m_backing_store(this) {
     setSurfaceType(QSurface::RasterSurface);
     setMinimumSize(QSize(160, 90));
     resize(960, 544);
     setFlags(Qt::Window);
 
-    m_app_fs_path = gui::utils::to_qt_path(emuenv.vita_fs_path / "ux0/app" / app_path);
+    m_app_fs_path = gui::utils::to_qt_path(vfs::get_app_base_path(emuenv.vita_fs_path, app_path));
+
+    {
+        auto &list = emuenv.app.apps_list;
+        std::lock_guard lock(list.mutex);
+        const auto app = std::find_if(list.apps.begin(), list.apps.end(), [&](const auto &entry) { return entry.path == app_path; });
+        if (app != list.apps.end() && !app->title_id.empty())
+            m_title_id = app->title_id;
+    }
 
     load_contents();
 
-    QDir manual_dir(m_app_fs_path + "/sce_sys/manual");
-    if (manual_dir.exists() && !manual_dir.isEmpty())
+    if (vfs::app_dir_has_entries(emuenv.vita_fs_path, app_path, "sce_sys/manual", m_title_id))
         m_manual_exists = true;
 
     m_autoflip_timer = new QTimer(this);
@@ -226,50 +241,71 @@ void LiveAreaWidget::render_now() {
     m_backing_store.flush(region, this);
 }
 
+void LiveAreaWidget::refresh_app_contents(const std::string &app_path) {
+    if (m_app_path != app_path)
+        return;
+
+    m_background = {};
+    m_gate_image = {};
+    m_app_icon = {};
+    m_pic0 = {};
+    m_frames.clear();
+    m_frame_items.clear();
+    m_manual_pages.clear();
+    m_manual_page = 0;
+    m_showing_manual = false;
+    m_manual_exists = vfs::app_dir_has_entries(m_emuenv.vita_fs_path, m_app_path, "sce_sys/manual", m_title_id);
+    load_contents();
+    request_redraw();
+}
+
 void LiveAreaWidget::load_contents() {
     QString contents_dir = m_app_fs_path + "/sce_sys/livearea/contents";
-
-    QDir retail_dir(m_app_fs_path + "/sce_sys/retail/livearea");
-    if (retail_dir.exists())
+    vfs::FileBuffer xml;
+    if (vfs::read_app_livearea_file(xml, m_emuenv.vita_fs_path, m_app_path, "sce_sys/retail/livearea/contents/template.xml", m_title_id))
         contents_dir = m_app_fs_path + "/sce_sys/retail/livearea/contents";
+    else
+        vfs::read_app_livearea_file(xml, m_emuenv.vita_fs_path, m_app_path, "sce_sys/livearea/contents/template.xml", m_title_id);
 
-    QString template_path = contents_dir + "/template.xml";
-
-    if (!QFile::exists(template_path)) {
+    pugi::xml_document doc;
+    bool loaded = !xml.empty() && doc.load_buffer(xml.data(), xml.size());
+    if (!loaded) {
         const auto vita_fs = gui::utils::to_qt_path(m_emuenv.vita_fs_path);
         contents_dir = vita_fs + "/vs0/data/internal/livearea/default/sce_sys/livearea/contents";
-        template_path = contents_dir + "/template.xml";
+        loaded = doc.load_file((contents_dir + "/template.xml").toStdString().c_str());
     }
 
-    if (QFile::exists(template_path)) {
-        parse_template(template_path, contents_dir);
+    if (loaded) {
+        parse_template(doc, contents_dir);
     } else {
         m_style_type = "a1";
+        LOG_WARN("LiveArea template missing or invalid for '{}'", m_title_id);
     }
 
-    const QString icon_path = m_app_fs_path + "/sce_sys/icon0.png";
-    if (QFile::exists(icon_path))
-        m_app_icon.load(icon_path);
-
-    const QString pic0_path = m_app_fs_path + "/sce_sys/pic0.png";
-    if (QFile::exists(pic0_path))
-        m_pic0.load(pic0_path);
+    vfs::FileBuffer image;
+    if (vfs::read_app_icon(image, m_emuenv.vita_fs_path, m_app_path, m_title_id) && image.size() <= std::numeric_limits<uint>::max())
+        m_app_icon.loadFromData(image.data(), static_cast<uint>(image.size()));
+    image.clear();
+    if (vfs::read_app_livearea_file(image, m_emuenv.vita_fs_path, m_app_path, "sce_sys/pic0.png", m_title_id) && image.size() <= std::numeric_limits<uint>::max())
+        m_pic0.loadFromData(image.data(), static_cast<uint>(image.size()));
 }
 
 QPixmap LiveAreaWidget::load_image(const QString &dir, const std::string &name) {
     if (name.empty())
         return {};
-    QString path = dir + "/" + QString::fromStdString(name);
+    const QString path = dir + "/" + QString::fromStdString(name);
     QPixmap pix;
-    pix.load(path);
+    if (dir.startsWith(m_app_fs_path + "/")) {
+        const auto relative_path = path.mid(m_app_fs_path.size() + 1).toStdString();
+        vfs::FileBuffer image;
+        if (vfs::read_app_livearea_file(image, m_emuenv.vita_fs_path, m_app_path, fs::path(relative_path), m_title_id) && image.size() <= std::numeric_limits<uint>::max())
+            pix.loadFromData(image.data(), static_cast<uint>(image.size()));
+    } else
+        pix.load(path);
     return pix;
 }
 
-void LiveAreaWidget::parse_template(const QString &xml_path, const QString &contents_dir) {
-    pugi::xml_document doc;
-    if (!doc.load_file(xml_path.toStdString().c_str()))
-        return;
-
+void LiveAreaWidget::parse_template(const pugi::xml_document &doc, const QString &contents_dir) {
     m_contents_dir = contents_dir;
 
     auto livearea = doc.child("livearea");
@@ -830,22 +866,18 @@ void LiveAreaWidget::keyPressEvent(QKeyEvent *e) {
 
 void LiveAreaWidget::load_manual_pages() {
     m_manual_pages.clear();
-
-    QString base = m_app_fs_path + "/sce_sys/manual";
-
-    const auto lang = QString("%1").arg(m_emuenv.cfg.sys_lang, 2, 10, QChar('0'));
-    QDir lang_dir(base + "/" + lang);
-    if (lang_dir.exists() && !lang_dir.isEmpty())
-        base = lang_dir.absolutePath();
-
-    for (int i = 1; i <= 999; ++i) {
-        QString filename = QString("%1.png").arg(i, 3, 10, QChar('0'));
-        QString path = base + "/" + filename;
-        QPixmap pix;
-        if (!pix.load(path))
-            break;
-        m_manual_pages.push_back(std::move(pix));
-    }
+    const bool loaded = pfsmgr::read_manual_pages(m_emuenv.io, m_emuenv.vita_fs_path, m_app_path, m_title_id,
+        m_emuenv.cfg.sys_lang, [&](const std::vector<uint8_t> &data, unsigned int page) {
+            QPixmap pix;
+            if (!pix.loadFromData(data.data(), static_cast<uint>(data.size()), "PNG")) {
+                LOG_ERROR("Invalid manual image for title '{}' page {}", m_title_id, page);
+                return false;
+            }
+            m_manual_pages.push_back(std::move(pix));
+            return true;
+        });
+    if (!loaded)
+        m_manual_pages.clear();
 }
 
 void LiveAreaWidget::enter_manual() {

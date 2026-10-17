@@ -333,7 +333,7 @@ void CheatsDialog::on_reload() {
     const auto running = running_title_id();
     if (!running.empty()) {
         cheat::reload(emuenv.cheat, emuenv.cheat_path, running, emuenv.mem,
-            [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(address, size); });
+            [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(emuenv.mem, address, size); });
     }
 
     reload(false);
@@ -651,7 +651,7 @@ void CheatsDialog::set_cheat_enabled(Game &game, size_t index, bool enabled) {
         return;
 
     cheat::set_cheat_enabled(emuenv.cheat, index, enabled, emuenv.mem,
-        [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(address, size); });
+        [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(emuenv.mem, address, size); });
 }
 
 void CheatsDialog::set_all_enabled(bool enabled) {
@@ -692,7 +692,7 @@ void CheatsDialog::on_master_toggled(bool enabled) {
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
     cheat::set_enabled(emuenv.cheat, enabled, emuenv.mem,
-        [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(address, size); });
+        [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(emuenv.mem, address, size); });
 }
 
 void CheatsDialog::on_save() {
@@ -907,7 +907,7 @@ void CheatsDialog::on_add_cheat() {
     added.lines.push_back(cheat::make_write_code(*address, type, *value));
 
     if (!cheat::add_cheat(emuenv.cheat, emuenv.cheat_path, running, added, emuenv.mem,
-            [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(address, size); })) {
+            [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(emuenv.mem, address, size); })) {
         gui::utils::show_message_box(this, QMessageBox::Warning, tr("Cheats"),
             tr("Failed to add the cheat to the cheat file of %1. Check the log for details.").arg(QString::fromStdString(running)),
             { { QStringLiteral("ok"), tr("OK"), QMessageBox::AcceptRole, true } });

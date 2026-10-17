@@ -27,12 +27,16 @@
 #include <config/version.h>
 #include <emuenv/state.h>
 #include <io/state.h>
+#include <io/vfs.h>
 #include <mem/util.h>
 #include <packages/license.h>
 #include <packages/sce_types.h>
 #include <renderer/state.h>
 #include <util/log.h>
 #include <util/sysinfo.h>
+#include <vfs/mounts.h>
+
+#include <algorithm>
 
 #include <QApplication>
 #include <QClipboard>
@@ -137,9 +141,10 @@ void AppsListContextMenu::build_single(const app::AppEntry &app) {
 AppsListContextMenu::AppPaths AppsListContextMenu::make_app_paths(const app::AppEntry &app) const {
     const auto &title_id = app.title_id;
     return {
-        .app = m_emuenv.vita_fs_path / "ux0/app" / app.path,
+        .app = vfs::get_app_base_path(m_emuenv.vita_fs_path, app.path),
         .save_data = m_emuenv.vita_fs_path / "ux0/user" / m_emuenv.io.user_id / "savedata" / app.savedata,
         .patch = m_emuenv.shared_path / "patch" / title_id,
+        .update = m_emuenv.vita_fs_path / "ux0/patch" / title_id,
         .cheats = m_emuenv.cheat_path,
         .addcont = m_emuenv.vita_fs_path / "ux0/addcont" / app.addcont,
         .license = m_emuenv.vita_fs_path / "ux0/license" / title_id,
@@ -153,7 +158,9 @@ AppsListContextMenu::AppPaths AppsListContextMenu::make_app_paths(const app::App
 
 void AppsListContextMenu::build_multi(const std::vector<const app::AppEntry *> &apps) {
     auto *delete_all = addAction(tr("Delete Selected Applications"));
-    delete_all->setEnabled(!m_app_running);
+    delete_all->setEnabled(!m_app_running && std::ranges::all_of(apps, [](const app::AppEntry *app) {
+        return app && app->path.starts_with("ux0:app/");
+    }));
     connect(delete_all, &QAction::triggered, this, [this, apps] {
         const int result = QMessageBox::question(parentWidget(),
             tr("Delete Applications"),
@@ -418,6 +425,13 @@ void AppsListContextMenu::add_open_folder_actions(const app::AppEntry &app) {
         });
     }
 
+    if (fs::is_directory(m_paths.update)) {
+        auto *a = open_menu->addAction(tr("Update"));
+        connect(a, &QAction::triggered, this, [this] {
+            gui::utils::open_dir(m_paths.update);
+        });
+    }
+
     if (fs::exists(m_paths.patch)) {
         auto *a = open_menu->addAction(tr("Patch"));
         connect(a, &QAction::triggered, this, [this] {
@@ -482,7 +496,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
     auto *delete_menu = addMenu(tr("Delete"));
 
     auto *delete_app = delete_menu->addAction(tr("Application"));
-    delete_app->setEnabled(!m_app_running);
+    delete_app->setEnabled(!m_app_running && app.path.starts_with("ux0:app/"));
     connect(delete_app, &QAction::triggered, this, [this, &app] {
         const int result = QMessageBox::question(parentWidget(),
             tr("Delete Application"),
@@ -514,6 +528,26 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
         });
     }
 
+    if (fs::is_directory(m_paths.update)) {
+        auto *a = delete_menu->addAction(tr("Update"));
+        a->setEnabled(!m_app_running);
+        connect(a, &QAction::triggered, this, [this, app_path = app.path] {
+            const int r = QMessageBox::question(parentWidget(),
+                tr("Delete Update"),
+                tr("Are you sure you want to delete the update data?"),
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+            if (r == QMessageBox::Yes) {
+                std::error_code error;
+                fs::remove_all(m_paths.update, error);
+                if (error)
+                    LOG_ERROR("Failed to delete update at '{}': {}", m_paths.update, error.message());
+                app::update_app(m_emuenv, app::read_app_info(m_emuenv, app_path));
+                emit update_changed(app_path);
+                emit refresh_requested();
+            }
+        });
+    }
+
     if (fs::exists(m_paths.patch)) {
         auto *a = delete_menu->addAction(tr("Patch"));
         connect(a, &QAction::triggered, this, [this] {
@@ -522,11 +556,10 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
                 tr("Are you sure you want to delete the patch data?"),
                 QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
             if (r == QMessageBox::Yes) {
-                try {
-                    fs::remove_all(m_paths.patch);
-                } catch (const std::exception &e) {
-                    LOG_WARN("Failed to remove {}: {}", m_paths.patch, e.what());
-                }
+                std::error_code error;
+                fs::remove_all(m_paths.patch, error);
+                if (error)
+                    LOG_ERROR("Failed to delete patch at '{}': {}", m_paths.patch, error.message());
             }
         });
     }
@@ -628,18 +661,22 @@ void AppsListContextMenu::add_misc_actions(const app::AppEntry &app) {
         emit refresh_requested();
     });
 
-    const auto changeinfo_path = m_paths.app / "sce_sys/changeinfo";
-    if (fs::exists(changeinfo_path) && !fs::is_empty(changeinfo_path)) {
+    if (fs::exists(m_paths.app / "sce_sys/changeinfo") || fs::exists(m_paths.update / "sce_sys/changeinfo")) {
         auto *history = other_menu->addAction(tr("Update History"));
-        connect(history, &QAction::triggered, this, [this, changeinfo_path] {
-            const auto lang_file = fmt::format("changeinfo_{:0>2d}.xml", m_emuenv.cfg.sys_lang);
-            const auto fname = fs::exists(changeinfo_path / lang_file)
-                ? lang_file
-                : std::string("changeinfo.xml");
+        connect(history, &QAction::triggered, this, [this, app_path = app.path, title_id] {
+            std::vector<uint8_t> xml;
+            if (!pfsmgr::read_update_history(m_emuenv.io, m_emuenv.vita_fs_path, app_path, title_id, m_emuenv.cfg.sys_lang, xml)) {
+                QMessageBox::information(this, tr("Update History"), tr("Update history is unavailable."));
+                return;
+            }
 
             pugi::xml_document doc;
-            if (!doc.load_file((changeinfo_path / fname).c_str()))
+            const auto result = doc.load_buffer(xml.data(), xml.size());
+            if (!result) {
+                LOG_WARN("Failed to parse update history for {}: {}", title_id, result.description());
+                QMessageBox::information(this, tr("Update History"), tr("Update history is unavailable."));
                 return;
+            }
 
             std::vector<std::pair<QString, QString>> entries;
             for (const auto &info : doc.child("changeinfo")) {
@@ -659,8 +696,11 @@ void AppsListContextMenu::add_misc_actions(const app::AppEntry &app) {
                 entries.emplace_back(ver, text);
             }
 
-            if (entries.empty())
+            if (entries.empty()) {
+                LOG_WARN("No update history entries found for {}.", title_id);
+                QMessageBox::information(this, tr("Update History"), tr("Update history is unavailable."));
                 return;
+            }
 
             auto *dlg = new QDialog(parentWidget());
             dlg->setWindowTitle(tr("Update History"));
@@ -706,7 +746,7 @@ void AppsListContextMenu::add_misc_actions(const app::AppEntry &app) {
 void AppsListContextMenu::add_information_actions(const app::AppEntry &app) {
     auto *info = addAction(tr("Information"));
     connect(info, &QAction::triggered, this, [this, &app] {
-        const auto APP_PATH = m_emuenv.vita_fs_path / "ux0/app" / app.path;
+        const auto APP_PATH = vfs::get_app_base_path(m_emuenv.vita_fs_path, app.path);
         const auto app_dir = gui::utils::to_qt_path(APP_PATH);
 
         const bool has_report = m_emuenv.compat.compat_db_loaded

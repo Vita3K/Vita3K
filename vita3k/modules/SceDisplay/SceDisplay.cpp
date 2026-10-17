@@ -30,6 +30,14 @@ TRACY_MODULE_NAME(SceDisplay);
 
 static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
     const auto &thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("Display wait called by unknown thread {}", thread_id);
+        return static_cast<int>(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    }
+    if (!valid_vblank_wait_count(vcount)) {
+        LOG_ERROR("Invalid display wait count {}", vcount);
+        return static_cast<int>(SCE_DISPLAY_ERROR_INVALID_VALUE);
+    }
     if (is_cb)
         thread->process_callbacks();
 
@@ -144,7 +152,7 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
         STUBBED("SCE_DISPLAY_SETBUF_IMMEDIATE is not supported");
     }
 
-    DisplayFrameInfo &info = emuenv.display.sce_frame;
+    DisplayFrameInfo info;
 
     info.base = pFrameBuf->base;
     info.pitch = pFrameBuf->pitch;

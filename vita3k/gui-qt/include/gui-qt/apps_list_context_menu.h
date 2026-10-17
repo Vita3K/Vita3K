@@ -43,12 +43,14 @@ Q_SIGNALS:
     void open_settings_requested(const std::string &app_path, int tab);
     void manage_cheats_requested(const app::AppEntry &app);
     void refresh_requested();
+    void update_changed(const std::string &app_path);
 
 private:
     struct AppPaths {
         fs::path app;
         fs::path save_data;
         fs::path patch;
+        fs::path update;
         fs::path cheats;
         fs::path addcont;
         fs::path license;

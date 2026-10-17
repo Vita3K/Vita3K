@@ -22,7 +22,10 @@
 #include <mem/ptr.h>
 
 #include <condition_variable>
+#include <cstddef>
+#include <memory>
 #include <queue>
+#include <unordered_set>
 #include <vector>
 
 struct MemState;
@@ -63,6 +66,12 @@ struct VoiceScheduler {
     std::recursive_mutex mutex;
     std::condition_variable_any condvar;
     bool is_updating = false;
+    SceUID updating_thread_id = -1;
+    Rack *processing_rack = nullptr;
+    size_t processing_module_index = 0;
+    std::shared_ptr<void> processing_module_keepalive;
+    std::unordered_set<Voice *> released_voices_during_update;
+    std::unordered_set<Rack *> pending_rack_releases;
 
 protected:
     void deque_insert(const MemState &mem, Voice *voice);
@@ -73,6 +82,7 @@ protected:
 
 public:
     bool deque_voice(Voice *voice);
+    bool relock_voice_after_callback(Voice *voice, std::unique_lock<std::mutex> &voice_lock);
 
     bool play(const MemState &mem, Voice *voice);
     bool pause(const MemState &mem, Voice *voice);
@@ -80,7 +90,7 @@ public:
     bool stop(const MemState &mem, Voice *voice);
     bool off(const MemState &mem, Voice *voice);
 
-    void update(KernelState &kern, const MemState &mem, const SceUID thread_id);
+    bool update(KernelState &kern, const MemState &mem, const SceUID thread_id);
 
     Ptr<Patch> patch(const MemState &mem, SceNgsPatchSetupInfo *info);
 };

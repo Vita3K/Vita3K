@@ -192,7 +192,7 @@ static Address find_import_stub_in_module(EmuEnvState &emuenv, const char *modul
     // Find the module UID
     SceUID mod_uid = -1;
     for (const auto &[uid, mod] : emuenv.kernel.loaded_modules) {
-        if (std::string(mod->info.module_name) == module_name) {
+        if (mod->address_space == &emuenv.mem && std::string(mod->info.module_name) == module_name) {
             mod_uid = uid;
             break;
         }
@@ -279,8 +279,8 @@ static SceUID create_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread
     stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
 
     // Invalidate JIT cache
-    emuenv.kernel.invalidate_jit_cache(target_addr, 12);
-    emuenv.kernel.invalidate_jit_cache(trampoline_addr, 12);
+    emuenv.kernel.invalidate_jit_cache(emuenv.mem, target_addr, 12);
+    emuenv.kernel.invalidate_jit_cache(emuenv.mem, trampoline_addr, 12);
 
     // Store hook info for release
     auto hook = std::make_unique<TaiHook>();
@@ -405,8 +405,8 @@ static SceUID create_inline_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
         }
     }
 
-    emuenv.kernel.invalidate_jit_cache(code_addr, copy_size);
-    emuenv.kernel.invalidate_jit_cache(trampoline_addr, trampoline_total);
+    emuenv.kernel.invalidate_jit_cache(emuenv.mem, code_addr, copy_size);
+    emuenv.kernel.invalidate_jit_cache(emuenv.mem, trampoline_addr, trampoline_total);
 
     auto hook = std::make_unique<TaiHook>();
     hook->uid = state->alloc_uid();
@@ -473,13 +473,13 @@ static SceUID create_export_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
             Address current = decode_lle_stub_target(stub);
             if (current == original_addr) {
                 write_arm_stub(stub, hook_func);
-                emuenv.kernel.invalidate_jit_cache(stub_addr, 12);
+                emuenv.kernel.invalidate_jit_cache(emuenv.mem, stub_addr, 12);
                 patched_count++;
             }
         }
     }
 
-    emuenv.kernel.invalidate_jit_cache(trampoline_addr, 12);
+    emuenv.kernel.invalidate_jit_cache(emuenv.mem, trampoline_addr, 12);
 
     auto hook = std::make_unique<TaiHook>();
     hook->uid = state->alloc_uid();
@@ -505,6 +505,8 @@ static SceUID create_export_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
 
 EXPORT(SceUID, taiHookFunctionExportForUser, Ptr<uint32_t> p_hook, Ptr<void> args) {
     TRACY_FUNC(taiHookFunctionExportForUser, p_hook, args);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN export hook"))
+        return RET_ERROR(error);
     if (!p_hook || !args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -550,6 +552,8 @@ EXPORT(SceUID, taiHookFunctionExportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
 
 EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> args) {
     TRACY_FUNC(taiHookFunctionImportForUser, p_hook, args);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN import hook"))
+        return RET_ERROR(error);
     if (!p_hook || !args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -565,8 +569,7 @@ EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
     // Find the import stub for this NID in the specified module
     Address stub_addr;
     {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+        const std::scoped_lock lock(emuenv.kernel.export_nids_mutex, emuenv.kernel.mutex);
         stub_addr = find_import_stub_in_module(emuenv, module_name, func_nid);
     }
 
@@ -590,6 +593,8 @@ EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
 
 EXPORT(SceUID, taiHookFunctionOffsetForUser, Ptr<uint32_t> p_hook, Ptr<void> args) {
     TRACY_FUNC(taiHookFunctionOffsetForUser, p_hook, args);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN offset hook"))
+        return RET_ERROR(error);
     if (!p_hook || !args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -609,7 +614,7 @@ EXPORT(SceUID, taiHookFunctionOffsetForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
     {
         const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+        if (mod_it == emuenv.kernel.loaded_modules.end() || mod_it->second->address_space != &emuenv.mem) {
             LOG_WARN("taiHookFunctionOffsetForUser: module {} not found", modid);
             return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
         }
@@ -642,6 +647,8 @@ EXPORT(SceUID, taiHookFunctionOffsetForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
 
 EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
     TRACY_FUNC(taiGetModuleInfo, module, info);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN module information"))
+        return RET_ERROR(error);
     if (!module || !info) {
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     }
@@ -663,21 +670,11 @@ EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
 
     // Search LLE loaded modules first
     {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
         const auto &loaded_modules = emuenv.kernel.loaded_modules;
         for (const auto &[uid, mod] : loaded_modules) {
-            if (std::string(mod->info.module_name) == module) {
-                // Find module_nid via reverse lookup in module_uid_by_nid
-                uint32_t mod_nid = 0;
-                {
-                    const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
-                    for (const auto &[nid, mapped_uid] : emuenv.kernel.module_uid_by_nid) {
-                        if (mapped_uid == uid) {
-                            mod_nid = nid;
-                            break;
-                        }
-                    }
-                }
+            if (mod->address_space == &emuenv.mem && std::string(mod->info.module_name) == module) {
+                const uint32_t mod_nid = mod->module_nid;
                 fill_info(uid, mod->info.module_name, mod_nid,
                     mod->info.segments[0].vaddr.address(),
                     mod->info.segments[0].memsz);
@@ -705,6 +702,8 @@ EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
 
 EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
     TRACY_FUNC(taiHookRelease, tai_uid, hook_ref);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN hook release"))
+        return RET_ERROR(error);
     auto *state = emuenv.kernel.obj_store.get<TaihenState>();
     if (!state)
         return SCE_KERNEL_ERROR_ERROR;
@@ -723,7 +722,7 @@ EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
         // Inline hook: restore original prologue bytes
         uint8_t *target = Ptr<uint8_t>(hook->target_addr).get(emuenv.mem);
         memcpy(target, hook->saved_bytes.data(), hook->saved_bytes.size());
-        emuenv.kernel.invalidate_jit_cache(hook->target_addr, hook->patch_size);
+        emuenv.kernel.invalidate_jit_cache(emuenv.mem, hook->target_addr, hook->patch_size);
 
         // Restore export_nids if we have a NID
         if (hook->func_nid != 0) {
@@ -735,7 +734,7 @@ EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
         // Import hook: restore original bytes at the patched stub
         uint8_t *target = Ptr<uint8_t>(hook->target_addr).get(emuenv.mem);
         memcpy(target, hook->saved_bytes.data(), hook->saved_bytes.size());
-        emuenv.kernel.invalidate_jit_cache(hook->target_addr, hook->saved_bytes.size());
+        emuenv.kernel.invalidate_jit_cache(emuenv.mem, hook->target_addr, hook->saved_bytes.size());
     } else {
         // Fallback export hook (stub patching): restore export_nids + import stubs
         if (hook->func_nid != 0) {
@@ -753,7 +752,7 @@ EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
                     Address current = decode_lle_stub_target(stub);
                     if (current == hook->hook_func) {
                         write_arm_stub(stub, original_addr);
-                        emuenv.kernel.invalidate_jit_cache(bi->second.entry_address, 12);
+                        emuenv.kernel.invalidate_jit_cache(emuenv.mem, bi->second.entry_address, 12);
                     }
                 }
             }
@@ -772,6 +771,8 @@ EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
 
 EXPORT(SceUID, taiInjectAbs, Ptr<void> dest, Ptr<const void> src, uint32_t size) {
     TRACY_FUNC(taiInjectAbs, dest, src, size);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN injection"))
+        return RET_ERROR(error);
     if (!dest || !src || size == 0) {
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     }
@@ -798,7 +799,7 @@ EXPORT(SceUID, taiInjectAbs, Ptr<void> dest, Ptr<const void> src, uint32_t size)
     std::memcpy(dest_ptr, src_ptr, size);
 
     // invalidate JIT cache
-    emuenv.kernel.invalidate_jit_cache(dest.address(), size);
+    emuenv.kernel.invalidate_jit_cache(emuenv.mem, dest.address(), size);
 
     SceUID uid = inject.uid;
     state->injections[uid] = std::move(inject);
@@ -821,6 +822,8 @@ struct TaiInjectArgs {
 
 EXPORT(SceUID, taiInjectDataForUser, Ptr<void> args) {
     TRACY_FUNC(taiInjectDataForUser, args);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN injection"))
+        return RET_ERROR(error);
     if (!args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -839,7 +842,7 @@ EXPORT(SceUID, taiInjectDataForUser, Ptr<void> args) {
     {
         const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+        if (mod_it == emuenv.kernel.loaded_modules.end() || mod_it->second->address_space != &emuenv.mem) {
             LOG_WARN("taiInjectDataForUser: module {} not found", modid);
             return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
         }
@@ -859,6 +862,8 @@ EXPORT(SceUID, taiInjectDataForUser, Ptr<void> args) {
 
 EXPORT(int, taiInjectRelease, SceUID tai_uid) {
     TRACY_FUNC(taiInjectRelease, tai_uid);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN injection release"))
+        return RET_ERROR(error);
     auto *state = emuenv.kernel.obj_store.get<TaihenState>();
     if (!state)
         return SCE_KERNEL_ERROR_ERROR;
@@ -873,7 +878,7 @@ EXPORT(int, taiInjectRelease, SceUID tai_uid) {
     auto &inject = it->second;
     auto dest_ptr = Ptr<void>(inject.dest).get(emuenv.mem);
     std::memcpy(dest_ptr, inject.saved_data.data(), inject.saved_data.size());
-    emuenv.kernel.invalidate_jit_cache(inject.dest, static_cast<size_t>(inject.saved_data.size()));
+    emuenv.kernel.invalidate_jit_cache(emuenv.mem, inject.dest, static_cast<size_t>(inject.saved_data.size()));
 
     state->injections.erase(it);
 
@@ -883,6 +888,8 @@ EXPORT(int, taiInjectRelease, SceUID tai_uid) {
 
 EXPORT(int, taiGetModuleExportFunc, const char *modname, uint32_t libnid, uint32_t funcnid, Ptr<uint32_t> func) {
     TRACY_FUNC(taiGetModuleExportFunc, modname, libnid, funcnid, func);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN export lookup"))
+        return RET_ERROR(error);
     if (!func)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -905,6 +912,8 @@ EXPORT(SceUID, taiLoadKernelModule, const char *path, int flags, Ptr<void> opt) 
     TRACY_FUNC(taiLoadKernelModule, path, flags, opt);
     if (!path)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    if (const SceInt32 error = emuenv.kernel.check_primary_module_loader(thread_id))
+        return RET_ERROR(error);
 
     LOG_DEBUG("taiLoadKernelModule: path={}", path);
     return load_module(emuenv, path);
@@ -920,19 +929,20 @@ EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args
     TRACY_FUNC(taiLoadStartKernelModuleForUser, path, args);
     if (!path)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    if (const SceInt32 error = emuenv.kernel.check_primary_module_loader(thread_id))
+        return RET_ERROR(error);
 
     LOG_DEBUG("taiLoadStartKernelModuleForUser: path={}", path);
     SceUID uid = load_module(emuenv, path);
     if (uid < 0)
         return uid;
 
-    {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-        if (mod_it != emuenv.kernel.loaded_modules.end()) {
-            start_module(emuenv, mod_it->second->info);
-        }
+    const auto module = emuenv.kernel.find_module(emuenv.mem, uid);
+    if (!module) {
+        LOG_ERROR("taiLoadStartKernelModuleForUser: loaded module {} is missing", uid);
+        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
     }
+    start_module(emuenv, *module);
     return uid;
 }
 
@@ -940,19 +950,20 @@ EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args
     TRACY_FUNC(taiLoadStartModuleForPidForUser, path, args);
     if (!path)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    if (const SceInt32 error = emuenv.kernel.check_primary_module_loader(thread_id))
+        return RET_ERROR(error);
 
     LOG_DEBUG("taiLoadStartModuleForPidForUser: path={}", path);
     SceUID uid = load_module(emuenv, path);
     if (uid < 0)
         return uid;
 
-    {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-        if (mod_it != emuenv.kernel.loaded_modules.end()) {
-            start_module(emuenv, mod_it->second->info);
-        }
+    const auto module = emuenv.kernel.find_module(emuenv.mem, uid);
+    if (!module) {
+        LOG_ERROR("taiLoadStartModuleForPidForUser: loaded module {} is missing", uid);
+        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
     }
+    start_module(emuenv, *module);
     return uid;
 }
 
@@ -976,6 +987,8 @@ EXPORT(int, taiStopUnloadKernelModuleForUser, SceUID modid, Ptr<void> args, Ptr<
 
 EXPORT(int, taiMemcpyUserToKernel, Ptr<void> kernel_dst, Ptr<const void> user_src, uint32_t len) {
     TRACY_FUNC(taiMemcpyUserToKernel, kernel_dst, user_src, len);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN memory copy"))
+        return RET_ERROR(error);
     if (!kernel_dst || !user_src)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     // In emulator, user/kernel address space is the same
@@ -985,6 +998,8 @@ EXPORT(int, taiMemcpyUserToKernel, Ptr<void> kernel_dst, Ptr<const void> user_sr
 
 EXPORT(int, taiMemcpyKernelToUser, Ptr<void> user_dst, Ptr<const void> kernel_src, uint32_t len) {
     TRACY_FUNC(taiMemcpyKernelToUser, user_dst, kernel_src, len);
+    if (const SceInt32 error = emuenv.kernel.check_primary_address_space_access(thread_id, "taiHEN memory copy"))
+        return RET_ERROR(error);
     if (!user_dst || !kernel_src)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     std::memcpy(user_dst.get(emuenv.mem), kernel_src.get(emuenv.mem), len);
@@ -1008,6 +1023,8 @@ EXPORT(int, taiReloadConfig) {
 EXPORT(SceUID, taiHookFunctionExportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     const char *module, uint32_t library_nid, uint32_t func_nid, Ptr<const void> hook_func) {
     TRACY_FUNC(taiHookFunctionExportForKernel, pid, p_hook);
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN export hook"))
+        return RET_ERROR(error);
     if (!p_hook || !module)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1047,6 +1064,8 @@ EXPORT(SceUID, taiHookFunctionExportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     const char *module, uint32_t import_library_nid, uint32_t import_func_nid, Ptr<const void> hook_func) {
     TRACY_FUNC(taiHookFunctionImportForKernel, pid, p_hook);
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN import hook"))
+        return RET_ERROR(error);
     if (!p_hook || !module)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1056,8 +1075,7 @@ EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 
     Address stub_addr;
     {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+        const std::scoped_lock lock(emuenv.kernel.export_nids_mutex, emuenv.kernel.mutex);
         stub_addr = find_import_stub_in_module(emuenv, module, import_func_nid);
     }
 
@@ -1081,6 +1099,8 @@ EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 EXPORT(SceUID, taiHookFunctionOffsetForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     SceUID modid, int segidx, uint32_t offset, int thumb, Ptr<const void> hook_func) {
     TRACY_FUNC(taiHookFunctionOffsetForKernel, pid, p_hook);
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN offset hook"))
+        return RET_ERROR(error);
     if (!p_hook)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1092,7 +1112,7 @@ EXPORT(SceUID, taiHookFunctionOffsetForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     {
         const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+        if (mod_it == emuenv.kernel.loaded_modules.end() || mod_it->second->address_space != &emuenv.mem) {
             LOG_WARN("taiHookFunctionOffsetForKernel: module {} not found", modid);
             return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
         }
@@ -1119,7 +1139,8 @@ EXPORT(SceUID, taiHookFunctionOffsetForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 
 EXPORT(int, taiGetModuleInfoForKernel, SceUID pid, const char *module, Ptr<void> info) {
     TRACY_FUNC(taiGetModuleInfoForKernel, pid, module, info);
-    // Delegate to the user version — in emulator there's no pid separation
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN module information"))
+        return RET_ERROR(error);
     return export_taiGetModuleInfo(emuenv, thread_id, export_name, module, info);
 }
 
@@ -1131,13 +1152,16 @@ EXPORT(int, taiHookReleaseForKernel, SceUID tai_uid, uint32_t hook_ref) {
 
 EXPORT(SceUID, taiInjectAbsForKernel, SceUID pid, Ptr<void> dest, Ptr<const void> src, uint32_t size) {
     TRACY_FUNC(taiInjectAbsForKernel, pid, dest, src, size);
-    // Delegate — no pid separation in emulator
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN injection"))
+        return RET_ERROR(error);
     return export_taiInjectAbs(emuenv, thread_id, export_name, dest, src, size);
 }
 
 EXPORT(SceUID, taiInjectDataForKernel, SceUID pid, SceUID modid, int segidx, uint32_t offset,
     Ptr<const void> data, uint32_t size) {
     TRACY_FUNC(taiInjectDataForKernel, pid, modid, segidx, offset);
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN injection"))
+        return RET_ERROR(error);
     if (!data || size == 0)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1145,7 +1169,7 @@ EXPORT(SceUID, taiInjectDataForKernel, SceUID pid, SceUID modid, int segidx, uin
     {
         const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+        if (mod_it == emuenv.kernel.loaded_modules.end() || mod_it->second->address_space != &emuenv.mem) {
             LOG_WARN("taiInjectDataForKernel: module {} not found", modid);
             return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
         }
@@ -1187,6 +1211,8 @@ EXPORT(int, module_get_by_name_nid, SceUID pid, const char *name, uint32_t nid, 
 
 EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t offset, Ptr<uint32_t> addr) {
     TRACY_FUNC(module_get_offset, pid, modid, segidx, offset, addr);
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN module offset"))
+        return RET_ERROR(error);
     if (!addr)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1194,7 +1220,7 @@ EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t of
     {
         const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+        if (mod_it == emuenv.kernel.loaded_modules.end() || mod_it->second->address_space != &emuenv.mem) {
             LOG_DEBUG("module_get_offset: module {} not found (may be HLE)", modid);
             return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
         }
@@ -1213,6 +1239,8 @@ EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t of
 
 EXPORT(int, module_get_export_func, SceUID pid, const char *modname, uint32_t libnid, uint32_t funcnid, Ptr<uint32_t> func) {
     TRACY_FUNC(module_get_export_func, pid, modname, libnid, funcnid, func);
+    if (const SceInt32 error = emuenv.kernel.check_primary_process_target(thread_id, pid, "taiHEN export lookup"))
+        return RET_ERROR(error);
     if (!func)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1246,7 +1274,7 @@ EXPORT(int, module_get_export_func, SceUID pid, const char *modname, uint32_t li
 
         // Register in export_nids so future lookups find it directly
         emuenv.kernel.export_nids.emplace(funcnid, stub_addr);
-        emuenv.kernel.invalidate_jit_cache(stub_addr, 12);
+        emuenv.kernel.invalidate_jit_cache(emuenv.mem, stub_addr, 12);
 
         *func.get(emuenv.mem) = stub_addr;
         LOG_INFO("module_get_export_func: created dynamic SVC stub for NID {} ({})", log_hex(funcnid), modname ? modname : "?");
@@ -1328,7 +1356,7 @@ static void register_hle_override(EmuEnvState &emuenv, uint32_t nid) {
         caller_stub[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(stub_addr), 12);
         caller_stub[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(stub_addr >> 16), 12);
         caller_stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
-        kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
+        kernel.invalidate_jit_cache(mem, address, 3 * sizeof(uint32_t));
     }
 
     const char *name = import_name(nid);

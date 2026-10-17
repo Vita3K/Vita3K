@@ -178,7 +178,93 @@ Attendi.</connecting_please_wait>
 		<silver>Argento</silver>
 		<hours_ago>{} ore fa</hours_ago>
 		<minutes_ago>{} minuti fa</minutes_ago>
+		<activities>Attività</activities>
+		<like>Mi piace</like>
+		<likes_this>Piace a {}.</likes_this>
+		<and_like_this>Piace a {} e {}.</and_like_this>
+		<people_like_this>Piace a {} persone.</people_like_this>
+		<comments>Commenti {}</comments>
+		<delete_activity>Questa attività sarà eliminata.</delete_activity>
+		<delete_comment>Questo commento sarà eliminato.</delete_comment>
+		<unlike>Non mi piace più</unlike>
+		<write_comment>Scrivi commento</write_comment>
+		<has_earned_platinum_trophy>ha guadagnato un trofeo di platino in "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>ha guadagnato un trofeo in "{}"!</has_earned_trophy>
+		<first_time_playing>sta giocando a "{}" per la prima volta.</first_time_playing>
+		<download_failed>Impossibile scaricare.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>Attività di {}</activities_of>
+		<anyone>Chiunque</anyone>
+		<no_one>Nessuno</no_one>
+		<cannot_display>Impossibile visualizzare altre pagine.</cannot_display>
+		<friends_of_friends>Amici di amici</friends_of_friends>
+		<friends_only>Solo amici</friends_only>
+		<share_range>Ambito condivisione:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Accetta</accept>
+		<players_blocked>Giocatori bloccati</players_blocked>
+		<friend_request_already_canceled>Questa richiesta amico è stata già annullata.</friend_request_already_canceled>
+		<search_for_player>Cerca un giocatore Vita3K Network e visualizzane il profilo oppure invia una richiesta amico.</search_for_player>
+		<friend_requests>Richieste amico</friend_requests>
+		<friends>Amici</friends>
+		<could_not_find_online_id>Impossibile trovare l'ID online.</could_not_find_online_id>
+		<there_are_no_players>Non ci sono giocatori.</there_are_no_players>
+		<no_players_found>Nessun giocatore trovato.</no_players_found>
+		<online_id>ID online</online_id>
+		<enter_from_3_to_16_characters>Inserisci da 3 a 16 caratteri.</enter_from_3_to_16_characters>
+		<online_status>Stato online</online_status>
+		<received>Ricevute</received>
+		<search>Cerca</search>
+		<sent>Inviate</sent>
+		<waiting_for_friend_response>In attesa della risposta dell'amico.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>Informazioni personali</about_me>
+		<accept>Accetta</accept>
+		<activity>Attività</activity>
+		<warn_block_player>Se blocchi questo giocatore, non potrai più ricevere messaggi da questo giocatore.
+Vuoi continuare?</warn_block_player>
+		<warn_block_friend>Se blocchi questo giocatore, sarà rimosso dagli amici. Non potrai più ricevere messaggi da questo giocatore.
+Vuoi continuare?</warn_block_friend>
+		<block>Blocca</block>
+		<blocked>Bloccato.</blocked>
+		<cancel_friend_request>Annulla richiesta amico</cancel_friend_request>
+		<friend_request_canceled>La richiesta amico sarà annullata.</friend_request_canceled>
+		<delete_request>Elimina richiesta</delete_request>
+		<edit_profile>Modifica profilo</edit_profile>
+		<friend_request_already_canceled>Questa richiesta amico è stata già annullata.</friend_request_already_canceled>
+		<friends>Amici</friends>
+		<is_now_friends_with>è ora amico di {}</is_now_friends_with>
+		<level>Livello</level>
+		<not_a_friend_yet>Non ancora un amico.</not_a_friend_yet>
+		<remove_from_friends>Rimuovi dagli amici</remove_from_friends>
+		<player_removed_from_friends>Questo giocatore sarà rimosso dagli amici.</player_removed_from_friends>
+		<send_friend_request>Invia richiesta amico</send_friend_request>
+		<send>Invia</send>
+		<trophies>Trofei</trophies>
+		<unblock>Sblocca</unblock>
+		<unblock_player>Sblocca questo giocatore.</unblock_player>
+		<waiting_friend_response>In attesa della risposta dell'amico.</waiting_friend_response>
+		<friend_request_from_player>Hai una richiesta amico da questo giocatore.</friend_request_from_player>
+		<you_have_friend_requests>Hai delle richieste amico.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Messaggi</title>
+		<create_message>+ Crea un messaggio</create_message>
+		<uncheck_all>Deseleziona tutto</uncheck_all>
+		<enter_online_id>Inserisci il tuo ID online.</enter_online_id>
+		<add>Aggiungi</add>
+		<add_recipient>Aggiungi destinatario</add_recipient>
+		<delete>Elimina</delete>
+		<cancel>Annulla</cancel>
+		<to>A</to>
+	</messages_app>
 
 	<compatibility name="Compatibilità">
 		<states>
@@ -218,13 +304,43 @@ Attendi.</connecting_please_wait>
 
 	<indicator>
 		<app_added_home>L'applicazione è stata aggiunta alla schermata principale.</app_added_home>
+		<cancel_download>Vuoi annullare questo download?</cancel_download>
+		<cancel_install>Vuoi annullare questa installazione?
+Se la annulli, saranno eliminati anche i file scaricati per questa installazione.</cancel_install>
 		<delete_all>Elimina tutto</delete_all>
 		<notif_deleted>Le notifiche saranno eliminate.</notif_deleted>
+		<waiting_download>In attesa del download...</waiting_download>
+		<downloading_complete>Download completato.</downloading_complete>
 		<install_failed>Impossibile installare.</install_failed>
+		<player_is_online>{} è ora online.</player_is_online>
+		<waiting_install>In attesa dell'installazione...</waiting_install>
 		<install_complete>Installazione completata.</install_complete>
 		<installing>Installazione in corso...</installing>
+		<minutes_left>Tempo rimanente: {} minuti</minutes_left>
 		<no_notif>Non ci sono notifiche.</no_notif>
+		<commented_on_activity>Qualcuno ha commentato l'attività di {}.</commented_on_activity>
+		<commented_on_your_activity>Qualcuno ha commentato la tua attività.</commented_on_your_activity>
+		<commented_and_likes_your_activity>A qualcuno piace la tua attività e l'ha commentata.</commented_and_likes_your_activity>
+		<likes_your_activity>A qualcuno piace la tua attività.</likes_your_activity>
+		<pause_all>Tutto in pausa</pause_all>
+		<pause>Metti in pausa</pause>
+		<paused>In pausa</paused>
+		<resume_all>Riprendi tutto</resume_all>
+		<resume>Riprendi</resume>
+		<seconds_left>Tempo rimanente: {} secondi</seconds_left>
+		<friend_requests>Hai delle richieste amico.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>È disponibile una nuova versione dell'applicazione.</new_app_version_available>
+		<latest_version_installed>È già installata la versione più recente dell'applicazione.</latest_version_installed>
+		<downloading_app_update>Download del file di aggiornamento dell'applicazione in corso...
+Puoi verificare l'avanzamento del download nella lista delle notifiche.</downloading_app_update>
+		<download>Scarica</download>
+		<not_enough_space>Impossibile scaricare.
+Spazio libero insufficiente sulla scheda di memoria. Prova a liberare almeno {} di spazio sulla scheda di memoria e quindi ritenta il download.</not_enough_space>
+		<version>Versione {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Indietro</back>

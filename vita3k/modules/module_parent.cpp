@@ -19,6 +19,7 @@
 #include "io/io.h"
 
 #include <modules/module_parent.h>
+#include <modules/secondary_imports.h>
 
 #include <cpu/state.h>
 #include <emuenv/state.h>
@@ -27,6 +28,7 @@
 #include <io/vfs.h>
 #include <kernel/load_self.h>
 #include <kernel/state.h>
+#include <mem/functions.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <packages/license.h>
@@ -75,7 +77,7 @@ struct VarExport {
     ImportVarFactory factory;
 };
 
-void init_exported_vars(EmuEnvState &emuenv) {
+bool init_exported_vars(EmuEnvState &emuenv, MemState &mem) {
     const auto var_exports = std::to_array<VarExport>({
 #define NID(name, nid)
 #define VAR_NID(name, nid) \
@@ -88,57 +90,14 @@ void init_exported_vars(EmuEnvState &emuenv) {
 #undef NID
     });
 
+    std::vector<ExportedVariableDefinition> definitions;
+    definitions.reserve(var_exports.size());
     for (const auto &var : var_exports) {
-        auto addr = var.factory(emuenv);
-        emuenv.kernel.export_nids.emplace(var.nid, addr);
+        definitions.push_back({ var.nid, [&emuenv, factory = var.factory](MemState &target_mem) {
+                                   return factory(emuenv, target_mem);
+                               } });
     }
-}
-
-Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem) {
-    // we need 4 bytes for the function pointer and 12 bytes for the syscall
-    const uint32_t vtable_size = nids.size() * 4 * sizeof(uint32_t);
-    Ptr<void> vtable = Ptr<void>(alloc(mem, vtable_size, "vtable"));
-    uint32_t *function_pointer = vtable.cast<uint32_t>().get(mem);
-    uint32_t *function_svc = function_pointer + nids.size();
-    uint32_t function_location = vtable.address() + nids.size() * sizeof(uint32_t);
-    for (uint32_t nid : nids) {
-        *function_pointer = function_location;
-        // encode svc call
-        function_svc[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-        function_svc[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
-        function_svc[2] = nid; // Our interrupt hook will read this.
-
-        function_pointer++;
-        function_svc += 3;
-        function_location += 3 * sizeof(uint32_t);
-    }
-    return vtable;
-}
-
-Ptr<void> get_client_vtable(KernelState &kernel, MemState &mem) {
-    if (!kernel.client_vtable) {
-        kernel.client_vtable = create_vtable({
-                                                 0x101C93F8, // destroy
-                                                 0xA22C3E01, // connect
-                                                 0xEC73331C, // disconnect
-                                                 0xD484D36D, // terminateConnection
-                                                 0x28BD5F19, // invokeSyncMethod
-                                                 0x73C72FBB, // invokeSyncMethod
-                                                 0xAFD10F3B, // invokeAsyncMethod
-                                                 0x387AFA3F, // invokeAsyncMethod
-                                                 0xF8C2B8BA, // tryGetResult
-                                                 0x4EBB01A2, // tryGetResult
-                                                 0x8FF23C3C, // pollEventFlag
-                                                 0x45C32034, // waitEventFlag
-                                                 0x004F48ED, // getUserData
-                                                 0xA3E650B0, // getMsg
-                                                 0x60EFADE7, // tryGetMsg
-                                                 0xA5AA193C, // ~Client
-                                             },
-            mem);
-    }
-
-    return kernel.client_vtable;
+    return initialize_exported_variables(emuenv.kernel, mem, definitions);
 }
 
 static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
@@ -149,6 +108,15 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 CallResult call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
+    if (!emuenv.kernel.is_primary_address_space(cpu.mem) && !secondary_import_allowed(nid, cpu.get_reg(0), cpu.get_reg(2))) {
+        LOG_ERROR("Stopping secondary thread {}: HLE import {} ({}) is not isolated (r0={}, r1={}, r2={}, r3={})",
+            thread_id, import_name(nid), log_hex(nid), log_hex(cpu.get_reg(0)), log_hex(cpu.get_reg(1)),
+            log_hex(cpu.get_reg(2)), log_hex(cpu.get_reg(3)));
+        const auto thread = emuenv.kernel.get_thread(thread_id);
+        if (thread)
+            thread->exit(static_cast<SceInt32>(SCE_KERNEL_ERROR_NOT_IMPLEMENTED));
+        return { .regs = { static_cast<uint32_t>(SCE_KERNEL_ERROR_NOT_IMPLEMENTED) }, .count = 1 };
+    }
     // HLE - call our C++ function
     if (emuenv.kernel.debugger.watch_import_calls) {
         const std::unordered_set<uint32_t> hle_nid_blacklist = {
@@ -187,28 +155,23 @@ struct SceKernelBootimageInfo {
 constexpr uint32_t nid_sceKernelBootimageInfo = 0x9C08E88A;
 
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
-    // Check if module is already loaded
-    {
-        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
-        const auto &loaded_modules = emuenv.kernel.loaded_modules;
-        auto module_iter = std::ranges::find_if(loaded_modules, [&](const auto &p) {
-            return module_path == p.second->info.path;
-        });
+    return load_module(emuenv, emuenv.mem, emuenv.io, module_path);
+}
 
-        if (module_iter != loaded_modules.end()) {
-            return module_iter->first;
-        }
-    }
+SceUID load_module(EmuEnvState &emuenv, MemState &mem, IOState &io, const std::string &module_path, const uint8_t *license_key) {
+    if (const auto loaded = emuenv.kernel.find_module_by_path(mem, module_path))
+        return loaded->info.modid;
 
     LOG_INFO("Loading module \"{}\"", module_path);
-    if (module_path.starts_with("vs0:sys/external/")) {
+    const auto app_device = device::get_device(io.app_path);
+    const bool is_firmware_app = app_device == VitaIoDevice::vs0 || app_device == VitaIoDevice::pd0;
+    if (!is_firmware_app && module_path.starts_with("vs0:sys/external/")) {
         // check if module is LLEd or not
         // check only for this path because app modules are always LLEd and os0 modules can be loaded only by developer.
         const auto module_name = fs::path(module_path).stem().string();
         if (!is_lle_module(module_name, emuenv)) {
             LOG_INFO("Module {} is HLE. Skipping load.", module_name);
-            const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
-            memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
+            const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>(mem);
 
             auto *sceKernelModuleInfo = &kernelModuleInfo->info;
             sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
@@ -227,7 +190,9 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     }
 
     const auto load_module_data = [&](const void *module_data) -> SceUID {
-        SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_data, module_path, emuenv.log_path / "elfdumps" / emuenv.io.title_id);
+        const bool capture_shared_initial_segments = module_path == "vs0:sys/external/libpaf.suprx"
+            && emuenv.kernel.is_primary_address_space(mem);
+        SceUID module_id = load_self(emuenv.kernel, mem, module_data, module_path, emuenv.log_path / "elfdumps" / io.title_id, capture_shared_initial_segments);
 
         if (module_id >= 0) {
             const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
@@ -239,21 +204,26 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         return module_id;
     };
 
-    VitaIoDevice device = device::get_device(module_path);
-    auto device_for_icase = device;
-    fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
-    auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.vita_fs_path, emuenv.io.redirect_stdio);
+    const auto system_path = expand_path(io, module_path.c_str(), emuenv.vita_fs_path);
 
     if (module_path.starts_with("os0:kd/")) {
         if (!fs::exists(system_path)) {
-            SceKernelBootimageInfo *bootimage_info = Ptr<SceKernelBootimageInfo>(emuenv.kernel.export_nids[nid_sceKernelBootimageInfo]).get(emuenv.mem);
+            Address bootimage_address = 0;
+            {
+                const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+                const auto bindings = emuenv.kernel.module_bindings(mem);
+                const auto it = bindings.exports.find(nid_sceKernelBootimageInfo);
+                if (it != bindings.exports.end())
+                    bootimage_address = it->second;
+            }
+            SceKernelBootimageInfo *bootimage_info = Ptr<SceKernelBootimageInfo>(bootimage_address).get(mem);
             if (bootimage_info) {
                 for (SceSize i = 0; i < bootimage_info->number; i++) {
-                    const SceKernelBootimageModules &module_content = bootimage_info->list.get(emuenv.mem)[i];
+                    const SceKernelBootimageModules &module_content = bootimage_info->list.get(mem)[i];
                     if (module_content.path && module_content.data && module_content.size > 0) {
-                        if (module_content.path.get(emuenv.mem) == module_path) {
+                        if (module_content.path.get(mem) == module_path) {
                             // Load the module from the boot image
-                            return load_module_data(module_content.data.get(emuenv.mem));
+                            return load_module_data(module_content.data.get(mem));
                         }
                     }
                 }
@@ -261,40 +231,20 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         }
     }
 
-    if (emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
-        // Attempt a case-insensitive file search.
-        const auto original_translated_module_path = translated_module_path;
-        const auto cached_path = find_in_cache(emuenv.io, string_utils::tolower(translated_module_path.string()));
-        if (!cached_path.empty()) {
-            translated_module_path = cached_path;
-            LOG_TRACE("Found cached filepath at {}", translated_module_path);
-        } else {
-            const bool path_found = find_case_isens_path(emuenv.io, device_for_icase, translated_module_path, system_path);
-            translated_module_path = find_in_cache(emuenv.io, string_utils::tolower(system_path.string()));
-            if (!translated_module_path.empty() && path_found) {
-                LOG_TRACE("Found file on case-sensitive filesystem at {}", translated_module_path);
-                translated_module_path = translated_module_path.string().substr(emuenv.vita_fs_path.string().length());
-                translated_module_path = translated_module_path.string().substr(translated_module_path.string().find('/') + 1);
-            } else {
-                LOG_ERROR("Missing file at {} (target path: {})", original_translated_module_path.string(), module_path);
-                return SCE_ERROR_ERRNO_ENOENT;
-            }
-        }
-    }
-
     vfs::FileBuffer module_buffer;
-    bool res;
-    if (device == VitaIoDevice::app0)
-        res = vfs::read_app_file(module_buffer, emuenv.vita_fs_path, emuenv.io.app_path, translated_module_path);
-    else
-        res = vfs::read_file(device, module_buffer, emuenv.vita_fs_path, translated_module_path);
-    if (!res) {
+    const bool read_module = (module_path.starts_with("app0:") && !io.app_game_base_mount.empty()) || module_path.starts_with("addcont0:")
+        ? read_file_to_buffer(io, module_path.c_str(), emuenv.vita_fs_path, module_buffer, "load_module")
+        : fs_utils::read_data(system_path, module_buffer);
+    if (!read_module) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    // Decrypt module file if necessary
-    module_buffer = decrypt_fself(module_buffer, emuenv.license.rif[emuenv.io.title_id].key);
+    // Firmware processes do not need a title license; avoid modifying the shared license map.
+    const uint8_t firmware_key[16]{};
+    const uint8_t *key = license_key ? license_key : is_firmware_app && !emuenv.kernel.is_primary_address_space(mem) ? firmware_key
+                                                                                                                     : emuenv.license.rif[io.title_id].key;
+    module_buffer = decrypt_fself(module_buffer, key);
     if (module_buffer.empty()) {
         LOG_ERROR("Failed to decrypt module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
@@ -304,37 +254,43 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
 }
 
 int unload_module(EmuEnvState &emuenv, SceUID module_id) {
-    const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    return unload_module(emuenv, emuenv.mem, module_id);
+}
+
+int unload_module(EmuEnvState &emuenv, MemState &mem, SceUID module_id) {
+    const auto module = emuenv.kernel.find_module(mem, module_id);
     if (!module) {
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
     }
     LOG_INFO("Unloading module {} ({})", module_id, module->info.module_name);
     if (module->info.segments[0].memsz == 0) {
-        LOG_WARN("Module {} has no segments, skipping unload", module->info.module_name);
-        {
-            const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
-            emuenv.kernel.loaded_modules.erase(module->info.modid);
+        const std::lock_guard<std::mutex> linker_lock(emuenv.kernel.module_linker_mutex);
+        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+        const auto it = emuenv.kernel.loaded_modules.find(module_id);
+        if (it == emuenv.kernel.loaded_modules.end() || it->second != module) {
+            LOG_ERROR("Cannot unload module {} because it is no longer registered", module_id);
+            return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
         }
+        if (module->startup_references.load() != 0) {
+            LOG_ERROR("Cannot unload module {} while process startup is using it", module_id);
+            return SCE_KERNEL_ERROR_MODULEMGR_IN_USE;
+        }
+        LOG_WARN("Module {} has no segments, skipping unload", module->info.module_name);
+        emuenv.kernel.loaded_modules.erase(it);
         return 0;
     }
-    return unload_self(emuenv.kernel, emuenv.mem, *module);
+    return unload_self(emuenv.kernel, mem, *module);
 }
 
-uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args, Ptr<const void> argp) {
+uint32_t start_module(EmuEnvState &emuenv, const KernelModule &owner, SceSize args, Ptr<const void> argp) {
+    const auto &module = owner.info;
     const auto module_start = module.start_entry;
     if (module_start) {
         const auto module_name = module.module_name;
 
         LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
-        SceInt32 priority = SCE_KERNEL_DEFAULT_PRIORITY_USER;
-        SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
-        SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
-        // module_start is always called from new thread
-        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, 0);
-
-        const uint32_t ret = module_thread->start_and_wait(args, argp.cast<void>());
-        module_thread->remove();
+        const uint32_t ret = emuenv.kernel.run_module_entry(owner, true, args, argp);
 
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module.path, log_hex(ret));
         if (ret != SCE_KERNEL_START_SUCCESS)
@@ -345,20 +301,14 @@ uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sc
     return 0;
 }
 
-uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args, Ptr<const void> argp) {
+uint32_t stop_module(EmuEnvState &emuenv, const KernelModule &owner, SceSize args, Ptr<const void> argp) {
+    const auto &module = owner.info;
     const auto module_stop = module.stop_entry;
     if (module_stop) {
         const auto module_name = module.module_name;
 
         LOG_DEBUG("Running module_stop of library: {} at address {}", module_name, log_hex(module_stop.address()));
-        SceInt32 priority = SCE_KERNEL_DEFAULT_PRIORITY_USER;
-        SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
-        SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
-        // module_stop is always called from new thread
-        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_stop, priority, affinity, stack_size, 0);
-
-        const uint32_t ret = module_thread->start_and_wait(args, argp.cast<void>());
-        module_thread->remove();
+        const uint32_t ret = emuenv.kernel.run_module_entry(owner, false, args, argp);
 
         LOG_INFO("Module {} (at \"{}\") module_stop returned {}", module_name, module.path, log_hex(ret));
         if (ret != SCE_KERNEL_STOP_SUCCESS)
@@ -395,11 +345,11 @@ bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
         }
         loaded_uids.push_back(loaded_module_uid);
         const auto module = lock_and_find(loaded_module_uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
-        start_module(emuenv, module->info);
+        start_module(emuenv, *module);
     }
 
     std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-    emuenv.kernel.loaded_sysmodules[module_id] = std::move(loaded_uids);
+    emuenv.kernel.loaded_sysmodules[&emuenv.mem][module_id] = std::move(loaded_uids);
     return true;
 }
 
@@ -409,11 +359,14 @@ int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
     std::vector<SceUID> loaded_uids;
     {
         std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-        auto it = emuenv.kernel.loaded_sysmodules.find(module_id);
-        if (it == emuenv.kernel.loaded_sysmodules.end())
+        auto process = emuenv.kernel.loaded_sysmodules.find(&emuenv.mem);
+        if (process == emuenv.kernel.loaded_sysmodules.end())
+            return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
+        auto it = process->second.find(module_id);
+        if (it == process->second.end())
             return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
         loaded_uids = std::move(it->second);
-        emuenv.kernel.loaded_sysmodules.erase(it);
+        process->second.erase(it);
     }
 
     // unload the modules in the reverse order they were loaded
@@ -425,7 +378,7 @@ int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
         if (!module)
             return RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
 
-        stop_module(emuenv, module->info);
+        stop_module(emuenv, *module);
     }
     for (SceUID uid : loaded_uids) {
         int ret = unload_module(emuenv, uid);
@@ -452,11 +405,14 @@ bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceSysmoduleInternal
             return false;
         }
         const auto module = lock_and_find(loaded_module_uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
-        auto ret = start_module(emuenv, module->info, args, argp);
+        auto ret = start_module(emuenv, *module, args, argp);
         if (retcode)
             *retcode = static_cast<int>(ret);
     }
-    emuenv.kernel.loaded_internal_sysmodules.push_back(module_id);
+    {
+        const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
+        emuenv.kernel.loaded_internal_sysmodules[&emuenv.mem].push_back(module_id);
+    }
     return true;
 }
 

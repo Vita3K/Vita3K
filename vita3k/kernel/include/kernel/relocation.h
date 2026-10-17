@@ -30,6 +30,8 @@ struct SegmentInfoForReloc {
 };
 using SegmentInfosForReloc = std::map<uint16_t, SegmentInfoForReloc>;
 
+bool validate_variable_relocations(const void *entries, uint32_t size, const SegmentInfosForReloc &segments);
+
 /**
  * \param is_var_import True when alternate format 1 should be used (it's used for var import relocations)
  * \param explicit_symval Used only if is_var_import is true, specifies the value to be written to the relocation target

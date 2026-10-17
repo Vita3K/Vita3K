@@ -29,6 +29,7 @@
 #include <display/functions.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
@@ -39,6 +40,7 @@
 #include <packages/vci.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
+#include <vfs/mounts.h>
 
 #include <miniz.h>
 #include <pugixml.hpp>
@@ -46,6 +48,7 @@
 #include <modules/module_parent.h>
 #include <modules/sysmem_state.h>
 #include <string>
+#include <string_view>
 #include <util/log.h>
 #include <util/string_utils.h>
 #include <util/vector_utils.h>
@@ -61,6 +64,7 @@
 
 #include "patch/patch.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <regex>
@@ -103,10 +107,9 @@ static bool is_nonpdrm(EmuEnvState &emuenv, const fs::path &output_path) {
     const auto is_patch_found_app_license = (emuenv.app_info.app_category == "gp") && fs::exists(app_license_path);
     if (fs::exists(output_path / "sce_sys/package/work.bin") || is_patch_found_app_license) {
         fs::path licpath = is_patch_found_app_license ? app_license_path : output_path / "sce_sys/package/work.bin";
-        LOG_INFO("Decrypt layer: {}", output_path);
-        if (!decrypt_install_nonpdrm(emuenv, licpath, output_path)) {
-            LOG_ERROR("NoNpDrm installation failed, deleting data!");
-            fs::remove_all(output_path);
+        LOG_INFO("Installing license and validating PFS: {}", output_path);
+        if (!install_nonpdrm_license(emuenv, licpath, output_path)) {
+            LOG_ERROR("NoNpDrm installation failed for '{}'", output_path);
             return false;
         }
         return true;
@@ -206,21 +209,28 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
         if (reinstall_callback) {
             if (!reinstall_callback(emuenv.app_info.app_title, emuenv.app_info.app_title_id)) {
                 LOG_INFO("{} already installed, skipping", emuenv.app_info.app_title_id);
+                if (progress_callback)
+                    progress_callback({ {}, {}, 100.f });
                 return true;
             }
         }
         fs::remove_all(output_path);
     }
 
-    float file_progress = 0;
-    float decrypt_progress = 0;
-
-    const auto update_progress = [&]() {
+    const auto update_progress = [&](float progress) {
         if (progress_callback)
-            progress_callback({ {}, {}, { file_progress * 0.7f + decrypt_progress * 0.3f } });
+            progress_callback({ {}, {}, progress });
     };
 
     mz_uint num_files = mz_zip_reader_get_num_files(zip.get());
+    mz_uint content_files = 0;
+    for (mz_uint i = 0; i < num_files; ++i) {
+        mz_zip_archive_file_stat file_stat;
+        if (mz_zip_reader_file_stat(zip.get(), i, &file_stat) && std::string_view(file_stat.m_filename).contains(content_path))
+            ++content_files;
+    }
+    mz_uint processed_files = 0;
+    update_progress(0.f);
     for (mz_uint i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
@@ -228,9 +238,6 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
         }
         const std::string m_filename = file_stat.m_filename;
         if (m_filename.contains(content_path)) {
-            file_progress = static_cast<float>(i) / num_files * 100.0f;
-            update_progress();
-
             std::string replace_filename = m_filename.substr(content_path.size());
             const fs::path file_output = fs_utils::generic_path(output_path / fs_utils::utf8_to_path(replace_filename));
 
@@ -247,23 +254,33 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
             } else {
                 fs::create_directories(file_output.parent_path());
                 LOG_INFO("Extracting {}", file_output);
-                mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0);
+                if (!mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0)) {
+                    LOG_ERROR("Failed to extract {}: {}", m_filename, miniz_get_error(zip));
+                    return false;
+                }
             }
+            ++processed_files;
+            update_progress(static_cast<float>(processed_files) / content_files * 99.f);
         }
     }
 
     if (fs::exists(output_path / "sce_sys/package/") && emuenv.app_info.app_title_id.starts_with("PCS")) {
-        update_progress();
-        if (is_nonpdrm(emuenv, output_path))
-            decrypt_progress = 100.f;
-        else
+        if (!is_nonpdrm(emuenv, output_path))
             return false;
     }
-    if (!copy_path(output_path, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
-        return false;
 
-    update_progress();
+    if (!is_theme) {
+        const auto ux0 = emuenv.vita_fs_path / "ux0";
+        if (output_path == ux0 / "app" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Application, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        } else if (output_path == ux0 / "patch" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Patch, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        }
+    }
 
+    update_progress(100.f);
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
 
     return true;
@@ -405,8 +422,16 @@ bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(emuenv, dst_path))
         return false;
 
-    if (!copy_path(dst_path, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
-        return false;
+    if (!is_theme) {
+        const auto ux0 = emuenv.vita_fs_path / "ux0";
+        if (dst_path == ux0 / "app" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Application, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        } else if (dst_path == ux0 / "patch" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Patch, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        }
+    }
 
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
 
@@ -456,7 +481,7 @@ static void load_cheats(EmuEnvState &emuenv, const SceKernelModuleInfo &module_i
     cheat::unload(emuenv.cheat);
 
     const cheat::JitInvalidate invalidate_jit = [&emuenv](uint32_t address, size_t size) {
-        emuenv.kernel.invalidate_jit_cache(address, size);
+        emuenv.kernel.invalidate_jit_cache(emuenv.mem, address, size);
     };
     cheat::set_enabled(emuenv.cheat, emuenv.cfg.enable_cheats, emuenv.mem, invalidate_jit);
 
@@ -479,14 +504,22 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     const auto call_import = [&emuenv](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         return ::call_import(emuenv, cpu, nid, thread_id);
     };
+    emuenv.mem.trace_silent_hill = emuenv.io.title_id == "PCSB00115";
+    const char *scheduler_test = std::getenv("VITA3K_SH_TEST_SCHEDULER");
+    const char *late_wait_test = std::getenv("VITA3K_SH_TEST_LATE_WAIT");
+    emuenv.mem.silent_hill_late_wait_experiment = emuenv.mem.trace_silent_hill && late_wait_test && std::strcmp(late_wait_test, "1") == 0;
+    emuenv.mem.silent_hill_scheduler_experiment = emuenv.mem.silent_hill_late_wait_experiment
+        || (emuenv.mem.trace_silent_hill && scheduler_test && std::strcmp(scheduler_test, "1") == 0);
+    const bool thread_scheduler = emuenv.cfg.current_config.thread_scheduler || emuenv.mem.silent_hill_scheduler_experiment;
     emuenv.kernel.process_exit_callback = [&emuenv](int res, std::optional<AppLaunchRequest> relaunch) {
         emuenv.post_app_launch_request(relaunch.value_or(AppLaunchRequest{ .reason = AppLaunchReason::ProcessExit, .exit_code = res }));
     };
-    if (!emuenv.kernel.init(emuenv.mem, call_import, emuenv.cfg.current_config.cpu_opt)) {
+    if (!emuenv.kernel.init(emuenv.mem, call_import, emuenv.cfg.current_config.cpu_opt, thread_scheduler)) {
         LOG_WARN("Failed to init kernel!");
         return KernelInitFailed;
     }
-
+    if (!emuenv.kernel.register_process_identity(emuenv.mem, { emuenv.io.app_path }))
+        return KernelInitFailed;
     if (emuenv.cfg.archive_log) {
         const fs::path log_directory{ emuenv.log_path / "logs" };
         fs::create_directory(log_directory);
@@ -524,15 +557,33 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     LOG_INFO("Version: {}", emuenv.app_info.app_version);
     LOG_INFO("Category: {}", emuenv.app_info.app_category);
 
-    init_device_paths(emuenv.io);
-    init_savedata_app_path(emuenv.io, emuenv.vita_fs_path);
+    init_device_paths(emuenv.io, emuenv.vita_fs_path);
+    if (!pfsmgr::mount_application_game_data(emuenv.io, emuenv.vita_fs_path))
+        return ModuleLoadFailed;
+    try {
+        app::recover_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path);
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Cannot recover savedata identity: {}", error.what());
+        return ModuleLoadFailed;
+    }
+    if (!init_savedata_app_path(emuenv.io, emuenv.vita_fs_path, [&emuenv] { return app::get_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path); }))
+        return ModuleLoadFailed;
 
     // Load param.sfo
+    emuenv.sfo_handle = {};
     vfs::FileBuffer param_sfo;
-    if (vfs::read_app_file(param_sfo, emuenv.vita_fs_path, emuenv.io.app_path, "sce_sys/param.sfo"))
+    const bool read_param = emuenv.io.app_game_base_mount.empty()
+        ? fs_utils::read_data(expand_path(emuenv.io, "app0:sce_sys/param.sfo", emuenv.vita_fs_path), param_sfo)
+        : read_file_to_buffer(emuenv.io, "app0:sce_sys/param.sfo", emuenv.vita_fs_path, param_sfo, "load_app");
+    if (!read_param && !emuenv.io.app_game_base_mount.empty()) {
+        LOG_ERROR("Cannot read mounted application param.sfo for '{}'", emuenv.io.title_id);
+        return ModuleLoadFailed;
+    }
+    if (read_param)
         sfo::load(emuenv.sfo_handle, param_sfo);
 
-    init_exported_vars(emuenv);
+    if (!init_exported_vars(emuenv, emuenv.mem))
+        return KernelInitFailed;
     create_system_font_blocks(emuenv);
 
     // Load main executable
@@ -547,14 +598,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
-        uint32_t module_nid = 0;
-        {
-            const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
-            for (const auto &[nid, uid] : emuenv.kernel.module_uid_by_nid) {
-                if (uid == static_cast<uint32_t>(main_module_id))
-                    module_nid = nid;
-            }
-        }
+        const uint32_t module_nid = module->module_nid;
         LOG_INFO("Main executable NID: {} (for the NID attribute of a patch)", fmt::format("0x{:08X}", module_nid));
 
         const std::string bin = "app0:" + emuenv.self_path;
@@ -571,33 +615,36 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
 
     // get list of preload modules
     SceUInt32 process_preload_disabled = 0;
-    auto process_param = emuenv.kernel.process_param.get(emuenv.mem);
+    auto process_param = emuenv.kernel.get_process_param(emuenv.mem).get(emuenv.mem);
     if (process_param) {
         auto preload_disabled_ptr = Ptr<SceUInt32>(process_param->process_preload_disabled);
         if (preload_disabled_ptr) {
             process_preload_disabled = *preload_disabled_ptr.get(emuenv.mem);
         }
     }
-    const auto module_app_path{ emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
-
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
     auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
         if ((process_preload_disabled & code) == 0) {
             if (is_lle_module(name, emuenv)) {
                 const auto module_name_file = fmt::format("{}.suprx", name);
-                if (load_from_app && fs::exists(module_app_path / module_name_file))
+                if (load_from_app && fs::exists(expand_path(emuenv.io, fmt::format("app0:sce_module/{}", module_name_file).c_str(), emuenv.vita_fs_path)))
                     lib_load_list.emplace_back(fmt::format("app0:sce_module/{}", module_name_file));
                 else if (fs::exists(emuenv.vita_fs_path / "vs0/sys/external" / module_name_file))
                     lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
             }
 
-            if (module_id != SCE_SYSMODULE_INVALID)
-                emuenv.kernel.loaded_sysmodules[module_id] = {};
+            if (module_id != SCE_SYSMODULE_INVALID) {
+                const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
+                emuenv.kernel.loaded_sysmodules[&emuenv.mem][module_id] = {};
+            }
         }
     };
-    lib_load_list.emplace_back("os0:kd/bootimage.skprx");
-    lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
+    const auto app_device = device::get_device(emuenv.io.app_path);
+    if (app_device != VitaIoDevice::vs0 && app_device != VitaIoDevice::pd0) {
+        lib_load_list.emplace_back("os0:kd/bootimage.skprx");
+        lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
+    }
     add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
     add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
     add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);
@@ -711,7 +758,8 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
 
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchRequest &launch_request) {
     if (load_app_impl(main_module_id, emuenv, launch_request) != Success) {
-        std::string message = fmt::format(fmt::runtime(lang::get(lang::str::load_app_failed_msg)), emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
+        const auto executable_path = vfs::resolve_app_path(emuenv.vita_fs_path, emuenv.io.app_path, emuenv.self_path, emuenv.io.title_id);
+        std::string message = fmt::format(fmt::runtime(lang::get(lang::str::load_app_failed_msg)), executable_path);
         LOG_ERROR(message);
         return ModuleLoadFailed;
     }
@@ -745,66 +793,21 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
 }
 
 ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchRequest &launch_request) {
-    auto entry_point = emuenv.kernel.loaded_modules[main_module_id]->info.start_entry;
-    auto process_param = emuenv.kernel.process_param.get(emuenv.mem);
-
-    SceInt32 priority = SCE_KERNEL_DEFAULT_PRIORITY_USER;
-    SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
-    SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
-    if (process_param) {
-        auto priority_ptr = Ptr<int32_t>(process_param->main_thread_priority);
-        if (priority_ptr) {
-            priority = *priority_ptr.get(emuenv.mem);
-        }
-
-        auto stack_size_ptr = Ptr<int32_t>(process_param->main_thread_stacksize);
-        if (stack_size_ptr) {
-            stack_size = *stack_size_ptr.get(emuenv.mem);
-        }
-
-        auto affinity_ptr = Ptr<SceInt32>(process_param->main_thread_cpu_affinity_mask);
-        if (affinity_ptr) {
-            affinity = *affinity_ptr.get(emuenv.mem);
-        }
-    }
-    // A main thread without its own affinity runs on every user core and reports them all
-    if (affinity == SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT)
-        affinity = SCE_KERNEL_CPU_MASK_USER_ALL;
-    const ThreadStatePtr main_thread = emuenv.kernel.create_thread(emuenv.mem, emuenv.io.title_id.c_str(), entry_point, priority, affinity, stack_size, 0);
-    if (!main_thread) {
-        LOG_ERROR("Failed to init main thread.");
-        return InitThreadFailed;
-    }
-    emuenv.main_thread_id = main_thread->id;
-
-    // Before any guest code runs, module_start functions included, since they can read it too
-    emuenv.set_launch_uri(emuenv.cfg.launch_uri);
-
-    // Run `module_start` export (entry point) of loaded libraries
-    for (auto &[_, module] : emuenv.kernel.loaded_modules) {
-        if (module->info.modid != main_module_id)
-            start_module(emuenv, module->info);
-    }
-
-    SceKernelThreadOptParam param{ 0, 0 };
     std::vector<std::string> cfg_args;
     const auto *args = &launch_request.argv;
     if (args->empty() && !emuenv.cfg.app_args.empty()) {
         cfg_args = split(emuenv.cfg.app_args, ",\\s+");
         args = &cfg_args;
     }
-    if (!args->empty()) {
-        // why is this flipped
-        std::vector<uint8_t> buf;
-        for (const auto &arg : *args)
-            buf.insert(buf.end(), arg.c_str(), arg.c_str() + arg.size() + 1);
-        auto arr = Ptr<uint8_t>(alloc(emuenv.mem, static_cast<uint32_t>(buf.size()), "arg"));
-        memcpy(arr.get(emuenv.mem), buf.data(), buf.size());
-        param.size = static_cast<SceSize>(buf.size());
-        param.attr = arr.address();
-    }
-    if (main_thread->start(param.size, Ptr<void>(param.attr), true) < 0) {
-        LOG_ERROR("Failed to run main thread.");
+    const auto result = emuenv.kernel.start_process(emuenv.mem, emuenv.io.title_id.c_str(), main_module_id, *args, [&](const ThreadStatePtr &main_thread) {
+            emuenv.main_thread_id = main_thread->id;
+            emuenv.set_launch_uri(emuenv.cfg.launch_uri); }, [&](const KernelModule &module) { start_module(emuenv, module); });
+    if (result == ProcessStartResult::MainModuleUnavailable)
+        return ModuleLoadFailed;
+    if (result == ProcessStartResult::MainThreadCreationFailed)
+        return InitThreadFailed;
+    if (result == ProcessStartResult::MainThreadStartFailed) {
+        emuenv.main_thread_id = 0;
         return RunThreadFailed;
     }
 

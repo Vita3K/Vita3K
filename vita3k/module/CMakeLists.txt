@@ -3,6 +3,8 @@ add_library(
 	STATIC
 	src/load_module.cpp
 	src/call_result.cpp
+	src/exported_variable.cpp
+	src/ipmi_client.cpp
 )
 
 target_include_directories(module PUBLIC include)

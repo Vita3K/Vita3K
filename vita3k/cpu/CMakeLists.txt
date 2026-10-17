@@ -1,6 +1,7 @@
 set(SOURCE_LIST
 include/cpu/state.h
 include/cpu/common.h
+include/cpu/impl/aliased_thumb.h
 include/cpu/impl/dynarmic_cpu.h
 include/cpu/disasm/functions.h
 include/cpu/disasm/state.h

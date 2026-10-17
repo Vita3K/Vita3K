@@ -184,4 +184,16 @@ inline constexpr size_t SDSLOT_TOTAL_SIZE = SDSLOT_DATA_BASE + static_cast<size_
 inline constexpr uint8_t SDSLOT_MAGIC[10] = { 'S', 'D', 'S', 'L', 0, 0, 0, 0, 0, 1 };
 
 struct EmuEnvState;
-bool sdslot_read_slot_param(EmuEnvState &emuenv, uint32_t slot_id, SceAppUtilSaveDataSlotParam *param, const char *export_name);
+enum class SaveDataSlotReadResult { Found,
+    NotFound,
+    Error };
+SaveDataSlotReadResult read_savedata_slot(EmuEnvState &emuenv, uint32_t slot_id, SceAppUtilSaveDataSlotParam &param, const char *export_name);
+
+enum class SaveDataSlotWriteMode { Create,
+    CreateOnly,
+    Set,
+    Delete,
+    DeleteExisting,
+    UpdateTime };
+int write_savedata_slot(EmuEnvState &emuenv, uint32_t slot_id, const SceAppUtilSaveDataSlotParam *param,
+    SaveDataSlotWriteMode mode, const SceDateTime *time, const char *export_name);

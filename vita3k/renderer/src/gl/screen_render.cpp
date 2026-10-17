@@ -21,6 +21,7 @@
 #include <renderer/gl/screen_render.h>
 #include <util/log.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -69,6 +70,7 @@ void ScreenRenderer::setup_vertex_attributes(GLuint program) {
 
 bool ScreenRenderer::init(const fs::path &static_assets) {
     glGenTextures(1, &m_screen_texture);
+    glGenTextures(1, &m_background_texture);
 
     const auto builtin_shaders_path = static_assets / "shaders-builtin/opengl";
 
@@ -78,9 +80,10 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     const auto render_main_path_bicubic_frag = builtin_shaders_path / "render_main_bicubic.frag";
 
     m_render_shader_nofilter = ::gl::load_shaders(render_main_path_vert, render_main_path_frag);
+    m_render_shader_layer = ::gl::load_shaders(render_main_path_vert, builtin_shaders_path / "render_layer.frag");
     m_render_shader_fxaa = ::gl::load_shaders(render_main_path_vert, render_main_path_fxaa_frag);
     m_render_shader_bicubic = ::gl::load_shaders(render_main_path_vert, render_main_path_bicubic_frag);
-    if (!m_render_shader_nofilter || !m_render_shader_fxaa || !m_render_shader_bicubic) {
+    if (!m_render_shader_nofilter || !m_render_shader_layer || !m_render_shader_fxaa || !m_render_shader_bicubic) {
         LOG_CRITICAL("Couldn't compile essential shaders for rendering. Exiting");
         return false;
     }
@@ -412,7 +415,26 @@ void ScreenRenderer::render_fsr(const SceFVector2 &viewport_pos, const SceFVecto
     glDrawArrays(GL_TRIANGLE_FAN, 0, screen_vertex_count);
 }
 
-void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo) {
+void ScreenRenderer::set_uvs(const float *uvs) {
+    static constexpr float default_uv[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+    if (!uvs)
+        uvs = default_uv;
+    if (uvs[0] == last_uvs[0] && uvs[1] == last_uvs[1] && uvs[2] == last_uvs[2] && uvs[3] == last_uvs[3])
+        return;
+
+    screen_vertices_t vertices = {
+        { { -1.f, -1.f, 0.0f }, { uvs[0], uvs[3] } },
+        { { 1.f, -1.f, 0.0f }, { uvs[2], uvs[3] } },
+        { { 1.f, 1.f, 0.0f }, { uvs[2], uvs[1] } },
+        { { -1.f, 1.f, 0.0f }, { uvs[0], uvs[1] } }
+    };
+    std::copy_n(uvs, 4, last_uvs);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+}
+
+void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo, GLuint front_texture, const float *front_uvs) {
     // Code for backup and restore is taken from ImGui project ImGui_ImplSdlGL3_RenderDrawData
     // Backup GL state
     GLint last_framebuffer;
@@ -477,42 +499,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glBindVertexArray(m_vao);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 
-    const float default_uv[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
-
-    if (!uvs) {
-        uvs = default_uv;
-    }
-
-    if ((uvs[0] != last_uvs[0]) || (uvs[1] != last_uvs[1]) || (uvs[2] != last_uvs[2]) || (uvs[3] != last_uvs[3])) {
-        // Reupload the data again
-        screen_vertices_t vertex_buffer_data = {
-            { { -1.f, -1.f, 0.0f }, { 0.f, 1.f } },
-            { { 1.f, -1.f, 0.0f }, { 1.f, 1.f } },
-            { { 1.f, 1.f, 0.0f }, { 1.f, 0.f } },
-            { { -1.f, 1.f, 0.0f }, { 0.f, 0.f } }
-        };
-
-        vertex_buffer_data[0].uv[0] = uvs[0];
-        vertex_buffer_data[0].uv[1] = uvs[3];
-
-        vertex_buffer_data[1].uv[0] = uvs[2];
-        vertex_buffer_data[1].uv[1] = uvs[3];
-
-        vertex_buffer_data[2].uv[0] = uvs[2];
-        vertex_buffer_data[2].uv[1] = uvs[1];
-
-        vertex_buffer_data[3].uv[0] = uvs[0];
-        vertex_buffer_data[3].uv[1] = uvs[1];
-
-        last_uvs[0] = uvs[0];
-        last_uvs[1] = uvs[1];
-        last_uvs[2] = uvs[2];
-        last_uvs[3] = uvs[3];
-
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), nullptr, GL_DYNAMIC_DRAW);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_DYNAMIC_DRAW);
-    }
+    set_uvs(uvs);
 
     setup_vertex_attributes(*shader);
 
@@ -565,7 +552,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
             static_cast<GLint>(viewport_pos.y + viewport_size.y),
             GL_COLOR_BUFFER_BIT, GL_NEAREST);
     } else if (m_filter == ScreenFilter::FSR) {
-        render_fsr(viewport_pos, viewport_size, uvs, texture_size, default_fbo);
+        render_fsr(viewport_pos, viewport_size, last_uvs, texture_size, default_fbo);
     } else {
         if (m_filter == ScreenFilter::SMAA) {
             const GLint rt_metrics_location = glGetUniformLocation(*shader, "rt_metrics");
@@ -576,6 +563,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
             glBindTexture(GL_TEXTURE_2D, m_smaa_blend_texture);
             glActiveTexture(GL_TEXTURE0);
         }
+
         // Bilinear / Nearest / Bicubic / SMAA draw directly to the screen.
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
@@ -585,6 +573,35 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, 0);
         glActiveTexture(GL_TEXTURE0);
+    }
+
+    if (front_texture) {
+        GLint src_rgb, dst_rgb, src_alpha, dst_alpha, equation_rgb, equation_alpha;
+        glGetIntegerv(GL_BLEND_SRC_RGB, &src_rgb);
+        glGetIntegerv(GL_BLEND_DST_RGB, &dst_rgb);
+        glGetIntegerv(GL_BLEND_SRC_ALPHA, &src_alpha);
+        glGetIntegerv(GL_BLEND_DST_ALPHA, &dst_alpha);
+        glGetIntegerv(GL_BLEND_EQUATION_RGB, &equation_rgb);
+        glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &equation_alpha);
+        glBindFramebuffer(GL_FRAMEBUFFER, default_fbo);
+        glViewport(static_cast<GLint>(viewport_pos.x), static_cast<GLint>(viewport_pos.y),
+            static_cast<GLsizei>(viewport_size.x), static_cast<GLsizei>(viewport_size.y));
+        glDisable(GL_SCISSOR_TEST);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendEquation(GL_FUNC_ADD);
+        glUseProgram(*m_render_shader_layer);
+        glBindVertexArray(m_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+        set_uvs(front_uvs);
+        setup_vertex_attributes(*m_render_shader_layer);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, front_texture);
+        glBindSampler(0, m_sampler_linear);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glBlendFuncSeparate(src_rgb, dst_rgb, src_alpha, dst_alpha);
+        glBlendEquationSeparate(equation_rgb, equation_alpha);
     }
 
     // Restore modified GL state
@@ -621,6 +638,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
 
 void ScreenRenderer::destroy() {
     m_render_shader_nofilter.reset();
+    m_render_shader_layer.reset();
     m_render_shader_fxaa.reset();
     m_render_shader_bicubic.reset();
 
@@ -648,6 +666,8 @@ void ScreenRenderer::destroy() {
 
     glDeleteTextures(1, &m_screen_texture);
     m_screen_texture = 0;
+    glDeleteTextures(1, &m_background_texture);
+    m_background_texture = 0;
 
     glDeleteFramebuffers(1, &m_smaa_edges_fbo);
     glDeleteFramebuffers(1, &m_smaa_blend_fbo);

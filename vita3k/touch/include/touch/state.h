@@ -41,7 +41,7 @@ struct TouchState {
         mouse_y = 0.f;
         mouse_button_left = false;
         mouse_button_right = false;
-        renderer_focused = false;
+        // Window focus belongs to the frontend and can outlive an app session.
         touchscreen_port = SCE_TOUCH_PORT_FRONT;
         std::fill_n(touch_buffers[0], MAX_TOUCH_BUFFER_SAVED * 2, SceTouchData{});
         touch_buffer_idx = 0;

@@ -46,6 +46,7 @@ public:
 
 class SinglePassScreenFilter : public ScreenFilter {
 private:
+    bool alpha_blend;
     vk::DescriptorSetLayout descriptor_set_layout;
     std::vector<vk::DescriptorSet> descriptor_sets;
     vk::DescriptorPool descriptor_pool;
@@ -70,7 +71,7 @@ protected:
     virtual vk::Sampler create_sampler() = 0;
 
 public:
-    SinglePassScreenFilter(ScreenRenderer &screen);
+    SinglePassScreenFilter(ScreenRenderer &screen, bool alpha_blend = false);
     ~SinglePassScreenFilter();
     void init() override;
     void render(bool is_pre_renderpass, vk::ImageView src_img, vk::ImageLayout src_layout, const Viewport &viewport) override;
@@ -94,8 +95,8 @@ protected:
     vk::Sampler create_sampler() override;
 
 public:
-    BilinearScreenFilter(ScreenRenderer &screen)
-        : SinglePassScreenFilter(screen) {}
+    BilinearScreenFilter(ScreenRenderer &screen, bool alpha_blend = false)
+        : SinglePassScreenFilter(screen, alpha_blend) {}
 
     std::string_view get_name() override {
         return "Bilinear";

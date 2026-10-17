@@ -173,7 +173,7 @@ EXPORT(int, ksnprintf, char *s, size_t n, const char *format, module::vargs args
     TRACY_FUNC(ksnprintf, s, n, format);
 
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    return utils::snprintf(s, n, format, *(thread->cpu), emuenv.mem, args);
+    return utils::snprintf(s, n, format, *(thread->cpu), thread->cpu->mem, args);
 }
 
 EXPORT(int, kstrchr) {

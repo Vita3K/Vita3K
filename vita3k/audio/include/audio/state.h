@@ -51,6 +51,7 @@ struct AudioOutPort {
     int len = 0;
     int freq = 0;
     int mode = 0;
+    int32_t owner_pid = 0;
 };
 
 typedef std::shared_ptr<AudioOutPort> AudioOutPortPtr;

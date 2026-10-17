@@ -26,6 +26,7 @@
 #include <mutex>
 #include <set>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 enum SceDisplayPixelFormat {
@@ -41,6 +42,8 @@ struct DisplayFrameInfo {
     uint32_t pitch = 0;
     uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
     SceIVector2 image_size = { 0, 0 };
+    SceUID owner_pid = 0;
+    std::shared_ptr<const std::vector<uint8_t>> software_pixels;
 };
 
 struct PredictedDisplayFrame {
@@ -62,6 +65,10 @@ struct DisplayState {
     std::mutex display_info_mutex;
     // the next frame which will actually be displayed by the renderer
     DisplayFrameInfo next_rendered_frame;
+    // The back render port owner's software frame is the back display plane.
+    DisplayFrameInfo background_frame;
+    SceUID active_display_pid = 0;
+    std::unordered_map<SceUID, DisplayFrameInfo> process_frames;
 
     std::mutex mutex;
     std::unique_ptr<std::thread> vblank_thread;

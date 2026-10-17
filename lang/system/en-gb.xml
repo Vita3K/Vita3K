@@ -245,7 +245,93 @@ Please wait.</connecting_please_wait>
 		<silver>Silver</silver>
 		<hours_ago>{} Hours Ago</hours_ago>
 		<minutes_ago>{} Minutes Ago</minutes_ago>
+		<activities>Activities</activities>
+		<like>Like</like>
+		<likes_this>{} likes this.</likes_this>
+		<and_like_this>{} and {} like this.</and_like_this>
+		<people_like_this>{} people like this.</people_like_this>
+		<comments>Comments {}</comments>
+		<delete_activity>This activity will be deleted.</delete_activity>
+		<delete_comment>This comment will be deleted.</delete_comment>
+		<unlike>Unlike</unlike>
+		<write_comment>Write Comment</write_comment>
+		<has_earned_platinum_trophy>has earned a platinum trophy in "{}"!</has_earned_platinum_trophy>
+		<has_earned_trophy>has earned a trophy in "{}"!</has_earned_trophy>
+		<first_time_playing>is playing "{}" for the first time.</first_time_playing>
+		<download_failed>Could not download.</download_failed>
 	</common>
+
+	<contacts_pa>
+		<activities_of>{}'s Activities</activities_of>
+		<anyone>Anyone</anyone>
+		<no_one>No One</no_one>
+		<cannot_display>Cannot display any more pages.</cannot_display>
+		<friends_of_friends>Friends of Friends</friends_of_friends>
+		<friends_only>Friends Only</friends_only>
+		<share_range>Share Range:</share_range>
+	</contacts_pa>
+
+	<friend>
+		<accept>Accept</accept>
+		<players_blocked>Players Blocked</players_blocked>
+		<friend_request_already_canceled>This Friend request has already been cancelled.</friend_request_already_canceled>
+		<search_for_player>Search for a Vita3K Network player and view the player's profile, or send a Friend request.</search_for_player>
+		<friend_requests>Friend Requests</friend_requests>
+		<friends>Friends</friends>
+		<could_not_find_online_id>Could not find the online ID.</could_not_find_online_id>
+		<there_are_no_players>There are no players.</there_are_no_players>
+		<no_players_found>No players found.</no_players_found>
+		<online_id>Online ID</online_id>
+		<enter_from_3_to_16_characters>Enter from 3 to 16 characters.</enter_from_3_to_16_characters>
+		<online_status>Online Status</online_status>
+		<received>Received</received>
+		<search>Search</search>
+		<sent>Sent</sent>
+		<waiting_for_friend_response>Waiting for Friend response.</waiting_for_friend_response>
+	</friend>
+
+	<friend_profile>
+		<about_me>About Me</about_me>
+		<accept>Accept</accept>
+		<activity>Activity</activity>
+		<warn_block_player>If you block this player, you will no longer be able to receive messages from this player.
+Do you want to continue?</warn_block_player>
+		<warn_block_friend>If you block this player, the player will be removed from Friends. You will no longer be able to receive messages from this player.
+Do you want to continue?</warn_block_friend>
+		<block>Block</block>
+		<blocked>Blocked.</blocked>
+		<cancel_friend_request>Cancel Friend Request</cancel_friend_request>
+		<friend_request_canceled>The Friend request will be cancelled.</friend_request_canceled>
+		<delete_request>Delete Request</delete_request>
+		<edit_profile>Edit Profile</edit_profile>
+		<friend_request_already_canceled>This Friend request has already been cancelled.</friend_request_already_canceled>
+		<friends>Friends</friends>
+		<is_now_friends_with>is now friends with {}</is_now_friends_with>
+		<level>Level</level>
+		<not_a_friend_yet>Not a Friend yet.</not_a_friend_yet>
+		<remove_from_friends>Remove from Friends</remove_from_friends>
+		<player_removed_from_friends>This player will be removed from Friends.</player_removed_from_friends>
+		<send_friend_request>Send Friend Request</send_friend_request>
+		<send>Send</send>
+		<trophies>Trophies</trophies>
+		<unblock>Unblock</unblock>
+		<unblock_player>Unblock this player.</unblock_player>
+		<waiting_friend_response>Waiting for Friend response.</waiting_friend_response>
+		<friend_request_from_player>You have a Friend request from this player.</friend_request_from_player>
+		<you_have_friend_requests>You have Friend requests.</you_have_friend_requests>
+	</friend_profile>
+
+	<messages_app>
+		<title>Messages</title>
+		<create_message>+ Create a message</create_message>
+		<uncheck_all>Uncheck All</uncheck_all>
+		<enter_online_id>Enter the online ID.</enter_online_id>
+		<add>Add</add>
+		<add_recipient>Add a recipient</add_recipient>
+		<delete>Delete</delete>
+		<cancel>Cancel</cancel>
+		<to>To</to>
+	</messages_app>
 
 	<compatibility name="Compatibility">
 		<states>
@@ -379,13 +465,43 @@ Connect a controller that is compatible with SDL3.</not_connected>
 
 	<indicator>
 		<app_added_home>The application has been added to the home screen.</app_added_home>
+		<cancel_download>Do you want to cancel this download?</cancel_download>
+		<cancel_install>Do you want to cancel this installation?
+If you cancel, the files downloaded for this installation will also be deleted.</cancel_install>
 		<delete_all>Delete All</delete_all>
 		<notif_deleted>The notifications will be deleted.</notif_deleted>
+		<waiting_download>Waiting to download...</waiting_download>
+		<downloading_complete>Downloading complete.</downloading_complete>
 		<install_failed>Could not install.</install_failed>
+		<player_is_online>{} is now online.</player_is_online>
+		<waiting_install>Waiting to install...</waiting_install>
 		<install_complete>Installation complete.</install_complete>
 		<installing>Installing...</installing>
+		<minutes_left>{} Minutes Left</minutes_left>
 		<no_notif>There are no notifications.</no_notif>
+		<commented_on_activity>Someone commented on {}'s activity.</commented_on_activity>
+		<commented_on_your_activity>Someone commented on your activity.</commented_on_your_activity>
+		<commented_and_likes_your_activity>Someone commented on and likes your activity.</commented_and_likes_your_activity>
+		<likes_your_activity>Someone likes your activity.</likes_your_activity>
+		<pause_all>Pause All</pause_all>
+		<pause>Pause</pause>
+		<paused>Paused</paused>
+		<resume_all>Resume All</resume_all>
+		<resume>Resume</resume>
+		<seconds_left>{} Seconds Left</seconds_left>
+		<friend_requests>You have Friend requests.</friend_requests>
 	</indicator>
+
+	<patch_check>
+		<new_app_version_available>A new version of the application is available.</new_app_version_available>
+		<latest_version_installed>The latest version of the application is already installed.</latest_version_installed>
+		<downloading_app_update>Downloading the application update file...
+You can check the progress of the download in the notification list.</downloading_app_update>
+		<download>Download</download>
+		<not_enough_space>Could not download.
+There is not enough free space on the memory card. Create at least {} free space on the memory card, and then try to download again.</not_enough_space>
+		<version>Version {}</version>
+	</patch_check>
 
 	<initial_setup>
 		<back>Back</back>

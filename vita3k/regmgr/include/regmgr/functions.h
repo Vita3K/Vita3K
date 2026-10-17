@@ -19,15 +19,31 @@
 
 #include <regmgr/state.h>
 
+#include <array>
+#include <cstdint>
+#include <optional>
 #include <string>
 
 namespace regmgr {
 
+void reset_regmgr(RegMgrState &regmgr);
 void init_regmgr(RegMgrState &regmgr, const fs::path &vita_fs_path);
 
+// Returns failure on an invalid or inconsistent registry or an I/O failure. Both calls
+// require the loaded registry to match disk. The three-argument overload can
+// preserve the original as system.dreg.bak; an existing backup is never replaced.
+// A backup contains private registry data and remains even if replacement fails.
+// Failure to synchronize the parent directory can be reported after replacement;
+// in that case the loaded account ID has already been updated.
+std::optional<std::array<uint8_t, 8>> get_account_id(RegMgrState &regmgr);
+bool set_account_id(RegMgrState &regmgr, const std::array<uint8_t, 8> &account_id);
+bool set_account_id(RegMgrState &regmgr, const std::array<uint8_t, 8> &account_id, bool backup_original);
+
+// Setters return false for invalid input, an inconsistent registry, or an I/O failure.
+// After a directory synchronization failure, the replacement may already be visible.
 // Getters and setters for binary values
 void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize);
-void set_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const void *buf, uint32_t bufSize);
+bool set_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const void *buf, uint32_t bufSize);
 
 // Getters and setters for int values
 int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name);
@@ -35,7 +51,7 @@ void set_int_value(RegMgrState &regmgr, const std::string &category, const std::
 
 // Getters and setters for string values
 std::string get_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name);
-void set_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const char *value, const uint32_t bufSize);
+bool set_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const char *value, const uint32_t bufSize);
 
 // Getters of category and name by id
 std::pair<std::string, std::string> get_category_and_name_by_id(const int id, const std::string &export_name);

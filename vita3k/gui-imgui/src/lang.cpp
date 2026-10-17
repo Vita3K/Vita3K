@@ -26,6 +26,10 @@
 
 #include <pugixml.hpp>
 
+#include <algorithm>
+#include <cctype>
+#include <string_view>
+
 namespace gui {
 
 static const std::vector<std::string> list_user_lang_static = {
@@ -246,6 +250,9 @@ void init_lang(gui::LangState &lang, EmuEnvState &emuenv) {
                 // Indicator
                 set_lang_string(lang.indicator, lang_child.child("indicator"));
 
+                // Patch Check
+                set_lang_string(lang.patch_check, lang_child.child("patch_check"));
+
                 // Initial Setup
                 if (!emuenv.cfg.initial_setup)
                     set_lang_string(lang.initial_setup, lang_child.child("initial_setup"));
@@ -278,6 +285,12 @@ void init_lang(gui::LangState &lang, EmuEnvState &emuenv) {
 
                 // Online Storage
                 set_lang_string(lang.online_storage, lang_child.child("online_storage"));
+
+                // Friends and Messages
+                set_lang_string(lang.friends, lang_child.child("friend"));
+                set_lang_string(lang.friend_profile, lang_child.child("friend_profile"));
+                set_lang_string(lang.contacts_pa, lang_child.child("contacts_pa"));
+                set_lang_string(lang.messages_app, lang_child.child("messages_app"));
 
                 // Message
                 set_lang_string(lang.message, lang_child.child("message"));

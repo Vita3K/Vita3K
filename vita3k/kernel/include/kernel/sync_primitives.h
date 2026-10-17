@@ -87,13 +87,10 @@ SceInt32 SyncPrimitive::wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std:
     return result;
 }
 
-// The ID of the one process Vita3K runs
-constexpr SceUID PROCESS_ID = 1;
-
 // Returns the user data of a system event a thread caused, like a delete: its UID in the high word
 // and the process ID in the low word.
-constexpr SceUInt64 system_event_user_data(SceUID thread_id) {
-    return (static_cast<SceUInt64>(thread_id) << 32) | static_cast<SceUInt32>(PROCESS_ID);
+constexpr SceUInt64 system_event_user_data(SceUID thread_id, SceUID process_id) {
+    return (static_cast<SceUInt64>(thread_id) << 32) | static_cast<SceUInt32>(process_id);
 }
 
 // The event part of simple events and timers: a bit pattern, the user data of the last set, and the
@@ -113,7 +110,7 @@ public:
     SceInt32 info(SceKernelEventInfo &info);
 
 protected:
-    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
+    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data, bool create_event = true);
 
     struct WaitEntry {
         SceUInt32 pattern;
@@ -121,7 +118,7 @@ protected:
         SceUInt64 *user_data;
     };
 
-    void on_delete(SceUID deleter) override;
+    void on_delete(SceUID deleter, SceUID process_id) override;
     // Brings the event up to date before an event operation looks at it. Called with the lock held.
     // Only a timer has anything to do.
     virtual void catch_up() {}
@@ -144,7 +141,7 @@ protected:
 
 class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
 public:
-    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator);
+    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator, SceUID process_id, bool create_event = true);
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
@@ -162,7 +159,7 @@ using EventPtr = std::shared_ptr<Event>;
 
 class Timer final : public WithUidClass<Event, UidClass::timer> {
 public:
-    Timer(SceUInt32 attr, const char *name, SceUID creator);
+    Timer(SceUInt32 attr, const char *name, SceUID creator, SceUID process_id);
 
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
@@ -220,8 +217,10 @@ class Semaphore final : public WithUidClass<SyncPrimitive, UidClass::semaphore> 
 public:
     const SceInt32 init_val;
     const SceInt32 max;
+    MemState *const address_space;
+    const SceUID creator_thread;
 
-    Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val);
+    Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val, MemState *address_space = nullptr, SceUID creator_thread = 0);
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val);
@@ -303,7 +302,9 @@ private:
 
 class LwMutex final : public WithUidClass<Mutex, UidClass::lw_mutex> {
 public:
-    using WithUidClass::WithUidClass;
+    LwMutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea);
+    MemState *const address_space;
+    const SceUID creator_thread;
 
     // Fills info with what the lightweight mutex's info reports, or returns UNKNOWN_LW_MUTEX_ID if it
     // was deleted.
@@ -312,7 +313,9 @@ public:
 
 class HeavyMutex final : public WithUidClass<Mutex, UidClass::mutex> {
 public:
-    using WithUidClass::WithUidClass;
+    HeavyMutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, int ceiling, MemState *address_space = nullptr);
+    MemState *const address_space;
+    const SceUID creator_thread;
 
     // Fills info with what the mutex's info reports, or returns UNKNOWN_MUTEX_ID if it was deleted.
     SceInt32 info(SceKernelMutexInfo &info) const;
@@ -464,7 +467,9 @@ private:
 
 class LwCond final : public WithUidClass<Condvar, UidClass::lw_cond> {
 public:
-    LwCond(SceUInt32 attr, const char *name, MutexPtr associated_mutex, Ptr<SceKernelLwCondWork> workarea);
+    LwCond(SceUInt32 attr, const char *name, ThreadStatePtr creator, MutexPtr associated_mutex, Ptr<SceKernelLwCondWork> workarea);
+    MemState *const address_space;
+    const SceUID creator_thread;
 
     // Fills info with what the lightweight condition variable's info reports, or returns
     // UNKNOWN_LW_COND_ID if it was deleted.
@@ -499,11 +504,11 @@ public:
 
     // Both move the bytes of the pieces in order, waiting until a FULL call moved all of them or an
     // ASAP call any. The size moved so far is kept in size, which may be null.
-    SceInt32 receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
-    SceInt32 send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
+    SceInt32 receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
+    SceInt32 send(const ThreadStatePtr &thread, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
     // Both move what they can at once, without waiting
-    SceInt32 try_receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
-    SceInt32 try_send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
+    SceInt32 try_receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
+    SceInt32 try_send(const ThreadStatePtr &thread, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
     SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
     // Fills info with what the message pipe's info reports, or returns UNKNOWN_MSG_PIPE_ID if it was
     // deleted.

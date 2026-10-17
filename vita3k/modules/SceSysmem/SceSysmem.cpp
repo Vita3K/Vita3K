@@ -17,9 +17,13 @@
 
 #include "SceSysmem.h"
 #include "SceSysmemForDriver.h"
+#include "memblock_validation.h"
+#include "secondary_memblock.h"
 
+#include <cpu/state.h>
 #include <emuenv/state.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/functions.h>
 #include <modules/sysmem_state.h>
@@ -51,17 +55,6 @@ std::string to_debug_str(const MemState &mem, SceKernelMemBlockType type) {
     return std::to_string(type);
 }
 
-struct SceKernelAllocMemBlockOpt {
-    SceSize size;
-    SceUInt32 attr;
-    SceSize alignment;
-    SceUInt32 uidBaseBlock;
-    Ptr<const char> strBaseBlockName;
-    int flags;
-    int reserved[10];
-};
-static_assert(sizeof(SceKernelAllocMemBlockOpt) == 0x40);
-
 struct SceKernelFreeMemorySizeInfo {
     int size; //!< sizeof(SceKernelFreeMemorySizeInfo)
     int size_user; //!< Free memory size for *_USER_RW memory
@@ -73,97 +66,102 @@ LIBRARY_INIT(SceSysmem) {
     emuenv.kernel.obj_store.create<SysmemState>();
 }
 
-// The error for a block type an app can't allocate, or 0
-static SceInt32 type_error(SceKernelMemBlockType type) {
-    switch (type) {
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_R:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_DEVICE_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_GAME_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RO_UNCACHE:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RW_UNCACHE:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RO:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_L1WBWA_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_R:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        return 0;
-    // Types a Vita knows but keeps from apps
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_TOOL_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_TOOL_NC_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RX_UNCACHE:
-        return SCE_KERNEL_ERROR_ILLEGAL_MEMBLOCK_TYPE;
-    default:
-        return SCE_KERNEL_ERROR_ILLEGAL_BLOCK_TYPE;
-    }
+static std::shared_ptr<SecondaryMemblockState> secondary_state(EmuEnvState &emuenv, MemState &mem) {
+    return emuenv.kernel.secondary_memblocks(mem, std::make_shared<SecondaryMemblockState>());
 }
 
-// The error for a size a block of a user type can't have, or 0
-static SceInt32 size_error(SceKernelMemBlockType type, SceSize size) {
-    if (size == 0)
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-    switch (type & MEMBLOCK_TYPE_PHYMEMPART_MASK) {
-    case MEMBLOCK_TYPE_PHYMEMPART_CDRAM:
-        return size % MEMBLOCK_CDRAM_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_NO_FREE_PHYSICAL_PAGE_CDRAM : 0;
-    case MEMBLOCK_TYPE_PHYMEMPART_PHYCONT:
-        return size % MEMBLOCK_PHYCONT_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
-    default:
-        return size % MEMBLOCK_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_ILLEGAL_MEMBLOCK_SIZE : 0;
+static SceInt32 secondary_alloc(EmuEnvState &emuenv, MemState &mem, Ptr<const char> name_ptr,
+    SceKernelMemBlockType type, SceSize size, Ptr<SceKernelAllocMemBlockOpt> opt_ptr, bool vm) {
+    const auto identity = emuenv.kernel.get_process_identity(mem);
+    if (!identity) {
+        LOG_ERROR("Cannot allocate secondary memblock without a process identity");
+        return SCE_KERNEL_ERROR_ERROR;
     }
+    std::string name;
+    SceSize alignment = 0;
+    if (const auto error = secondary_prepare_alloc(mem, name_ptr, type, size, opt_ptr, vm, identity->is_firmware_app(), name, alignment)) {
+        LOG_WARN("Secondary memblock allocation type={} size={} rejected: {}", log_hex(type), size, log_hex(error));
+        return error;
+    }
+    const auto state = secondary_state(emuenv, mem);
+    if (!state) {
+        LOG_ERROR("Cannot allocate memblock for stopped or unregistered process {}", identity->pid);
+        return SCE_KERNEL_ERROR_ERROR;
+    }
+    const auto result = secondary_alloc_block(*state, mem, emuenv.kernel.get_next_uid(), name, type, size, alignment, vm);
+    if (result < 0)
+        LOG_WARN("Secondary memblock allocation '{}' type={} size={} failed: {}", name, log_hex(type), size, log_hex(result));
+    else
+        LOG_DEBUG("Process {} allocated memblock '{}' type={} size={} uid={}", identity->pid, name, log_hex(type), size, log_hex(result));
+    return result;
 }
 
-// The error for an alignment a block of a user type can't ask for, or 0
-static SceInt32 alignment_error(SceKernelMemBlockType type, SceSize alignment) {
-    // 0 asks for no alignment, which every type takes
-    if (alignment == 0)
-        return 0;
-    const SceUInt32 phymempart = type & MEMBLOCK_TYPE_PHYMEMPART_MASK;
-    if ((alignment & (alignment - 1)) != 0)
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-    // Under a page the alignment is below what every block has anyway
-    if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_PHYCONT)
-        return alignment >= MEMBLOCK_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
-    if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_CDRAM) {
-        if (alignment >= MEMBLOCK_MIN_ALIGNMENT && alignment < MEMBLOCK_CDRAM_MIN_ALIGNMENT)
-            return SCE_KERNEL_ERROR_NO_FREE_PHYSICAL_PAGE_CDRAM;
-        return alignment > MiB(64) ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
-    }
-    return alignment > MiB(16) ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
-}
-
-EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
+EXPORT(SceUID, sceKernelAllocMemBlock, Ptr<const char> name_ptr, SceKernelMemBlockType type, SceSize size, Ptr<SceKernelAllocMemBlockOpt> opt_ptr) {
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    MemState &mem = caller->cpu->mem;
+    if (!emuenv.kernel.is_primary_address_space(mem))
+        return secondary_alloc(emuenv, mem, name_ptr, type, size, opt_ptr, false);
+    const char *pName = name_ptr.get(mem);
+    auto *optp = opt_ptr.get(mem);
     TRACY_FUNC(sceKernelAllocMemBlock, pName, type, size, optp);
     if (!pName)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    const auto reject = [&](SceInt32 error, const char *reason) {
+        LOG_WARN("sceKernelAllocMemBlock: rejecting '{}' type={} size={} options={} error={} reason={}",
+            pName, log_hex(type), size, optp != nullptr, log_hex(error), reason);
+    };
     if (optp) {
         constexpr SceSize OPT_SIZES[] = { 0x14, 0x38, 0x3C, 0x40 };
         // An app can't choose an address, a physical address or a base block
         constexpr SceUInt32 ALLOWED_ATTRS = SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT | SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_ENABLE_OPEN
             | SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_PHYCONT;
+        bool firmware_unknown_attr = false;
+        if (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_0x20) {
+            const ThreadStatePtr caller = emuenv.kernel.get_thread(thread_id);
+            if (!caller)
+                return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+            const auto identity = emuenv.kernel.get_process_identity(caller->cpu->mem);
+            if (!identity) {
+                LOG_ERROR("Cannot allocate firmware memory block: caller {} has no process identity", thread_id);
+                return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
+            }
+            firmware_unknown_attr = identity->is_firmware_app();
+        }
+        const SceUInt32 allowed_attrs = ALLOWED_ATTRS | (firmware_unknown_attr ? SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_0x20 : 0U);
         if (!std::ranges::contains(OPT_SIZES, optp->size))
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
         // The last word of the largest option must be 0
-        if (optp->size == sizeof(SceKernelAllocMemBlockOpt) && optp->reserved[9] != 0)
+        if (optp->size == sizeof(SceKernelAllocMemBlockOpt) && optp->reserved[9] != 0) {
+            LOG_WARN("sceKernelAllocMemBlock: option size={} reserved[9]={}", optp->size, log_hex(optp->reserved[9]));
+            reject(SCE_KERNEL_ERROR_INVALID_ARGUMENT, "nonzero reserved option");
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-        if (optp->attr & ~ALLOWED_ATTRS)
+        }
+        if (optp->attr & ~allowed_attrs) {
+            LOG_WARN("sceKernelAllocMemBlock: option size={} attributes={}", optp->size, log_hex(optp->attr));
+            reject(SCE_KERNEL_ERROR_INVALID_ARGUMENT, "unsupported option attributes");
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        }
+        if (firmware_unknown_attr)
+            LOG_WARN("sceKernelAllocMemBlock: firmware block '{}' uses attribute 0x20; its effect is not emulated", pName);
     }
     if (const SceInt32 error = type_error(type))
         return RET_ERROR(error);
-    if (const SceInt32 error = size_error(type, size))
+    if (const SceInt32 error = size_error(type, size)) {
+        reject(error, "invalid block size");
         return RET_ERROR(error);
+    }
 
     // Build kernel opts from user opts
     SceKernelAllocMemBlockOptKernel k_opt = {};
     k_opt.size = sizeof(k_opt);
     if (optp && (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT)) {
-        if (const SceInt32 error = alignment_error(type, optp->alignment))
+        if (const SceInt32 error = alignment_error(type, optp->alignment)) {
+            LOG_WARN("sceKernelAllocMemBlock: option alignment={}", log_hex(optp->alignment));
+            reject(error, "invalid alignment");
             return RET_ERROR(error);
+        }
         k_opt.attr |= SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT;
         k_opt.alignment = optp->alignment;
     }
@@ -171,7 +169,14 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     return CALL_EXPORT(ksceKernelAllocMemBlock, pName, type, size, optp ? &k_opt : nullptr);
 }
 
-EXPORT(SceUID, sceKernelAllocMemBlockForVM, const char *pName, SceSize size) {
+EXPORT(SceUID, sceKernelAllocMemBlockForVM, Ptr<const char> name_ptr, SceSize size) {
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    MemState &mem = caller->cpu->mem;
+    if (!emuenv.kernel.is_primary_address_space(mem))
+        return secondary_alloc(emuenv, mem, name_ptr, SCE_KERNEL_MEMBLOCK_TYPE_USER_RX, size, {}, true);
+    const char *pName = name_ptr.get(mem);
     TRACY_FUNC(sceKernelAllocMemBlockForVM, pName, size);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     std::unique_lock<std::mutex> lock(state->mutex);
@@ -224,6 +229,14 @@ EXPORT(int, sceKernelCloseVMDomain) {
 
 EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
     TRACY_FUNC(sceKernelFindMemBlockByAddr, addr, size);
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (!emuenv.kernel.is_primary_address_space(caller->cpu->mem)) {
+        const auto state = secondary_state(emuenv, caller->cpu->mem);
+        const SceInt32 result = state ? secondary_find_block(*state, caller->cpu->mem, addr, 0, false) : SCE_KERNEL_ERROR_ERROR;
+        return result < 0 ? RET_ERROR(result) : result;
+    }
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
@@ -237,11 +250,27 @@ EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
 
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
     TRACY_FUNC(sceKernelFreeMemBlock, uid);
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (!emuenv.kernel.is_primary_address_space(caller->cpu->mem)) {
+        const auto state = secondary_state(emuenv, caller->cpu->mem);
+        const SceInt32 result = state ? secondary_free_block(*state, uid, false) : SCE_KERNEL_ERROR_ERROR;
+        return result < 0 ? RET_ERROR(result) : result;
+    }
     return CALL_EXPORT(ksceKernelFreeMemBlock, uid);
 }
 
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     TRACY_FUNC(sceKernelFreeMemBlockForVM, uid);
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (!emuenv.kernel.is_primary_address_space(caller->cpu->mem)) {
+        const auto state = secondary_state(emuenv, caller->cpu->mem);
+        const SceInt32 result = state ? secondary_free_block(*state, uid, true) : SCE_KERNEL_ERROR_ERROR;
+        return result < 0 ? RET_ERROR(result) : result;
+    }
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     {
         const auto guard = std::lock_guard<std::mutex>(state->mutex);
@@ -302,12 +331,29 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     return 0;
 }
 
-EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
+EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<Ptr<void>> basep) {
     TRACY_FUNC(sceKernelGetMemBlockBase, uid, basep);
-    return CALL_EXPORT(ksceKernelGetMemBlockBase, uid, basep);
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (!emuenv.kernel.is_primary_address_space(caller->cpu->mem)) {
+        const auto state = secondary_state(emuenv, caller->cpu->mem);
+        const SceInt32 result = state ? secondary_block_base(*state, caller->cpu->mem, uid, basep.address()) : SCE_KERNEL_ERROR_ERROR;
+        return result < 0 ? RET_ERROR(result) : result;
+    }
+    return CALL_EXPORT(ksceKernelGetMemBlockBase, uid, basep.get(caller->cpu->mem));
 }
 
-EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo *info) {
+EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, Ptr<SceKernelMemBlockInfo> info_ptr) {
+    const auto caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (!emuenv.kernel.is_primary_address_space(caller->cpu->mem)) {
+        const auto state = secondary_state(emuenv, caller->cpu->mem);
+        const SceInt32 result = state ? secondary_find_block(*state, caller->cpu->mem, addr, info_ptr.address(), true) : SCE_KERNEL_ERROR_ERROR;
+        return result < 0 ? RET_ERROR(result) : result;
+    }
+    auto *info = info_ptr.get(caller->cpu->mem);
     TRACY_FUNC(sceKernelGetMemBlockInfoByAddr, addr, info);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
@@ -412,6 +458,9 @@ EXPORT(int, sceKernelOpenVMDomain) {
 
 EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size) {
     TRACY_FUNC(sceKernelSyncVMDomain, block_uid, base, size);
+    const ThreadStatePtr caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     {
         const auto guard = std::lock_guard<std::mutex>(state->mutex);
@@ -426,8 +475,8 @@ EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size
         if (base < range.addr || uint64_t(base) + size > uint64_t(range.addr) + range.size)
             return RET_ERROR(SCE_KERNEL_ERROR_MEMBLOCK_RANGE_ERROR);
     }
-    // Every thread drops its old code, and the kernel lock comes after the sysmem one is released
-    emuenv.kernel.invalidate_jit_cache(base, size);
+    // Take the kernel lock after the sysmem lock is released.
+    emuenv.kernel.invalidate_jit_cache(caller->cpu->mem, base, size);
 
     return 0;
 }

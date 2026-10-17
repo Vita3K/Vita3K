@@ -32,6 +32,69 @@
 
 namespace gui {
 
+#ifdef __ANDROID__
+namespace {
+
+bool has_android_storage_access(JNIEnv *env, jobject activity) {
+    if (!env || !activity)
+        return false;
+
+    jclass version = env->FindClass("android/os/Build$VERSION");
+    jfieldID sdk_int = version ? env->GetStaticFieldID(version, "SDK_INT", "I") : nullptr;
+    if (!sdk_int) {
+        LOG_ERROR("Could not read Android SDK version");
+        if (env->ExceptionCheck())
+            env->ExceptionClear();
+        if (version)
+            env->DeleteLocalRef(version);
+        return false;
+    }
+    const jint sdk_version = env->GetStaticIntField(version, sdk_int);
+    env->DeleteLocalRef(version);
+    if (sdk_version < 30)
+        return true;
+
+    jclass storage = env->FindClass("org/vita3k/emulator/StorageAccess");
+    jmethodID method = storage ? env->GetStaticMethodID(storage, "hasStorageAccess", "(Landroid/content/Context;)Z") : nullptr;
+    const jboolean result = method ? env->CallStaticBooleanMethod(storage, method, activity) : JNI_FALSE;
+    const bool failed = env->ExceptionCheck();
+    if (failed) {
+        LOG_ERROR("Android StorageAccess.hasStorageAccess failed");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
+    if (storage)
+        env->DeleteLocalRef(storage);
+    return !failed && result == JNI_TRUE;
+}
+
+void request_android_storage_access(JNIEnv *env, jobject activity) {
+    if (!env || !activity)
+        return;
+
+    jclass storage = env->FindClass("org/vita3k/emulator/StorageAccess");
+    jmethodID create_intent = storage ? env->GetStaticMethodID(storage, "createManageAllFilesIntent", "(Landroid/content/Context;)Landroid/content/Intent;") : nullptr;
+    jobject intent = create_intent ? env->CallStaticObjectMethod(storage, create_intent, activity) : nullptr;
+    jclass activity_class = intent ? env->GetObjectClass(activity) : nullptr;
+    jmethodID start_activity = activity_class ? env->GetMethodID(activity_class, "startActivity", "(Landroid/content/Intent;)V") : nullptr;
+    if (start_activity)
+        env->CallVoidMethod(activity, start_activity, intent);
+    if (env->ExceptionCheck()) {
+        LOG_ERROR("Android storage permission request failed");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
+    if (activity_class)
+        env->DeleteLocalRef(activity_class);
+    if (intent)
+        env->DeleteLocalRef(intent);
+    if (storage)
+        env->DeleteLocalRef(storage);
+}
+
+} // namespace
+#endif
+
 void get_firmware_file(EmuEnvState &emuenv) {
     const std::map<int, std::string> locale_id = {
         { SCE_SYSTEM_PARAM_LANG_JAPANESE, "ja-jp" },
@@ -165,15 +228,10 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         has_all_files_access = []() -> bool {
             JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
             jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
-            jclass clazz = env->GetObjectClass(activity);
-
-            jmethodID method_id = env->GetMethodID(clazz, "isStorageManagerEnabled", "()Z");
-            jboolean result = env->CallBooleanMethod(activity, method_id);
-
-            env->DeleteLocalRef(clazz);
-            env->DeleteLocalRef(activity);
-
-            return result == JNI_TRUE;
+            const bool has_access = has_android_storage_access(env, activity);
+            if (env && activity)
+                env->DeleteLocalRef(activity);
+            return has_access;
         }();
 
         if (!has_all_files_access) {
@@ -182,11 +240,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Button(lang["grant_access"].c_str(), BIG_BUTTON_SIZE)) {
                 JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
                 jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
-                jclass clazz(env->GetObjectClass(activity));
-                jmethodID method_id = env->GetMethodID(clazz, "setStoragePermission", "()V");
-                env->CallVoidMethod(activity, method_id);
-                env->DeleteLocalRef(activity);
-                env->DeleteLocalRef(clazz);
+                request_android_storage_access(env, activity);
+                if (env && activity)
+                    env->DeleteLocalRef(activity);
             }
             break;
         }

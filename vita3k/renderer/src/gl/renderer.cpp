@@ -41,6 +41,7 @@
 #endif
 
 #include <array>
+#include <cstring>
 #include <mutex>
 #include <string_view>
 
@@ -648,13 +649,15 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
     should_display = false;
 
     DisplayFrameInfo display_frame;
+    DisplayFrameInfo background_frame;
     {
         std::lock_guard<std::mutex> guard(display.display_info_mutex);
         display_frame = display.next_rendered_frame;
+        background_frame = display.background_frame;
     }
 
     const bool has_overlays = overlay_manager && overlay_manager->has_visible();
-    if (!display_frame.base && !has_overlays)
+    if (!display_frame.base && !background_frame.software_pixels && !has_overlays)
         return;
 
     SceFVector2 vp_pos = { 0.0f, 0.0f };
@@ -696,30 +699,30 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
     display.viewport_w = vp_size.x;
     display.viewport_h = vp_size.y;
 
-    if (display_frame.base) {
+    if (display_frame.base || background_frame.software_pixels) {
         // Check if the surface exists
         float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         bool need_uv = true;
 
-        const std::size_t texture_data_size = static_cast<size_t>(display_frame.pitch) * static_cast<size_t>(display_frame.image_size.y) * sizeof(uint32_t);
-
         SceFVector2 texture_size;
 
-        uint64_t surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-            display_frame.base, display_frame.image_size.x, display_frame.image_size.y, display_frame.pitch, uvs, this->res_multiplier, texture_size);
+        uint64_t surface_handle = 0;
+        if (display_frame.base && !display_frame.software_pixels)
+            surface_handle = surface_cache.sourcing_color_surface_for_presentation(
+                display_frame.base, display_frame.image_size.x, display_frame.image_size.y, display_frame.pitch, uvs, this->res_multiplier, texture_size);
 
         GLint last_texture = 0;
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
 
-        if (!surface_handle) {
+        if (display_frame.base && !surface_handle) {
             // Fallback to a manual upload (likely a black !!!)
             need_uv = false;
             glBindTexture(GL_TEXTURE_2D, screen_renderer.get_resident_texture());
 
             // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
-            const auto pixels = display_frame.base.cast<void>().get(mem);
+            const void *pixels = display_frame.software_pixels ? display_frame.software_pixels->data() : display_frame.base.cast<void>().get(mem);
 
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, display_frame.pitch);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, display_frame.software_pixels ? display_frame.image_size.x : display_frame.pitch);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display_frame.image_size.x, display_frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -729,7 +732,7 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
             texture_size.y = static_cast<float>(display_frame.image_size.y);
 
             surface_handle = screen_renderer.get_resident_texture();
-        } else {
+        } else if (surface_handle) {
             const GLint standard_swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 
             glBindTexture(GL_TEXTURE_2D, surface_handle);
@@ -742,9 +745,23 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
 #endif
         }
 
-        glBindTexture(GL_TEXTURE_2D, last_texture);
-
-        screen_renderer.render(vp_pos, vp_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle), texture_size, default_fbo);
+        if (background_frame.software_pixels) {
+            const GLuint background_texture = screen_renderer.get_background_texture();
+            glBindTexture(GL_TEXTURE_2D, background_texture);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, background_frame.image_size.x);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, background_frame.image_size.x, background_frame.image_size.y,
+                0, GL_RGBA, GL_UNSIGNED_BYTE, background_frame.software_pixels->data());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            const SceFVector2 background_size = { static_cast<float>(background_frame.image_size.x), static_cast<float>(background_frame.image_size.y) };
+            glBindTexture(GL_TEXTURE_2D, last_texture);
+            screen_renderer.render(vp_pos, vp_size, nullptr, background_texture, background_size, default_fbo,
+                static_cast<GLuint>(surface_handle), need_uv ? uvs : nullptr);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, last_texture);
+            screen_renderer.render(vp_pos, vp_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle), texture_size, default_fbo);
+        }
     }
 
     update_overlays();
@@ -789,9 +806,16 @@ std::vector<uint32_t> GLState::dump_frame(DisplayState &display, uint32_t &width
     DisplayFrameInfo frame;
     {
         std::lock_guard<std::mutex> guard(display.display_info_mutex);
-        frame = display.next_rendered_frame;
+        frame = display.background_frame.software_pixels ? display.background_frame : display.next_rendered_frame;
     }
 
+    if (frame.software_pixels) {
+        width = static_cast<uint32_t>(frame.image_size.x);
+        height = static_cast<uint32_t>(frame.image_size.y);
+        std::vector<uint32_t> pixels(frame.software_pixels->size() / sizeof(uint32_t));
+        std::memcpy(pixels.data(), frame.software_pixels->data(), frame.software_pixels->size());
+        return pixels;
+    }
     width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
     height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
     return surface_cache.dump_frame(frame.base, width, height, frame.pitch, res_multiplier, features.support_get_texture_sub_image);

@@ -300,7 +300,66 @@ static bool relocate_entry(void *data, uint32_t code, uint32_t symval, uint32_t 
     return true; // ignore unhandled relocations
 }
 
+bool validate_variable_relocations(const void *entries, uint32_t size, const SegmentInfosForReloc &segments) {
+    const auto *bytes = static_cast<const uint8_t *>(entries);
+    uint32_t offset = 0;
+    while (offset < size) {
+        if (size - offset < sizeof(uint32_t)) {
+            LOG_ERROR("Truncated variable import relocation entry");
+            return false;
+        }
+        uint32_t header;
+        std::memcpy(&header, bytes + offset, sizeof(header));
+        const uint32_t format = header & 0xf;
+        if (format != 1 && format != 2) {
+            LOG_ERROR("Invalid variable import relocation format {}", format);
+            return false;
+        }
+        const size_t entry_size = format == 2 ? sizeof(EntryFormat2Alt) : sizeof(EntryFormat1Alt);
+        if (size - offset < entry_size) {
+            LOG_ERROR("Truncated variable import relocation entry");
+            return false;
+        }
+        const uint32_t code = (header >> 8) & 0xff;
+        size_t write_size = 0;
+        switch (code) {
+        case Abs8:
+            write_size = 1;
+            break;
+        case Abs32:
+        case Rel32:
+        case ThumbCall:
+        case Call:
+        case Jump24:
+        case Target1:
+        case Target2:
+        case Prel31:
+        case MovwAbsNc:
+        case MovtAbs:
+        case ThumbMovwAbsNc:
+        case ThumbMovtAbs:
+            write_size = sizeof(uint32_t);
+            break;
+        }
+        const uint32_t patch_segment = (header >> 4) & 0xf;
+        const auto segment = segments.find(patch_segment);
+        if (write_size && segment != segments.end()) {
+            uint32_t patch_offset;
+            std::memcpy(&patch_offset, bytes + offset + sizeof(uint32_t), sizeof(patch_offset));
+            if (patch_offset > segment->second.size || write_size > segment->second.size - patch_offset
+                || uint64_t(segment->second.addr) + patch_offset + write_size > (uint64_t{ 1 } << 32)) {
+                LOG_ERROR("Variable import relocation target {} exceeds segment {}", log_hex(patch_offset), patch_segment);
+                return false;
+            }
+        }
+        offset += static_cast<uint32_t>(entry_size);
+    }
+    return true;
+}
+
 bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &segments, const MemState &mem, bool is_var_import, uint32_t explicit_symval) {
+    if (is_var_import && !validate_variable_relocations(entries, size, segments))
+        return false;
     const void *const end = static_cast<const uint8_t *>(entries) + size;
     const Entry *entry = static_cast<const Entry *>(entries);
 
@@ -325,10 +384,12 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
 
     const EntryFormatUnknown *generic_entry = nullptr;
     while (entry < end) {
+        const auto *entry_bytes = reinterpret_cast<const uint8_t *>(entry);
+        if (static_cast<const uint8_t *>(end) - entry_bytes < sizeof(uint32_t)) {
+            LOG_ERROR("Truncated relocation entry");
+            return false;
+        }
         generic_entry = static_cast<const EntryFormatUnknown *>(entry);
-
-        if (is_var_import)
-            assert(generic_entry->format == 1 || generic_entry->format == 2);
 
         switch (generic_entry->format) {
         case 0: {
@@ -688,7 +749,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
         switch (generic_entry->format) {
         case 0: entry = static_cast<const EntryFormat0 *>(entry) + 1; break;
         case 1: entry = static_cast<const EntryFormat1 *>(entry) + 1; break;
-        case 2: entry = static_cast<const EntryFormat2 *>(entry) + 1; break;
+        case 2: entry = is_var_import ? static_cast<const Entry *>(static_cast<const EntryFormat2Alt *>(entry) + 1) : static_cast<const Entry *>(static_cast<const EntryFormat2 *>(entry) + 1); break;
         case 3: entry = static_cast<const EntryFormat3 *>(entry) + 1; break;
         case 4: entry = static_cast<const EntryFormat4 *>(entry) + 1; break;
         case 5: entry = static_cast<const EntryFormat5 *>(entry) + 1; break;

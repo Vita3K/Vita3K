@@ -97,7 +97,10 @@ EXPORT(int, ksceKernelCreateSimpleEvent) {
 }
 
 EXPORT(SceUID, ksceKernelCreateThread, const char *name, SceKernelThreadEntry entry, int initPriority, SceSize stackSize, SceUInt attr, int cpuAffinityMask, void *pOptParam) {
-    const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), initPriority, cpuAffinityMask, stackSize, 0);
+    const ThreadStatePtr caller = emuenv.kernel.get_thread(thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    const ThreadStatePtr thread = emuenv.kernel.create_thread_from_caller(caller, name, entry.cast<void>(), initPriority, cpuAffinityMask, stackSize, 0);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
     return thread->id;
@@ -383,7 +386,7 @@ EXPORT(int, ksceKernelWaitSema) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
+EXPORT(int, ksceKernelWaitThreadEnd, SceUID thid, Ptr<SceInt32> stat, Ptr<SceUInt32> timeout) {
     return CALL_EXPORT(_sceKernelWaitThreadEnd, thid, stat, timeout);
 }
 

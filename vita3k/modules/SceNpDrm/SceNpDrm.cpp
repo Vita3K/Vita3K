@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <kernel/types.h>
 #include <module/module.h>
 
 EXPORT(int, _sceNpDrmCheckActData) {
@@ -25,16 +26,20 @@ EXPORT(int, _sceNpDrmCheckDrmReset) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceNpDrmGetFixedRifName) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceNpDrmGetFixedRifName, Ptr<char> rif_name, uint64_t account_id) {
+    LOG_INFO_SYNC("_sceNpDrmGetFixedRifName: rif_name={}, account_id={}", log_hex(rif_name.address()), log_hex(account_id));
+    if (!rif_name)
+        return RET_ERROR(0x80870001);
+    return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
 }
 
 EXPORT(int, _sceNpDrmGetRifInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceNpDrmGetRifName) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceNpDrmGetRifName, Ptr<char> rif_name, uint64_t account_id) {
+    LOG_INFO_SYNC("_sceNpDrmGetRifName: rif_name={}, account_id={}", log_hex(rif_name.address()), log_hex(account_id));
+    return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
 }
 
 EXPORT(int, _sceNpDrmGetRifNameForInstall) {

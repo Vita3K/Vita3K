@@ -17,13 +17,42 @@
 
 #include <module/module.h>
 
+#include "audio_process.h"
+
 #include <audio/state.h>
+#include <cpu/state.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
-#include <util/lock_and_find.h>
 #include <util/tracy.h>
 
+#include <limits>
+#include <optional>
+#include <vector>
+
 TRACY_MODULE_NAME(SceAudio);
+
+struct AudioCaller {
+    ThreadStatePtr thread;
+    SceUID pid;
+};
+
+static std::optional<AudioCaller> get_audio_caller(EmuEnvState &emuenv, SceUID thread_id) {
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread) {
+        LOG_ERROR("Audio: unknown thread {}", thread_id);
+        return std::nullopt;
+    }
+    const auto identity = emuenv.kernel.get_process_identity(thread->cpu->mem);
+    if (!identity) {
+        LOG_ERROR("Audio: no process for thread {}", thread_id);
+        return std::nullopt;
+    }
+    return AudioCaller{ thread, identity->pid };
+}
+
+static bool valid_audio_buffer_size(int len, int channels) {
+    return len > 0 && len <= std::numeric_limits<int>::max() / (channels * static_cast<int>(sizeof(int16_t)));
+}
 
 enum SceAudioOutMode {
     SCE_AUDIO_OUT_MODE_MONO = 0,
@@ -156,20 +185,22 @@ EXPORT(int, sceAudioOutGetPortVolume_forUser) {
 
 EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, SceAudioOutMode mode) {
     TRACY_FUNC(sceAudioOutOpenPort, type, len, freq, mode);
+    const auto caller = get_audio_caller(emuenv, thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
     if (type < SCE_AUDIO_OUT_PORT_TYPE_MAIN || type > SCE_AUDIO_OUT_PORT_TYPE_VOICE) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT_TYPE);
     }
-    if (type == SCE_AUDIO_OUT_PORT_TYPE_MAIN && freq != 48000) {
+    if (freq <= 0 || (type == SCE_AUDIO_OUT_PORT_TYPE_MAIN && freq != 48000)) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
     }
     if ((mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO)) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);
     }
-    if (len <= 0) {
+    const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
+    if (!valid_audio_buffer_size(len, channels)) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
     }
-
-    const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
 
     AudioOutPortPtr port = emuenv.audio.open_port(channels, freq, len);
     if (!port)
@@ -180,6 +211,7 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     port->len = len;
     port->freq = freq;
     port->mode = mode;
+    port->owner_pid = caller->pid;
 
     const std::lock_guard<std::mutex> lock(emuenv.audio.mutex);
     const int port_id = emuenv.audio.next_port_id++;
@@ -188,9 +220,12 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     return port_id;
 }
 
-EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
+EXPORT(int, sceAudioOutOutput, int port, Ptr<const uint8_t> buf) {
     TRACY_FUNC(sceAudioOutOutput, port, buf);
-    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
+    const auto caller = get_audio_caller(emuenv, thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+    const AudioOutPortPtr prt = audio_process::find_port(emuenv.audio, port, caller->pid);
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
@@ -201,17 +236,25 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     if (!buf)
         return 0;
 
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    if (!thread)
-        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
-    const ThreadState::HostWait waiting(*thread);
-    emuenv.audio.audio_output(*prt, buf);
-    return prt->len;
+    try {
+        std::vector<uint8_t> buffer(static_cast<size_t>(prt->len_bytes));
+        if (!audio_process::copy_guest_buffer(caller->thread->cpu->mem, buf.address(), buffer.data(), static_cast<uint32_t>(buffer.size())))
+            return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_POINTER);
+        const ThreadState::HostWait waiting(*caller->thread);
+        emuenv.audio.audio_output(*prt, buffer.data());
+        return prt->len;
+    } catch (const std::bad_alloc &) {
+        LOG_ERROR("{}: unable to copy audio buffer for port {}", export_name, port);
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_OUT_OF_MEMORY);
+    }
 }
 
 EXPORT(int, sceAudioOutGetRestSample, int port) {
     TRACY_FUNC(sceAudioOutGetRestSample, port);
-    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
+    const auto caller = get_audio_caller(emuenv, thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+    const AudioOutPortPtr prt = audio_process::find_port(emuenv.audio, port, caller->pid);
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
@@ -235,8 +278,8 @@ EXPORT(int, sceAudioOutOpenExtPort) {
 
 EXPORT(int, sceAudioOutReleasePort, int port) {
     TRACY_FUNC(sceAudioOutReleasePort, port);
-    const std::lock_guard<std::mutex> guard(emuenv.audio.mutex);
-    if (!emuenv.audio.out_ports.erase(port)) {
+    const auto caller = get_audio_caller(emuenv, thread_id);
+    if (!caller || !audio_process::release_port(emuenv.audio, port, caller->pid)) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
@@ -265,13 +308,16 @@ EXPORT(int, sceAudioOutSetCompress) {
 
 EXPORT(int, sceAudioOutSetConfig, int port, int len, int freq, int mode) {
     TRACY_FUNC(sceAudioOutSetConfig, port, len, freq, mode);
+    const auto caller = get_audio_caller(emuenv, thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     if (len == 0)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
 
     if ((mode >= 0) && (mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO))
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);
 
-    AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
+    AudioOutPortPtr prt = audio_process::find_port(emuenv.audio, port, caller->pid);
     if (!prt)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
 
@@ -281,26 +327,36 @@ EXPORT(int, sceAudioOutSetConfig, int port, int len, int freq, int mode) {
     const auto set_len = len > 0 ? len : prt->len;
     const auto set_freq = freq >= 0 ? freq : prt->freq;
     const auto set_mode = mode >= 0 ? mode : prt->mode;
+    const auto channels = (set_mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
+    if (set_freq <= 0)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
+    if (!valid_audio_buffer_size(set_len, channels))
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
 
     if ((set_len == prt->len) && (set_freq == prt->freq) && (set_mode == prt->mode))
         return 0;
 
-    if (CALL_EXPORT(sceAudioOutReleasePort, port) != 0)
-        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
-
-    const auto channels = (set_mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
-
-    prt = emuenv.audio.open_port(channels, set_freq, set_len);
-    if (!prt)
+    AudioOutPortPtr replacement = emuenv.audio.open_port(channels, set_freq, set_len);
+    if (!replacement)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
 
-    // Save the port configuration
-    prt->freq = set_freq;
-    prt->len = set_len;
-    prt->mode = set_mode;
+    replacement->type = prt->type;
+    replacement->freq = set_freq;
+    replacement->len = set_len;
+    replacement->mode = set_mode;
+    replacement->owner_pid = caller->pid;
+    replacement->left_channel_volume = prt->left_channel_volume;
+    replacement->right_channel_volume = prt->right_channel_volume;
+    emuenv.audio.set_volume(*replacement, prt->volume);
 
     const std::lock_guard<std::mutex> lock(emuenv.audio.mutex);
-    emuenv.audio.out_ports.emplace(port, prt);
+    const auto it = emuenv.audio.out_ports.find(port);
+    if (it == emuenv.audio.out_ports.end() || it->second != prt)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+    prt->stopping = true;
+    if (emuenv.audio.adapter)
+        emuenv.audio.adapter->wake_all_ports();
+    it->second = std::move(replacement);
 
     return 0;
 }
@@ -315,18 +371,29 @@ EXPORT(int, sceAudioOutSetPortVolume_forUser) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, int *vol) {
-    TRACY_FUNC(sceAudioOutSetVolume, port, ch, vol[0], vol[1]);
+EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, Ptr<const int> vol) {
+    TRACY_FUNC(sceAudioOutSetVolume, port, ch, vol);
     if (ch == 0) // no channel selected, no changes
         return 0;
 
-    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
+    const auto caller = get_audio_caller(emuenv, thread_id);
+    if (!caller)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+    const AudioOutPortPtr prt = audio_process::find_port(emuenv.audio, port, caller->pid);
 
     if (!prt)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
 
-    const int left = (ch & SCE_AUDIO_VOLUME_FLAG_L_CH) ? vol[0] : prt->left_channel_volume;
-    const int right = (ch & SCE_AUDIO_VOLUME_FLAG_R_CH) ? vol[1] : prt->right_channel_volume;
+    int volumes[2]{};
+    try {
+        if (!vol || !audio_process::copy_guest_buffer(caller->thread->cpu->mem, vol.address(), volumes, sizeof(volumes)))
+            return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_POINTER);
+    } catch (const std::bad_alloc &) {
+        LOG_ERROR("{}: unable to pin volume buffer for port {}", export_name, port);
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_OUT_OF_MEMORY);
+    }
+    const int left = (ch & SCE_AUDIO_VOLUME_FLAG_L_CH) ? volumes[0] : prt->left_channel_volume;
+    const int right = (ch & SCE_AUDIO_VOLUME_FLAG_R_CH) ? volumes[1] : prt->right_channel_volume;
     const float volume_level = (static_cast<float>(left + right) / static_cast<float>(SCE_AUDIO_VOLUME_0DB * 2));
 
     // then update channel volumes in case there was a change

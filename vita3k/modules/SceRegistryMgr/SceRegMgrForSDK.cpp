@@ -17,6 +17,7 @@
 
 #include <module/module.h>
 
+#include <kernel/types.h>
 #include <regmgr/functions.h>
 
 #include <util/tracy.h>
@@ -49,9 +50,7 @@ EXPORT(int, sceRegMgrUtilityGetStr, const int id, char *buf, const SceSize bufSi
 EXPORT(int, sceRegMgrUtilitySetBin, const int id, const void *buf, const SceSize bufSize) {
     TRACY_FUNC(sceRegMgrUtilitySetBin, id, buf, bufSize);
     const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
-    regmgr::set_bin_value(emuenv.regmgr, category, name, buf, bufSize);
-
-    return 0;
+    return regmgr::set_bin_value(emuenv.regmgr, category, name, buf, bufSize) ? 0 : RET_ERROR(SCE_KERNEL_ERROR_ERROR);
 }
 
 EXPORT(int, sceRegMgrUtilitySetInt, const int id, SceInt32 buf) {
@@ -65,7 +64,5 @@ EXPORT(int, sceRegMgrUtilitySetInt, const int id, SceInt32 buf) {
 EXPORT(int, sceRegMgrUtilitySetStr, const int id, const char *buf, const SceSize bufSize) {
     TRACY_FUNC(sceRegMgrUtilitySetStr, id, buf, bufSize);
     const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
-    regmgr::set_str_value(emuenv.regmgr, category, name, buf, bufSize);
-
-    return 0;
+    return regmgr::set_str_value(emuenv.regmgr, category, name, buf, bufSize) ? 0 : RET_ERROR(SCE_KERNEL_ERROR_ERROR);
 }

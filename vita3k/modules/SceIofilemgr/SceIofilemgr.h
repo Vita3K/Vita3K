@@ -26,8 +26,9 @@ typedef struct _sceIoLseekOpt {
     uint32_t unk;
 } _sceIoLseekOpt;
 
-DECL_EXPORT(int, _sceIoDopen, const char *dir);
-DECL_EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir);
-DECL_EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode);
+DECL_EXPORT(int, _sceIoDopen, Ptr<const char> dir);
+DECL_EXPORT(int, _sceIoDread, const SceUID fd, Ptr<SceIoDirent> dir);
+DECL_EXPORT(int, _sceIoMkdir, Ptr<const char> dir, const SceMode mode);
 DECL_EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt);
-DECL_EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat);
+DECL_EXPORT(int, _sceIoGetstat, Ptr<const char> file, Ptr<SceIoStat> stat);
+DECL_EXPORT(int, _sceIoGetstatByFd, SceUID fd, Ptr<SceIoStat> stat);

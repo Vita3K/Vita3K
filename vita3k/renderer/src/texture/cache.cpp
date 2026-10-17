@@ -67,6 +67,19 @@ uint64_t hash_texture_data(const SceGxmTexture &texture, uint32_t texture_size, 
     }
 }
 
+static uint64_t hash_unprotected_texture_data(const SceGxmTexture &texture, uint32_t texture_size,
+    Address protect_begin, Address protect_end, const MemState &mem) {
+    const Address address = texture.data_addr << 2;
+    if (!address)
+        return 0;
+
+    uint64_t hash = hash_texture_data(texture, protect_begin - address, mem);
+    const uint32_t tail_size = address + texture_size - protect_end;
+    if (tail_size)
+        hash ^= std::rotl(hash_data(Ptr<const void>(protect_end).get(mem), tail_size), 1);
+    return hash;
+}
+
 // Function to hash an arbitrary swizzled texture in the most optimized way possible
 // this is a recursive function which calls itself on the 4 higher block making the sizzle
 // once a block entirely in the swizzle is found, it stops and hash it
@@ -667,12 +680,21 @@ static constexpr TextureGxmDataRepr strided_texture_mask = {
     0xF3FFFFFF
 };
 
-void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem) {
+bool TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
 
     size_t index = 0;
     bool configure = false;
     bool upload = false;
+
+    const Address texture_address = gxm_texture.data_addr << 2;
+    const uint64_t texture_size = gxm::texture_size(gxm_texture);
+    const uint64_t texture_end = uint64_t{ texture_address } + texture_size;
+    if (texture_end > UINT32_MAX - (mem.host_page_size - 1)
+        || (texture_address && !is_valid_addr_range(mem, texture_address, static_cast<Address>(texture_end)))) {
+        LOG_ERROR("Texture mip/face range is invalid: address 0x{:X}, size 0x{:X}", texture_address, texture_size);
+        return false;
+    }
 
     // Try to find GXM texture in cache.
     int cached_gxm_texture_index = -1;
@@ -706,8 +728,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         configure = true;
         upload = true;
-        // only hash the first mips, assume no game would modify other mips (and faces) without modifying the first one
-        info->texture_size = gxm::texture_size_first_mip(gxm_texture);
+        info->texture_size = static_cast<uint32_t>(texture_size);
         // use the texture_repr representation, it contains everything we need and we can use it to erase the key
         // from texture_lookup later
         info->texture = std::bit_cast<SceGxmTexture>(texture_repr);
@@ -728,11 +749,12 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         info->use_hash = should_use_hash;
         if (info->use_hash) {
+            info->data_hash = hash_texture_data(gxm_texture, info->texture_size, mem);
             if (import_textures || export_textures)
                 info->hash = hash_texture_nostride(gxm_texture, mem);
             else
                 // the xor 1 is to make sure it won't be the same as hash_texture_nostride
-                info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
+                info->hash = info->data_hash ^ 1;
         }
     } else {
         // Texture is cached.
@@ -740,18 +762,25 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         info = gxm_it->second;
         configure = false;
         if (info->use_hash) {
-            const uint64_t previous_hash = info->hash;
+            const uint64_t previous_hash = info->data_hash;
+            info->data_hash = hash_texture_data(gxm_texture, info->texture_size, mem);
             if (import_textures || export_textures)
                 info->hash = hash_texture_nostride(gxm_texture, mem);
             else
-                info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
+                info->hash = info->data_hash ^ 1;
 
-            upload = previous_hash != info->hash;
+            upload = previous_hash != info->data_hash;
         } else {
             range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
             range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
             upload = info->dirty;
         }
+    }
+    if (!info->use_hash) {
+        // Partial boundary pages are intentionally not protected; later mips may live there.
+        const uint64_t previous_hash = info->data_hash;
+        info->data_hash = hash_unprotected_texture_data(gxm_texture, info->texture_size, range_protect_begin, range_protect_end, mem);
+        upload |= previous_hash != info->data_hash;
     }
     current_info = info;
 
@@ -828,6 +857,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     // retrieve the appropriate sampler if needed
     if (use_sampler_cache)
         cache_and_bind_sampler(gxm_texture);
+    return true;
 }
 
 int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth) {

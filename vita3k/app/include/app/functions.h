@@ -33,7 +33,11 @@
 struct Config;
 struct EmuEnvState;
 struct AppLaunchRequest;
+struct RegMgrState;
 class Root;
+namespace pfsmgr {
+struct SavedataIdentity;
+}
 
 namespace app {
 
@@ -62,6 +66,10 @@ struct SettingsCommitResult {
 };
 
 bool init_paths(Root &root_paths);
+void recover_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path);
+pfsmgr::SavedataIdentity get_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path);
+bool import_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path, const pfsmgr::SavedataIdentity &identity, std::string &error);
+bool reset_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path, std::string &error);
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
 void shutdown_app_runtime(EmuEnvState &state, bool preserve_renderer = false);
 void reset_app_state(EmuEnvState &state, bool update_discord_presence = true);
@@ -75,6 +83,7 @@ void destroy(EmuEnvState &emuenv);
 
 bool init_apps_list(EmuEnvState &emuenv);
 bool scan_apps(EmuEnvState &emuenv);
+bool update_firmware_apps(EmuEnvState &emuenv, std::vector<std::string> &added_paths);
 bool load_cached_apps(EmuEnvState &emuenv);
 void save_apps_cache(EmuEnvState &emuenv);
 AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id);

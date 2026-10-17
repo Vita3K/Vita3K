@@ -47,7 +47,7 @@ auto get_recursive_directory_size(const T &path) {
 } // namespace
 
 void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto APP_PATH{ emuenv.vita_fs_path / "ux0/app" / app_path };
+    const auto APP_PATH = vfs::get_app_base_path(emuenv.vita_fs_path, app_path);
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
@@ -60,7 +60,7 @@ void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pat
 }
 
 size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto APP_PATH{ emuenv.vita_fs_path / "ux0/app" / app_path };
+    const auto APP_PATH = vfs::get_app_base_path(emuenv.vita_fs_path, app_path);
     std::uintmax_t app_size = 0;
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         app_size += get_recursive_directory_size(APP_PATH);
@@ -68,7 +68,7 @@ size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
     const auto app = get_app_index(gui, emuenv, app_path);
     if (!app)
         return 0;
-    const auto ADDCONT_PATH{ emuenv.vita_fs_path / "ux0/addcont" / app->title_id };
+    const auto ADDCONT_PATH{ emuenv.vita_fs_path / "ux0/addcont" / app->addcont };
     if (fs::exists(ADDCONT_PATH) && !fs::is_empty(ADDCONT_PATH)) {
         app_size += get_recursive_directory_size(ADDCONT_PATH);
     }
@@ -198,13 +198,15 @@ struct AddCont {
 static std::map<std::string, AddCont> addcont_info;
 
 static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
-    const auto APP_PATH{ emuenv.vita_fs_path / "ux0/app" / app_selected };
+    const auto APP_PATH = vfs::get_app_base_path(emuenv.vita_fs_path, app_selected);
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         gui.app_selector.app_info.size = get_recursive_directory_size(APP_PATH);
     }
 
     addcont_info.clear();
-    const auto ADDCONT_PATH{ emuenv.vita_fs_path / "ux0/addcont" / app_selected };
+    const auto selected_app = get_app_index(gui, emuenv, app_selected);
+    const auto addcont_id = selected_app ? selected_app->addcont : fs::path(app_selected).filename().string();
+    const auto ADDCONT_PATH{ emuenv.vita_fs_path / "ux0/addcont" / addcont_id };
     if (fs::exists(ADDCONT_PATH) && !fs::is_empty(ADDCONT_PATH)) {
         for (const auto &addcont : fs::directory_iterator(ADDCONT_PATH)) {
             const auto content_id = addcont.path().stem().string();
@@ -215,7 +217,7 @@ static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
             const auto addcont_size = get_recursive_directory_size(addcont);
             addcont_info[content_id].size = get_unit_size(addcont_size);
 
-            const auto content_path{ fs::path("addcont") / app_selected / content_id };
+            const auto content_path{ fs::path("addcont") / addcont_id / content_id };
             vfs::FileBuffer params;
             if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.vita_fs_path, content_path / "sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
@@ -232,7 +234,7 @@ static bool popup, content_delete, set_scroll_pos;
 static float scroll_pos;
 static ImGuiTextFilter search_bar;
 
-void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
+void draw_content_manager(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *session) {
     const auto &viewport = sdl::get_viewport();
     const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
     const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
@@ -374,14 +376,11 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             for (const auto &content : contents_selected) {
                 if (content.second) {
                     if (menu == "app") {
-                        if (!app::delete_app(emuenv, content.first))
-                            continue;
-                        // Keep icon cache management GUI-local.
-                        if (gui.app_selector.user_apps_icon.contains(content.first))
-                            gui.app_selector.user_apps_icon.erase(content.first);
+                        delete_app(gui, emuenv, content.first, session);
+                    } else {
+                        const auto SAVE_PATH{ emuenv.vita_fs_path / "ux0/user" / emuenv.io.user_id / "savedata" / content.first };
+                        fs::remove_all(SAVE_PATH);
                     }
-                    const auto SAVE_PATH{ emuenv.vita_fs_path / "ux0/user" / emuenv.io.user_id / "savedata" / content.first };
-                    fs::remove_all(SAVE_PATH);
                 }
             }
             init_content_manager(gui, emuenv);

@@ -18,28 +18,16 @@
 #pragma once
 
 #include "../state.h"
+#include "buffer_queue.h"
 
 #include <atomic>
-#include <condition_variable>
 
 #include <cubeb/cubeb.h>
-
-struct AudioBuffer {
-    std::vector<uint8_t> buffer;
-    int buffer_position;
-};
 
 struct CubebAudioOutPort : AudioOutPort {
     cubeb_stream *out_stream = nullptr;
     cubeb_stream_params spec;
-    // sync variables used to wait for the buffer to be ready
-    std::mutex mutex;
-    std::condition_variable cond_var;
-    // buffer filled with audio data to pass to cubeb
-    std::vector<AudioBuffer> audio_buffers;
-    // position of the next audio buffer to put audio
-    int next_audio_buffer = 0;
-    int nb_buffers_ready = 0;
+    AudioBufferQueue buffers;
     // cubeb_stream_set_volume rejects anything above 1.0, so gain beyond that
     // is applied to the samples in software by the audio callback
     std::atomic<float> extra_gain{ 1.0f };

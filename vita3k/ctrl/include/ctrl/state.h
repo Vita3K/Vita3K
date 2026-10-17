@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -62,6 +63,11 @@ struct VirtualKeyboardState {
 
 struct CtrlState {
     std::mutex mutex;
+    std::mutex power_callback_mutex;
+    std::map<SceUID, bool> power_callbacks;
+    std::chrono::steady_clock::time_point ps_press_started{};
+    bool ps_pressed = false;
+    bool ps_hold_sent = false;
     ControllerList controllers;
     int controllers_num = 0;
     float analog_multiplier = 1.0f;
@@ -90,6 +96,10 @@ struct CtrlState {
         // continue polling them without waiting for another SDL add event.
         input_mode = SCE_CTRL_MODE_DIGITAL;
         input_mode_ext = SCE_CTRL_MODE_DIGITAL;
+        power_callbacks.clear();
+        ps_press_started = {};
+        ps_pressed = false;
+        ps_hold_sent = false;
         std::fill_n(last_vcount, 5, 0);
         keyboard_state = {};
         overlay_input_intercepted.store(false, std::memory_order_relaxed);
