@@ -65,7 +65,7 @@ std::vector<SlotInfo> read_slots(const fs::path &save_path) {
 
     fs::ifstream sdslot(save_path / "sce_sys" / "sdslot.dat", std::ios::binary);
     if (sdslot) {
-        std::vector<char> buf((std::istreambuf_iterator<char>(sdslot)), {});
+        std::vector<char> buf(std::istreambuf_iterator<char>(sdslot), {});
         if (buf.size() < SDSLOT_DATA_BASE || std::memcmp(buf.data(), "SDSL", 4) != 0)
             return slots;
         for (uint32_t i = 0; i < SDSLOT_MAX_SLOTS; i++) {
