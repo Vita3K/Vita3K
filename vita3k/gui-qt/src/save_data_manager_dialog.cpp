@@ -55,6 +55,7 @@ static constexpr int RoleSort = Qt::UserRole + 1;
 static constexpr int RoleOriginalPixmap = Qt::UserRole + 2;
 static constexpr int RoleDetails = Qt::UserRole + 3;
 static constexpr int RoleAppTitle = Qt::UserRole + 4;
+static constexpr int RoleSavePath = Qt::UserRole + 5;
 
 static const QString notes_section = QStringLiteral("SaveDataNotes");
 static const GuiSave sm_geometry = GuiSave(QStringLiteral("SaveDataManager"), QStringLiteral("geometry"), QByteArray());
@@ -83,6 +84,17 @@ QDateTime last_modified(const fs::path &dir) {
 
 QString escape(const std::string &s) {
     return QString::fromStdString(s).toHtmlEscaped();
+}
+
+bool is_same_or_inside(const fs::path &path, const fs::path &base) {
+    const auto canonical = [](const fs::path &p) {
+        boost::system::error_code ec;
+        const fs::path result = fs::weakly_canonical(p, ec);
+        return ec ? fs::absolute(p) : result;
+    };
+    const fs::path p = canonical(path);
+    const fs::path b = canonical(base);
+    return std::mismatch(b.begin(), b.end(), p.begin(), p.end()).first == b.end();
 }
 
 } // namespace
@@ -229,8 +241,10 @@ QString SaveDataManagerDialog::selected_save_id() const {
 }
 
 fs::path SaveDataManagerDialog::selected_save_path() const {
-    const QString save_id = selected_save_id();
-    return save_id.isEmpty() ? fs::path() : savedata_root() / save_id.toStdString();
+    const QModelIndex current = m_table->currentIndex();
+    if (!current.isValid())
+        return {};
+    return gui::utils::to_fs_path(m_proxy->index(current.row(), SaveId).data(RoleSavePath).toString());
 }
 
 void SaveDataManagerDialog::reload() {
@@ -248,7 +262,7 @@ void SaveDataManagerDialog::reload() {
             continue;
         const fs::path path = it->path();
         const std::string save_id = path.filename().string();
-        if (save_id.starts_with('.') || path.extension() == ".tmp")
+        if (save_id.starts_with('.') || path.extension() == ".tmp" || path.extension() == ".bak")
             continue;
         if (save_id.starts_with("NPXS") && save_id != "NPXS10007")
             continue;
@@ -305,6 +319,7 @@ void SaveDataManagerDialog::reload() {
         auto *id_item = new QStandardItem(QString::fromStdString(save_id));
         id_item->setEditable(false);
         id_item->setData(id_item->text(), RoleSort);
+        id_item->setData(gui::utils::to_qt_path(path), RoleSavePath);
         auto *note_item = new QStandardItem(note);
         note_item->setData(note, RoleSort);
         m_model->appendRow({ icon_item, title_item, modified_item, id_item, note_item });
@@ -377,6 +392,19 @@ void SaveDataManagerDialog::update_details() {
     m_detail_text->setText(text);
 }
 
+void SaveDataManagerDialog::closeEvent(QCloseEvent *event) {
+    if (m_busy) {
+        event->ignore();
+        return;
+    }
+    QDialog::closeEvent(event);
+}
+
+void SaveDataManagerDialog::reject() {
+    if (!m_busy)
+        QDialog::reject();
+}
+
 bool SaveDataManagerDialog::refuse_while_running() {
     if (!m_is_app_running || !m_is_app_running())
         return false;
@@ -386,7 +414,8 @@ bool SaveDataManagerDialog::refuse_while_running() {
 
 bool SaveDataManagerDialog::run_with_progress(const QString &title, const std::function<bool(const std::function<void(float)> &)> &job) {
     QProgressDialog progress(title, QString(), 0, 1000, this);
-    progress.setWindowModality(Qt::WindowModal);
+    // Keeps the main window from launching an app or switching users mid conversion
+    progress.setWindowModality(Qt::ApplicationModal);
     progress.setMinimumDuration(0);
     progress.setValue(0);
 
@@ -402,7 +431,9 @@ bool SaveDataManagerDialog::run_with_progress(const QString &title, const std::f
     QEventLoop loop;
     connect(&watcher, &QFutureWatcher<bool>::finished, &loop, &QEventLoop::quit);
     watcher.setFuture(QtConcurrent::run([job, report] { return job(report); }));
+    m_busy = true;
     loop.exec();
+    m_busy = false;
     return watcher.result();
 }
 
@@ -441,6 +472,9 @@ void SaveDataManagerDialog::import_from_vita() {
 }
 
 void SaveDataManagerDialog::export_for_vita() {
+    if (refuse_while_running())
+        return;
+
     const fs::path src = selected_save_path();
     const QString save_id = selected_save_id();
     if (src.empty())
@@ -458,6 +492,10 @@ void SaveDataManagerDialog::export_for_vita() {
         return;
 
     const fs::path dst = gui::utils::to_fs_path(dir) / save_id.toStdString();
+    if (is_same_or_inside(dst, src) || is_same_or_inside(dst, m_emuenv.vita_fs_path / "ux0/user")) {
+        QMessageBox::warning(this, windowTitle(), tr("Choose a folder outside Vita3K's save data. Writing the encrypted copy there would replace the save data Vita3K uses."));
+        return;
+    }
     if (fs::exists(dst)
         && QMessageBox::question(this, windowTitle(), tr("%1 already exists. Overwrite it?").arg(QDir::toNativeSeparators(gui::utils::to_qt_path(dst))), QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
             != QMessageBox::Yes)
