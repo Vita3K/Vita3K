@@ -276,7 +276,7 @@ static void sdslot_load_existing(EmuEnvState &emuenv, std::vector<uint8_t> &buf,
     const auto fd = open_file(emuenv.io, construct_sdslot_path().c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
     const SceOff size = seek_file(fd, 0, SCE_SEEK_END, emuenv.io, export_name);
     seek_file(fd, 0, SCE_SEEK_SET, emuenv.io, export_name);
-    read_file(buf.data(), emuenv.io, fd, static_cast<SceSize>(std::min<SceOff>(std::max<SceOff>(size, 0), SDSLOT_TOTAL_SIZE)), export_name);
+    read_file(buf.data(), emuenv.io, fd, static_cast<SceSize>(std::clamp<SceOff>(size, 0, SDSLOT_TOTAL_SIZE)), export_name);
     close_file(emuenv.io, fd, export_name);
 }
 
