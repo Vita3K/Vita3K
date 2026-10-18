@@ -18,6 +18,7 @@
 #include <display/functions.h>
 
 #include <cheat/functions.h>
+#include <ctrl/functions.h>
 #include <dialog/state.h>
 #include <display/state.h>
 #include <emuenv/state.h>
@@ -65,6 +66,8 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             refresh_motion(emuenv.motion, emuenv.ctrl);
 
             // Cheat codes are re-applied on every vblank, the same way the Vita cheat plugins do.
+            // The pad is read here rather than taken from the game, which may stop reading it while a button is held.
+            cheat::set_buttons(emuenv.cheat, ctrl_peek_buttons(emuenv, 1));
             cheat::apply(emuenv.cheat, emuenv.mem, invalidate_jit);
 
             // Notify Vblank callback in each VBLANK start

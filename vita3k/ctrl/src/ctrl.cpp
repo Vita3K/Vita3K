@@ -19,7 +19,6 @@
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
 
-#include <cheat/functions.h>
 #include <config/state.h>
 #include <display/functions.h>
 #include <display/state.h>
@@ -257,7 +256,6 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     };
 
     if (state.overlay_input_intercepted.load(std::memory_order_relaxed) || emuenv.drop_inputs) {
-        cheat::set_buttons(emuenv.cheat, 0);
         reset_axes();
         return;
     }
@@ -280,11 +278,14 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
         }
     }
 
-    // Hand the pad over in positive logic, the cheat engine needs it to evaluate `$C2` codes.
-    if (port == 1)
-        cheat::set_buttons(emuenv.cheat, buttons);
-
     reset_axes();
+}
+
+SceUInt32 ctrl_peek_buttons(EmuEnvState &emuenv, int port) {
+    SceUInt32 buttons = 0;
+    SceUInt8 lx, ly, rx, ry;
+    retrieve_ctrl_data(emuenv, port, false, false, false, buttons, lx, ly, rx, ry);
+    return buttons;
 }
 
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext) {
