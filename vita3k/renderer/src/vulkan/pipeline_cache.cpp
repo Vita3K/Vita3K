@@ -123,9 +123,10 @@ void PipelineCache::init(bool support_rasterized_order_access) {
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eFragment
         };
+        // the mask, second color attachment read as an input attachment
         layout_binding[1] = vk::DescriptorSetLayoutBinding{
             .binding = 1,
-            .descriptorType = vk::DescriptorType::eStorageImage,
+            .descriptorType = vk::DescriptorType::eInputAttachment,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eFragment
         };
@@ -391,11 +392,12 @@ void PipelineCache::cleanup() {
 
     for (int i = 0; i < 2; i++)
         for (int j = 0; j < 2; j++)
-            for (int k = 0; k < 2; k++) {
-                for (auto &[fmt, pass] : render_passes[i][j][k])
-                    state.device.destroy(pass);
-                render_passes[i][j][k].clear();
-            }
+            for (int k = 0; k < 2; k++)
+                for (int l = 0; l < 2; l++) {
+                    for (auto &[fmt, pass] : render_passes[i][j][k][l])
+                        state.device.destroy(pass);
+                    render_passes[i][j][k][l].clear();
+                }
 
     for (auto &[fmt, pass] : shader_interlock_pass)
         state.device.destroy(pass);
@@ -430,41 +432,46 @@ void PipelineCache::cleanup() {
     nb_worker_threads = 0;
 }
 
-// Vulkan structs used to specify a specialization constant
+// Vulkan structs used to specify the fragment specialization constants (gamma correction
+// with shader interlock, mask test). Entries whose constant is absent from a shader are ignored.
 // Also, booleans in SPIRV are 32bit wide
-static const vk::SpecializationMapEntry srgb_entry = {
-    .constantID = shader::GAMMA_CORRECTION_SPECIALIZATION_ID,
-    .offset = 0,
-    .size = sizeof(uint32_t)
+static const vk::SpecializationMapEntry fragment_spec_entries[] = {
+    {
+        .constantID = shader::GAMMA_CORRECTION_SPECIALIZATION_ID,
+        .offset = 0,
+        .size = sizeof(uint32_t),
+    },
+    {
+        .constantID = shader::MASK_SPECIALIZATION_ID,
+        .offset = sizeof(uint32_t),
+        .size = sizeof(uint32_t),
+    },
 };
 
-static const uint32_t srgb_entry_true = vk::True;
-static const uint32_t srgb_entry_false = vk::False;
-
-static const vk::SpecializationInfo srgb_info_true = {
-    .mapEntryCount = 1,
-    .pMapEntries = &srgb_entry,
-    .dataSize = sizeof(uint32_t),
-    .pData = &srgb_entry_true
+// [is_srgb][use_mask]
+static const uint32_t fragment_spec_data[2][2][2] = {
+    { { vk::False, vk::False }, { vk::False, vk::True } },
+    { { vk::True, vk::False }, { vk::True, vk::True } },
 };
 
-static const vk::SpecializationInfo srgb_info_false = {
-    .mapEntryCount = 1,
-    .pMapEntries = &srgb_entry,
-    .dataSize = sizeof(uint32_t),
-    .pData = &srgb_entry_false
+static const vk::SpecializationInfo fragment_spec_info[2][2] = {
+    {
+        { .mapEntryCount = 2, .pMapEntries = fragment_spec_entries, .dataSize = sizeof(fragment_spec_data[0][0]), .pData = fragment_spec_data[0][0] },
+        { .mapEntryCount = 2, .pMapEntries = fragment_spec_entries, .dataSize = sizeof(fragment_spec_data[0][1]), .pData = fragment_spec_data[0][1] },
+    },
+    {
+        { .mapEntryCount = 2, .pMapEntries = fragment_spec_entries, .dataSize = sizeof(fragment_spec_data[1][0]), .pData = fragment_spec_data[1][0] },
+        { .mapEntryCount = 2, .pMapEntries = fragment_spec_entries, .dataSize = sizeof(fragment_spec_data[1][1]), .pData = fragment_spec_data[1][1] },
+    },
 };
 
-vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb) {
-    if (maskupdate)
-        LOG_WARN_ONCE("Mask not implemented in the vulkan renderer!");
-
+vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb, bool use_mask) {
     const vk::ShaderModule shader_compiling = std::bit_cast<vk::ShaderModule>(~0ULL);
 
     const vk::SpecializationInfo *spec_info = nullptr;
-    if (!is_vertex && state.features.should_use_shader_interlock() && program->is_frag_color_used()) {
-        // if the specialization constant is used in the shader
-        spec_info = is_srgb ? &srgb_info_true : &srgb_info_false;
+    if (!is_vertex && (state.features.use_mask_bit || (state.features.should_use_shader_interlock() && program->is_frag_color_used()))) {
+        // if a specialization constant is used in the shader
+        spec_info = &fragment_spec_info[is_srgb][use_mask];
     }
 
     vk::ShaderModule *shader_module;
@@ -536,8 +543,9 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     return shader_stage_info;
 }
 
-vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool is_color_transient, bool no_color) {
-    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[is_color_transient][force_load][force_store];
+vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool is_color_transient, bool no_color, bool keep_mask) {
+    keep_mask = keep_mask && state.features.use_mask_bit && !no_color;
+    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[is_color_transient][force_load][force_store][keep_mask];
 
     auto it = render_passes_map.find(format);
 
@@ -558,13 +566,24 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
         .pipelineBindPoint = vk::PipelineBindPoint::eGraphics
     };
 
+    // mask bit: second color attachment (location 1) and input attachment 1
+    const bool use_mask = state.features.use_mask_bit && !no_color;
+    const vk::AttachmentReference color_refs[] = {
+        color_ref,
+        { .attachment = 2, .layout = vk::ImageLayout::eGeneral },
+    };
+
     subpass.setPDepthStencilAttachment(&ds_ref);
     if (!no_color) {
         if (support_coherent_framebuffer_fetch)
             subpass.flags = vk::SubpassDescriptionFlagBits::eRasterizationOrderAttachmentColorAccessEXT;
 
-        subpass.setColorAttachments(color_ref);
-        subpass.setInputAttachments(color_ref);
+        subpass.setColorAttachments(color_refs);
+        subpass.setInputAttachments(color_refs);
+        if (!use_mask) {
+            subpass.colorAttachmentCount = 1;
+            subpass.inputAttachmentCount = 1;
+        }
     }
 
     vk::AttachmentDescription color_attachment{
@@ -589,7 +608,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
         .finalLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal
     };
 
-    std::array<vk::SubpassDependency, 4> dependencies;
+    std::array<vk::SubpassDependency, 5> dependencies;
 
     // external dependency
     // we want the previous render pass to be done when we reach the fragment stage / stencil*depth testing
@@ -646,9 +665,35 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
         .dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead
     };
 
+    // mask bit: a mask update (color attachment write) waits for the previous mask tests (input attachment reads)
+    dependencies[4] = {
+        .srcSubpass = 0,
+        .dstSubpass = 0,
+        .srcStageMask = vk::PipelineStageFlagBits::eFragmentShader,
+        .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        .srcAccessMask = vk::AccessFlagBits::eInputAttachmentRead,
+        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion
+    };
+
+    // Once a render target uses the mask, it starts each scene cleared (see VKContext::prepare_mask)
+    // and is kept between the render passes of a scene. Until then its content does not matter.
+    vk::AttachmentDescription mask_attachment{
+        .format = vk::Format::eR8Unorm,
+        .samples = vk::SampleCountFlagBits::e1,
+        .loadOp = keep_mask ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eDontCare,
+        .storeOp = keep_mask ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare,
+        .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+        .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+        .initialLayout = vk::ImageLayout::eGeneral,
+        .finalLayout = vk::ImageLayout::eGeneral
+    };
+
     vk::RenderPassCreateInfo pass_info{};
-    vk::AttachmentDescription attachments[] = { color_attachment, ds_attachment };
+    vk::AttachmentDescription attachments[] = { color_attachment, ds_attachment, mask_attachment };
     pass_info.setAttachments(attachments);
+    if (!use_mask)
+        pass_info.attachmentCount = 2;
     pass_info.setSubpasses(subpass);
     pass_info.setDependencies(dependencies);
     if (no_color) {
@@ -824,11 +869,14 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     // the vertex input state must be computed before shader are retrieved in case symbols are stripped
     const vk::PipelineVertexInputStateCreateInfo vertex_input = get_vertex_input_state(vertex_program_gxm, mem);
 
-    const vk::PipelineShaderStageCreateInfo vertex_shader = retrieve_shader(vertex_program_gxm.program.get(mem), vertex_program.hash, true, fragment_program_gxm.is_maskupdate, mem, hints);
-    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, hints, record.is_gamma_corrected);
+    // a mask update writes the mask bit (a storage image) and nothing else: no color, no depth-stencil test
+    const bool is_mask_update = fragment_program_gxm.is_maskupdate;
+
+    const vk::PipelineShaderStageCreateInfo vertex_shader = retrieve_shader(vertex_program_gxm.program.get(mem), vertex_program.hash, true, false, mem, hints);
+    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_program.hash, false, is_mask_update, mem, hints, record.is_gamma_corrected, record.is_mask_read);
     const vk::PipelineShaderStageCreateInfo shader_stages[] = { vertex_shader, fragment_shader };
     // disable the fragment shader if gxm asks us to
-    const bool is_fragment_disabled = record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED || gxm_fragment_shader->has_no_effect();
+    const bool is_fragment_disabled = !is_mask_update && (record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED || gxm_fragment_shader->has_no_effect());
     const uint32_t shader_stage_count = is_fragment_disabled ? 1U : 2U;
 
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly{
@@ -853,31 +901,38 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     // depth and stencil tests are always enabled on the ps vita as there is almost no cost in doing so
     // on a tiled renderer
     const vk::PipelineDepthStencilStateCreateInfo ds_info{
-        .depthTestEnable = VK_TRUE,
-        .depthWriteEnable = (record.front_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED),
+        .depthTestEnable = !is_mask_update,
+        .depthWriteEnable = !is_mask_update && (record.front_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED),
         .depthCompareOp = translate_depth_func(record.front_depth_func),
         .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_TRUE,
+        .stencilTestEnable = !is_mask_update,
         .front = convert_op_state(record.front_stencil_state_op),
         .back = convert_op_state(two_sided ? record.back_stencil_state_op : record.front_stencil_state_op)
     };
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
-    if (support_coherent_framebuffer_fetch && gxm_fragment_shader->is_frag_color_used())
+    // input attachment reads (last color, mask bit) must see the writes of the previous draws
+    if (support_coherent_framebuffer_fetch && (gxm_fragment_shader->is_frag_color_used() || record.is_mask_read))
         color_blending.flags = vk::PipelineColorBlendStateCreateFlagBits::eRasterizationOrderAttachmentAccessEXT;
 
     const bool frag_has_no_output = static_cast<bool>(gxm_fragment_shader->program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED);
-    if (is_fragment_disabled || frag_has_no_output || use_shader_interlock) {
-        // The write mask must be empty as the lack of a fragment shader results in undefined values
-        static const vk::PipelineColorBlendAttachmentState blending = {
-            .blendEnable = VK_FALSE,
-            .colorWriteMask = vk::ColorComponentFlags()
-        };
-        color_blending.setAttachments(blending);
-    } else {
-        const vk::PipelineColorBlendAttachmentState &blending = fragment_program.blending;
-        color_blending.setAttachments(blending);
-    }
+    // The write mask must be empty as the lack of a fragment shader results in undefined values
+    static const vk::PipelineColorBlendAttachmentState no_write = {
+        .blendEnable = VK_FALSE,
+        .colorWriteMask = vk::ColorComponentFlags()
+    };
+    // second attachment: the mask bit, only written by mask updates
+    static const vk::PipelineColorBlendAttachmentState mask_write = {
+        .blendEnable = VK_FALSE,
+        .colorWriteMask = vk::ColorComponentFlagBits::eR
+    };
+    const vk::PipelineColorBlendAttachmentState blend_attachments[] = {
+        (is_fragment_disabled || frag_has_no_output || use_shader_interlock || is_mask_update) ? no_write : fragment_program.blending,
+        is_mask_update ? mask_write : no_write,
+    };
+    color_blending.setAttachments(blend_attachments);
+    if (!state.features.use_mask_bit)
+        color_blending.attachmentCount = 1;
 
     vk::PipelineLayout pipeline_layout = pipeline_layouts[vertex_program.texture_count][fragment_program.texture_count];
 

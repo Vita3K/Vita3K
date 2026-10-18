@@ -107,6 +107,9 @@ struct SpirvShaderParameters {
 
     // When using shader interlock, specialization constant telling us if the texture is gamma corrected
     spv::Id is_srgb_constant;
+
+    // Vulkan with the mask bit: specialization constant telling us if the mask must be tested
+    spv::Id is_mask_constant = 0; // spv::NoResult
 };
 
 using Coord = std::pair<spv::Id, int>;

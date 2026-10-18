@@ -369,15 +369,14 @@ COMMAND_SET_STATE(stencil_func) {
     stencil_state_vals.compare_mask = helper.pop<std::uint8_t>();
     stencil_state_vals.write_mask = helper.pop<std::uint8_t>();
 
-    if (render_context->record.is_maskupdate) {
-        if (stencil_state_op.func == SCE_GXM_STENCIL_FUNC_NEVER) {
+    // A mask update program writes 1 with the stencil function ALWAYS and 0 with NEVER.
+    // The function may be set before or after the program, and must still reach the
+    // stencil state of the draws that follow.
+    if (is_front) {
+        if (stencil_state_op.func == SCE_GXM_STENCIL_FUNC_NEVER)
             render_context->record.writing_mask = 0.0f;
-        } else if (stencil_state_op.func == SCE_GXM_STENCIL_FUNC_ALWAYS) {
+        else if (stencil_state_op.func == SCE_GXM_STENCIL_FUNC_ALWAYS)
             render_context->record.writing_mask = 1.0f;
-        } else {
-            assert(false);
-        }
-        return;
     }
 
     switch (renderer.current_backend) {
