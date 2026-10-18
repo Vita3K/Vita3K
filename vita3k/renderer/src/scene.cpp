@@ -74,6 +74,7 @@ COMMAND(handle_set_context) {
     } else {
         render_context->record.depth_stencil_surface.depth_data.reset();
         render_context->record.depth_stencil_surface.stencil_data.reset();
+        render_context->record.depth_stencil_surface.mask = 1;
     }
 
     destroy_command_payload(*helper.cmd);

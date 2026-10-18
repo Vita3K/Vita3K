@@ -23,6 +23,7 @@
 
 #include <gxm/functions.h>
 #include <renderer/functions.h>
+#include <shader/spirv_recompiler.h>
 
 #include <util/log.h>
 #include <util/overloaded.h>
@@ -127,6 +128,7 @@ void VKContext::wait_thread_function(const MemState &mem) {
 void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const FeatureState &features) {
     context.render_target = rt;
     context.scene_timestamp++;
+    context.gxm_scene_id++;
     context.state.texture_cache.current_scene_timestamp = context.scene_timestamp;
 
     SceGxmColorSurface *color_surface_fin = &context.record.color_surface;
@@ -169,6 +171,35 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
 
     context.start_recording(true);
 
+    if (features.use_mask_bit) {
+        const bool initialized = rt->mask.layout != vkutil::ImageLayout::Undefined;
+        vk::ImageMemoryBarrier mask_barrier{
+            .srcAccessMask = initialized ? vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead : vk::AccessFlags(),
+            .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+            .oldLayout = initialized ? vk::ImageLayout::eGeneral : vk::ImageLayout::eUndefined,
+            .newLayout = vk::ImageLayout::eTransferDstOptimal,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = rt->mask.image,
+            .subresourceRange = vkutil::color_subresource_range
+        };
+        context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
+            vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, mask_barrier);
+        const float initial_mask = context.record.depth_stencil_surface.mask ? 1.0f : 0.0f;
+        rt->mask_may_reject = initial_mask == 0.0f;
+        const vk::ClearColorValue mask_clear{
+            .float32 = std::array<float, 4>{ initial_mask, initial_mask, initial_mask, initial_mask }
+        };
+        context.render_cmd.clearColorImage(rt->mask.image, vk::ImageLayout::eTransferDstOptimal, mask_clear, vkutil::color_subresource_range);
+        mask_barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+        mask_barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+        mask_barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+        mask_barrier.newLayout = vk::ImageLayout::eGeneral;
+        context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+            vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, {}, {}, mask_barrier);
+        rt->mask.layout = vkutil::ImageLayout::StorageImage;
+    }
+
     bool force_load = context.record.depth_stencil_surface.force_load;
     bool force_store = context.record.depth_stencil_surface.force_store;
     if (ds_surface_fin == nullptr) {
@@ -176,10 +207,12 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
         force_load = false;
         force_store = false;
     }
-    if (context.state.features.support_shader_interlock)
-        // we must always store the depth stencil
+    if (context.state.features.support_shader_interlock || features.use_mask_bit)
+        // Preserve depth/stencil when a mask update splits the scene.
         force_store = true;
     context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store, color_surface_fin == nullptr);
+    context.initial_render_pass = context.current_render_pass;
+    context.initial_depth_stencil_clear = force_load ? vk::ImageAspectFlags() : vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
     if (context.state.features.support_shader_interlock)
         // also retrieve / create the shader interlock pass
         context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, color_surface_fin == nullptr, true);
@@ -199,6 +232,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     }
 
     context.is_first_scene_draw = true;
+    context.initialized_macroblocks = 0;
     context.last_macroblock_x = ~0;
     context.last_macroblock_y = ~0;
     context.ignore_macroblock = false;
@@ -282,15 +316,20 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
 
     // we have no more frame descriptor available, create a bunch of new one for this specific layout
     // the type depends on the way we read it
-    vk::DescriptorPoolSize pool_size{
-        .type = state.features.support_shader_interlock ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eInputAttachment,
-        .descriptorCount = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
-    };
+    std::vector<vk::DescriptorPoolSize> pool_sizes{ { .type = state.features.support_shader_interlock ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eInputAttachment,
+        .descriptorCount = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING } };
+    if (state.features.use_mask_bit) {
+        if (state.features.support_shader_interlock) {
+            pool_sizes[0].descriptorCount *= 2;
+            pool_sizes.push_back({ vk::DescriptorType::eInputAttachment, DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING });
+        } else
+            pool_sizes.push_back({ vk::DescriptorType::eStorageImage, DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING });
+    }
 
     vk::DescriptorPoolCreateInfo descriptor_pool_info{
         .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
     };
-    descriptor_pool_info.setPoolSizes(pool_size);
+    descriptor_pool_info.setPoolSizes(pool_sizes);
 
     vk::DescriptorPool descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
     state.frame_descriptor_pools.push_back(descriptor_pool);
@@ -316,7 +355,7 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
     return frame_descriptor.sets[frame_descriptor.descriptors_idx++];
 }
 
-void VKContext::start_render_pass(bool create_descriptor_set) {
+void VKContext::start_render_pass(bool create_descriptor_set, bool maskupdate) {
     if (in_renderpass) {
         LOG_ERROR("Starting render pass while already in render pass");
         return;
@@ -325,9 +364,21 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     if (!is_recording)
         start_recording();
 
+    vk::ImageAspectFlags macroblock_clear;
+    if (!maskupdate && state.features.use_mask_bit && render_target->has_macroblock_sync && !ignore_macroblock) {
+        // Only the first pass may discard the attachment; later new blocks need a local clear.
+        const uint16_t macroblock_bit = 1U << (last_macroblock_x + 4 * last_macroblock_y);
+        is_first_scene_draw = (initialized_macroblocks & macroblock_bit) == 0;
+        const bool first_macroblock = initialized_macroblocks == 0;
+        current_render_pass = first_macroblock ? initial_render_pass : state.pipeline_cache.retrieve_render_pass(current_color_format, true, true, !record.color_surface.data);
+        if (is_first_scene_draw && !first_macroblock)
+            macroblock_clear = initial_depth_stencil_clear;
+        initialized_macroblocks |= macroblock_bit;
+    }
+
     curr_renderpass_info = vk::RenderPassBeginInfo{
-        .renderPass = current_render_pass,
-        .framebuffer = current_framebuffer
+        .renderPass = maskupdate ? state.pipeline_cache.retrieve_mask_render_pass() : current_render_pass,
+        .framebuffer = maskupdate ? render_target->mask_framebuffer : current_framebuffer
     };
 
     if (render_target->has_macroblock_sync && !ignore_macroblock) {
@@ -351,8 +402,14 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
         .depth = record.depth_stencil_surface.background_depth,
         .stencil = record.depth_stencil_surface.stencil
     };
-    curr_renderpass_info.setClearValues(curr_clear_values);
+    if (!maskupdate)
+        curr_renderpass_info.setClearValues(curr_clear_values);
     render_cmd.beginRenderPass(curr_renderpass_info, vk::SubpassContents::eInline);
+    if (macroblock_clear && curr_renderpass_info.renderArea.extent.width && curr_renderpass_info.renderArea.extent.height) {
+        const vk::ClearAttachment clear{ .aspectMask = macroblock_clear, .clearValue = curr_clear_values[1] };
+        const vk::ClearRect rect{ .rect = curr_renderpass_info.renderArea, .layerCount = 1 };
+        render_cmd.clearAttachments(clear, rect);
+    }
 
     // set the renderpass info ready in case we need to switch between classic and framebuffer fetch usage
     curr_renderpass_info.setClearValues(nullptr);
@@ -361,6 +418,7 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     refresh_pipeline = true;
     current_pipeline = nullptr;
     in_renderpass = true;
+    in_maskupdate_pass = maskupdate;
 
     if (!create_descriptor_set)
         return;
@@ -384,6 +442,27 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     };
     write_descr.setImageInfo(descr_color_info);
     state.device.updateDescriptorSets(write_descr, {});
+
+    if (state.features.use_mask_bit) {
+        vk::DescriptorImageInfo mask_info{
+            .imageView = render_target->mask.view,
+            .imageLayout = vk::ImageLayout::eGeneral
+        };
+        write_descr.dstBinding = 1;
+        write_descr.descriptorType = vk::DescriptorType::eStorageImage;
+        write_descr.setImageInfo(mask_info);
+        state.device.updateDescriptorSets(write_descr, {});
+        if (state.features.support_shader_interlock) {
+            const vk::DescriptorImageInfo input_info{
+                .imageView = current_color_view,
+                .imageLayout = vk::ImageLayout::eGeneral
+            };
+            write_descr.dstBinding = 2;
+            write_descr.descriptorType = vk::DescriptorType::eInputAttachment;
+            write_descr.setImageInfo(input_info);
+            state.device.updateDescriptorSets(write_descr, {});
+        }
+    }
 }
 
 void VKContext::stop_render_pass() {
@@ -393,14 +472,142 @@ void VKContext::stop_render_pass() {
     }
 
     // do this before ending the render pass
-    if (is_in_query) {
-        render_cmd.endQuery(current_visibility_buffer->query_pool, current_query_idx);
-        is_in_query = false;
-    }
+    end_visibility_query();
 
     render_cmd.endRenderPass();
 
     in_renderpass = false;
+    in_maskupdate_pass = false;
+}
+
+void VKContext::begin_visibility_query() {
+    constexpr uint32_t queries_per_pool = 256;
+    const uint32_t slot = static_cast<uint32_t>(visibility_queries.size() % queries_per_pool);
+    if (slot == 0) {
+        const vk::QueryPoolCreateInfo info{ .queryType = vk::QueryType::eOcclusion, .queryCount = queries_per_pool };
+        visibility_query_pools.push_back(state.device.createQueryPool(info));
+        prerender_cmd.resetQueryPool(visibility_query_pools.back(), 0, queries_per_pool);
+    }
+    const auto pool = visibility_query_pools.back();
+    visibility_queries.push_back({ current_visibility_buffer, static_cast<uint32_t>(current_query_idx), is_query_op_increment, pool, slot });
+    const vk::QueryControlFlags flags = (is_query_op_increment && state.physical_device_features.occlusionQueryPrecise)
+        ? vk::QueryControlFlagBits::ePrecise
+        : vk::QueryControlFlags();
+    render_cmd.beginQuery(pool, slot, flags);
+    is_in_query = true;
+}
+
+void VKContext::end_visibility_query() {
+    if (!is_in_query)
+        return;
+    const auto &query = visibility_queries.back();
+    render_cmd.endQuery(query.pool, query.slot);
+    is_in_query = false;
+}
+
+void VKContext::resolve_visibility_queries() {
+    if (visibility_queries.empty())
+        return;
+
+    if (!visibility_pipeline) {
+        const auto code = shader::create_visibility_reduce_shader();
+        const vk::ShaderModuleCreateInfo shader_info{ .codeSize = code.size() * sizeof(uint32_t), .pCode = code.data() };
+        visibility_shader = state.device.createShaderModule(shader_info);
+        const vk::DescriptorSetLayoutBinding binding{ 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute };
+        vk::DescriptorSetLayoutCreateInfo descriptor_info{};
+        descriptor_info.setBindings(binding);
+        visibility_descriptor_layout = state.device.createDescriptorSetLayout(descriptor_info);
+        const vk::PushConstantRange constants{ vk::ShaderStageFlagBits::eCompute, 0, 2 * sizeof(uint32_t) };
+        vk::PipelineLayoutCreateInfo layout_info{};
+        layout_info.setSetLayouts(visibility_descriptor_layout);
+        layout_info.setPushConstantRanges(constants);
+        visibility_pipeline_layout = state.device.createPipelineLayout(layout_info);
+        const vk::ComputePipelineCreateInfo pipeline_info{
+            .stage = { .stage = vk::ShaderStageFlagBits::eCompute, .module = visibility_shader, .pName = "main" },
+            .layout = visibility_pipeline_layout
+        };
+        const auto result = state.device.createComputePipeline(nullptr, pipeline_info);
+        if (result.result != vk::Result::eSuccess) {
+            LOG_ERROR("Cannot create visibility reduction pipeline: {}", vk::to_string(result.result));
+            throw std::runtime_error("Cannot create visibility reduction pipeline");
+        }
+        visibility_pipeline = result.value;
+    }
+
+    std::map<std::pair<Address, uint32_t>, std::vector<const VisibilityQuery *>> groups;
+    for (const auto &query : visibility_queries)
+        groups[{ query.buffer->address, query.index }].push_back(&query);
+
+    const vk::DeviceSize result_offset = visibility_queries.size() * 2 * sizeof(uint32_t);
+    const vk::DeviceSize size = result_offset + groups.size() * 4 * sizeof(uint32_t);
+    if (size > state.physical_device_properties.limits.maxStorageBufferRange) {
+        LOG_ERROR("Visibility reduction requires {} bytes, exceeding the GPU storage buffer range", size);
+        throw std::runtime_error("Visibility reduction exceeds GPU storage buffer range");
+    }
+    vkutil::Buffer scratch(size);
+    scratch.init_buffer(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc);
+
+    const vk::DescriptorPoolSize pool_size{ vk::DescriptorType::eStorageBuffer, 1 };
+    vk::DescriptorPoolCreateInfo pool_info{ .maxSets = 1 };
+    pool_info.setPoolSizes(pool_size);
+    auto descriptor_pool = state.device.createDescriptorPool(pool_info);
+    vk::DescriptorSetAllocateInfo allocation{ .descriptorPool = descriptor_pool };
+    allocation.setSetLayouts(visibility_descriptor_layout);
+    const auto descriptor = state.device.allocateDescriptorSets(allocation)[0];
+    const vk::DescriptorBufferInfo buffer_info{ scratch.buffer, 0, size };
+    vk::WriteDescriptorSet write{ .dstSet = descriptor, .dstBinding = 0, .descriptorType = vk::DescriptorType::eStorageBuffer };
+    write.setBufferInfo(buffer_info);
+    state.device.updateDescriptorSets(write, {});
+
+    uint32_t cursor = 0;
+    vk::DeviceSize header_offset = result_offset;
+    for (const auto &[key, queries] : groups) {
+        const std::array<uint32_t, 2> header{ cursor, static_cast<uint32_t>(queries.size()) };
+        render_cmd.updateBuffer(scratch.buffer, header_offset, sizeof(header), header.data());
+        auto &buffer = *queries.front()->buffer;
+        const auto previous_scene = buffer.result_scenes.find(key.second);
+        if (previous_scene != buffer.result_scenes.end() && previous_scene->second == gxm_scene_id) {
+            const vk::BufferCopy copy{ buffer.buffer_offset + key.second * sizeof(uint32_t), header_offset + 8, sizeof(uint32_t) };
+            render_cmd.copyBuffer(buffer.gpu_buffer, scratch.buffer, copy);
+        } else {
+            const uint32_t zero = 0;
+            render_cmd.updateBuffer(scratch.buffer, header_offset + 8, sizeof(zero), &zero);
+        }
+        buffer.result_scenes[key.second] = gxm_scene_id;
+        header_offset += 4 * sizeof(uint32_t);
+        for (const auto *query : queries) {
+            const uint32_t increment = query->increment;
+            render_cmd.updateBuffer(scratch.buffer, cursor * 8 + 4, sizeof(increment), &increment);
+            render_cmd.copyQueryPoolResults(query->pool, query->slot, 1, scratch.buffer, cursor * 8,
+                sizeof(uint32_t), vk::QueryResultFlagBits::eWait);
+            ++cursor;
+        }
+    }
+    const vk::MemoryBarrier input_barrier{ .srcAccessMask = vk::AccessFlagBits::eTransferWrite, .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite };
+    render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eComputeShader, {}, input_barrier, {}, {});
+    render_cmd.bindPipeline(vk::PipelineBindPoint::eCompute, visibility_pipeline);
+    render_cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, visibility_pipeline_layout, 0, descriptor, {});
+    const std::array<uint32_t, 2> constants{ static_cast<uint32_t>(result_offset / sizeof(uint32_t)), static_cast<uint32_t>(groups.size()) };
+    render_cmd.pushConstants(visibility_pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(constants), constants.data());
+    render_cmd.dispatch((constants[1] + 63) / 64, 1, 1);
+    const vk::MemoryBarrier output_barrier{ .srcAccessMask = vk::AccessFlagBits::eShaderWrite, .dstAccessMask = vk::AccessFlagBits::eTransferRead };
+    render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eTransfer, {}, output_barrier, {}, {});
+    vk::DeviceSize offset = result_offset + 3 * sizeof(uint32_t);
+    for (const auto &[key, queries] : groups) {
+        const auto &buffer = *queries.front()->buffer;
+        const vk::BufferCopy copy{ offset, buffer.buffer_offset + key.second * sizeof(uint32_t), sizeof(uint32_t) };
+        render_cmd.copyBuffer(scratch.buffer, buffer.gpu_buffer, copy);
+        visibility_sync_ranges.push_back({ buffer.address + key.second * uint32_t{ 4 }, sizeof(uint32_t) });
+        offset += 4 * sizeof(uint32_t);
+    }
+    const vk::MemoryBarrier destination_barrier{ .srcAccessMask = vk::AccessFlagBits::eTransferWrite, .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite };
+    render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eAllCommands, {}, destination_barrier, {}, {});
+    state.frame().destroy_queue.add_buffer(scratch);
+    state.frame().destroy_queue.add(descriptor_pool);
+    for (auto &pool : visibility_query_pools)
+        state.frame().destroy_queue.add(pool);
+    visibility_query_pools.clear();
+    visibility_queries.clear();
 }
 
 void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit) {
@@ -412,41 +619,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     if (in_renderpass)
         stop_render_pass();
 
-    struct VisibilityRange {
-        uint32_t offset;
-        uint32_t size;
-    };
-    std::vector<VisibilityRange> occlusion_ranges;
-    if (visibility_max_used_idx != -1) {
-        // get all the entry ranges that were used
-        bool in_range = false;
-        uint32_t range_start = 0;
-        for (uint32_t entry = 0; entry <= visibility_max_used_idx + 1; entry++) {
-            if (current_visibility_buffer->queries_used[entry] == in_range)
-                continue;
-
-            if (in_range) {
-                occlusion_ranges.push_back({ range_start, entry - range_start });
-                in_range = false;
-            } else {
-                range_start = entry;
-                in_range = true;
-            }
-        }
-
-        for (auto &range : occlusion_ranges) {
-            // reset before the beginning of the render pass
-            prerender_cmd.resetQueryPool(current_visibility_buffer->query_pool, range.offset, range.size);
-
-            // wait for the range at the end
-            // TODO: this will be wrong with upscaling enabled and precise mode set
-            render_cmd.copyQueryPoolResults(current_visibility_buffer->query_pool, range.offset, range.size,
-                current_visibility_buffer->gpu_buffer, current_visibility_buffer->buffer_offset + range.offset * sizeof(uint32_t),
-                sizeof(uint32_t), vk::QueryResultFlagBits::eWait);
-        }
-        visibility_max_used_idx = -1;
-        current_visibility_buffer->queries_used.assign(current_visibility_buffer->size, false);
-    }
+    resolve_visibility_queries();
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
     if (state.features.enable_memory_mapping && !state.disable_surface_sync && submit)
@@ -488,9 +661,8 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
 
         if (state.mapping_method == MappingMethod::DoubleBuffer) {
             // sync all the visibility buffers
-            for (auto &range : occlusion_ranges) {
-                state.request_queue.push(BufferSyncRequest{ current_visibility_buffer->address + range.offset * 4, range.size * 4 });
-            }
+            for (const auto &range : visibility_sync_ranges)
+                state.request_queue.push(range);
 
             // we must sync the two buffers
             if (surface_info && surface_info->need_buffer_sync)
@@ -509,6 +681,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
             state.request_queue.push(request);
         }
     }
+    visibility_sync_ranges.clear();
 }
 
 void VKContext::check_for_macroblock_change(bool is_draw) {

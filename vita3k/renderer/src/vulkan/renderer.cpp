@@ -359,6 +359,7 @@ VKState::VKState(int gpu_idx)
 
 bool VKState::init() {
     shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
+    features.use_mask_bit = true;
     return true;
 }
 
@@ -924,7 +925,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
     support_fsr &= screen_renderer.surface_format.format == vk::Format::eR8G8B8A8Unorm;
     support_fsr &= static_cast<bool>(physical_device.getFormatProperties(screen_renderer.surface_format.format).optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage);
 
-    return true;
+    return init();
 }
 
 void VKState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
@@ -1286,7 +1287,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     assert(features.enable_memory_mapping);
     // the address should be 4K aligned
     assert((address.address() & 4095) == 0);
-    constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst;
+    constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc;
 
     auto find_mem_type_with_flag = [&](const vk::MemoryPropertyFlags flags, uint32_t hardware_types) {
         while (hardware_types != 0) {
