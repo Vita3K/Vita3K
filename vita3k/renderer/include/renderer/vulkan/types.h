@@ -173,8 +173,15 @@ struct VisibilityBuffer {
     vk::Buffer gpu_buffer;
     uint64_t buffer_offset;
     uint32_t size;
-    vk::QueryPool query_pool;
-    std::vector<bool> queries_used; // the queries that were used in the current scene
+    std::map<uint32_t, uint64_t> result_scenes;
+};
+
+struct VisibilityQuery {
+    VisibilityBuffer *buffer;
+    uint32_t index;
+    bool increment;
+    vk::QueryPool pool;
+    uint32_t slot;
 };
 
 struct FenceWaitRequest {
@@ -235,6 +242,8 @@ struct VKContext : public renderer::Context {
 
     uint64_t frame_timestamp = 1;
     uint64_t scene_timestamp = 1;
+    // Unlike scene_timestamp, recording splits do not advance the logical GXM scene.
+    uint64_t gxm_scene_id = 0;
     std::vector<vk::CommandBuffer> cmdbuffers_to_submit = {};
 
     vkutil::HostRingBuffer vertex_stream_ring_buffer;
@@ -265,7 +274,13 @@ struct VKContext : public renderer::Context {
     // used to implement the Visibility Buffer
     std::map<Address, VisibilityBuffer> visibility_buffers;
     VisibilityBuffer *current_visibility_buffer = nullptr;
-    int visibility_max_used_idx = -1;
+    std::vector<VisibilityQuery> visibility_queries;
+    std::vector<vk::QueryPool> visibility_query_pools;
+    std::vector<BufferSyncRequest> visibility_sync_ranges;
+    vk::ShaderModule visibility_shader;
+    vk::DescriptorSetLayout visibility_descriptor_layout;
+    vk::PipelineLayout visibility_pipeline_layout;
+    vk::Pipeline visibility_pipeline;
     bool is_in_query = false;
     int current_query_idx = -1;
     bool is_query_op_increment = false;
@@ -291,6 +306,7 @@ struct VKContext : public renderer::Context {
     SceGxmPrimitiveType last_primitive;
 
     vk::RenderPass current_render_pass;
+    vk::RenderPass initial_render_pass;
     vk::RenderPass current_shader_interlock_pass = nullptr;
     vk::Pipeline current_pipeline;
 
@@ -304,8 +320,11 @@ struct VKContext : public renderer::Context {
 
     bool is_recording = false;
     bool in_renderpass = false;
+    bool in_maskupdate_pass = false;
     bool refresh_pipeline = false;
     bool is_first_scene_draw = false;
+    vk::ImageAspectFlags initial_depth_stencil_clear;
+    uint16_t initialized_macroblocks = 0;
     // command buffer used to record the current scene
     vk::CommandBuffer render_cmd{};
     // command buffer used for commands that need to be executed before render_cmd (mostly because they can't be done during a render pass)
@@ -336,8 +355,11 @@ struct VKContext : public renderer::Context {
     ~VKContext() override;
 
     void start_recording(bool first_in_scene = false);
-    void start_render_pass(bool create_descriptor_set = true);
+    void start_render_pass(bool create_descriptor_set = true, bool maskupdate = false);
     void stop_render_pass();
+    void begin_visibility_query();
+    void end_visibility_query();
+    void resolve_visibility_queries();
     void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit = true);
 
     // check (when the render target has macroblock set) if we are drawing to another block
@@ -353,6 +375,9 @@ struct VKRenderTarget : public renderer::RenderTarget {
     uint16_t height;
     vkutil::Image color;
     vkutil::Image depthstencil;
+    vkutil::Image mask;
+    vk::Framebuffer mask_framebuffer;
+    bool mask_may_reject = true;
 
     uint64_t last_used_frame = 0;
 

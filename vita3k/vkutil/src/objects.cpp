@@ -324,6 +324,8 @@ void DestroyQueue::destroy_objects() {
             HANDLE_DESTROY(Fence)
             HANDLE_DESTROY(Semaphore)
             HANDLE_DESTROY(Framebuffer)
+            HANDLE_DESTROY(QueryPool)
+            HANDLE_DESTROY(DescriptorPool)
 
         default:
             LOG_ERROR("Unknown object type {}", vk::to_string(type));

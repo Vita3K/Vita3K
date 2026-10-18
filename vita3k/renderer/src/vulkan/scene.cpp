@@ -324,45 +324,134 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
     context.render_cmd.bindVertexBuffers(0, max_stream_idx, context.vertex_stream_buffers, context.vertex_stream_offsets);
 }
 
+struct OrderedMaskIndices {
+    vk::Buffer buffer;
+    uint32_t offset;
+    uint32_t count;
+};
+
+static OrderedMaskIndices prepare_ordered_mask_indices(VKContext &context, SceGxmPrimitiveType type,
+    SceGxmIndexFormat format, Ptr<void> indices, size_t count, MemState &mem) {
+    const size_t primitive_count = count > 2 ? count - 2 : 0;
+    const uint32_t index_size = format == SCE_GXM_INDEX_FORMAT_U16 ? 2 : 4;
+    if (primitive_count > std::numeric_limits<uint32_t>::max() / (3 * index_size)) {
+        LOG_ERROR("Masked framebuffer fetch index expansion is too large: {} indices", count);
+        throw std::runtime_error("Masked framebuffer fetch index expansion exceeds buffer limits");
+    }
+    const uint32_t output_count = static_cast<uint32_t>(primitive_count * 3);
+    if (!output_count)
+        return { nullptr, 0, 0 };
+
+    std::vector<vk::BufferCopy> copies;
+    copies.reserve(output_count);
+    for (size_t primitive = 0; primitive < primitive_count; ++primitive) {
+        // Keep the first (provoking) vertex while correcting alternating strip winding.
+        const std::array<size_t, 3> vertices = type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN
+            ? std::array<size_t, 3>{ 0, primitive + 1, primitive + 2 }
+            : std::array<size_t, 3>{ primitive, primitive + 1 + (primitive & 1), primitive + 2 - (primitive & 1) };
+        for (const auto vertex : vertices)
+            copies.push_back({ vertex * index_size, copies.size() * index_size, index_size });
+    }
+
+    if (!context.state.features.enable_memory_mapping) {
+        const auto *source = indices.cast<uint8_t>().get(mem);
+        vkutil::Buffer expanded(output_count * index_size);
+        expanded.init_buffer(vk::BufferUsageFlagBits::eIndexBuffer, vkutil::vma_mapped_alloc);
+        auto *destination = static_cast<uint8_t *>(expanded.mapped_data);
+        for (const auto &copy : copies)
+            memcpy(destination + copy.dstOffset, source + copy.srcOffset, index_size);
+        context.state.allocator.flushAllocation(expanded.allocation, 0, VK_WHOLE_SIZE);
+        const auto buffer = expanded.buffer;
+        context.state.frame().destroy_queue.add_buffer(expanded);
+        return { buffer, 0, output_count };
+    }
+
+    if (context.state.mapping_method == MappingMethod::DoubleBuffer)
+        context.state.buffer_trapping.access_buffer(indices.address(), count * index_size, mem);
+    const auto [source, source_offset] = context.state.get_matching_mapping(indices);
+    for (auto &copy : copies)
+        copy.srcOffset += source_offset;
+
+    if (context.in_renderpass)
+        context.stop_render_pass();
+    const vk::MemoryBarrier source_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
+        .dstAccessMask = vk::AccessFlagBits::eTransferRead
+    };
+    context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eTransfer,
+        {}, source_barrier, {}, {});
+    vkutil::Buffer expanded(output_count * index_size);
+    expanded.init_buffer(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer);
+    context.render_cmd.copyBuffer(source, expanded.buffer, copies);
+    const vk::MemoryBarrier index_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eIndexRead
+    };
+    context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eVertexInput,
+        {}, index_barrier, {}, {});
+    const auto buffer = expanded.buffer;
+    context.state.frame().destroy_queue.add_buffer(expanded);
+    return { buffer, 0, output_count };
+}
+
+static void framebuffer_fetch_barrier(VKContext &context) {
+    const vk::MemoryBarrier barrier{
+        .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .dstAccessMask = vk::AccessFlagBits::eInputAttachmentRead
+    };
+    context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+        vk::DependencyFlagBits::eByRegion, barrier, {}, {});
+}
+
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
+    const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
+
     void *indices_ptr = indices.get(mem);
 
     context.check_for_macroblock_change(true);
 
+    const bool maskupdate = gxm_fragment_program.is_maskupdate;
+    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+    const bool uses_framebuffer_fetch = !maskupdate && fragment_program_gxp.is_frag_color_used()
+        && context.record.front_side_fragment_program_mode != SCE_GXM_FRAGMENT_PROGRAM_DISABLED && !fragment_program_gxp.has_no_effect();
+    const bool masked_fetch = uses_framebuffer_fetch && context.state.features.should_use_shader_interlock()
+        && context.state.features.use_mask_bit && context.render_target->mask_may_reject;
+    const bool ordered_fetch = masked_fetch && !context.state.support_rasterized_order_access;
+    if (context.shader_hints.masked_framebuffer_fetch != masked_fetch) {
+        context.shader_hints.masked_framebuffer_fetch = masked_fetch;
+        context.refresh_pipeline = true;
+    }
+    std::optional<OrderedMaskIndices> ordered_indices;
+    if (ordered_fetch && (type == SCE_GXM_PRIMITIVE_TRIANGLE_STRIP || type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN)) {
+        ordered_indices = prepare_ordered_mask_indices(context, type, format, indices, count, mem);
+        type = SCE_GXM_PRIMITIVE_TRIANGLES;
+    }
+    if (masked_fetch)
+        LOG_INFO_ONCE("Using late-tested framebuffer fetch for rejecting GXM masks; programmable blending is ordered per primitive when rasterization-order attachment access is unavailable");
+
+    if (context.in_renderpass && context.in_maskupdate_pass != maskupdate)
+        context.stop_render_pass();
+
     if (!context.in_renderpass)
-        context.start_render_pass();
+        context.start_render_pass(true, maskupdate);
 
     // when we do multiple render pass for one scene (shader interlock or slow macroblock),
     // we need to always load the depth-stencil after the first draw
-    if (context.is_first_scene_draw && (context.state.features.support_shader_interlock || context.ignore_macroblock)) {
+    if (!maskupdate && context.is_first_scene_draw && (context.state.features.support_shader_interlock || context.state.features.use_mask_bit || context.ignore_macroblock)) {
         // update the render pass to load and store the depth and stencil
         context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true, !context.record.color_surface.data);
         context.is_first_scene_draw = false;
     }
 
-    const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
-    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
-    if (context.state.features.direct_fragcolor && fragment_program_gxp.is_frag_color_used()) {
-        // the fragment shader is using programmable blending with a subpass input
-        vk::ImageMemoryBarrier barrier{
-            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-            .dstAccessMask = vk::AccessFlagBits::eInputAttachmentRead,
-            .oldLayout = vk::ImageLayout::eGeneral,
-            .newLayout = vk::ImageLayout::eGeneral,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = context.current_color_base_image->image,
-            .subresourceRange = vkutil::color_subresource_range
-        };
-        context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-            vk::DependencyFlagBits::eByRegion, {}, {}, barrier);
-    } else if (context.state.features.support_shader_interlock
-        && fragment_program_gxp.is_frag_color_used() != context.last_draw_was_framebuffer_fetch) {
+    const bool uses_interlock = uses_framebuffer_fetch && context.state.features.support_shader_interlock && !masked_fetch;
+    if (!maskupdate && context.state.features.support_shader_interlock
+        && uses_interlock != context.last_draw_was_framebuffer_fetch) {
         // restart the render pass to act as a barrier
+        context.end_visibility_query();
         context.render_cmd.endRenderPass();
 
-        if (fragment_program_gxp.is_frag_color_used()) {
+        if (uses_interlock) {
             context.curr_renderpass_info.framebuffer = context.current_shader_interlock_framebuffer;
             context.curr_renderpass_info.renderPass = context.current_shader_interlock_pass;
         } else {
@@ -371,21 +460,13 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         }
 
         context.render_cmd.beginRenderPass(context.curr_renderpass_info, vk::SubpassContents::eInline);
-        context.last_draw_was_framebuffer_fetch = fragment_program_gxp.is_frag_color_used();
+        context.last_draw_was_framebuffer_fetch = uses_interlock;
     }
+    if ((context.state.features.direct_fragcolor || masked_fetch) && uses_framebuffer_fetch)
+        framebuffer_fetch_barrier(context);
 
-    if (context.current_visibility_buffer != nullptr && context.current_query_idx != -1 && !context.is_in_query) {
-        if (context.current_visibility_buffer->queries_used[context.current_query_idx]) {
-            LOG_WARN_ONCE("Visibility buffer entry is used more than once in a scene");
-            // still let this happen, this is a validation error but I think most GPUs should be fine with it
-        }
-        context.current_visibility_buffer->queries_used[context.current_query_idx] = true;
-
-        context.visibility_max_used_idx = std::max(context.visibility_max_used_idx, context.current_query_idx);
-
-        const vk::QueryControlFlags control_flags = (context.is_query_op_increment && context.state.physical_device_features.occlusionQueryPrecise) ? vk::QueryControlFlagBits::ePrecise : vk::QueryControlFlags();
-        context.render_cmd.beginQuery(context.current_visibility_buffer->query_pool, context.current_query_idx, control_flags);
-        context.is_in_query = true;
+    if (!maskupdate && context.current_visibility_buffer != nullptr && context.current_query_idx != -1 && !context.is_in_query) {
+        context.begin_visibility_query();
     }
 
     // do we need to check for a pipeline change?
@@ -493,7 +574,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
             max_index = trapped_buffer->extra;
         }
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
-    } else {
+    } else if (!ordered_indices) {
         const size_t index_buffer_size = index_size * count;
         context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
         context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
@@ -502,7 +583,25 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // bind the vertex streams
     bind_vertex_streams(context, mem, instance_count, max_index);
 
-    context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
+    if (ordered_fetch) {
+        if (ordered_indices) {
+            count = ordered_indices->count;
+            if (count)
+                context.render_cmd.bindIndexBuffer(ordered_indices->buffer, ordered_indices->offset, index_type);
+        }
+        const uint32_t vertices_per_primitive = type == SCE_GXM_PRIMITIVE_POINTS ? 1U : type == SCE_GXM_PRIMITIVE_LINES ? 2U
+                                                                                                                        : 3U;
+        for (uint32_t instance = 0; instance < instance_count; ++instance) {
+            for (size_t first = 0; first + vertices_per_primitive <= count; first += vertices_per_primitive) {
+                framebuffer_fetch_barrier(context);
+                context.render_cmd.drawIndexed(vertices_per_primitive, 1, static_cast<uint32_t>(first), 0, instance);
+            }
+        }
+    } else {
+        context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
+    }
+    if (maskupdate && count && instance_count && context.record.writing_mask < 0.5f)
+        context.render_target->mask_may_reject = true;
 
     context.vertex_uniform_storage_allocated = false;
     context.fragment_uniform_storage_allocated = false;

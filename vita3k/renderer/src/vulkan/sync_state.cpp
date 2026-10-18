@@ -203,6 +203,7 @@ void sync_viewport_real(VKContext &context, const float xOffset, const float yOf
 }
 
 void sync_visibility_buffer(VKContext &context, Ptr<uint32_t> buffer, uint32_t stride) {
+    context.end_visibility_query();
     if (!buffer) {
         context.current_visibility_buffer = nullptr;
         return;
@@ -210,19 +211,10 @@ void sync_visibility_buffer(VKContext &context, Ptr<uint32_t> buffer, uint32_t s
 
     auto ite = context.visibility_buffers.find(buffer.address());
     if (ite == context.visibility_buffers.end()) {
-        // create a new query pool
-        vk::QueryPoolCreateInfo pool_info{
-            .queryType = vk::QueryType::eOcclusion,
-            .queryCount = static_cast<uint32_t>(stride / sizeof(uint32_t))
-        };
-        vk::QueryPool query_pool = context.state.device.createQueryPool(pool_info);
-
-        context.visibility_buffers[buffer.address()] = { buffer.address(), nullptr, 0, static_cast<uint32_t>(stride / sizeof(uint32_t)), query_pool };
+        context.visibility_buffers[buffer.address()] = { buffer.address(), nullptr, 0, static_cast<uint32_t>(stride / sizeof(uint32_t)) };
         ite = context.visibility_buffers.find(buffer.address());
 
         std::tie(ite->second.gpu_buffer, ite->second.buffer_offset) = context.state.get_matching_mapping(buffer.cast<void>());
-        // the + 1 is to make computing the ranges easier in context.cpp
-        ite->second.queries_used.resize(ite->second.size + 1, false);
     }
 
     context.current_visibility_buffer = &ite->second;
@@ -241,20 +233,14 @@ void sync_visibility_index(VKContext &context, bool enable, uint32_t index, bool
     }
 
     if (!enable) {
-        if (context.is_in_query) {
-            context.render_cmd.endQuery(context.current_visibility_buffer->query_pool, context.current_query_idx);
-            context.is_in_query = false;
-        }
+        context.end_visibility_query();
 
         context.current_query_idx = -1;
         return;
     }
 
-    // do not end the query if it's the same index
-    if (context.is_in_query && context.current_query_idx != index) {
-        context.render_cmd.endQuery(context.current_visibility_buffer->query_pool, context.current_query_idx);
-        context.is_in_query = false;
-    }
+    if (context.current_query_idx != index || context.is_query_op_increment != is_increment)
+        context.end_visibility_query();
     context.current_query_idx = index;
     context.is_query_op_increment = is_increment;
 }
