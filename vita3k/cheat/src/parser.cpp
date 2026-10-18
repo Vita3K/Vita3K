@@ -125,25 +125,32 @@ static bool has_section(const fs::path &path, const std::string &wanted) {
 }
 
 fs::path find_cheat_file(const fs::path &cheats_dir, const std::string &title_id) {
-    if (title_id.empty() || !fs::is_directory(cheats_dir))
+    // Runs during boot, so a folder that cannot be read must mean "no cheats" rather than throw.
+    boost::system::error_code ec;
+    if (title_id.empty() || !fs::is_directory(cheats_dir, ec))
         return {};
 
     const auto wanted = string_utils::toupper(title_id);
     std::vector<fs::path> databases;
 
-    for (const auto &entry : fs::directory_iterator(cheats_dir)) {
-        if (!fs::is_regular_file(entry.path()))
+    fs::directory_iterator it(cheats_dir, ec);
+    for (; !ec && (it != fs::directory_iterator()); it.increment(ec)) {
+        const fs::path &path = it->path();
+        boost::system::error_code status_ec;
+        if (!fs::is_regular_file(path, status_ec))
             continue;
 
-        const auto filename = string_utils::toupper(fs_utils::path_to_utf8(entry.path().filename()));
+        const auto filename = string_utils::toupper(fs_utils::path_to_utf8(path.filename()));
         // The databases ship `<title id>.psv`, but plain `.txt` files are common too.
         if ((filename == wanted + ".PSV") || (filename == wanted + ".TXT"))
-            return entry.path();
+            return path;
 
         // `cheat.db` and the like hold every game in one file, keyed by `_S <title id>`.
         if (filename.ends_with(".DB") || filename.ends_with(".TXT"))
-            databases.push_back(entry.path());
+            databases.push_back(path);
     }
+    if (ec)
+        LOG_WARN("Failed to list cheat folder {}: {}", cheats_dir, ec.message());
 
     // Reading those is only worth it once no file is named after the title.
     for (const auto &database : databases) {

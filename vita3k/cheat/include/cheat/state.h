@@ -55,7 +55,7 @@ struct CheatState {
     // Title of the running game, set even when it has no cheat file.
     std::string title_id;
 
-    // Buttons the game last read, kept outside the mutex so that reading the pad stays cheap.
+    // Buttons held at the last vblank, kept outside the mutex so that reading the pad stays cheap.
     std::atomic<uint32_t> buttons{ 0 };
 
     cheat::CheatFile file;

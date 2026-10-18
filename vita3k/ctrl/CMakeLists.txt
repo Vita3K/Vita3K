@@ -9,7 +9,7 @@ add_library(
 
 target_include_directories(ctrl PUBLIC include)
 target_link_libraries(ctrl PUBLIC emuenv SDL3::SDL3 util)
-target_link_libraries(ctrl PRIVATE cheat config display kernel touch)
+target_link_libraries(ctrl PRIVATE config display kernel touch)
 if(ANDROID)
 	target_link_libraries(ctrl PRIVATE android)
 endif()
