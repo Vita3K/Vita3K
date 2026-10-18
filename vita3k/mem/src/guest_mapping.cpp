@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <atomic>
 #include <cstring>
 #include <mem/atomic.h>
 #include <mem/state.h>
@@ -25,6 +26,35 @@ bool valid_range(const MemState &mem, Address addr, uint32_t size) {
             return false;
     return true;
 }
+PagePtr native_entry(const MemState &mem, Address page) {
+    return native_pointer(mem, page) - page;
+}
+// Locked. The JIT reads entries concurrently: stores are single aligned pointer writes.
+PagePtr page_entry(const MemState &mem, Address page) {
+    const auto it = mem.guest_mappings.find(page);
+    if (it == mem.guest_mappings.end())
+        return is_valid_addr(mem, page) ? native_entry(mem, page) : nullptr;
+    const auto &mapping = it->second;
+    if (!mapping.backing || mapping.perm != MemPerm::ReadWrite)
+        return nullptr;
+    return backing_pointer(mem, *mapping.backing) - page;
+}
+void set_entry(MemState &mem, Address page, PagePtr entry) {
+    std::atomic_ref<PagePtr>(mem.guest_page_table[page / page_size]).store(entry, std::memory_order_release);
+}
+void refresh_entries(MemState &mem, Address addr, uint32_t size) {
+    if (!mem.guest_page_table)
+        return;
+    for (uint64_t p = addr & ~4095u; p < uint64_t(addr) + size; p += page_size)
+        set_entry(mem, static_cast<Address>(p), page_entry(mem, static_cast<Address>(p)));
+}
+void ensure_page_table(MemState &mem) {
+    if (mem.guest_page_table)
+        return;
+    mem.guest_page_table = std::make_unique<PagePtr[]>(address_limit / page_size);
+    refresh_entries(mem, 0, static_cast<uint32_t>(address_limit - page_size));
+    set_entry(mem, static_cast<Address>(address_limit - page_size), page_entry(mem, static_cast<Address>(address_limit - page_size)));
+}
 MemState::VirtualPage &get_page(MemState &mem, Address addr) {
     auto [it, added] = mem.guest_mappings.try_emplace(addr);
     if (added) {
@@ -35,14 +65,21 @@ MemState::VirtualPage &get_page(MemState &mem, Address addr) {
 }
 // Preserve physical data before its native allocation can be cleared/reused.
 void retain_backing(MemState &mem, Address addr, uint32_t size) {
-    for (auto &[_, page] : mem.guest_mappings) {
+    std::vector<Address> moved;
+    for (auto &[key, page] : mem.guest_mappings) {
         auto &backing = page.backing;
         if (backing && !backing->retained && backing->address >= addr && uint64_t(backing->address) < uint64_t(addr) + size) {
             auto copy = std::make_unique<uint8_t[]>(page_size);
             std::memcpy(copy.get(), native_pointer(mem, backing->address), page_size);
             backing->retained = std::move(copy);
         }
+        if (backing && backing->retained && backing->address >= addr && uint64_t(backing->address) < uint64_t(addr) + size)
+            moved.push_back(key);
     }
+    // Aliases of a retained page now read the copy.
+    for (const auto key : moved)
+        if (mem.guest_page_table)
+            set_entry(mem, key, page_entry(mem, key));
 }
 bool check_access_locked(MemState &mem, Address addr, uint32_t size, bool write, Address &fault) {
     if (!size || uint64_t(addr) + size > address_limit) {
@@ -81,6 +118,9 @@ bool map_guest_memory(MemState &mem, Address dest, uint32_t size, Address source
             backing->aliases.push_back(dest + offset);
         mem.guest_mappings[dest + offset] = { backing, perm };
     }
+    ensure_page_table(mem);
+    refresh_entries(mem, source, size);
+    refresh_entries(mem, dest, size);
     mem.guest_mappings_active.store(true, std::memory_order_release);
     return true;
 }
@@ -96,6 +136,8 @@ bool commit_guest_memory(MemState &mem, Address dest, uint32_t size, MemPerm per
         }
         page.perm = perm;
     }
+    ensure_page_table(mem);
+    refresh_entries(mem, dest, size);
     mem.guest_mappings_active.store(true, std::memory_order_release);
     return true;
 }
@@ -105,6 +147,8 @@ bool protect_guest_memory(MemState &mem, Address dest, uint32_t size, MemPerm pe
     std::lock_guard lock(mem.guest_mapping_mutex);
     for (uint32_t offset = 0; offset < size; offset += page_size)
         get_page(mem, dest + offset).perm = perm;
+    ensure_page_table(mem);
+    refresh_entries(mem, dest, size);
     mem.guest_mappings_active.store(true, std::memory_order_release);
     return true;
 }
@@ -115,6 +159,8 @@ bool decommit_guest_memory(MemState &mem, Address dest, uint32_t size) {
     retain_backing(mem, dest, size);
     for (uint32_t offset = 0; offset < size; offset += page_size)
         mem.guest_mappings[dest + offset] = {};
+    ensure_page_table(mem);
+    refresh_entries(mem, dest, size);
     mem.guest_mappings_active.store(true, std::memory_order_release);
     return true;
 }
@@ -126,6 +172,16 @@ void release_guest_mappings(MemState &mem, Address dest, uint32_t size) {
     auto first = mem.guest_mappings.lower_bound(dest);
     auto last = uint64_t(dest) + size == address_limit ? mem.guest_mappings.end() : mem.guest_mappings.lower_bound(dest + size);
     mem.guest_mappings.erase(first, last);
+    // Called before the allocator frees the range: null it, a later allocation heals on first access.
+    if (mem.guest_page_table)
+        for (uint64_t p = dest; p < uint64_t(dest) + size; p += page_size)
+            set_entry(mem, static_cast<Address>(p), nullptr);
+}
+void refresh_guest_page_table(MemState &mem, Address addr, uint32_t size) {
+    if (!mem.guest_mappings_active.load(std::memory_order_acquire))
+        return;
+    std::lock_guard lock(mem.guest_mapping_mutex);
+    refresh_entries(mem, addr, size);
 }
 uint8_t *resolve_guest_pointer(const MemState &mem, Address addr) {
     std::lock_guard lock(mem.guest_mapping_mutex);
@@ -160,6 +216,81 @@ std::vector<std::pair<Address, uint32_t>> guest_alias_ranges(const MemState &mem
     }
     return ranges;
 }
+uint8_t *contiguous_guest_pointer(const MemState &mem, Address addr, uint32_t size) {
+    if (!mem.guest_mappings_active.load(std::memory_order_acquire))
+        return native_pointer(mem, addr);
+    const uint64_t end = uint64_t(addr) + std::max<uint32_t>(size, 1);
+    std::lock_guard lock(mem.guest_mapping_mutex);
+    if (mem.guest_page_table) {
+        // Absolute-offset entries: one shared entry means one contiguous host block.
+        const PagePtr first = mem.guest_page_table[addr / page_size];
+        if (!first)
+            return nullptr;
+        for (uint64_t p = (addr & ~4095u) + page_size; p < end; p += page_size)
+            if (mem.guest_page_table[p / page_size] != first)
+                return nullptr;
+        return first + addr;
+    }
+    // No table: contiguous only if no page of the range is mapped.
+    const auto it = mem.guest_mappings.lower_bound(addr & ~4095u);
+    if (it != mem.guest_mappings.end() && it->first < end)
+        return nullptr;
+    return native_pointer(mem, addr);
+}
+// Page-by-page access through the mappings that ignores guest permissions, as HLE library functions
+// always have: a guest memcpy onto a page the app write-protected must still land (the app would have
+// handled the abort and retried). Only unmapped/decommitted pages fail.
+static bool access_unchecked(MemState &mem, Address addr, uint8_t *data, uint32_t size, bool write, Address &fault) {
+    std::lock_guard lock(mem.guest_mapping_mutex);
+    while (size) {
+        if (!is_valid_addr(mem, addr)) {
+            fault = addr;
+            return false;
+        }
+        const auto it = mem.guest_mappings.find(addr & ~4095u);
+        uint8_t *ptr;
+        if (it == mem.guest_mappings.end())
+            ptr = native_pointer(mem, addr);
+        else if (it->second.backing)
+            ptr = backing_pointer(mem, *it->second.backing) + (addr & 4095u);
+        else {
+            fault = addr;
+            return false;
+        }
+        const uint32_t count = std::min(size, page_size - (addr & 4095u));
+        if (write)
+            std::memcpy(ptr, data, count);
+        else
+            std::memcpy(data, ptr, count);
+        addr += count;
+        data += count;
+        size -= count;
+    }
+    return true;
+}
+bool copy_guest_memory(MemState &mem, Address dst, Address src, uint32_t size, Address &fault) {
+    if (!size)
+        return true;
+    uint8_t *d = contiguous_guest_pointer(mem, dst, size);
+    const uint8_t *s = contiguous_guest_pointer(mem, src, size);
+    if (d && s) {
+        std::memmove(d, s, size);
+        return true;
+    }
+    // Through a temporary: also gives memmove semantics when the two views alias the same pages.
+    std::vector<uint8_t> tmp(size);
+    return access_unchecked(mem, src, tmp.data(), size, false, fault) && access_unchecked(mem, dst, tmp.data(), size, true, fault);
+}
+bool fill_guest_memory(MemState &mem, Address dst, uint8_t value, uint32_t size, Address &fault) {
+    if (!size)
+        return true;
+    if (uint8_t *d = contiguous_guest_pointer(mem, dst, size)) {
+        std::memset(d, value, size);
+        return true;
+    }
+    std::vector<uint8_t> tmp(size, value);
+    return access_unchecked(mem, dst, tmp.data(), size, true, fault);
+}
 bool check_guest_memory_access(MemState &mem, Address addr, uint32_t size, bool write, Address &fault) {
     std::lock_guard lock(mem.guest_mapping_mutex);
     return check_access_locked(mem, addr, size, write, fault);
@@ -190,6 +321,9 @@ bool access_guest_memory(MemState &mem, Address addr, void *data, uint32_t size,
     // A cross-page fault must not leave a partial store.
     if (!check_access_locked(mem, addr, size, write, fault))
         return false;
+    // Memory allocated after the table was built (or reused after a free) starts null: heal it.
+    if (mem.guest_page_table && !mem.guest_page_table[addr / page_size])
+        set_entry(mem, addr & ~4095u, page_entry(mem, addr & ~4095u));
     auto bytes = static_cast<uint8_t *>(data);
     while (size) {
         auto it = mem.guest_mappings.find(addr & ~4095u);

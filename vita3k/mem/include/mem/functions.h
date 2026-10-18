@@ -61,6 +61,14 @@ uint8_t *resolve_guest_pointer(const MemState &mem, Address addr);
 // Guest ranges whose cached translations a write to [addr, addr + size) can change: the range itself
 // plus every alias sharing backing with one of its pages. Pages only committed or protected count once.
 std::vector<std::pair<Address, uint32_t>> guest_alias_ranges(const MemState &mem, Address addr, uint32_t size);
+// Host pointer covering [addr, addr + size) when that range is one contiguous host block (always the case
+// without guest mappings); nullptr when its pages are backed by different host blocks.
+uint8_t *contiguous_guest_pointer(const MemState &mem, Address addr, uint32_t size);
+// memmove / memset through the guest mappings, page by page when the range is not contiguous on the host.
+bool copy_guest_memory(MemState &mem, Address dst, Address src, uint32_t size, Address &fault);
+bool fill_guest_memory(MemState &mem, Address dst, uint8_t value, uint32_t size, Address &fault);
+// Recompute guest_page_table entries after the native page table changed (external mappings).
+void refresh_guest_page_table(MemState &mem, Address addr, uint32_t size);
 bool access_guest_memory(MemState &mem, Address addr, void *data, uint32_t size, bool write, Address &fault);
 bool check_guest_memory_access(MemState &mem, Address addr, uint32_t size, bool write, Address &fault);
 bool compare_exchange_guest_memory(MemState &mem, Address addr, uint32_t size, uint64_t value, uint64_t expected, bool &swapped, Address &fault);

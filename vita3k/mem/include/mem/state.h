@@ -84,6 +84,10 @@ struct MemState {
     };
     // Guest 4 KiB mappings, independent of host page size and GPU mappings.
     std::map<Address, VirtualPage> guest_mappings;
+    // Flat view of guest_mappings for the JIT (dynarmic page_table, absolute offset) and Ptr<T>:
+    // entry + addr is the host byte of a readable and writable page; null takes the checked path
+    // (no access, read-only, decommitted, unallocated). Built before guest_mappings_active is set.
+    std::unique_ptr<PagePtr[]> guest_page_table;
 
     uint32_t host_page_size = 0;
     Memory memory;

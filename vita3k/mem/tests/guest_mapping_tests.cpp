@@ -320,3 +320,75 @@ TEST(guest_mapping, alias_ranges_follow_remaps) {
         EXPECT_TRUE(has(ranges, first_alias_address));
     });
 }
+
+TEST(guest_mapping, page_table_tracks_aliases_and_permissions) {
+    for_each_memory_mode([](MemState &mem) {
+        ASSERT_NE(allocate_page(mem, source_address, "guest_mapping_source"), 0U);
+        ASSERT_NE(allocate_page(mem, first_alias_address, "guest_mapping_alias_1"), 0U);
+        ASSERT_NE(allocate_page(mem, second_alias_address, "guest_mapping_alias_2"), 0U);
+        ASSERT_TRUE(map_guest_memory(mem, first_alias_address, page_size, source_address, MemPerm::ReadWrite));
+        ASSERT_TRUE(mem.guest_page_table);
+        const auto entry = [&mem](Address addr) { return mem.guest_page_table[addr / page_size]; };
+
+        // A read/write alias resolves to the source's bytes; so does Ptr<T>.
+        ASSERT_NE(entry(first_alias_address), nullptr);
+        EXPECT_EQ(entry(first_alias_address) + first_alias_address + 8, resolve_guest_pointer(mem, source_address + 8));
+        EXPECT_EQ(Ptr<uint32_t>(first_alias_address + 8).get(mem), reinterpret_cast<uint32_t *>(resolve_guest_pointer(mem, source_address + 8)));
+        // Unmapped memory keeps its native base; unallocated memory takes the checked path.
+        EXPECT_EQ(entry(second_alias_address) + second_alias_address, resolve_guest_pointer(mem, second_alias_address));
+        EXPECT_EQ(entry(0x90000000U), nullptr);
+
+        ASSERT_TRUE(protect_guest_memory(mem, first_alias_address, page_size, MemPerm::ReadOnly));
+        EXPECT_EQ(entry(first_alias_address), nullptr);
+        ASSERT_TRUE(protect_guest_memory(mem, first_alias_address, page_size, MemPerm::ReadWrite));
+        EXPECT_NE(entry(first_alias_address), nullptr);
+
+        // Decommitting the source keeps the alias on the retained copy; the source itself faults.
+        uint32_t value = 0x55667788;
+        Address fault = 0;
+        ASSERT_TRUE(access_guest_memory(mem, source_address, &value, sizeof(value), true, fault));
+        ASSERT_TRUE(decommit_guest_memory(mem, source_address, page_size));
+        EXPECT_EQ(entry(source_address), nullptr);
+        ASSERT_NE(entry(first_alias_address), nullptr);
+        EXPECT_EQ(*reinterpret_cast<uint32_t *>(entry(first_alias_address) + first_alias_address), value);
+
+        free(mem, second_alias_address);
+        EXPECT_EQ(entry(second_alias_address), nullptr);
+    });
+}
+
+TEST(guest_mapping, copies_split_across_non_contiguous_backing) {
+    for_each_memory_mode([](MemState &mem) {
+        // Two adjacent alias pages backed by two non-adjacent source pages.
+        constexpr Address second_source = source_address + 0x10000;
+        ASSERT_NE(alloc_at(mem, source_address, page_size, "src_a"), 0U);
+        ASSERT_NE(alloc_at(mem, second_source, page_size, "src_b"), 0U);
+        ASSERT_NE(alloc_at(mem, first_alias_address, 2 * page_size, "alias"), 0U);
+        ASSERT_TRUE(map_guest_memory(mem, first_alias_address, page_size, source_address, MemPerm::ReadWrite));
+        ASSERT_TRUE(map_guest_memory(mem, first_alias_address + page_size, page_size, second_source, MemPerm::ReadWrite));
+        EXPECT_EQ(contiguous_guest_pointer(mem, first_alias_address + page_size - 8, 16), nullptr);
+        EXPECT_NE(contiguous_guest_pointer(mem, first_alias_address + 8, 16), nullptr);
+
+        Address fault = 0;
+        ASSERT_TRUE(fill_guest_memory(mem, first_alias_address + page_size - 8, 0xAB, 16, fault));
+        uint8_t a = 0, b = 0;
+        ASSERT_TRUE(access_guest_memory(mem, source_address + page_size - 1, &a, 1, false, fault));
+        ASSERT_TRUE(access_guest_memory(mem, second_source + 7, &b, 1, false, fault));
+        EXPECT_EQ(a, 0xAB);
+        EXPECT_EQ(b, 0xAB);
+
+        // A copy out of the split range lands in a plain page in order.
+        ASSERT_NE(allocate_page(mem, second_alias_address, "dst"), 0U);
+        ASSERT_TRUE(copy_guest_memory(mem, second_alias_address, first_alias_address + page_size - 8, 16, fault));
+        std::array<uint8_t, 16> out{};
+        ASSERT_TRUE(access_guest_memory(mem, second_alias_address, out.data(), 16, false, fault));
+        for (const uint8_t v : out)
+            EXPECT_EQ(v, 0xAB);
+
+        // HLE copies ignore guest write protection (the app would handle the abort and retry).
+        ASSERT_TRUE(protect_guest_memory(mem, first_alias_address, page_size, MemPerm::ReadOnly));
+        ASSERT_TRUE(fill_guest_memory(mem, first_alias_address, 0x5A, 4, fault));
+        ASSERT_TRUE(access_guest_memory(mem, source_address, &a, 1, false, fault));
+        EXPECT_EQ(a, 0x5A);
+    });
+}

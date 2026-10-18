@@ -399,8 +399,11 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     protect_inner(mem, addr, size, MemPerm::None);
     mem.page_table[addr / KiB(4)] = page_table_entry;
 
-    const std::unique_lock<std::mutex> lock(mem.protect_mutex);
-    mem.external_mapping[addr_value] = { addr, size };
+    {
+        const std::unique_lock<std::mutex> lock(mem.protect_mutex);
+        mem.external_mapping[addr_value] = { addr, size };
+    }
+    refresh_guest_page_table(mem, addr, size);
 }
 
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
@@ -450,6 +453,7 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
             memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
             mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
         }
+        refresh_guest_page_table(mem, mapping.address, mapping.size);
     }
 }
 
@@ -564,6 +568,7 @@ void deinit_mem(MemState &state) {
         const std::lock_guard<std::mutex> mapping_lock(state.guest_mapping_mutex);
         state.guest_mappings.clear();
         state.guest_mappings_active.store(false);
+        state.guest_page_table.reset();
     }
 
     {

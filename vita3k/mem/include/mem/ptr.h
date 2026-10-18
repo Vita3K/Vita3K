@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <mem/atomic.h>
 #include <mem/functions.h>
 #include <mem/state.h>
@@ -58,6 +59,9 @@ public:
         if (addr == 0) {
             return nullptr;
         } else if (mem.guest_mappings_active.load(std::memory_order_acquire)) {
+            if (mem.guest_page_table)
+                if (const PagePtr entry = std::atomic_ref<PagePtr>(mem.guest_page_table[addr / KiB(4)]).load(std::memory_order_acquire))
+                    return reinterpret_cast<T *>(entry + addr);
             return reinterpret_cast<T *>(resolve_guest_pointer(mem, addr));
         } else if (mem.use_page_table) {
             return reinterpret_cast<T *>(mem.page_table[addr / KiB(4)] + addr);
