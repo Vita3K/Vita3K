@@ -56,7 +56,7 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
 }
 
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
-    MemState &mem, const Config &config) {
+    MemState &mem, const Config &config, int32_t base_vertex) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;
@@ -221,9 +221,17 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
 
     if (instance_count == 1) {
-        glDrawElements(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second));
+        if (base_vertex != 0) {
+            glDrawElementsBaseVertex(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), base_vertex);
+        } else {
+            glDrawElements(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second));
+        }
     } else {
-        glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
+        if (base_vertex != 0) {
+            glDrawElementsInstancedBaseVertex(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count, base_vertex);
+        } else {
+            glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
+        }
     }
 
     // Restore context for normal draws
