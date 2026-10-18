@@ -640,6 +640,7 @@ void ControlsDialog::build_hotkeys_page() {
     add_row(5, tr("Pinch Modifier"), m_hotkeys_page.btn_pinch_mod, m_hotkeys_page.btn_pinch_mod_alt);
     add_row(6, tr("Alternate Pinch In"), m_hotkeys_page.btn_alt_pinch_in, m_hotkeys_page.btn_alt_pinch_in_alt);
     add_row(7, tr("Alternate Pinch Out"), m_hotkeys_page.btn_alt_pinch_out, m_hotkeys_page.btn_alt_pinch_out_alt);
+    add_row(8, tr("Exit"), m_hotkeys_page.btn_exit, m_hotkeys_page.btn_exit_alt);
 
     content_layout->addWidget(rows_widget);
     content_layout->addStretch();
@@ -887,6 +888,8 @@ void ControlsDialog::init_keyboard_bindings() {
         { m_hotkeys_page.btn_alt_pinch_in_alt, &cfg.keyboard_alternate_pinch_in_alt },
         { m_hotkeys_page.btn_alt_pinch_out, &cfg.keyboard_alternate_pinch_out },
         { m_hotkeys_page.btn_alt_pinch_out_alt, &cfg.keyboard_alternate_pinch_out_alt },
+        { m_hotkeys_page.btn_exit, &cfg.keyboard_gui_exit },
+        { m_hotkeys_page.btn_exit_alt, &cfg.keyboard_gui_exit_alt },
         { m_keyboard_page.btn_dpad_up_alt, &cfg.keyboard_button_up_alt },
         { m_keyboard_page.btn_dpad_down_alt, &cfg.keyboard_button_down_alt },
         { m_keyboard_page.btn_dpad_left_alt, &cfg.keyboard_button_left_alt },

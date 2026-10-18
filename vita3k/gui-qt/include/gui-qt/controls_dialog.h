@@ -131,6 +131,8 @@ private:
         QPushButton *btn_alt_pinch_in_alt = nullptr;
         QPushButton *btn_alt_pinch_out = nullptr;
         QPushButton *btn_alt_pinch_out_alt = nullptr;
+        QPushButton *btn_exit = nullptr;
+        QPushButton *btn_exit_alt = nullptr;
         QPushButton *btn_reset = nullptr;
     };
 
