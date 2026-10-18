@@ -94,6 +94,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(PhysicalKeyCode, "keyboard-pinch-modifier", PhysicalKeyCode::Unbound, keyboard_pinch_modifier)                                \
     code(PhysicalKeyCode, "keyboard-alternate-pinch-in", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_in)                        \
     code(PhysicalKeyCode, "keyboard-alternate-pinch-out", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_out)                      \
+    code(PhysicalKeyCode, "keyboard-gui-exit", PhysicalKeyCode::Unbound, keyboard_gui_exit)                                            \
     code(PhysicalKeyCode, "keyboard-button-select-alt", PhysicalKeyCode::Unbound, keyboard_button_select_alt)                          \
     code(PhysicalKeyCode, "keyboard-button-start-alt", PhysicalKeyCode::Unbound, keyboard_button_start_alt)                            \
     code(PhysicalKeyCode, "keyboard-button-up-alt", PhysicalKeyCode::Unbound, keyboard_button_up_alt)                                  \
@@ -125,7 +126,8 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(PhysicalKeyCode, "keyboard-take-screenshot-alt", PhysicalKeyCode::Unbound, keyboard_take_screenshot_alt)                      \
     code(PhysicalKeyCode, "keyboard-pinch-modifier-alt", PhysicalKeyCode::Unbound, keyboard_pinch_modifier_alt)                        \
     code(PhysicalKeyCode, "keyboard-alternate-pinch-in-alt", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_in_alt)                \
-    code(PhysicalKeyCode, "keyboard-alternate-pinch-out-alt", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_out_alt)
+    code(PhysicalKeyCode, "keyboard-alternate-pinch-out-alt", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_out_alt)              \
+    code(PhysicalKeyCode, "keyboard-gui-exit-alt", PhysicalKeyCode::Unbound, keyboard_gui_exit_alt)
 
 #define CONFIG_INDIVIDUAL(code)                                                                         \
     code(bool, "initial-setup", false, initial_setup)                                                   \

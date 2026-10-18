@@ -29,6 +29,7 @@
     <addaction name="install_zip_action"/>
     <addaction name="install_license_action"/>
     <addaction name="separator"/>
+    <addaction name="exit_action"/>
    </widget>
    <widget class="QMenu" name="menuEmulation">
     <property name="title">
@@ -219,6 +220,14 @@
   <action name="install_license_action">
    <property name="text">
     <string>Install License (.rif / work.bin)</string>
+   </property>
+  </action>
+  <action name="exit_action">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::QuitRole</enum>
    </property>
   </action>
   <action name="pause_action">
