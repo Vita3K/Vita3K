@@ -64,6 +64,16 @@ static const GuiSave sm_iconSize = GuiSave(QStringLiteral("SaveDataManager"), QS
 
 namespace {
 
+// Closing the progress dialog would lift the modal lock while the job keeps running
+class LockedProgressDialog : public QProgressDialog {
+public:
+    using QProgressDialog::QProgressDialog;
+
+protected:
+    void closeEvent(QCloseEvent *event) override { event->ignore(); }
+    void reject() override {}
+};
+
 QString format_date_time(const SceDateTime &t) {
     return QString::asprintf("%04u-%02u-%02u %02u:%02u:%02u", t.year, t.month, t.day, t.hour, t.minute, t.second);
 }
@@ -413,7 +423,7 @@ bool SaveDataManagerDialog::refuse_while_running() {
 }
 
 bool SaveDataManagerDialog::run_with_progress(const QString &title, const std::function<bool(const std::function<void(float)> &)> &job) {
-    QProgressDialog progress(title, QString(), 0, 1000, this);
+    LockedProgressDialog progress(title, QString(), 0, 1000, this);
     // Keeps the main window from launching an app or switching users mid conversion
     progress.setWindowModality(Qt::ApplicationModal);
     progress.setMinimumDuration(0);

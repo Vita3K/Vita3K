@@ -57,7 +57,9 @@ bool is_encrypted(const fs::path &save_path) {
 }
 
 bool can_export(const fs::path &save_path) {
-    return fs::exists(save_path / "sce_sys" / "sealedkey") && !is_encrypted(save_path);
+    const fs::path sce_sys = save_path / "sce_sys";
+    return fs::exists(sce_sys / "sealedkey") && fs::exists(sce_sys / "keystone") && fs::exists(sce_sys / "param.sfo")
+        && !is_encrypted(save_path);
 }
 
 std::vector<SlotInfo> read_slots(const fs::path &save_path) {
@@ -65,7 +67,9 @@ std::vector<SlotInfo> read_slots(const fs::path &save_path) {
 
     fs::ifstream sdslot(save_path / "sce_sys" / "sdslot.dat", std::ios::binary);
     if (sdslot) {
-        std::vector<char> buf(std::istreambuf_iterator<char>(sdslot), {});
+        std::vector<char> buf(SDSLOT_DATA_BASE + SDSLOT_MAX_SLOTS * SDSLOT_BLOCK_SIZE);
+        sdslot.read(buf.data(), buf.size());
+        buf.resize(sdslot.gcount());
         if (buf.size() < SDSLOT_DATA_BASE || std::memcmp(buf.data(), "SDSL", 4) != 0)
             return slots;
         for (uint32_t i = 0; i < SDSLOT_MAX_SLOTS; i++) {
