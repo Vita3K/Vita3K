@@ -37,7 +37,6 @@ class PatchManagerDialog : public QDialog {
     Q_OBJECT
 public:
     explicit PatchManagerDialog(EmuEnvState &emuenv, QWidget *parent = nullptr);
-    ~PatchManagerDialog() override;
 
 private:
     void reload_entries();

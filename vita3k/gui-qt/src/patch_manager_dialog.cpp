@@ -23,6 +23,7 @@
 #include <util/net_utils.h>
 
 #include <QCheckBox>
+#include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -155,11 +156,6 @@ PatchManagerDialog::PatchManagerDialog(EmuEnvState &emuenv, QWidget *parent)
     reload_entries();
 }
 
-PatchManagerDialog::~PatchManagerDialog() {
-    if (m_download_thread)
-        m_download_thread->wait();
-}
-
 void PatchManagerDialog::reload_entries() {
     m_entries = load_patch_entries(m_emuenv.patch_path);
     m_enabled = load_enabled_patches(m_emuenv.patch_path);
@@ -272,22 +268,26 @@ void PatchManagerDialog::download_patches() {
     m_download->setText(tr("Downloading..."));
 
     const fs::path patch_dir = m_emuenv.patch_path;
-    m_download_thread = QThread::create([this, patch_dir] {
+    m_download_thread = QThread::create([self = QPointer<PatchManagerDialog>(this), patch_dir] {
         const std::string xml = net_utils::get_web_response(PATCHLIST_XML_URL);
         PatchEntries entries;
         bool success = false;
         QString message;
         if (xml.empty()) {
-            message = tr("Could not download the patch list. Please try again later.");
+            message = QCoreApplication::translate("PatchManagerDialog", "Could not download the patch list. Please try again later.");
         } else if (!parse_patch_entries(xml, entries)) {
-            message = tr("The downloaded patch list is not valid.");
+            message = QCoreApplication::translate("PatchManagerDialog", "The downloaded patch list is not valid.");
         } else {
             fs::create_directories(patch_dir);
             fs_utils::dump_data(patchlist_xml_path(patch_dir), xml.data(), static_cast<std::streamsize>(xml.size()));
             success = true;
-            message = tr("Downloaded %n patch(es).", nullptr, static_cast<int>(entries.size()));
+            message = QCoreApplication::translate("PatchManagerDialog", "Downloaded %n patch(es).", nullptr, static_cast<int>(entries.size()));
         }
-        QMetaObject::invokeMethod(this, [this, success, message] { on_download_finished(success, message); }, Qt::QueuedConnection);
+        const auto finish = [self, success, message] {
+            if (self)
+                self->on_download_finished(success, message);
+        };
+        QMetaObject::invokeMethod(qApp, finish, Qt::QueuedConnection);
     });
     connect(m_download_thread, &QThread::finished, m_download_thread, &QObject::deleteLater);
     m_download_thread->start();

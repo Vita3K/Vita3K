@@ -35,7 +35,7 @@ std::string file_name_of(const std::string &bin) {
 } // namespace
 
 std::string PatchEntry::key() const {
-    return (title_ids.empty() ? std::string{} : title_ids.front()) + '|' + app_ver + '|' + app_elf;
+    return (title_ids.empty() ? std::string{} : title_ids.front()) + '|' + app_ver + '|' + app_elf + '|' + nid + '|' + name;
 }
 
 fs::path patchlist_xml_path(const fs::path &patch_dir) {
