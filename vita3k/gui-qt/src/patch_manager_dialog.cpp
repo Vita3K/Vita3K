@@ -278,10 +278,14 @@ void PatchManagerDialog::download_patches() {
         } else if (!parse_patch_entries(xml, entries)) {
             message = QCoreApplication::translate("PatchManagerDialog", "The downloaded patch list is not valid.");
         } else {
-            fs::create_directories(patch_dir);
-            fs_utils::dump_data(patchlist_xml_path(patch_dir), xml.data(), static_cast<std::streamsize>(xml.size()));
-            success = true;
-            message = QCoreApplication::translate("PatchManagerDialog", "Downloaded %n patch(es).", nullptr, static_cast<int>(entries.size()));
+            boost::system::error_code error;
+            fs::create_directories(patch_dir, error);
+            if (error || !fs_utils::dump_data(patchlist_xml_path(patch_dir), xml.data(), static_cast<std::streamsize>(xml.size()))) {
+                message = QCoreApplication::translate("PatchManagerDialog", "Failed to save the patch list.");
+            } else {
+                success = true;
+                message = QCoreApplication::translate("PatchManagerDialog", "Downloaded %n patch(es).", nullptr, static_cast<int>(entries.size()));
+            }
         }
         const auto finish = [self, success, message] {
             if (self)
