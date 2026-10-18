@@ -66,6 +66,11 @@ struct GeneratedShader {
     usse::SpirvCode spirv;
 };
 
+// Return the component of the fragment shader output stored in a single component color surface when it
+// is not the first one, or -1 otherwise. The generated shader moves this component to the first one, so
+// shaders for these surfaces must be cached separately.
+int get_single_component_output_index(const SceGxmProgram &program, SceGxmColorFormat color_format);
+
 // Dump generated SPIR-V disassembly up to this point
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
 

@@ -193,6 +193,11 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
         return false;
     }
 
+    if (blend) {
+        fp->has_blend = true;
+        fp->blend = *blend;
+    }
+
     // Try to hash this shader
     fp->hash = sha256(&program, program.size);
     gxp_ptr_map.emplace(fp->hash, &program);
