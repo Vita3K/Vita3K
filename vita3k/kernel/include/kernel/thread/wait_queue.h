@@ -63,7 +63,7 @@ public:
     // With callbacks, the thread runs its notified callbacks while it waits.
     [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks, std::predicate<Waiter &> auto ready) {
         Waiter waiter{ .thread = thread, .entry = std::move(entry) };
-        waiter.priority = waiter.thread->priority;
+        waiter.priority = waiter.thread->get_priority();
         push(waiter);
         while (true) {
             lock.unlock();

@@ -578,12 +578,11 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
     if (const int error = vm_target(emuenv, thread_id, threadId, thread))
         return RET_ERROR(error);
 
-    std::unique_lock<std::mutex> lock(thread->mutex);
-    // A thread whose wait timed out while suspended stops on its way back to its code
-    thread->wait_for_vm_stop(lock);
-    if (!thread->vm_suspended())
-        return RET_ERROR(SCE_KERNEL_ERROR_NOT_SUSPENDED);
-    const auto context = save_context(*thread->cpu);
+    CPUContext context;
+    uint32_t tpidrurw = 0;
+    bool in_kernel_call = false;
+    if (const SceInt32 error = thread->get_vm_context(context, tpidrurw, in_kernel_call))
+        return RET_ERROR(error);
 
     if (infoCpu) {
         // A thread a guest can suspend runs in user mode
@@ -593,12 +592,12 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
         infoCpu->sb = 100000; // Todo
         infoCpu->st = 100000; // Todo
         infoCpu->teehbr = 100000; // Todo
-        infoCpu->tpidrurw = read_tpidrurw(*thread->cpu);
+        infoCpu->tpidrurw = tpidrurw;
     }
 
     if (infoVfp) {
         static_assert(sizeof(infoVfp->reg) == sizeof(context.fpu_registers));
-        if (thread->in_wait()) {
+        if (in_kernel_call) {
             // Inside a syscall a Vita reports the FPSCR the kernel runs with, and only d8 to d15,
             // which a call keeps. Every other d register reads this NaN.
             constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
@@ -624,7 +623,7 @@ EXPORT(SceInt32, _sceKernelGetThreadCpuAffinityMask, SceUID thid) {
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    return thread->affinity_mask;
+    return thread->get_affinity_mask();
 }
 
 EXPORT(int, _sceKernelGetThreadEventInfo) {
@@ -640,13 +639,10 @@ EXPORT(int, _sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
     }
     if (!pExitStatus)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
-    if (thread->status != ThreadStatus::dormant) {
-        return SCE_KERNEL_ERROR_NOT_DORMANT;
-    }
-    // A thread that never started has no exit status yet
-    if (thread->returned_value == static_cast<uint32_t>(SCE_KERNEL_ERROR_DORMANT))
-        return SCE_KERNEL_ERROR_DORMANT;
-    *pExitStatus = thread->returned_value;
+    const std::expected<uint32_t, SceInt32> exit_status = thread->exit_status();
+    if (!exit_status)
+        return exit_status.error();
+    *pExitStatus = *exit_status;
     return 0;
 }
 
@@ -667,23 +663,7 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
 
     // TODO: SCE_KERNEL_ERROR_ILLEGAL_CONTEXT check
 
-    const std::lock_guard<std::mutex> lock(thread->mutex);
-    SceKernelThreadInfo full{};
-    strncpy(full.name, thread->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
-    full.attr = thread->attr;
-    full.stack = Ptr<void>(thread->stack.get());
-    full.stackSize = thread->stack_size;
-    full.initPriority = thread->priority; // Todo Give only current priority
-    full.currentPriority = thread->priority;
-    full.initCpuAffinityMask = thread->affinity_mask; // Todo Give init affinity
-    full.currentCpuAffinityMask = thread->affinity_mask;
-    full.entry = SceKernelThreadEntry(thread->entry_point);
-    full.status = std::to_underlying(thread->status);
-    full.waitType = thread->wait_target.type;
-    full.waitId = thread->wait_target.id;
-    full.exitStatus = thread->returned_value;
-    full.fNotifyCallback = thread->callbacks_notified() ? 1 : 0;
-    write_info(info, full);
+    write_info(info, thread->info());
     return SCE_KERNEL_OK;
 }
 
@@ -1106,14 +1086,10 @@ EXPORT(SceInt32, sceKernelChangeThreadCpuAffinityMask, SceUID thid, SceInt32 aff
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    const SceInt32 old_affinity = thread->affinity_mask;
-
     if (affinity_mask & ~SCE_KERNEL_CPU_MASK_USER_ALL)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CPU_AFFINITY_MASK);
 
-    thread->affinity_mask = affinity_mask;
-    thread->tls.get_ptr<int>().get(emuenv.mem)[TLS_CPU_AFFINITY_MASK] = affinity_mask;
-    return old_affinity;
+    return thread->change_affinity_mask(affinity_mask);
 }
 
 EXPORT(SceInt32, sceKernelChangeThreadPriority2, SceUID thid, SceInt32 priority) {
@@ -1122,10 +1098,8 @@ EXPORT(SceInt32, sceKernelChangeThreadPriority2, SceUID thid, SceInt32 priority)
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    const SceInt32 old_priority = thread->priority;
-
     if (priority == SCE_KERNEL_CURRENT_THREAD_PRIORITY) {
-        priority = emuenv.kernel.get_thread(thread_id)->priority;
+        priority = emuenv.kernel.get_thread(thread_id)->get_priority();
     }
 
     if (priority >= SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY
@@ -1136,10 +1110,7 @@ EXPORT(SceInt32, sceKernelChangeThreadPriority2, SceUID thid, SceInt32 priority)
     if (priority < SCE_KERNEL_HIGHEST_PRIORITY_USER || priority > SCE_KERNEL_LOWEST_PRIORITY_USER)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
 
-    thread->priority = priority;
-    thread->tls.get_ptr<int>().get(emuenv.mem)[TLS_CURRENT_PRIORITY] = priority;
-
-    return old_priority;
+    return thread->change_priority(priority);
 }
 
 EXPORT(SceInt32, sceKernelChangeThreadPriority, SceUID thid, SceInt32 priority) {
@@ -1272,12 +1243,11 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
     // The new thread starts at the creating thread's current priority
     if (init_priority == SCE_KERNEL_CURRENT_THREAD_PRIORITY)
-        init_priority = emuenv.kernel.get_thread(thread_id)->priority;
+        init_priority = emuenv.kernel.get_thread(thread_id)->get_priority();
 
-    const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), init_priority, options->cpu_affinity_mask, options->stack_size, options->option.get(emuenv.mem));
+    const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), init_priority, options->cpu_affinity_mask, options->stack_size, options->attr, options->option.get(emuenv.mem));
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
-    thread->attr = options->attr | THREAD_ATTR_USER;
     return thread->id;
 }
 
@@ -1396,9 +1366,8 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thid);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    if (thread->status != ThreadStatus::dormant)
-        return RET_ERROR(SCE_KERNEL_ERROR_NOT_DORMANT);
-    thread->remove();
+    if (const SceInt32 error = thread->remove_dormant())
+        return RET_ERROR(error);
     return 0;
 }
 
@@ -1455,10 +1424,7 @@ EXPORT(int, sceKernelGetThreadStackFreeSize, SceUID thid) {
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    // A dormant thread's whole stack is free, a started one's is free below its stack pointer
-    if (thread->status == ThreadStatus::dormant)
-        return thread->stack_size;
-    return static_cast<int>(read_sp(*thread->cpu) - thread->stack.get());
+    return thread->stack_free_size();
 }
 
 EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {

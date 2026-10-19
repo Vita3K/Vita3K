@@ -1493,7 +1493,7 @@ EXPORT(SceInt32, sceKernelGetThreadCurrentPriority) {
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    return thread->priority;
+    return thread->get_priority();
 }
 
 EXPORT(int, sceKernelGetThreadEventInfo) {
