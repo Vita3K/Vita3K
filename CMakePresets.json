@@ -69,8 +69,9 @@
       "inherits": "windows-ninja",
       "description": "CI preset for Windows MSVC builds",
       "cacheVariables": {
-        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_DISABLE_PRECOMPILE_HEADERS": true,
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
       }
@@ -83,7 +84,8 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_DISABLE_PRECOMPILE_HEADERS": true
       }
     },
     {
@@ -134,8 +136,9 @@
       "inherits": "linux-ninja-clang",
       "description": "CI preset for Linux Clang builds",
       "cacheVariables": {
-        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache"
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_DISABLE_PRECOMPILE_HEADERS": true
       }
     },
     {
@@ -189,6 +192,7 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
         "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_DISABLE_PRECOMPILE_HEADERS": true,
         "CMAKE_OSX_ARCHITECTURES": "x86_64",
         "FORCE_BUILD_OPENSSL_MAC": true,
         "VITA3K_FORCE_CUSTOM_BOOST": true
@@ -201,6 +205,7 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
         "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_DISABLE_PRECOMPILE_HEADERS": true,
         "CMAKE_OSX_ARCHITECTURES": "arm64",
         "FORCE_BUILD_OPENSSL_MAC": true,
         "VITA3K_FORCE_CUSTOM_BOOST": true

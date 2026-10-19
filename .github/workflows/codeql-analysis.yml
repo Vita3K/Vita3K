@@ -23,7 +23,8 @@ on:
 env:
   BUILD_CONFIG: Release
   QT_VERSION: '6.11.0'
-  SCCACHE_GHA_ENABLED: "true"
+  # A cache hit skips the compiler, so CodeQL would not see that file
+  CCACHE_DISABLE: "1"
 
 jobs:
   analyze:
@@ -39,7 +40,7 @@ jobs:
         # Learn more...
         # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
         config: [Release]
-        cmake_preset: [ci-linux-clang]
+        cmake_preset: [linux-ninja-clang]
 
     steps:
       - name: Checkout repository
@@ -49,10 +50,6 @@ jobs:
 
       - name: Set up build environment
         run: bash ./.ci/setup-linux.sh x86_64 without-appimage
-
-      - uses: mozilla-actions/sccache-action@v0.0.11
-        with:
-          disable_annotations: true
 
       - name: Install Qt6
         uses: jurplel/install-qt-action@v4
