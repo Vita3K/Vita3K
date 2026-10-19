@@ -331,14 +331,16 @@ bool parse_address(const std::string &address, uint8_t &seg, uint32_t &offset) {
 
 // Versions are compared per component so that "1.02" equals "01.02"
 bool patch_versions_equal(const std::string &a, const std::string &b) {
-    const auto split = [](const std::string &version) {
+    const auto split = [](const std::string &version) -> std::optional<std::vector<int>> {
         std::vector<int> parts;
         size_t pos = 0;
         while (pos <= version.size()) {
             const auto dot = version.find('.', pos);
             const std::string part = version.substr(pos, dot == std::string::npos ? std::string::npos : dot - pos);
             int value = 0;
-            std::from_chars(part.data(), part.data() + part.size(), value);
+            const auto [end, ec] = std::from_chars(part.data(), part.data() + part.size(), value);
+            if (part.empty() || ec != std::errc{} || end != part.data() + part.size())
+                return std::nullopt;
             parts.push_back(value);
             if (dot == std::string::npos)
                 break;
@@ -348,5 +350,9 @@ bool patch_versions_equal(const std::string &a, const std::string &b) {
             parts.pop_back();
         return parts;
     };
-    return split(a) == split(b);
+    const auto parts_a = split(a);
+    const auto parts_b = split(b);
+    if (!parts_a || !parts_b)
+        return a == b;
+    return *parts_a == *parts_b;
 }
