@@ -456,6 +456,10 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
     state.motion.init();
 
+    if (state.cfg.controller_binds.empty() || state.cfg.controller_binds.size() != 15
+        || state.cfg.controller_axis_binds.empty() || state.cfg.controller_axis_binds.size() != 6)
+        reset_controller_binding(state);
+
     return true;
 }
 
