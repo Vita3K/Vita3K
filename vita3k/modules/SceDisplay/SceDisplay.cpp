@@ -45,10 +45,7 @@ static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const
         // the wait is considered starting from the last time the thread resumed
         // from a vblank wait (sceDisplayWait...) and not from the time this function was called
         // but we still need to wait at least for one vblank
-        const uint64_t next_vsync = emuenv.display.vblank_count + 1;
-        const uint64_t min_vsync = thread->last_vblank_waited + vcount;
-        thread->last_vblank_waited = std::max(next_vsync, min_vsync);
-        target_vcount = thread->last_vblank_waited;
+        target_vcount = thread->next_display_wait(emuenv.display.vblank_count + 1, vcount);
     }
 
     wait_vblank(emuenv.display, thread, target_vcount, is_cb);

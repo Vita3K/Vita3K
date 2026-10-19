@@ -456,8 +456,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             if (!thread->resume(true))
                 return "E01";
             // TODO: a step into a call that waits on a thread the debugger holds never returns
-            auto lock = std::unique_lock(thread->mutex);
-            thread->status_cond.wait(lock, [&]() { return thread->stopped_for_debugger() || thread->status == ThreadStatus::dormant || thread->status == ThreadStatus::deleted; });
+            thread->wait_until_stopped_for_debugger();
 
             state.gdb.current_thread = thread_id;
             return stop_reply(thread_id);
@@ -475,8 +474,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 if (state.gdb.server_die)
                     return "";
                 for (const auto &[_, thread] : state.kernel.threads) {
-                    const auto thread_guard = std::lock_guard(thread->mutex);
-                    if (thread->stopped_for_debugger() && hit_breakpoint(*thread->cpu)) {
+                    if (thread->stopped_at_breakpoint()) {
                         stopped = thread;
                         break;
                     }
@@ -493,10 +491,8 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // Stop the world. A thread inside a kernel call stops when the call returns.
             state.kernel.suspend_threads();
-            for (const ThreadStatePtr &thread : list_threads(state)) {
-                auto lock = std::unique_lock(thread->mutex);
-                thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::running; });
-            }
+            for (const ThreadStatePtr &thread : list_threads(state))
+                thread->wait_until_not_running();
 
             state.gdb.current_thread = stopped->id;
             return stop_reply(stopped->id);

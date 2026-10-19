@@ -334,7 +334,7 @@ uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sc
         SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
         SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
         // module_start is always called from new thread
-        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, nullptr);
+        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, 0, nullptr);
 
         const uint32_t ret = module_thread->run_guest_function(module_start.address(), args, argp.cast<void>());
         module_thread->remove();
@@ -358,7 +358,7 @@ uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sce
         SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
         SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
         // module_stop is always called from new thread
-        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_stop, priority, affinity, stack_size, nullptr);
+        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_stop, priority, affinity, stack_size, 0, nullptr);
 
         const uint32_t ret = module_thread->run_guest_function(module_stop.address(), args, argp.cast<void>());
         module_thread->remove();

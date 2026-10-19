@@ -277,7 +277,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         return result;
 
     const Deadline guest_deadline = deadline_from(timeout);
-    WaitQueue<std::monostate>::Waiter waiter{ .thread = thread, .priority = thread->priority };
+    WaitQueue<std::monostate>::Waiter waiter{ .thread = thread, .priority = thread->get_priority() };
     waiters.push(waiter);
 
     while (true) {

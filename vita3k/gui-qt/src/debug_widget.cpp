@@ -237,7 +237,7 @@ void DebugWidget::refresh_threads() {
         item->setData(0, Qt::UserRole, static_cast<uint>(id));
         item->setText(0, QStringLiteral("0x%1").arg(id, 8, 16, QLatin1Char('0')).toUpper());
         item->setText(1, QString::fromStdString(th->name));
-        item->setText(2, thread_status_string(th->status));
+        item->setText(2, thread_status_string(th->get_status()));
         item->setText(3, QStringLiteral("0x%1").arg(th->stack.get(), 8, 16, QLatin1Char('0')).toUpper());
     }
 }
@@ -380,7 +380,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
     };
 
     form->addRow(tr("Name:"), new QLabel(QString::fromStdString(thread->name), dlg));
-    form->addRow(tr("Status:"), new QLabel(thread_status_string(thread->status), dlg));
+    form->addRow(tr("Status:"), new QLabel(thread_status_string(thread->get_status()), dlg));
     form->addRow(tr("PC:"), new QLabel(make_hex(pc), dlg));
     form->addRow(tr("SP:"), new QLabel(make_hex(sp), dlg));
     form->addRow(tr("LR:"), new QLabel(make_hex(lr), dlg));
