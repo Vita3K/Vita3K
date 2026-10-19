@@ -26,9 +26,6 @@ done
 require_arg "$PRESET" "preset"
 require_arg "$CONFIG" "config"
 
-export CCACHE_DIR
-CCACHE_DIR="$(cygpath -u "C:/msys2-ccache")"
-
 cmake --preset "$PRESET"
 download_qt_translations "build/$PRESET/qt_translations"
 cmake --build "build/$PRESET" --config "$CONFIG"

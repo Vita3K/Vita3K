@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sudo add-apt-repository universe
+sudo add-apt-repository -y --no-update universe
 sudo apt update
 sudo apt -y install \
+    ccache \
     libboost-program-options1.88-dev \
     libgtk-3-dev \
     ninja-build \
