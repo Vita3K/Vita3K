@@ -4965,7 +4965,7 @@ EXPORT(uint32_t, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
         return 0;
     }
 
-    return texture->lod_min0 | (texture->lod_min1 << 2);
+    return texture->true_lod_min();
 }
 
 EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
@@ -5281,8 +5281,8 @@ EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, uint32_t lodMin) {
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
     }
 
-    texture->lod_min0 = lodMin & 3;
-    texture->lod_min1 = lodMin >> 2;
+    texture->lod_min0 = lodMin >> 2;
+    texture->lod_min1 = lodMin & 3;
 
     return 0;
 }

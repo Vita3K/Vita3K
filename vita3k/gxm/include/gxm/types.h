@@ -1225,6 +1225,10 @@ struct SceGxmTexture {
         uint32_t count = (mip_count + 1) & 15;
         return (count == 0) ? 1 : count; // 0 count is no mip chain, but there's still top level...
     }
+
+    uint32_t true_lod_min() const {
+        return (lod_min0 << 2) | lod_min1;
+    }
 };
 
 static_assert(sizeof(SceGxmTexture) == 16);

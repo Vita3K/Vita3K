@@ -585,7 +585,7 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .mipLodBias = (static_cast<float>(texture.lod_bias) - 31.f) / 8.f,
         .maxAnisotropy = static_cast<float>(anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2)),
+        .minLod = static_cast<float>(texture.true_lod_min()),
         .maxLod = VK_LOD_CLAMP_NONE,
         .unnormalizedCoordinates = VK_FALSE,
     };

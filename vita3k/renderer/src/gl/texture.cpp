@@ -39,7 +39,7 @@ static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum t
 #ifndef __ANDROID__
     glTexParameterf(texture_bind_type, GL_TEXTURE_LOD_BIAS, (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f);
 #endif
-    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_LOD, gxm_texture.true_lod_min());
     glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, min_filter);
     glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, mag_filter);
 
