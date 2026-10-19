@@ -31,7 +31,13 @@ done
 require_arg "$PRESET" "preset"
 require_arg "$CONFIG" "config"
 
-cmake --preset "$PRESET"
+# CI keeps the check results of an earlier configure with the same CMake files here
+cmake_args=()
+if [[ -f "build/$PRESET/cmake-checks.cmake" ]]; then
+    cmake_args+=(-C "build/$PRESET/cmake-checks.cmake")
+fi
+
+cmake --preset "$PRESET" ${cmake_args[@]+"${cmake_args[@]}"}
 download_qt_translations "build/$PRESET/qt_translations"
 cmake --build "build/$PRESET" --config "$CONFIG"
 

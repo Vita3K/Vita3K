@@ -8,8 +8,11 @@ VITA3K="$(realpath "$1")"
 AUTOTESTS_DIR="$(realpath "$2")"
 TOOLS_DIR="$(realpath "$(dirname "$0")/../tools/autotests")"
 
-docker run --rm --user "$(id -u):$(id -g)" -v "$AUTOTESTS_DIR:/src" -w /src vitasdk/vitasdk:latest \
-    sh -c 'cmake -B build && cmake --build build -j"$(nproc)"'
+# CI restores the vpk built from the same autotests commit
+if [[ "${AUTOTESTS_VPK_CACHED:-}" != true ]]; then
+    docker run --rm --user "$(id -u):$(id -g)" -v "$AUTOTESTS_DIR:/src" -w /src vitasdk/vitasdk:latest \
+        sh -c 'cmake -B build && cmake --build build -j"$(nproc)"'
+fi
 
 sudo apt-get -y install mesa-vulkan-drivers
 
