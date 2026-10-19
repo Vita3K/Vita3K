@@ -117,11 +117,6 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
 
         emuenv->vulkan_device_info = std::make_unique<renderer::VulkanDeviceInfo>(renderer::enumerate_vulkan_devices());
 
-        if (emuenv->cfg.controller_binds.empty() || emuenv->cfg.controller_binds.size() != 15
-            || emuenv->cfg.controller_axis_binds.empty() || emuenv->cfg.controller_axis_binds.size() != 6) {
-            app::reset_controller_binding(*emuenv);
-        }
-
         init_libraries(*emuenv);
 
         if (!app::init_apps_list(*emuenv))
