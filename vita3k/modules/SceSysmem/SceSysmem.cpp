@@ -361,11 +361,14 @@ void create_system_font_blocks(EmuEnvState &emuenv) {
             continue;
         memcpy(address.get(emuenv.mem), data.data(), data.size());
 
+        // Not add_block: the shell owns these blocks, so they must not count against the app's memory.
         const auto block = std::make_shared<KernelMemBlock>();
         block->type = SCE_KERNEL_MEMBLOCK_TYPE_USER_RW;
         block->mappedBase = address;
         block->mappedSize = size;
         block->size = sizeof(SceKernelMemBlockInfo);
+        block->memoryType = SCE_KERNEL_MEMORY_TYPE_NORMAL;
+        block->access = SCE_KERNEL_MEMORY_ACCESS_R | SCE_KERNEL_MEMORY_ACCESS_W;
         std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
         state->blocks.emplace(state->get_next_uid(), block);
     }
