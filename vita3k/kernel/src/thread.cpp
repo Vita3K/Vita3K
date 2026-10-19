@@ -25,6 +25,7 @@
 
 #include <util/log.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <memory>
@@ -51,6 +52,8 @@ constexpr size_t KERNEL_TLS_SIZE = 0x800;
 // The registers each run of a thread starts with
 static CPUContext initial_context(Address stack_top, const SceKernelThreadOptParam *option) {
     CPUContext ctx;
+    // A Vita starts every thread with these in r2 to r12, and some games rely on r9 not being 0
+    std::fill(ctx.cpu_registers.begin() + 2, ctx.cpu_registers.begin() + 13, 0xDEADBEEF);
     ctx.set_sp(stack_top);
     ctx.fpscr = INITIAL_FPSCR;
     if (option) {
