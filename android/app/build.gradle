@@ -28,6 +28,15 @@ android {
 		ndk {
 			abiFilters "arm64-v8a", "x86_64"
 		}
+
+		if (System.getenv("CI")) {
+			// ccache cannot store objects built with precompiled headers
+			externalNativeBuild {
+				cmake {
+					arguments "-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON"
+				}
+			}
+		}
 	}
 
 	signingConfigs {
