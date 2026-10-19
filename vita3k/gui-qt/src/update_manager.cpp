@@ -563,7 +563,9 @@ void UpdateManager::on_download_finished() {
     if (!m_expected_sha256.isEmpty()
         && QString::fromLatin1(QCryptographicHash::hash(archive, QCryptographicHash::Sha256).toHex()) != m_expected_sha256) {
         close_download_dialog();
-        QMessageBox::warning(m_parent_widget, tr_update("Update Vita3K"), tr_update("The downloaded update is corrupted, its checksum does not match the release."));
+        // The continuous release may have been replaced since the last check, so its cached checksum can no longer be trusted
+        set_pending_update(std::nullopt);
+        QMessageBox::warning(m_parent_widget, tr_update("Update Vita3K"), tr_update("The downloaded update does not match the release information. The release may have changed, please check for updates again."));
         return;
     }
 

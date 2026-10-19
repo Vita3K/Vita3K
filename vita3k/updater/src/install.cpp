@@ -79,8 +79,8 @@ bool install_appimage(std::span<const uint8_t> payload, const stdfs::path &appim
     {
         std::ofstream out(staged, std::ios::binary | std::ios::trunc);
         out.write(reinterpret_cast<const char *>(payload.data()), static_cast<std::streamsize>(payload.size()));
+        out.close();
         if (!out) {
-            out.close();
             stdfs::remove(staged, ec);
             error_message = fmt::format("Could not write the new AppImage to {}", to_utf8(staged));
             return false;
