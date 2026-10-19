@@ -75,6 +75,7 @@
     </property>
     <addaction name="vita_themes_action"/>
     <addaction name="trophy_collection_action"/>
+    <addaction name="patch_manager_action"/>
     <addaction name="user_management_action"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -254,6 +255,11 @@
   <action name="vita_themes_action">
    <property name="text">
     <string>Vita Themes</string>
+   </property>
+  </action>
+  <action name="patch_manager_action">
+   <property name="text">
+    <string>Patch Manager</string>
    </property>
   </action>
   <action name="user_management_action">

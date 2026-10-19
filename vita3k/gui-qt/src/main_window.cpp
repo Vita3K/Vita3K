@@ -34,6 +34,7 @@
 #include <gui-qt/live_area_widget.h>
 #include <gui-qt/log_widget.h>
 #include <gui-qt/main_window.h>
+#include <gui-qt/patch_manager_dialog.h>
 #include <gui-qt/persistent_settings.h>
 #include <gui-qt/physical_key_qt.h>
 #include <gui-qt/pkg_install_dialog.h>
@@ -447,6 +448,12 @@ void MainWindow::initialize() {
 
     connect(m_ui->vita_themes_action, &QAction::triggered,
         this, &MainWindow::open_vita_themes);
+
+    connect(m_ui->patch_manager_action, &QAction::triggered, this, [this] {
+        auto *dlg = new PatchManagerDialog(emuenv, this);
+        connect(dlg, &QDialog::finished, dlg, &QObject::deleteLater);
+        dlg->exec();
+    });
 
     connect(m_ui->user_management_action, &QAction::triggered,
         this, &MainWindow::open_user_management);

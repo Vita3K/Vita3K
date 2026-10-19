@@ -506,7 +506,20 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
-        const Patches patches = get_patches(emuenv.patch_path, emuenv.io.title_id, "app0:" + emuenv.self_path);
+        uint32_t module_nid = 0;
+        {
+            const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+            for (const auto &[nid, uid] : emuenv.kernel.module_uid_by_nid) {
+                if (uid == static_cast<uint32_t>(main_module_id))
+                    module_nid = nid;
+            }
+        }
+        LOG_INFO("Main executable NID: {} (for the NID attribute of a patch)", fmt::format("0x{:08X}", module_nid));
+
+        const std::string bin = "app0:" + emuenv.self_path;
+        Patches patches = get_patches(emuenv.patch_path, emuenv.io.title_id, bin);
+        const Patches xml_patches = get_xml_patches(emuenv.patch_path, emuenv.io.title_id, bin, emuenv.app_info.app_version, module_nid);
+        patches.insert(patches.end(), xml_patches.begin(), xml_patches.end());
         if (!patches.empty())
             do_patches(emuenv.mem, patches, module->info);
     } else

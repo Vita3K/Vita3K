@@ -17,8 +17,123 @@
 
 #include "patch/util.h"
 
+#include <algorithm>
+#include <cctype>
+#include <charconv>
 #include <map>
+#include <optional>
+#include <string_view>
 #include <util/log.h>
+
+std::optional<uint64_t> parse_hex(std::string_view text) {
+    if (text.starts_with("0x") || text.starts_with("0X"))
+        text.remove_prefix(2);
+    uint64_t value = 0;
+    const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), value, 16);
+    if (text.empty() || ec != std::errc{} || end != text.data() + text.size())
+        return std::nullopt;
+    return value;
+}
+
+namespace {
+
+std::optional<std::vector<uint8_t>> parse_hex_bytes(const std::string &text) {
+    std::string digits;
+    for (size_t pos = 0; pos < text.size();) {
+        while (pos < text.size() && std::isspace(static_cast<unsigned char>(text[pos])))
+            ++pos;
+        const size_t start = pos;
+        while (pos < text.size() && !std::isspace(static_cast<unsigned char>(text[pos])))
+            ++pos;
+        std::string token = text.substr(start, pos - start);
+        if (token.starts_with("0x") || token.starts_with("0X"))
+            token.erase(0, 2);
+        if (token.size() % 2)
+            token.insert(token.begin(), '0');
+        digits += token;
+    }
+
+    if (digits.empty())
+        return std::nullopt;
+
+    std::vector<uint8_t> bytes;
+    bytes.reserve(digits.size() / 2);
+    for (size_t i = 0; i < digits.size(); i += 2) {
+        const auto byte = parse_hex(std::string_view(digits).substr(i, 2));
+        if (!byte)
+            return std::nullopt;
+        bytes.push_back(static_cast<uint8_t>(*byte));
+    }
+    return bytes;
+}
+
+std::optional<int64_t> parse_number(std::string_view text) {
+    if (text.starts_with("0x") || text.starts_with("0X")) {
+        const auto value = parse_hex(text);
+        return value ? std::optional<int64_t>(static_cast<int64_t>(*value)) : std::nullopt;
+    }
+    int64_t value = 0;
+    const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
+    if (text.empty() || ec != std::errc{} || end != text.data() + text.size())
+        return std::nullopt;
+    return value;
+}
+
+// Evaluates "a + b - c" over decimal or 0x numbers; vblank is fixed to 1 (60Hz)
+std::optional<uint32_t> evaluate_expression(const std::string &expression) {
+    int64_t total = 0;
+    int sign = 1;
+    size_t pos = 0;
+    bool expect_number = true;
+    while (pos < expression.size()) {
+        const char c = expression[pos];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++pos;
+        } else if (!expect_number && (c == '+' || c == '-')) {
+            sign = c == '+' ? 1 : -1;
+            expect_number = true;
+            ++pos;
+        } else if (expect_number) {
+            size_t end = pos;
+            while (end < expression.size() && !std::isspace(static_cast<unsigned char>(expression[end])) && expression[end] != '+' && expression[end] != '-')
+                ++end;
+            const std::string_view token = std::string_view(expression).substr(pos, end - pos);
+            const auto value = token == "vblank" ? std::optional<int64_t>(1) : parse_number(token);
+            if (!value)
+                return std::nullopt;
+            total += sign * *value;
+            expect_number = false;
+            pos = end;
+        } else {
+            return std::nullopt;
+        }
+    }
+    if (expect_number)
+        return std::nullopt;
+    return static_cast<uint32_t>(total);
+}
+
+std::optional<std::vector<uint8_t>> encode_instruction(std::string name, const std::string &args_text) {
+    if (to_instruction(name) == Instruction::INVALID)
+        return std::nullopt;
+
+    std::vector<uint32_t> args;
+    size_t pos = 0;
+    while (!args_text.empty() && pos <= args_text.size()) {
+        const auto comma = args_text.find(',', pos);
+        const auto arg = evaluate_expression(args_text.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos));
+        if (!arg)
+            return std::nullopt;
+        args.push_back(*arg);
+        if (comma == std::string::npos)
+            break;
+        pos = comma + 1;
+    }
+
+    return to_bytes(translate(name, args), 0);
+}
+
+} // namespace
 
 // This function will return a PatchHeader struct, which contains the titleid and the binary name (if provided)
 PatchHeader read_header(std::string &header, bool is_patchlist) {
@@ -157,4 +272,87 @@ uint32_t translate(std::string &inst, std::vector<uint32_t> &args) {
     LOG_WARN("Instruction {} could not be translated! It will be replaced with NOP", inst);
 
     return 0;
+}
+
+// Value is a list of hex byte strings and instructions such as "t1_mov(1, 4 - 1)"
+std::optional<std::vector<uint8_t>> parse_value(const std::string &text) {
+    std::vector<uint8_t> bytes;
+    size_t pos = 0;
+    while (pos < text.size()) {
+        if (std::isspace(static_cast<unsigned char>(text[pos]))) {
+            ++pos;
+            continue;
+        }
+
+        size_t end = pos;
+        while (end < text.size() && !std::isspace(static_cast<unsigned char>(text[end])) && text[end] != '(')
+            ++end;
+
+        std::optional<std::vector<uint8_t>> chunk;
+        if (end < text.size() && text[end] == '(') {
+            const auto close = text.find(')', end);
+            if (close == std::string::npos)
+                return std::nullopt;
+            chunk = encode_instruction(text.substr(pos, end - pos), text.substr(end + 1, close - end - 1));
+            end = close + 1;
+        } else {
+            chunk = parse_hex_bytes(text.substr(pos, end - pos));
+        }
+
+        if (!chunk)
+            return std::nullopt;
+        bytes.insert(bytes.end(), chunk->begin(), chunk->end());
+        pos = end;
+    }
+
+    if (bytes.empty())
+        return std::nullopt;
+    return bytes;
+}
+
+// Address is "<offset>" in segment 0 or "<segment>:<offset>"
+bool parse_address(const std::string &address, uint8_t &seg, uint32_t &offset) {
+    std::string_view offset_text = address;
+    seg = 0;
+    if (const auto colon = address.find(':'); colon != std::string::npos) {
+        const auto seg_value = parse_hex(std::string_view(address).substr(0, colon));
+        if (!seg_value || *seg_value > 0xFF)
+            return false;
+        seg = static_cast<uint8_t>(*seg_value);
+        offset_text = std::string_view(address).substr(colon + 1);
+    }
+
+    const auto offset_value = parse_hex(offset_text);
+    if (!offset_value || *offset_value > UINT32_MAX)
+        return false;
+    offset = static_cast<uint32_t>(*offset_value);
+    return true;
+}
+
+// Versions are compared per component so that "1.02" equals "01.02"
+bool patch_versions_equal(const std::string &a, const std::string &b) {
+    const auto split = [](const std::string &version) -> std::optional<std::vector<int>> {
+        std::vector<int> parts;
+        size_t pos = 0;
+        while (pos <= version.size()) {
+            const auto dot = version.find('.', pos);
+            const std::string part = version.substr(pos, dot == std::string::npos ? std::string::npos : dot - pos);
+            int value = 0;
+            const auto [end, ec] = std::from_chars(part.data(), part.data() + part.size(), value);
+            if (part.empty() || ec != std::errc{} || end != part.data() + part.size())
+                return std::nullopt;
+            parts.push_back(value);
+            if (dot == std::string::npos)
+                break;
+            pos = dot + 1;
+        }
+        while (parts.size() > 1 && parts.back() == 0)
+            parts.pop_back();
+        return parts;
+    };
+    const auto parts_a = split(a);
+    const auto parts_b = split(b);
+    if (!parts_a || !parts_b)
+        return a == b;
+    return *parts_a == *parts_b;
 }

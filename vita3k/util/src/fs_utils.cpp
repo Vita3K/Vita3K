@@ -50,12 +50,13 @@ fs::path path_concat(const fs::path &path1, const fs::path &path2) {
     return fs::path{ path1.native() + path2.native() };
 }
 
-void dump_data(const fs::path &path, const void *data, const std::streamsize size) {
+bool dump_data(const fs::path &path, const void *data, const std::streamsize size) {
     fs::ofstream of{ path, fs::ofstream::binary };
-    if (!of.fail()) {
-        of.write(static_cast<const char *>(data), size);
-        of.close();
-    }
+    if (of.fail())
+        return false;
+    of.write(static_cast<const char *>(data), size);
+    of.close();
+    return !of.fail();
 }
 template <typename T>
 static bool read_data(const fs::path &path, std::vector<T> &data) {
