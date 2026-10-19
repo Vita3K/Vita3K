@@ -185,7 +185,7 @@ poll_calls                      fail     # a poll takes a count a queued waiter 
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_migrate                 fail     # threads ignore their core
 preempt_status                  fail     # threads ignore their core and priority
-priority_change_args            fail     # a start doesn't reset a changed priority
+priority_change_args            pass
 priority_change_preempt         fail     # threads ignore their core and priority
 priority_inheritance            fail     # threads ignore their core and priority
 priority_queue_areas            fail     # threads ignore their core and priority
@@ -271,7 +271,7 @@ thread_exit_status              fail     # an end wait for an ended thread write
 thread_fpscr                    pass
 thread_id_registers             pass
 thread_info                     pass
-thread_info_fields              fail     # thread info process, affinity, CPU and run time fields
+thread_info_fields              fail     # thread info process, CPU and run time fields
 thread_lifecycle                fail     # starting with more arguments than the stack holds
 thread_limits                   fail     # no limit on the number of threads
 thread_names                    pass

@@ -76,7 +76,7 @@ struct ThreadState {
     // The pointer is fixed. The registers are only touched by the thread itself, or while
     // something holds it.
     const CPUStatePtr cpu;
-    // The priority and the cores it was created with
+    // The priority and the cores it was created with, which each start goes back to
     const int init_priority;
     const SceInt32 init_affinity_mask;
     // The registers each run starts with
@@ -235,6 +235,9 @@ private:
     void request_ending(Ending how) { ending = std::max(ending, how); }
     // Ends the thread without its end handler, whatever its status
     void request_removal();
+    // Set the priority or the affinity mask and the TLS slot that shows it
+    void set_priority(int new_priority);
+    void set_affinity_mask(SceInt32 new_affinity_mask);
     // Starts a dormant thread at entry, like start() does at its entry point. Takes mutex.
     int start_at(Address entry, SceSize arglen, Ptr<void> argp, bool run_entry_callback);
     // Whether a callback of this thread was notified and hasn't run yet

@@ -120,6 +120,9 @@ int ThreadState::start_at(Address entry, SceSize arglen, const Ptr<void> argp, b
 
     run_start_callback = run_entry_callback;
     returned_value = SCE_KERNEL_ERROR_NOT_DORMANT;
+    // Each run starts at the priority and on the cores the thread was created with
+    set_priority(init_priority);
+    set_affinity_mask(init_affinity_mask);
     load_context(*cpu, init_cpu_ctx);
     // A thread starts with TPIDRURW at 0, also when it starts again
     write_tpidrurw(*cpu, 0);
@@ -645,9 +648,9 @@ SceKernelThreadInfo ThreadState::info() {
     info.attr = attr;
     info.stack = Ptr<void>(stack.get());
     info.stackSize = stack_size;
-    info.initPriority = priority; // Todo Give only current priority
+    info.initPriority = init_priority;
     info.currentPriority = priority;
-    info.initCpuAffinityMask = affinity_mask; // Todo Give init affinity
+    info.initCpuAffinityMask = init_affinity_mask;
     info.currentCpuAffinityMask = affinity_mask;
     info.entry = SceKernelThreadEntry(entry_point);
     info.status = std::to_underlying(status);
@@ -665,9 +668,14 @@ int ThreadState::get_priority() const {
 
 int ThreadState::change_priority(int new_priority) {
     const std::lock_guard<std::mutex> lock(mutex);
-    const int old_priority = std::exchange(priority, new_priority);
-    tls.get_ptr<int>().get(mem)[TLS_CURRENT_PRIORITY] = new_priority;
+    const int old_priority = priority;
+    set_priority(new_priority);
     return old_priority;
+}
+
+void ThreadState::set_priority(int new_priority) {
+    priority = new_priority;
+    tls.get_ptr<int>().get(mem)[TLS_CURRENT_PRIORITY] = new_priority;
 }
 
 SceInt32 ThreadState::get_affinity_mask() const {
@@ -677,9 +685,14 @@ SceInt32 ThreadState::get_affinity_mask() const {
 
 SceInt32 ThreadState::change_affinity_mask(SceInt32 new_affinity_mask) {
     const std::lock_guard<std::mutex> lock(mutex);
-    const SceInt32 old_affinity_mask = std::exchange(affinity_mask, new_affinity_mask);
-    tls.get_ptr<int>().get(mem)[TLS_CPU_AFFINITY_MASK] = new_affinity_mask;
+    const SceInt32 old_affinity_mask = affinity_mask;
+    set_affinity_mask(new_affinity_mask);
     return old_affinity_mask;
+}
+
+void ThreadState::set_affinity_mask(SceInt32 new_affinity_mask) {
+    affinity_mask = new_affinity_mask;
+    tls.get_ptr<int>().get(mem)[TLS_CPU_AFFINITY_MASK] = new_affinity_mask;
 }
 
 Address ThreadState::stack_top() const {
