@@ -452,7 +452,8 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         modified_time.minute = local.tm_min;
         modified_time.second = local.tm_sec;
         slot_param->modifiedTime = modified_time;
-        sdslot_write_slot_param(emuenv, slot->id, slot_param, export_name);
+        if (!sdslot_write_slot_param(emuenv, slot->id, slot_param, export_name))
+            return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_NO_SPACE_FS);
     }
 
     return 0;
@@ -493,7 +494,8 @@ EXPORT(int, sceAppUtilSaveDataMount) {
 
 EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotCreate, slotId, param, mountPoint);
-    sdslot_write_slot_param(emuenv, slotId, param, export_name);
+    if (!sdslot_write_slot_param(emuenv, slotId, param, export_name))
+        return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_NO_SPACE_FS);
     return 0;
 }
 
@@ -564,7 +566,8 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSetParam, SceAppUtilSaveDataSlotId slotId
     SceAppUtilSaveDataSlotParam existing{};
     if (!sdslot_read_slot_param(emuenv, slotId, &existing, export_name))
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
-    sdslot_write_slot_param(emuenv, slotId, param, export_name);
+    if (!sdslot_write_slot_param(emuenv, slotId, param, export_name))
+        return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_NO_SPACE_FS);
     return 0;
 }
 

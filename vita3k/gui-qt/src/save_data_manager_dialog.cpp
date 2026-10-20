@@ -426,6 +426,9 @@ bool SaveDataManagerDialog::run_with_progress(const QString &title, const std::f
     LockedProgressDialog progress(title, QString(), 0, 1000, this);
     // Keeps the main window from launching an app or switching users mid conversion
     progress.setWindowModality(Qt::ApplicationModal);
+    // Reaching the maximum would otherwise hide the dialog before the job returns
+    progress.setAutoReset(false);
+    progress.setAutoClose(false);
     progress.setMinimumDuration(0);
     progress.setValue(0);
 
@@ -502,7 +505,7 @@ void SaveDataManagerDialog::export_for_vita() {
         return;
 
     const fs::path dst = gui::utils::to_fs_path(dir) / save_id.toStdString();
-    if (is_same_or_inside(dst, src) || is_same_or_inside(dst, m_emuenv.vita_fs_path / "ux0/user")) {
+    if (is_same_or_inside(dst, src) || is_same_or_inside(src, dst) || is_same_or_inside(dst, m_emuenv.vita_fs_path / "ux0/user")) {
         QMessageBox::warning(this, windowTitle(), tr("Choose a folder outside Vita3K's save data. Writing the encrypted copy there would replace the save data Vita3K uses."));
         return;
     }
