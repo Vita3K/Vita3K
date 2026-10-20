@@ -51,7 +51,9 @@ public:
 
     SceUID uid{};
 
-    // Locks the object, which guards its fields. The lock is empty if the object was deleted.
+protected:
+    // Locks the object, which guards its fields. The lock is empty if the object was deleted. Only
+    // the object's own methods take it.
     [[nodiscard]] std::unique_lock<std::mutex> lock() const {
         std::unique_lock<std::mutex> guard(mutex);
         if (deleted)
@@ -59,7 +61,6 @@ public:
         return guard;
     }
 
-protected:
     // Ends what the object is doing when it is deleted. Runs once, with the lock held.
     virtual void on_delete() {}
 
@@ -150,15 +151,14 @@ public:
         return nullptr;
     }
 
-    // Calls fn on every T, in UID order, with the table and the object locked.
+    // Calls fn on every T, in UID order, with the table locked. No T is deleted meanwhile, and fn
+    // locks the ones it reads.
     template <KernelObjectClass T>
     void for_each(std::invocable<T &> auto fn) const {
         const std::lock_guard<std::mutex> lock(mutex);
         for (const auto &[_, obj] : objects) {
-            if (obj->get_uid_class() != T::uid_class)
-                continue;
-            const std::lock_guard<std::mutex> obj_lock(obj->mutex);
-            fn(static_cast<T &>(*obj));
+            if (obj->get_uid_class() == T::uid_class)
+                fn(static_cast<T &>(*obj));
         }
     }
 

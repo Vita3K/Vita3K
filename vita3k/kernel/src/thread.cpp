@@ -229,10 +229,7 @@ void ThreadState::run_loop(bool top_level) {
     // A mutex or a write lock the thread still holds when it ends goes to its next waiter
     auto release_locks = [&]() {
         lock.unlock();
-        kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) {
-            if (mutex.owner.get() == this)
-                mutex.release_ended_owner();
-        });
+        kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) { mutex.release_ended_owner(*this); });
         kernel.objects.for_each<RWLock>([&](RWLock &rwlock) { rwlock.release_ended_writer(*this); });
         lock.lock();
     };

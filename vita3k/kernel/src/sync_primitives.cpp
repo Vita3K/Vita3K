@@ -189,6 +189,14 @@ SceInt32 SimpleEvent::cancel(SceUInt32 *num_wait_threads) {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 SimpleEvent::get_pattern(SceUInt32 &result) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    result = pattern;
+    return SCE_KERNEL_OK;
+}
+
 // *********
 // * Timer *
 // *********
@@ -396,6 +404,22 @@ uint64_t Timer::count() const {
     return is_started ? get_current_time() - base : stopped_count;
 }
 
+SceInt32 Timer::get_time(uint64_t &time) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    time = count();
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 Timer::get_base(uint64_t &time) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    time = base;
+    return SCE_KERNEL_OK;
+}
+
 SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
@@ -554,7 +578,10 @@ SceInt32 Mutex::release(MemState &mem, const ThreadStatePtr &thread, SceInt32 un
     return SCE_KERNEL_OK;
 }
 
-void Mutex::release_ended_owner() {
+void Mutex::release_ended_owner(const ThreadState &thread) {
+    const auto guard = lock();
+    if (!guard || owner.get() != &thread)
+        return;
     lock_count = 0;
     hand_over();
 }
@@ -585,6 +612,39 @@ SceInt32 Mutex::cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 LwMutex::info(SceKernelLwMutexInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID;
+
+    info = {};
+    info.uid = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.pWork = workarea;
+    info.initCount = init_count;
+    info.currentCount = lock_count;
+    info.currentOwnerId = owner ? owner->id : 0;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 HeavyMutex::info(SceKernelMutexInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+
+    info = {};
+    info.mutexId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.initCount = init_count;
+    info.currentCount = lock_count;
+    info.currentOwnerId = owner ? owner->id : 0;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
 
@@ -705,10 +765,29 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
 }
 
 void RWLock::release_ended_writer(const ThreadState &thread) {
+    const auto guard = lock();
+    if (!guard)
+        return;
     if (write_owner.get() != &thread)
         return;
     lock_count = 0;
     hand_over();
+}
+
+SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
+
+    info = {};
+    info.rwLockId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.lockCount = lock_count;
+    info.writeOwnerId = write_owner ? write_owner->id : 0;
+    info.numReadWaitThreads = static_cast<SceUInt32>(waiters.count_if([](const auto &waiter) { return !waiter.entry.is_write; }));
+    info.numWriteWaitThreads = static_cast<SceUInt32>(waiters.count_if([](const auto &waiter) { return waiter.entry.is_write; }));
+    return SCE_KERNEL_OK;
 }
 
 void RWLock::hand_over() {
@@ -849,6 +928,22 @@ SceInt32 Semaphore::cancel(SceInt32 set_count, SceUInt32 *num_wait_threads) {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 Semaphore::info(SceKernelSemaInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
+
+    info = {};
+    info.semaId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.initCount = init_val;
+    info.currentCount = val;
+    info.maxCount = max;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
 // **********************
 // * Condition Variable *
 // **********************
@@ -915,14 +1010,33 @@ SceInt32 Condvar::signal(SignalTarget target) {
     return SCE_KERNEL_OK;
 }
 
+SceUInt32 Condvar::num_waiters() const {
+    const auto guard = lock();
+    return guard ? static_cast<SceUInt32>(waiters.size()) : 0;
+}
+
+SceInt32 HeavyCond::info(SceKernelCondInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
+
+    info = {};
+    info.condId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.mutexId = associated_mutex->uid;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
 // **************
 // * Event Flag *
 // **************
 
 EventFlag::EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
     : WithUidClass(attr, name)
-    , waiters(attr)
     , init_pattern(init_pattern)
+    , waiters(attr)
     , flags(init_pattern) {}
 
 SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr) {
@@ -1077,6 +1191,21 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
+
+    info = {};
+    info.evfId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.initPattern = init_pattern;
+    info.currentPattern = flags;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
 
@@ -1256,5 +1385,21 @@ SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receiv
     if (num_receive_wait_threads)
         *num_receive_wait_threads = nb_receivers;
 
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 MsgPipe::info(SceKernelMppInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+
+    info = {};
+    info.mppId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.bufSize = static_cast<SceInt32>(data_buffer.Capacity());
+    info.freeSize = static_cast<SceInt32>(data_buffer.Free());
+    info.numSendWaitThreads = static_cast<SceInt32>(senders.size());
+    info.numReceiveWaitThreads = static_cast<SceInt32>(receivers.size());
     return SCE_KERNEL_OK;
 }
