@@ -610,10 +610,10 @@ void RWLock::on_delete() {
 
 SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
     // The writer may take the write lock again only if the lock is recursive
-    if (is_write && state == RWLockState::WriteLocked && owners.contains(thread)) {
+    if (is_write && write_owner == thread) {
         if (!(attr & SCE_KERNEL_RW_LOCK_ATTR_RECURSIVE))
             return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
-        owners[thread]++;
+        lock_count++;
         return SCE_KERNEL_OK;
     }
 
@@ -623,13 +623,13 @@ SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
         return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
     // Readers share the lock, but a reader and a writer don't, even in the same thread
-    if (state == RWLockState::Unlocked || (!is_write && state == RWLockState::ReadLocked)) {
-        owners[thread]++;
-        state = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
-        return SCE_KERNEL_OK;
-    }
+    if (write_owner || (is_write && lock_count > 0))
+        return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
-    return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
+    lock_count++;
+    if (is_write)
+        write_owner = thread;
+    return SCE_KERNEL_OK;
 }
 
 SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks) {
@@ -639,6 +639,10 @@ SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 
 
     if (const SceInt32 result = try_take(thread, is_write); result != SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK)
         return result;
+    // The writer's own read lock fails at once, it could only wait for itself. A reader's write lock
+    // waits, since readers aren't known one by one.
+    if (!is_write && write_owner == thread)
+        return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
     // we need to wait
     const Deadline deadline = deadline_from(timeout);
@@ -684,49 +688,40 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
-    // Only the writer may write unlock, and only a reader may read unlock
-    if (!is_write && state == RWLockState::Unlocked)
-        return SCE_KERNEL_ERROR_RW_LOCK_UNLOCK_UDF;
-    auto it = owners.find(thread);
-    const RWLockState held = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
-    if (state != held || it == owners.end())
-        return is_write ? SCE_KERNEL_ERROR_RW_LOCK_NOT_OWNED : SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_UNLOCK;
+    if (is_write) {
+        // Only the writer may write unlock
+        if (write_owner != thread)
+            return SCE_KERNEL_ERROR_RW_LOCK_NOT_OWNED;
+    } else {
+        if (write_owner)
+            return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_UNLOCK;
+        if (lock_count == 0)
+            return SCE_KERNEL_ERROR_RW_LOCK_UNLOCK_UDF;
+    }
 
-    // decrease the lock count
-    it->second--;
-    if (it->second == 0)
-        owners.erase(thread);
-
-    // if it is still locked
-    if (!owners.empty())
-        return SCE_KERNEL_OK;
-
-    hand_over();
+    if (--lock_count == 0)
+        hand_over();
     return SCE_KERNEL_OK;
 }
 
 void RWLock::release_ended_writer(const ThreadState &thread) {
-    // A write lock has a single owner, whatever its count
-    if (state != RWLockState::WriteLocked || owners.empty() || owners.begin()->first.get() != &thread)
+    if (write_owner.get() != &thread)
         return;
-    owners.clear();
+    lock_count = 0;
     hand_over();
 }
 
 void RWLock::hand_over() {
-    state = RWLockState::Unlocked;
+    write_owner = nullptr;
 
     // The first waiting writer goes first, even before readers that waited longer. Without one,
     // every waiting reader gets the lock at once.
     if (auto *writer = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; })) {
-        owners.emplace(writer->thread, 1);
-        state = RWLockState::WriteLocked;
+        write_owner = writer->thread;
+        lock_count = 1;
         waiters.wake(*writer);
-    } else if (waiters.wake_if([&](auto &waiter) {
-                   owners.emplace(waiter.thread, 1);
-                   return true;
-               })) {
-        state = RWLockState::ReadLocked;
+    } else {
+        lock_count = static_cast<SceInt32>(waiters.wake_all());
     }
 }
 
@@ -740,13 +735,9 @@ SceInt32 RWLock::cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_t
     const auto nb_readers = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
 
     // The lock is reset, and only the calling thread may hold it afterwards
-    owners.clear();
-    if (flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK) {
-        owners.emplace(thread, 1);
-        state = RWLockState::WriteLocked;
-    } else {
-        state = RWLockState::Unlocked;
-    }
+    const bool write_locked = flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK;
+    lock_count = write_locked ? 1 : 0;
+    write_owner = write_locked ? thread : nullptr;
 
     if (num_read_wait_threads)
         *num_read_wait_threads = nb_readers;

@@ -25,7 +25,6 @@
 
 #include <expected>
 #include <limits>
-#include <map>
 #include <span>
 #include <string>
 #include <variant>
@@ -193,12 +192,6 @@ public:
 
 typedef std::shared_ptr<Mutex> MutexPtr;
 
-enum class RWLockState {
-    Unlocked,
-    ReadLocked,
-    WriteLocked,
-};
-
 class RWLock final : public WithUidClass<SyncPrimitive, UidClass::rw_lock> {
 public:
     RWLock(SceUInt32 attr, const char *name);
@@ -221,9 +214,11 @@ public:
         bool is_write;
     };
 
-    RWLockState state = RWLockState::Unlocked;
-    // the int value is the lock count for recursive locks
-    std::map<ThreadStatePtr, int> owners;
+    // The read locks of every reader, or the writer's count. Readers aren't tracked one by one, like
+    // on a Vita, so any thread may read unlock while readers hold it.
+    SceInt32 lock_count = 0;
+    // The thread that holds the write lock, if one does
+    ThreadStatePtr write_owner;
     WaitQueue<WaitEntry> waiters;
 
 private:

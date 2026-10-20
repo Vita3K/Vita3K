@@ -101,7 +101,7 @@ gxm_usse_map                    fail     # USSE map size, alignment and overlap 
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
 head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
 info                            pass
-info_fields                     fail     # lightweight condition info, rwlock waiter counts
+info_fields                     fail     # lightweight condition info, rwlock info sizes
 info_sizes                      fail     # the size the info calls leave in the struct, reader/writer lock info sizes
 local_ready_requeue             fail     # threads are never READY or STANDBY
 lowered_to_shared               fail     # threads ignore their core
@@ -202,7 +202,7 @@ readonly_timeouts               fail     # no write check on timeouts
 ready_changes                   fail     # threads ignore their core and priority
 ready_cpu_field                 fail     # the CPU fields of thread info, threads ignore their core
 ready_queue_order               fail     # threads ignore their core and priority
-release_errors_waiters          fail     # the waiting count a semaphore cancel writes, a read unlock by another thread
+release_errors_waiters          fail     # the waiting count a semaphore cancel writes
 release_preempt                 fail     # threads ignore their core and priority
 release_preempt_more            fail     # wakes don't preempt the waker
 remote_change_preempt           fail     # threads are never STANDBY and ignore their core
@@ -211,11 +211,11 @@ requeue_lower_same              fail     # no requeue on a priority change
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_attr_bits                pass
-rwlock_counts                   fail     # read unlocks by a thread without a read lock
+rwlock_counts                   pass
 rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
 rwlock_requeue_writers          fail     # waiting writers don't go before readers, no requeue on a priority change
-rwlock_wake_order               fail     # rwlock info counts no waiters
+rwlock_wake_order               pass
 savedata_slot_id                fail     # save data slot ID range checks
 self_lower_order                fail     # a thread that lowers itself doesn't go to the head of its new priority
 self_priority_drop              fail     # threads ignore their core and priority

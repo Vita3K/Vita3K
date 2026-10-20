@@ -113,6 +113,11 @@ public:
         return it == waiters.end() ? nullptr : *it;
     }
 
+    // Returns how many waiters pick accepts.
+    std::size_t count_if(std::predicate<const Waiter &> auto pick) const {
+        return std::count_if(waiters.begin(), waiters.end(), [&](const Waiter *w) { return pick(*w); });
+    }
+
     // Ends a wait with result and takes the waiter off the queue.
     void wake(Waiter &waiter, SceInt32 result = SCE_KERNEL_OK) {
         waiter.result = result;
