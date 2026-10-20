@@ -68,6 +68,8 @@ private:
     void on_delete() override;
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
+    // Gives the event's bits to the waits they match. The lock must be held.
+    void serve();
 
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
@@ -147,6 +149,9 @@ private:
     };
 
     void on_delete() override;
+    // Gives the count to the waits it covers, in queue order up to the first it doesn't. The lock
+    // must be held.
+    void serve();
 
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
@@ -193,8 +198,8 @@ private:
     SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
-    // Gives the unlocked mutex to the first waiter, if there is one. The lock must be held.
-    void hand_over();
+    // Gives a free mutex to the first waiter, if there is one. The lock must be held.
+    void serve();
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
     void update_workarea(MemState &mem);
 };
@@ -249,9 +254,8 @@ private:
     SceInt32 release(const ThreadStatePtr &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
     SceInt32 try_take(const ThreadStatePtr &thread, bool is_write);
-    // Unlocks the lock nobody holds anymore, and gives it to the waiters that get it next. The lock
-    // must be held.
-    void hand_over();
+    // Gives a lock nobody holds to the waiters that get it next. The lock must be held.
+    void serve();
 
     // Guarded by the lock
     // The read locks of every reader, or the writer's count. Readers aren't tracked one by one, like
@@ -294,6 +298,8 @@ private:
     void on_delete() override;
     // Takes the flags if pattern matches them, or returns why it can't. The lock must be held.
     SceInt32 try_take(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
+    // Gives the flags to the waits they match, in queue order. The lock must be held.
+    void serve();
 
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;

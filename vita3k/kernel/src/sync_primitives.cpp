@@ -137,7 +137,18 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
     const SceUInt64 old_user_data = last_user_data;
     pattern |= set_pattern;
     last_user_data = user_data;
+    serve();
 
+    // A pulse clears its own bits, the others go back to what they were
+    if (!is_set) {
+        pattern = old_pattern & ~set_pattern;
+        last_user_data = old_user_data;
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+void SimpleEvent::serve() {
     waiters.wake_if([&](auto &waiter) {
         const WaitEntry &wait = waiter.entry;
         if (!(pattern & wait.pattern))
@@ -155,14 +166,6 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
 
         return true;
     });
-
-    // A pulse clears its own bits, the others go back to what they were
-    if (!is_set) {
-        pattern = old_pattern & ~set_pattern;
-        last_user_data = old_user_data;
-    }
-
-    return SCE_KERNEL_OK;
 }
 
 SceInt32 SimpleEvent::clear(SceUInt32 clear_pattern) {
@@ -570,9 +573,9 @@ SceInt32 Mutex::release(MemState &mem, const ThreadStatePtr &thread, SceInt32 un
         return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF : SCE_KERNEL_ERROR_MUTEX_UNLOCK_UDF;
 
     lock_count -= unlock_count;
-
     if (lock_count == 0)
-        hand_over();
+        owner = 0;
+    serve();
     update_workarea(mem);
 
     return SCE_KERNEL_OK;
@@ -583,13 +586,15 @@ void Mutex::release_ended_owner(const ThreadState &thread) {
     if (!guard || owner != thread.id)
         return;
     lock_count = 0;
-    hand_over();
+    owner = 0;
+    serve();
 }
 
-void Mutex::hand_over() {
-    owner = 0;
+void Mutex::serve() {
+    if (lock_count > 0)
+        return;
     if (auto *waiter = waiters.front()) {
-        lock_count += waiter->entry.lock_count;
+        lock_count = waiter->entry.lock_count;
         owner = waiter->thread->id;
         waiters.wake(*waiter);
     }
@@ -760,7 +765,8 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
     }
 
     if (--lock_count == 0)
-        hand_over();
+        write_owner = 0;
+    serve();
     return SCE_KERNEL_OK;
 }
 
@@ -771,7 +777,8 @@ void RWLock::release_ended_writer(const ThreadState &thread) {
     if (write_owner != thread.id)
         return;
     lock_count = 0;
-    hand_over();
+    write_owner = 0;
+    serve();
 }
 
 SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
@@ -790,8 +797,9 @@ SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
     return SCE_KERNEL_OK;
 }
 
-void RWLock::hand_over() {
-    write_owner = 0;
+void RWLock::serve() {
+    if (lock_count > 0)
+        return;
 
     // The first waiting writer goes first, even before readers that waited longer. Without one,
     // every waiting reader gets the lock at once.
@@ -895,18 +903,18 @@ SceInt32 Semaphore::signal(SceInt32 count) {
         return SCE_KERNEL_ERROR_SEMA_OVF;
     }
     val += count;
-
-    while (auto *waiter = waiters.front()) {
-        const auto waiting_signal_count = waiter->entry.need_count;
-
-        if (val < waiting_signal_count)
-            break;
-
-        val -= waiting_signal_count;
-        waiters.wake(*waiter);
-    }
+    serve();
 
     return SCE_KERNEL_OK;
+}
+
+void Semaphore::serve() {
+    while (auto *waiter = waiters.front()) {
+        if (val < waiter->entry.need_count)
+            break;
+        val -= waiter->entry.need_count;
+        waiters.wake(*waiter);
+    }
 }
 
 SceInt32 Semaphore::cancel(SceInt32 set_count, SceUInt32 *num_wait_threads) {
@@ -1150,7 +1158,12 @@ SceInt32 EventFlag::set(SceUInt32 pattern) {
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
 
     flags |= pattern;
+    serve();
 
+    return SCE_KERNEL_OK;
+}
+
+void EventFlag::serve() {
     waiters.wake_if([&](auto &waiter) {
         const WaitEntry &wait = waiter.entry;
         const SceUInt32 waiting_flags = wait.pattern;
@@ -1179,8 +1192,6 @@ SceInt32 EventFlag::set(SceUInt32 pattern) {
 
         return true;
     });
-
-    return SCE_KERNEL_OK;
 }
 
 SceInt32 EventFlag::clear(SceUInt32 pattern) {
