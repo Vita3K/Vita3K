@@ -39,6 +39,22 @@ public:
 
 protected:
     SyncPrimitive(SceUInt32 attr, const char *name);
+
+    // Gives what the object holds to the waiters it can complete, in queue order. Runs with the lock
+    // held, from each operation that gives the object something to hand out, and from wait_on() when
+    // a waiter leaves without being given anything. An object with nothing to hand out keeps this
+    // default.
+    virtual void serve() {}
+
+    // Waits in queue like WaitQueue::wait(). A wait that ends by its deadline or its thread's end
+    // leaves the queue without a waker, so the waiters behind it are served.
+    template <typename Entry>
+    [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks) {
+        const WaitResult r = queue.wait(lock, thread, target, std::move(entry), deadline, callbacks);
+        if (!r || *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+            serve();
+        return r;
+    }
 };
 
 class SimpleEvent final : public WithUidClass<SyncPrimitive, UidClass::simple_event> {
@@ -68,8 +84,8 @@ private:
     void on_delete() override;
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
-    // Gives the event's bits to the waits they match. The lock must be held.
-    void serve();
+    // Gives the event's bits to the waits they match.
+    void serve() override;
 
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
@@ -149,9 +165,8 @@ private:
     };
 
     void on_delete() override;
-    // Gives the count to the waits it covers, in queue order up to the first it doesn't. The lock
-    // must be held.
-    void serve();
+    // Gives the count to the waits it covers, in queue order up to the first it doesn't.
+    void serve() override;
 
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
@@ -198,8 +213,8 @@ private:
     SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
-    // Gives a free mutex to the first waiter, if there is one. The lock must be held.
-    void serve();
+    // Gives a free mutex to the first waiter, if there is one.
+    void serve() override;
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
     void update_workarea(MemState &mem);
 };
@@ -254,8 +269,8 @@ private:
     SceInt32 release(const ThreadStatePtr &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
     SceInt32 try_take(const ThreadStatePtr &thread, bool is_write);
-    // Gives a lock nobody holds to the waiters that get it next. The lock must be held.
-    void serve();
+    // Gives a lock nobody holds to the waiters that get it next.
+    void serve() override;
 
     // Guarded by the lock
     // The read locks of every reader, or the writer's count. Readers aren't tracked one by one, like
@@ -298,8 +313,8 @@ private:
     void on_delete() override;
     // Takes the flags if pattern matches them, or returns why it can't. The lock must be held.
     SceInt32 try_take(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
-    // Gives the flags to the waits they match, in queue order. The lock must be held.
-    void serve();
+    // Gives the flags to the waits they match, in queue order.
+    void serve() override;
 
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
