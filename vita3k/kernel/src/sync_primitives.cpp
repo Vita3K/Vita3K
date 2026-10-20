@@ -447,7 +447,7 @@ Mutex::Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateP
     , workarea(workarea)
     , waiters(attr)
     , lock_count(init_count)
-    , owner(init_count > 0 ? std::move(thread) : nullptr) {}
+    , owner(init_count > 0 && thread ? thread->id : 0) {}
 
 SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count, bool kernel) {
     if (const SceInt32 error = check_name(name, attr))
@@ -469,7 +469,7 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
 
 void Mutex::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
-    owner = nullptr;
+    owner = 0;
 }
 
 SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count) {
@@ -478,7 +478,7 @@ SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 c
     // Already owned
     if (lock_count > 0) {
         // Owned by ourselves
-        if (owner == thread) {
+        if (owner == thread->id) {
             if (is_recursive) {
                 if (lightweight()) {
                     // A lightweight mutex doesn't check for overflow, its count just wraps
@@ -506,7 +506,7 @@ SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 c
     // Take ownership!
 
     lock_count += count;
-    owner = thread;
+    owner = thread->id;
     update_workarea(mem);
 
     return SCE_KERNEL_OK;
@@ -516,7 +516,7 @@ void Mutex::update_workarea(MemState &mem) {
     if (!lightweight())
         return;
     workarea.get(mem)->lockCount = lock_count;
-    workarea.get(mem)->owner = owner ? owner->id : 0;
+    workarea.get(mem)->owner = owner;
 }
 
 SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks) {
@@ -531,13 +531,13 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 co
         return error;
 
     // Owned by someone else, wait until it is handed over
-    if (lock_count > 0 && owner != thread) {
+    if (lock_count > 0 && owner != thread->id) {
         const Deadline deadline = deadline_from(timeout);
         const WaitResult r = waiters.wait(guard, thread, target, { count }, deadline, callbacks);
         writeback_timeout(timeout, deadline);
 
         // A deleted mutex has no owner, and its work area may be freed already
-        if (owner == thread)
+        if (owner == thread->id)
             update_workarea(mem);
 
         return guest_result(r);
@@ -564,7 +564,7 @@ SceInt32 Mutex::release(MemState &mem, const ThreadStatePtr &thread, SceInt32 un
 
     if (const SceInt32 error = check_count(unlock_count))
         return error;
-    if (thread != owner)
+    if (thread->id != owner)
         return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED : SCE_KERNEL_ERROR_MUTEX_NOT_OWNED;
     if (unlock_count > lock_count)
         return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF : SCE_KERNEL_ERROR_MUTEX_UNLOCK_UDF;
@@ -580,17 +580,17 @@ SceInt32 Mutex::release(MemState &mem, const ThreadStatePtr &thread, SceInt32 un
 
 void Mutex::release_ended_owner(const ThreadState &thread) {
     const auto guard = lock();
-    if (!guard || owner.get() != &thread)
+    if (!guard || owner != thread.id)
         return;
     lock_count = 0;
     hand_over();
 }
 
 void Mutex::hand_over() {
-    owner = nullptr;
+    owner = 0;
     if (auto *waiter = waiters.front()) {
         lock_count += waiter->entry.lock_count;
-        owner = waiter->thread;
+        owner = waiter->thread->id;
         waiters.wake(*waiter);
     }
 }
@@ -608,7 +608,7 @@ SceInt32 Mutex::cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt
 
     const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     lock_count = new_count;
-    owner = new_count > 0 ? thread : nullptr;
+    owner = new_count > 0 ? thread->id : 0;
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
@@ -627,7 +627,7 @@ SceInt32 LwMutex::info(SceKernelLwMutexInfo &info) const {
     info.pWork = workarea;
     info.initCount = init_count;
     info.currentCount = lock_count;
-    info.currentOwnerId = owner ? owner->id : 0;
+    info.currentOwnerId = owner;
     info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
@@ -643,7 +643,7 @@ SceInt32 HeavyMutex::info(SceKernelMutexInfo &info) const {
     info.attr = attr;
     info.initCount = init_count;
     info.currentCount = lock_count;
-    info.currentOwnerId = owner ? owner->id : 0;
+    info.currentOwnerId = owner;
     info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
@@ -670,7 +670,7 @@ void RWLock::on_delete() {
 
 SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
     // The writer may take the write lock again only if the lock is recursive
-    if (is_write && write_owner == thread) {
+    if (is_write && write_owner == thread->id) {
         if (!(attr & SCE_KERNEL_RW_LOCK_ATTR_RECURSIVE))
             return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
         lock_count++;
@@ -688,7 +688,7 @@ SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
 
     lock_count++;
     if (is_write)
-        write_owner = thread;
+        write_owner = thread->id;
     return SCE_KERNEL_OK;
 }
 
@@ -701,7 +701,7 @@ SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 
         return result;
     // The writer's own read lock fails at once, it could only wait for itself. A reader's write lock
     // waits, since readers aren't known one by one.
-    if (!is_write && write_owner == thread)
+    if (!is_write && write_owner == thread->id)
         return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
     // we need to wait
@@ -750,7 +750,7 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
 
     if (is_write) {
         // Only the writer may write unlock
-        if (write_owner != thread)
+        if (write_owner != thread->id)
             return SCE_KERNEL_ERROR_RW_LOCK_NOT_OWNED;
     } else {
         if (write_owner)
@@ -768,7 +768,7 @@ void RWLock::release_ended_writer(const ThreadState &thread) {
     const auto guard = lock();
     if (!guard)
         return;
-    if (write_owner.get() != &thread)
+    if (write_owner != thread.id)
         return;
     lock_count = 0;
     hand_over();
@@ -784,19 +784,19 @@ SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
     strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
     info.attr = attr;
     info.lockCount = lock_count;
-    info.writeOwnerId = write_owner ? write_owner->id : 0;
+    info.writeOwnerId = write_owner;
     info.numReadWaitThreads = static_cast<SceUInt32>(waiters.count_if([](const auto &waiter) { return !waiter.entry.is_write; }));
     info.numWriteWaitThreads = static_cast<SceUInt32>(waiters.count_if([](const auto &waiter) { return waiter.entry.is_write; }));
     return SCE_KERNEL_OK;
 }
 
 void RWLock::hand_over() {
-    write_owner = nullptr;
+    write_owner = 0;
 
     // The first waiting writer goes first, even before readers that waited longer. Without one,
     // every waiting reader gets the lock at once.
     if (auto *writer = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; })) {
-        write_owner = writer->thread;
+        write_owner = writer->thread->id;
         lock_count = 1;
         waiters.wake(*writer);
     } else {
@@ -816,7 +816,7 @@ SceInt32 RWLock::cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_t
     // The lock is reset, and only the calling thread may hold it afterwards
     const bool write_locked = flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK;
     lock_count = write_locked ? 1 : 0;
-    write_owner = write_locked ? thread : nullptr;
+    write_owner = write_locked ? thread->id : 0;
 
     if (num_read_wait_threads)
         *num_read_wait_threads = nb_readers;
@@ -1025,6 +1025,25 @@ SceInt32 HeavyCond::info(SceKernelCondInfo &info) const {
     strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
     info.attr = attr;
     info.mutexId = associated_mutex->uid;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
+LwCond::LwCond(SceUInt32 attr, const char *name, MutexPtr associated_mutex, Ptr<SceKernelLwCondWork> workarea)
+    : WithUidClass(attr, name, std::move(associated_mutex))
+    , workarea(workarea) {}
+
+SceInt32 LwCond::info(SceKernelLwCondInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID;
+
+    info = {};
+    info.uid = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.pWork = workarea;
+    info.pLwMutex = associated_mutex->workarea;
     info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
