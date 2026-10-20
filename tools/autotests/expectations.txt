@@ -38,7 +38,7 @@ ceiling_waiter                  fail     # a mutex ceiling doesn't raise its own
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass
-cond_errors                     fail     # condition variable unknown UID errors and close
+cond_errors                     fail     # close, signal to a thread errors, create attributes, open with a NULL name
 cond_mutex_delete               pass
 cond_relock_requeue             fail     # a condition waiter taking its mutex back reports the condition, no requeue on a priority change
 cond_rwlock_edges               pass

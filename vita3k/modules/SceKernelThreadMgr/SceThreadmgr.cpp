@@ -303,7 +303,7 @@ EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pI
     const CondvarPtr condvar = emuenv.kernel.objects.find<HeavyCond>(condId);
     const auto guard = condvar ? condvar->lock() : std::unique_lock<std::mutex>();
     if (!guard)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_COND_ID);
 
     SceKernelCondInfo *info = pInfo.get(emuenv.mem);
     if (!info)
