@@ -1539,7 +1539,7 @@ EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
-    return semaphore->poll(needCount);
+    return semaphore->poll(emuenv.kernel.get_thread(thread_id), needCount);
 }
 
 EXPORT(SceInt32, sceKernelPulseEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {

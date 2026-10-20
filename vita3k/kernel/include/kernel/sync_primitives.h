@@ -215,7 +215,7 @@ public:
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val);
 
     SceInt32 wait(const ThreadStatePtr &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
-    SceInt32 poll(SceInt32 need_count);
+    SceInt32 poll(const ThreadStatePtr &thread, SceInt32 need_count);
     SceInt32 signal(SceInt32 count);
     SceInt32 cancel(SceInt32 set_count, SceUInt32 *num_wait_threads);
     // Fills info with what the semaphore's info reports, or returns UNKNOWN_SEMA_ID if it was deleted.
@@ -227,6 +227,9 @@ private:
     };
 
     void on_delete() override;
+    // Takes need_count if the count covers it and no waiter is queued ahead of thread. The lock
+    // must be held.
+    bool try_take(const ThreadStatePtr &thread, SceInt32 need_count);
     // Gives the count to the waits it covers, in queue order up to the first it doesn't.
     void serve() override;
 

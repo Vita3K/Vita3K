@@ -109,6 +109,14 @@ public:
         return waiters.empty() ? nullptr : waiters.front();
     }
 
+    // Returns whether a thread of this priority would be first in the queue, ahead of every waiter.
+    bool first_for(int priority) const {
+        if (waiters.empty())
+            return true;
+        // Lower value is higher priority, and equal priorities keep FIFO order
+        return by_priority && waiters.front()->priority > priority;
+    }
+
     // Returns the first waiter accepted by pick, or null.
     Waiter *find_if(std::predicate<Waiter &> auto pick) {
         const auto it = std::find_if(waiters.begin(), waiters.end(), [&](Waiter *w) { return pick(*w); });

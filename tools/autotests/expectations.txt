@@ -205,7 +205,7 @@ out_past_block_end              fail     # no write check on output parameters, 
 outside_mask_rerun              fail     # threads ignore their core
 owner_end                       pass
 owner_end_more                  pass
-poll_calls                      fail     # a poll takes a count a queued waiter waits for, the bits failed polls write
+poll_calls                      fail     # the bits failed event flag polls write, message pipe try calls past waiting threads
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_migrate                 fail     # threads ignore their core
 preempt_status                  fail     # threads ignore their core and priority
@@ -245,11 +245,11 @@ savedata_slot_id                fail     # save data slot ID range checks
 self_lower_order                fail     # a thread that lowers itself doesn't go to the head of its new priority
 self_priority_drop              fail     # threads ignore their core and priority
 sema_errors                     crash    # closing unknown UIDs, a NULL name
-sema_head_leaves                fail     # a semaphore wait takes a count past an earlier waiter that needs more
+sema_head_leaves                fail     # a head that leaves by a priority drop doesn't let the next waiter take
 sema_mutex_edges                pass
 sema_poll_negative              pass
-sema_requeue_wake               fail     # a waiter gets a count behind a head that doesn't fit, no requeue on a priority change
-sema_take_past_waiters          fail     # a semaphore wait or poll takes past queued waiters
+sema_requeue_wake               fail     # no requeue on a priority change
+sema_take_past_waiters          pass
 sema_waits                      pass
 semaphore                       pass
 shader_patcher_callback         fail     # a library callback's caller gets its FPSCR and TPIDRURW back after it

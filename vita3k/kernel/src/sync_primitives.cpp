@@ -863,28 +863,29 @@ SceInt32 Semaphore::wait(const ThreadStatePtr &thread, SceInt32 need_count, SceU
     if (need_count <= 0 || need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
-    if (val < need_count) {
-        const WaitResult r = wait_on(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_SEMAPHORE, uid, callbacks }, { need_count }, timeout);
-        return guest_result(r);
-    } else {
-        val -= need_count;
-    }
+    if (try_take(thread, need_count))
+        return SCE_KERNEL_OK;
 
-    return SCE_KERNEL_OK;
+    const WaitResult r = wait_on(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_SEMAPHORE, uid, callbacks }, { need_count }, timeout);
+    return guest_result(r);
 }
 
-SceInt32 Semaphore::poll(SceInt32 need_count) {
+SceInt32 Semaphore::poll(const ThreadStatePtr &thread, SceInt32 need_count) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
     if (need_count <= 0 || need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
-    if (val < need_count) {
-        return SCE_KERNEL_ERROR_SEMA_ZERO;
-    }
+    return try_take(thread, need_count) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_SEMA_ZERO;
+}
+
+bool Semaphore::try_take(const ThreadStatePtr &thread, SceInt32 need_count) {
+    // A waiter queued ahead goes first, even one the count doesn't cover yet
+    if (val < need_count || !waiters.first_for(thread->get_priority()))
+        return false;
     val -= need_count;
-    return SCE_KERNEL_OK;
+    return true;
 }
 
 SceInt32 Semaphore::signal(SceInt32 count) {
