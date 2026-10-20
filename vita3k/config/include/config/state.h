@@ -21,7 +21,10 @@
 
 #include <util/fs.h>
 
+#include <cstdint>
 #include <optional>
+#include <string>
+#include <vector>
 
 // The frontend that runs the emulator
 enum class Frontend {

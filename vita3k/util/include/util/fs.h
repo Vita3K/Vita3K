@@ -20,9 +20,32 @@
 #include <fmt/format.h>
 #include <fmt/std.h>
 
+// Boost.Filesystem used to pull in these headers, and a lot of code relies on that
+#include <atomic>
+#include <cassert>
+#include <cerrno>
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <list>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #ifdef _WIN32
 #define fseek _fseeki64

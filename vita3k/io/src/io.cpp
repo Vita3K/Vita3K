@@ -659,7 +659,7 @@ int remove_file(IOState &io, const char *file, const fs::path &vita_fs_path, con
     std::error_code error_code{};
     const auto res = fs::remove(emulated_path, error_code);
 
-    if (!(res && !(error_code.value()))) {
+    if (!res || error_code.value()) {
         LOG_ERROR("Cannot remove file: {} ({})", file, device::construct_normalized_path(device, translated_path));
         LOG_ERROR("Error code: {} ({})", error_code.value(), error_code.message());
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
