@@ -1029,6 +1029,25 @@ SceInt32 HeavyCond::info(SceKernelCondInfo &info) const {
     return SCE_KERNEL_OK;
 }
 
+LwCond::LwCond(SceUInt32 attr, const char *name, MutexPtr associated_mutex, Ptr<SceKernelLwCondWork> workarea)
+    : WithUidClass(attr, name, std::move(associated_mutex))
+    , workarea(workarea) {}
+
+SceInt32 LwCond::info(SceKernelLwCondInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID;
+
+    info = {};
+    info.uid = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.pWork = workarea;
+    info.pLwMutex = associated_mutex->workarea;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
 // **************
 // * Event Flag *
 // **************

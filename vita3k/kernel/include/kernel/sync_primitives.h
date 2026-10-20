@@ -339,7 +339,13 @@ private:
 
 class LwCond final : public WithUidClass<Condvar, UidClass::lw_cond> {
 public:
-    using WithUidClass::WithUidClass;
+    LwCond(SceUInt32 attr, const char *name, MutexPtr associated_mutex, Ptr<SceKernelLwCondWork> workarea);
+
+    // Fills info with what the lightweight condition variable's info reports, or returns
+    // UNKNOWN_LW_COND_ID if it was deleted.
+    SceInt32 info(SceKernelLwCondInfo &info) const;
+
+    const Ptr<SceKernelLwCondWork> workarea;
 };
 
 class HeavyCond final : public WithUidClass<Condvar, UidClass::cond> {

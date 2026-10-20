@@ -101,14 +101,14 @@ gxm_usse_map                    fail     # USSE map size, alignment and overlap 
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
 head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
 info                            pass
-info_fields                     fail     # lightweight condition info
+info_fields                     pass
 info_sizes                      pass
 local_ready_requeue             fail     # threads are never READY or STANDBY
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
-lw_cond_errors                  fail     # lightweight condition variable info by UID
-lw_cond_relock_requeue          fail     # lightweight condition waits report no condition and count no waiter
-lw_cond_semantics               fail     # lightweight condition info counts no waiters, a signaled waiter whose timeout passes
+lw_cond_errors                  fail     # create checks of the attribute, a NULL mutex and a NULL work area, a signal to thread 0
+lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back reports the condition, no requeue on a priority change
+lw_cond_semantics               fail     # a signaled waiter whose timeout passes
 lw_mutex                        pass
 lw_mutex_errors                 pass
 lw_mutex_semantics              pass

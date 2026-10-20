@@ -783,6 +783,17 @@ struct SceKernelLwCondWork {
 };
 static_assert(sizeof(SceKernelLwCondWork) == 16, "Incorrect size");
 
+struct SceKernelLwCondInfo {
+    SceSize size; /**< Size of this structure (sizeof(SceKernelLwCondInfo)) */
+    SceUID uid; /**< Lightweight condition variable identifier */
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]; /**< Name given to sceKernelCreateLwCond() */
+    SceUInt32 attr; /**< Attributes given to sceKernelCreateLwCond() */
+    Ptr<SceKernelLwCondWork> pWork; /**< Work area given to sceKernelCreateLwCond() */
+    Ptr<SceKernelLwMutexWork> pLwMutex; /**< Work area of the lightweight mutex it uses */
+    SceUInt32 numWaitThreads; /**< Number of threads waiting on it */
+};
+static_assert(sizeof(SceKernelLwCondInfo) == 0x38, "Incorrect size");
+
 struct SceKernelCreateLwMutex_opt {
     int init_count;
     Ptr<SceKernelLwMutexOptParam> opt_param;

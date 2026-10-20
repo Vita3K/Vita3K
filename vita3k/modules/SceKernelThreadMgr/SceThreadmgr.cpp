@@ -45,6 +45,13 @@ static void write_info(T *info, T full) {
     memcpy(info, &full, info->size);
 }
 
+// Same as write_info, for a call that takes the size apart from the struct
+template <typename T>
+static void write_info(T *info, T full, SceSize size) {
+    full.size = sizeof(T);
+    memcpy(info, &full, size);
+}
+
 // Waits on a simple event or a timer, which are both events.
 static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
@@ -176,7 +183,7 @@ EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const cha
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
 
-    const auto condvar = std::make_shared<LwCond>(attr, name, mutex);
+    const auto condvar = std::make_shared<LwCond>(attr, name, mutex, workarea);
     SceKernelLwCondWork *work = workarea.get(emuenv.mem);
     *work = {};
     work->uid = emuenv.kernel.objects.add(condvar, emuenv.kernel.get_next_uid());
@@ -354,14 +361,44 @@ EXPORT(SceInt32, _sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_patt
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetLwCondInfo) {
-    TRACY_FUNC(_sceKernelGetLwCondInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetLwCondInfo, Ptr<SceKernelLwCondWork> workarea, Ptr<SceKernelLwCondInfo> pInfo) {
+    TRACY_FUNC(_sceKernelGetLwCondInfo, workarea, pInfo);
+    const SceKernelLwCondWork *work = workarea.get(emuenv.mem);
+    if (!work)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    const std::shared_ptr<LwCond> condvar = emuenv.kernel.objects.find<LwCond>(work->uid);
+    SceKernelLwCondInfo full;
+    if (!condvar || condvar->info(full) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
+
+    SceKernelLwCondInfo *info = pInfo.get(emuenv.mem);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
+
+    write_info(info, full);
+    // The UID from the work area, whatever size the game asked for
+    info->uid = work->uid;
+    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetLwCondInfoById) {
-    TRACY_FUNC(_sceKernelGetLwCondInfoById);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetLwCondInfoById, SceUID lwCondId, Ptr<SceKernelLwCondInfo> pInfo, const SceSize *size) {
+    TRACY_FUNC(_sceKernelGetLwCondInfoById, lwCondId, pInfo, size);
+    if (!size)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    SceKernelLwCondInfo *info = pInfo.get(emuenv.mem);
+    if (info && *size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+    const std::shared_ptr<LwCond> condvar = emuenv.kernel.objects.find<LwCond>(lwCondId);
+    SceKernelLwCondInfo full;
+    if (!condvar || condvar->info(full) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    write_info(info, full, *size);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info, SceSize size) {

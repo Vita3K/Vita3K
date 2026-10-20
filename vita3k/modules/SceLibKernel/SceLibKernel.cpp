@@ -1369,14 +1369,16 @@ EXPORT(SceInt32, sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_patte
     return CALL_EXPORT(_sceKernelGetEventPattern, event_id, get_pattern);
 }
 
-EXPORT(int, sceKernelGetLwCondInfo) {
-    TRACY_FUNC(sceKernelGetLwCondInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetLwCondInfo, Ptr<SceKernelLwCondWork> workarea, Ptr<SceKernelLwCondInfo> pInfo) {
+    TRACY_FUNC(sceKernelGetLwCondInfo, workarea, pInfo);
+    return CALL_EXPORT(_sceKernelGetLwCondInfo, workarea, pInfo);
 }
 
-EXPORT(int, sceKernelGetLwCondInfoById) {
-    TRACY_FUNC(sceKernelGetLwCondInfoById);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetLwCondInfoById, SceUID lwCondId, Ptr<SceKernelLwCondInfo> pInfo) {
+    TRACY_FUNC(sceKernelGetLwCondInfoById, lwCondId, pInfo);
+    // The kernel gets the size apart, 0 without a struct
+    const SceSize size = pInfo ? pInfo.get(emuenv.mem)->size : 0;
+    return CALL_EXPORT(_sceKernelGetLwCondInfoById, lwCondId, pInfo, &size);
 }
 
 EXPORT(int, sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info) {
