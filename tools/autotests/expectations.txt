@@ -23,6 +23,8 @@ callback_inner_wait             fail     # waits stay queued while a callback wa
 callback_nesting                fail     # callbacks don't run inside callbacks
 callback_outer_timeout          fail     # a wait whose timeout passes during a callback
 callback_outer_wake             fail     # waits stay queued during callbacks
+callback_outer_wake_more        fail     # waits stay queued during callbacks
+callback_outer_wake_send        fail     # waits stay queued during callbacks
 callback_owner_end              pass
 callback_priority_requeue       fail     # waits stay queued during callbacks, so a cancel counts and ends them
 callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
@@ -36,7 +38,7 @@ ceiling_waiter                  fail     # a mutex ceiling doesn't raise its own
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass
-cond_errors                     fail     # condition variable unknown UID errors and close
+cond_errors                     fail     # close, signal to a thread errors, create attributes, open with a NULL name
 cond_mutex_delete               pass
 cond_relock_requeue             fail     # a condition waiter taking its mutex back reports the condition, no requeue on a priority change
 cond_rwlock_edges               pass
@@ -99,7 +101,7 @@ gxm_usse_map                    fail     # USSE map size, alignment and overlap 
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
 head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
 info                            pass
-info_fields                     fail     # lightweight condition info, rwlock waiter counts
+info_fields                     fail     # lightweight condition info, rwlock info sizes
 info_sizes                      fail     # the size the info calls leave in the struct, reader/writer lock info sizes
 local_ready_requeue             fail     # threads are never READY or STANDBY
 lowered_to_shared               fail     # threads ignore their core
@@ -200,7 +202,7 @@ readonly_timeouts               fail     # no write check on timeouts
 ready_changes                   fail     # threads ignore their core and priority
 ready_cpu_field                 fail     # the CPU fields of thread info, threads ignore their core
 ready_queue_order               fail     # threads ignore their core and priority
-release_errors_waiters          fail     # the waiting count a semaphore cancel writes, a read unlock by another thread
+release_errors_waiters          fail     # the waiting count a semaphore cancel writes
 release_preempt                 fail     # threads ignore their core and priority
 release_preempt_more            fail     # wakes don't preempt the waker
 remote_change_preempt           fail     # threads are never STANDBY and ignore their core
@@ -209,11 +211,11 @@ requeue_lower_same              fail     # no requeue on a priority change
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_attr_bits                pass
-rwlock_counts                   fail     # read unlocks by a thread without a read lock
+rwlock_counts                   pass
 rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
 rwlock_requeue_writers          fail     # waiting writers don't go before readers, no requeue on a priority change
-rwlock_wake_order               fail     # rwlock info counts no waiters
+rwlock_wake_order               pass
 savedata_slot_id                fail     # save data slot ID range checks
 self_lower_order                fail     # a thread that lowers itself doesn't go to the head of its new priority
 self_priority_drop              fail     # threads ignore their core and priority
@@ -292,6 +294,7 @@ thread_stack_free               fail     # the stack free size is the room below
 thread_stack_free_scan          fail     # the stack free size is the room below the stack pointer, not a scan of the stack
 thread_stack_negative           pass
 thread_stack_zero               pass
+thread_start_registers          fail     # the arguments and sp 8 bytes below the stack top, not 16, the CPSR a thread reads
 thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_suspend_for_vm_stops     pass

@@ -189,6 +189,14 @@ SceInt32 SimpleEvent::cancel(SceUInt32 *num_wait_threads) {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 SimpleEvent::get_pattern(SceUInt32 &result) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    result = pattern;
+    return SCE_KERNEL_OK;
+}
+
 // *********
 // * Timer *
 // *********
@@ -396,6 +404,22 @@ uint64_t Timer::count() const {
     return is_started ? get_current_time() - base : stopped_count;
 }
 
+SceInt32 Timer::get_time(uint64_t &time) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    time = count();
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 Timer::get_base(uint64_t &time) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    time = base;
+    return SCE_KERNEL_OK;
+}
+
 SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
@@ -554,7 +578,10 @@ SceInt32 Mutex::release(MemState &mem, const ThreadStatePtr &thread, SceInt32 un
     return SCE_KERNEL_OK;
 }
 
-void Mutex::release_ended_owner() {
+void Mutex::release_ended_owner(const ThreadState &thread) {
+    const auto guard = lock();
+    if (!guard || owner.get() != &thread)
+        return;
     lock_count = 0;
     hand_over();
 }
@@ -588,6 +615,39 @@ SceInt32 Mutex::cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt
     return SCE_KERNEL_OK;
 }
 
+SceInt32 LwMutex::info(SceKernelLwMutexInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID;
+
+    info = {};
+    info.uid = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.pWork = workarea;
+    info.initCount = init_count;
+    info.currentCount = lock_count;
+    info.currentOwnerId = owner ? owner->id : 0;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 HeavyMutex::info(SceKernelMutexInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+
+    info = {};
+    info.mutexId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.initCount = init_count;
+    info.currentCount = lock_count;
+    info.currentOwnerId = owner ? owner->id : 0;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
 // **************
 // * RWLock *
 // **************
@@ -610,10 +670,10 @@ void RWLock::on_delete() {
 
 SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
     // The writer may take the write lock again only if the lock is recursive
-    if (is_write && state == RWLockState::WriteLocked && owners.contains(thread)) {
+    if (is_write && write_owner == thread) {
         if (!(attr & SCE_KERNEL_RW_LOCK_ATTR_RECURSIVE))
             return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
-        owners[thread]++;
+        lock_count++;
         return SCE_KERNEL_OK;
     }
 
@@ -623,13 +683,13 @@ SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
         return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
     // Readers share the lock, but a reader and a writer don't, even in the same thread
-    if (state == RWLockState::Unlocked || (!is_write && state == RWLockState::ReadLocked)) {
-        owners[thread]++;
-        state = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
-        return SCE_KERNEL_OK;
-    }
+    if (write_owner || (is_write && lock_count > 0))
+        return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
-    return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
+    lock_count++;
+    if (is_write)
+        write_owner = thread;
+    return SCE_KERNEL_OK;
 }
 
 SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks) {
@@ -639,6 +699,10 @@ SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 
 
     if (const SceInt32 result = try_take(thread, is_write); result != SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK)
         return result;
+    // The writer's own read lock fails at once, it could only wait for itself. A reader's write lock
+    // waits, since readers aren't known one by one.
+    if (!is_write && write_owner == thread)
+        return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
     // we need to wait
     const Deadline deadline = deadline_from(timeout);
@@ -684,49 +748,59 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
-    // Only the writer may write unlock, and only a reader may read unlock
-    if (!is_write && state == RWLockState::Unlocked)
-        return SCE_KERNEL_ERROR_RW_LOCK_UNLOCK_UDF;
-    auto it = owners.find(thread);
-    const RWLockState held = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
-    if (state != held || it == owners.end())
-        return is_write ? SCE_KERNEL_ERROR_RW_LOCK_NOT_OWNED : SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_UNLOCK;
+    if (is_write) {
+        // Only the writer may write unlock
+        if (write_owner != thread)
+            return SCE_KERNEL_ERROR_RW_LOCK_NOT_OWNED;
+    } else {
+        if (write_owner)
+            return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_UNLOCK;
+        if (lock_count == 0)
+            return SCE_KERNEL_ERROR_RW_LOCK_UNLOCK_UDF;
+    }
 
-    // decrease the lock count
-    it->second--;
-    if (it->second == 0)
-        owners.erase(thread);
-
-    // if it is still locked
-    if (!owners.empty())
-        return SCE_KERNEL_OK;
-
-    hand_over();
+    if (--lock_count == 0)
+        hand_over();
     return SCE_KERNEL_OK;
 }
 
 void RWLock::release_ended_writer(const ThreadState &thread) {
-    // A write lock has a single owner, whatever its count
-    if (state != RWLockState::WriteLocked || owners.empty() || owners.begin()->first.get() != &thread)
+    const auto guard = lock();
+    if (!guard)
         return;
-    owners.clear();
+    if (write_owner.get() != &thread)
+        return;
+    lock_count = 0;
     hand_over();
 }
 
+SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
+
+    info = {};
+    info.rwLockId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.lockCount = lock_count;
+    info.writeOwnerId = write_owner ? write_owner->id : 0;
+    info.numReadWaitThreads = static_cast<SceUInt32>(waiters.count_if([](const auto &waiter) { return !waiter.entry.is_write; }));
+    info.numWriteWaitThreads = static_cast<SceUInt32>(waiters.count_if([](const auto &waiter) { return waiter.entry.is_write; }));
+    return SCE_KERNEL_OK;
+}
+
 void RWLock::hand_over() {
-    state = RWLockState::Unlocked;
+    write_owner = nullptr;
 
     // The first waiting writer goes first, even before readers that waited longer. Without one,
     // every waiting reader gets the lock at once.
     if (auto *writer = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; })) {
-        owners.emplace(writer->thread, 1);
-        state = RWLockState::WriteLocked;
+        write_owner = writer->thread;
+        lock_count = 1;
         waiters.wake(*writer);
-    } else if (waiters.wake_if([&](auto &waiter) {
-                   owners.emplace(waiter.thread, 1);
-                   return true;
-               })) {
-        state = RWLockState::ReadLocked;
+    } else {
+        lock_count = static_cast<SceInt32>(waiters.wake_all());
     }
 }
 
@@ -740,13 +814,9 @@ SceInt32 RWLock::cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_t
     const auto nb_readers = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
 
     // The lock is reset, and only the calling thread may hold it afterwards
-    owners.clear();
-    if (flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK) {
-        owners.emplace(thread, 1);
-        state = RWLockState::WriteLocked;
-    } else {
-        state = RWLockState::Unlocked;
-    }
+    const bool write_locked = flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK;
+    lock_count = write_locked ? 1 : 0;
+    write_owner = write_locked ? thread : nullptr;
 
     if (num_read_wait_threads)
         *num_read_wait_threads = nb_readers;
@@ -858,6 +928,22 @@ SceInt32 Semaphore::cancel(SceInt32 set_count, SceUInt32 *num_wait_threads) {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 Semaphore::info(SceKernelSemaInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
+
+    info = {};
+    info.semaId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.initCount = init_val;
+    info.currentCount = val;
+    info.maxCount = max;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
 // **********************
 // * Condition Variable *
 // **********************
@@ -924,14 +1010,33 @@ SceInt32 Condvar::signal(SignalTarget target) {
     return SCE_KERNEL_OK;
 }
 
+SceUInt32 Condvar::num_waiters() const {
+    const auto guard = lock();
+    return guard ? static_cast<SceUInt32>(waiters.size()) : 0;
+}
+
+SceInt32 HeavyCond::info(SceKernelCondInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
+
+    info = {};
+    info.condId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.mutexId = associated_mutex->uid;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
 // **************
 // * Event Flag *
 // **************
 
 EventFlag::EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
     : WithUidClass(attr, name)
-    , waiters(attr)
     , init_pattern(init_pattern)
+    , waiters(attr)
     , flags(init_pattern) {}
 
 SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr) {
@@ -1086,6 +1191,21 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
+
+    info = {};
+    info.evfId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.initPattern = init_pattern;
+    info.currentPattern = flags;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
 
@@ -1265,5 +1385,21 @@ SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receiv
     if (num_receive_wait_threads)
         *num_receive_wait_threads = nb_receivers;
 
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 MsgPipe::info(SceKernelMppInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+
+    info = {};
+    info.mppId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.bufSize = static_cast<SceInt32>(data_buffer.Capacity());
+    info.freeSize = static_cast<SceInt32>(data_buffer.Free());
+    info.numSendWaitThreads = static_cast<SceInt32>(senders.size());
+    info.numReceiveWaitThreads = static_cast<SceInt32>(receivers.size());
     return SCE_KERNEL_OK;
 }

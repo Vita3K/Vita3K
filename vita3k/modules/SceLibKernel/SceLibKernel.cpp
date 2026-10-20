@@ -1524,12 +1524,11 @@ EXPORT(int, sceKernelGetThreadRunStatus) {
 EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerBase, timer_handle, time);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
-    const auto guard = timer ? timer->lock() : std::unique_lock<std::mutex>();
-
-    if (!guard)
+    uint64_t base;
+    if (!timer || timer->get_base(base) != SCE_KERNEL_OK)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    *time = timer->base ? emuenv.kernel.process_time_at(timer->base) : 0;
+    *time = base ? emuenv.kernel.process_time_at(base) : 0;
 
     return 0;
 }
@@ -1547,12 +1546,11 @@ EXPORT(int, sceKernelGetTimerInfo) {
 EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerTime, timer_handle, time);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
-    const auto guard = timer ? timer->lock() : std::unique_lock<std::mutex>();
-
-    if (!guard)
+    uint64_t count;
+    if (!timer || timer->get_time(count) != SCE_KERNEL_OK)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    *time = timer->count();
+    *time = count;
 
     return 0;
 }

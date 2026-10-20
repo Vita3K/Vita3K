@@ -227,6 +227,15 @@ static QString thread_status_string(ThreadStatus status) {
     }
 }
 
+// Returns the name and UID of a mutex's owner thread, or only its UID once the thread is gone
+static QString owner_string(KernelState &kernel, SceUID owner_id) {
+    if (!owner_id)
+        return DebugWidget::tr("not owned");
+    const QString uid = QStringLiteral("0x%1").arg(owner_id, 8, 16, QLatin1Char('0')).toUpper();
+    const ThreadStatePtr owner = kernel.get_thread(owner_id);
+    return owner ? QStringLiteral("%1 (%2)").arg(QString::fromStdString(owner->name), uid) : uid;
+}
+
 void DebugWidget::refresh_threads() {
     m_threads_tree->clear();
 
@@ -245,28 +254,34 @@ void DebugWidget::refresh_threads() {
 void DebugWidget::refresh_mutexes() {
     m_mutexes_tree->clear();
 
-    emuenv.kernel.objects.for_each<HeavyMutex>([&](const Mutex &mutex) {
+    emuenv.kernel.objects.for_each<HeavyMutex>([&](const HeavyMutex &mutex) {
+        SceKernelMutexInfo info;
+        if (mutex.info(info) != SCE_KERNEL_OK)
+            return;
         auto *item = new QTreeWidgetItem(m_mutexes_tree);
         item->setText(0, QStringLiteral("0x%1").arg(mutex.uid, 8, 16, QLatin1Char('0')).toUpper());
         item->setText(1, QString::fromStdString(mutex.name));
-        item->setText(2, QString::number(mutex.lock_count));
+        item->setText(2, QString::number(info.currentCount));
         item->setText(3, QString::number(mutex.attr));
-        item->setText(4, QString::number(mutex.waiters.size()));
-        item->setText(5, mutex.owner ? QString::fromStdString(mutex.owner->name) : tr("not owned"));
+        item->setText(4, QString::number(info.numWaitThreads));
+        item->setText(5, owner_string(emuenv.kernel, info.currentOwnerId));
     });
 }
 
 void DebugWidget::refresh_lw_mutexes() {
     m_lw_mutexes_tree->clear();
 
-    emuenv.kernel.objects.for_each<LwMutex>([&](const Mutex &mutex) {
+    emuenv.kernel.objects.for_each<LwMutex>([&](const LwMutex &mutex) {
+        SceKernelLwMutexInfo info;
+        if (mutex.info(info) != SCE_KERNEL_OK)
+            return;
         auto *item = new QTreeWidgetItem(m_lw_mutexes_tree);
         item->setText(0, QStringLiteral("0x%1").arg(mutex.uid, 8, 16, QLatin1Char('0')).toUpper());
         item->setText(1, QString::fromStdString(mutex.name));
-        item->setText(2, QString::number(mutex.lock_count));
+        item->setText(2, QString::number(info.currentCount));
         item->setText(3, QString::number(mutex.attr));
-        item->setText(4, QString::number(mutex.waiters.size()));
-        item->setText(5, mutex.owner ? QString::fromStdString(mutex.owner->name) : tr("not owned"));
+        item->setText(4, QString::number(info.numWaitThreads));
+        item->setText(5, owner_string(emuenv.kernel, info.currentOwnerId));
     });
 }
 
@@ -278,7 +293,7 @@ void DebugWidget::refresh_condvars() {
         item->setText(0, QStringLiteral("0x%1").arg(cv.uid, 8, 16, QLatin1Char('0')).toUpper());
         item->setText(1, QString::fromStdString(cv.name));
         item->setText(2, QString::number(cv.attr));
-        item->setText(3, QString::number(cv.waiters.size()));
+        item->setText(3, QString::number(cv.num_waiters()));
     });
 }
 
@@ -290,7 +305,7 @@ void DebugWidget::refresh_lw_condvars() {
         item->setText(0, QStringLiteral("0x%1").arg(cv.uid, 8, 16, QLatin1Char('0')).toUpper());
         item->setText(1, QString::fromStdString(cv.name));
         item->setText(2, QString::number(cv.attr));
-        item->setText(3, QString::number(cv.waiters.size()));
+        item->setText(3, QString::number(cv.num_waiters()));
     });
 }
 
@@ -298,12 +313,15 @@ void DebugWidget::refresh_semaphores() {
     m_semaphores_tree->clear();
 
     emuenv.kernel.objects.for_each<Semaphore>([&](const Semaphore &sema) {
+        SceKernelSemaInfo info;
+        if (sema.info(info) != SCE_KERNEL_OK)
+            return;
         auto *item = new QTreeWidgetItem(m_semaphores_tree);
         item->setText(0, QStringLiteral("0x%1").arg(sema.uid, 8, 16, QLatin1Char('0')).toUpper());
         item->setText(1, QString::fromStdString(sema.name));
-        item->setText(2, QStringLiteral("%1 / %2").arg(sema.val).arg(sema.max));
-        item->setText(3, QString::number(sema.max));
-        item->setText(4, QString::number(sema.waiters.size()));
+        item->setText(2, QStringLiteral("%1 / %2").arg(info.currentCount).arg(info.maxCount));
+        item->setText(3, QString::number(info.maxCount));
+        item->setText(4, QString::number(info.numWaitThreads));
     });
 }
 
@@ -311,12 +329,15 @@ void DebugWidget::refresh_event_flags() {
     m_event_flags_tree->clear();
 
     emuenv.kernel.objects.for_each<EventFlag>([&](const EventFlag &ef) {
+        SceKernelEventFlagInfo info;
+        if (ef.info(info) != SCE_KERNEL_OK)
+            return;
         auto *item = new QTreeWidgetItem(m_event_flags_tree);
         item->setText(0, QStringLiteral("0x%1").arg(ef.uid, 8, 16, QLatin1Char('0')).toUpper());
         item->setText(1, QString::fromStdString(ef.name));
-        item->setText(2, QStringLiteral("0x%1").arg(static_cast<uint>(ef.flags), 8, 16, QLatin1Char('0')).toUpper());
+        item->setText(2, QStringLiteral("0x%1").arg(static_cast<uint>(info.currentPattern), 8, 16, QLatin1Char('0')).toUpper());
         item->setText(3, QString::number(ef.attr));
-        item->setText(4, QString::number(ef.waiters.size()));
+        item->setText(4, QString::number(info.numWaitThreads));
     });
 }
 
