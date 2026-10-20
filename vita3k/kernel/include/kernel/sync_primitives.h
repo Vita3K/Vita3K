@@ -182,7 +182,9 @@ protected:
     // Guarded by the lock, read by the info of each kind of mutex
     WaitQueue<WaitEntry> waiters;
     SceInt32 lock_count;
-    ThreadStatePtr owner;
+    // The UID of the thread that holds it, or 0. A UID and not the thread, since a lightweight mutex
+    // stays locked by an owner that ended and was deleted.
+    SceUID owner;
 
 private:
     void on_delete() override;
@@ -255,8 +257,8 @@ private:
     // The read locks of every reader, or the writer's count. Readers aren't tracked one by one, like
     // on a Vita, so any thread may read unlock while readers hold it.
     SceInt32 lock_count = 0;
-    // The thread that holds the write lock, if one does
-    ThreadStatePtr write_owner;
+    // The UID of the thread that holds the write lock, or 0
+    SceUID write_owner = 0;
     WaitQueue<WaitEntry> waiters;
 };
 
