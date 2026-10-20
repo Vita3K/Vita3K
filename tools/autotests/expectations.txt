@@ -13,6 +13,7 @@ atomics                         pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
 cache_mount                     fail     # sceAppUtilCacheMount's init and mount checks, cache0: before a mount
 callback                        pass
+callback_after_wake             skip     # threads ignore their core and priority, so whether the woken thread ran before the notify is a race
 callback_changes                pass
 callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
@@ -38,6 +39,7 @@ ceiling_waiter                  fail     # a mutex ceiling doesn't raise its own
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass
+cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
 cond_errors                     fail     # close, signal to a thread errors, create attributes, open with a NULL name
 cond_mutex_delete               pass
 cond_relock_requeue             fail     # a condition waiter taking its mutex back reports the condition, no requeue on a priority change
@@ -66,6 +68,8 @@ event_bits                      pass
 event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
+event_flag_hold_callbacks       fail     # the event flag's single waiter hold around callbacks and waits that don't block
+event_flag_hold_leak            fail     # the event flag's single waiter hold after a wait that didn't block
 event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass
@@ -109,6 +113,7 @@ lw_cond                         pass
 lw_cond_errors                  fail     # create checks of the attribute, a NULL mutex and a NULL work area, a signal to thread 0
 lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back reports the condition, no requeue on a priority change
 lw_cond_semantics               fail     # a signaled waiter whose timeout passes
+lw_info_by_id_uid               fail     # the uid the lightweight condition variable info by UID reports
 lw_mutex                        pass
 lw_mutex_errors                 pass
 lw_mutex_semantics              pass
@@ -154,6 +159,8 @@ msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
 msgpipe_failed_sizes            fail     # failed try calls in FULL mode or while another thread waits write a size, a FULL receive that times out takes no bytes
 msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe
 msgpipe_order                   fail     # a send reaches only one waiting receiver
+msgpipe_peek_stale              fail     # a send to a DONT_REMOVE receive leaves the pipe's bytes out of step
+msgpipe_receive_sender_stays    fail     # a receive serves only one waiting sender, not each that fits
 msgpipe_receiver_leaves         fail     # bytes sent to a waiting receive stay in the pipe
 msgpipe_receiver_requeue        fail     # a receiver takes part of a FULL receive at once, no requeue on a priority change
 msgpipe_sender_requeue          fail     # senders put their bytes in behind a head that doesn't fit, no requeue on a priority change
@@ -161,10 +168,13 @@ msgpipe_vectors                 pass
 msgpipe_waits                   pass
 mspace                          fail     # sceClib memory space info
 multi_events                    fail     # waiting on several events, callbacks registered to events
+multi_events_and_delete         fail     # sceKernelWaitMultipleEvents, deleted events and the wait type and UID
 multi_events_errors             fail     # waiting on several events with unknown UIDs
 multi_events_requeue            fail     # sceKernelWaitMultipleEvents
+multi_events_unknown_uid        fail     # sceKernelWaitMultipleEvents with unusable entries and cancels
 multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
+mutex_cancel_counts             fail     # negative mutex cancel counts, callbacks on locks that don't wait, a woken waiter's state
 mutex_ceiling                   fail     # mutex priority ceilings
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_waits                     pass
@@ -211,6 +221,8 @@ requeue_lower_same              fail     # no requeue on a priority change
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_attr_bits                pass
+rwlock_cancel_order             fail     # the rwlock cancel's flag check
+rwlock_cancel_wake_order        skip     # threads ignore their core and priority, so the order woken threads run in is a race
 rwlock_counts                   pass
 rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
@@ -224,6 +236,7 @@ sema_head_leaves                fail     # a semaphore wait takes a count past a
 sema_mutex_edges                pass
 sema_poll_negative              pass
 sema_requeue_wake               fail     # a waiter gets a count behind a head that doesn't fit, no requeue on a priority change
+sema_take_past_waiters          fail     # a semaphore wait or poll takes past queued waiters
 sema_waits                      pass
 semaphore                       pass
 shader_patcher_callback         fail     # a library callback's caller gets its FPSCR and TPIDRURW back after it
@@ -232,9 +245,11 @@ shared_ready_raise              fail     # threads are never READY and ignore th
 simple_event                    pass
 simple_event_auto_waiters       pass
 simple_event_cancel             fail     # simple event cancels with a set pattern, the user data a cancel leaves
+simple_event_edges              fail     # a wait for pattern 0, what failed waits write, attribute 0x800
 simple_event_errors             fail     # simple event info, close and delete of unknown UIDs
 simple_event_info               fail     # simple event info
 simple_event_null_pointers      pass
+simple_event_open_close_bits    fail     # an open or a close doesn't set the event's 0x100 or 0x200 bit
 simple_event_wait_null          pass
 stagnant_mask                   pass
 standby_changes                 fail     # threads are never STANDBY
@@ -299,6 +314,7 @@ thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
+thread_wait_id_idle             fail     # the wait UID of a thread that doesn't wait is 0, not -1
 timeout_left_kinds              fail     # sceKernelWaitMultipleEvents
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
@@ -309,6 +325,7 @@ timer_errors                    crash    # timer set time, info and close of unk
 timer_event_interval_zero       pass
 timer_info_cancel               fail     # timer info fields
 timer_modes                     fail     # sceKernelSetTimerTime
+timer_oneshot_refire            fail     # a one shot timer that fired never fires again
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
 timer_waiters                   fail     # a manual reset timer's bit after its event, a pulse wakes one waiter
