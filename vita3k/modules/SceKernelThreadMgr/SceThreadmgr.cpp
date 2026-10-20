@@ -37,11 +37,11 @@ inline static uint64_t get_current_time() {
         .count();
 }
 
-// Copies the start of full to info, as many bytes as the size the game set in info asks for. A size
-// past the struct must be refused before.
+// Copies the start of full to info, as many bytes as the size the game set in info asks for, with
+// the size of the whole struct in its size field. A size past the struct must be refused before.
 template <typename T>
 static void write_info(T *info, T full) {
-    full.size = info->size;
+    full.size = sizeof(T);
     memcpy(info, &full, info->size);
 }
 
