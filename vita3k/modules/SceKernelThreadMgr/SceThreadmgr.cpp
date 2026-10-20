@@ -416,16 +416,14 @@ EXPORT(int, _sceKernelGetRWLockInfo, SceUID rwlockId, SceKernelRWLockInfo *info)
     TRACY_FUNC(_sceKernelGetRWLockInfo, rwlockId, info);
     if (!info)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-    if (info->size < sizeof(SceKernelRWLockInfo))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     const RWLockPtr rwlock = emuenv.kernel.objects.find<RWLock>(rwlockId);
     SceKernelRWLockInfo full;
     if (!rwlock || rwlock->info(full) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
 
-    // Everything but the size the caller gave
-    full.size = info->size;
-    *info = full;
+    write_info(info, full);
     return SCE_KERNEL_OK;
 }
 

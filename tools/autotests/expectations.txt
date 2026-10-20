@@ -101,8 +101,8 @@ gxm_usse_map                    fail     # USSE map size, alignment and overlap 
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
 head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
 info                            pass
-info_fields                     fail     # lightweight condition info, rwlock info sizes
-info_sizes                      fail     # the size the info calls leave in the struct, reader/writer lock info sizes
+info_fields                     fail     # lightweight condition info
+info_sizes                      pass
 local_ready_requeue             fail     # threads are never READY or STANDBY
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
