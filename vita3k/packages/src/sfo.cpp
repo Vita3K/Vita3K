@@ -75,6 +75,7 @@ bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &ke
 }
 
 bool get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer &param, int sys_lang) {
+    app_info = {};
     SfoFile sfo_handle;
     if (!sfo::load(sfo_handle, param))
         return false;
