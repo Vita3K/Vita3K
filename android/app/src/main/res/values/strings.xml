@@ -82,7 +82,7 @@
     <string name="app_menu_custom_config">Custom Config</string>
     <string name="app_menu_create_shortcut">Create Home Screen Shortcut</string>
     <string name="shortcut_create_requested">Shortcut request sent.</string>
-    <string name="shortcut_create_unsupported">Your launcher does not support creating shortcuts.</string>
+    <string name="shortcut_create_unsupported">Unable to request a home screen shortcut.</string>
 
     <!-- User management -->
     <string name="user_management_title">User Management</string>
