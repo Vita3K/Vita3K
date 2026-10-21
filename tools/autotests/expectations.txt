@@ -24,6 +24,10 @@ callback_inner_same_object      fail     # waits stay queued during callbacks
 callback_inner_same_pipe        fail     # message pipe waits stay queued during callbacks
 callback_inner_wait             fail     # waits stay queued while a callback waits
 callback_nesting                fail     # callbacks don't run inside callbacks
+callback_notify_departure_state skip     # threads ignore their core and priority, so whether the notified waiter already ran when the main thread looks is a race
+callback_notify_preempt         skip     # threads ignore their core and priority, so whether the callback runs inside the notify is a race
+callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
+callback_notify_time_left       fail     # threads ignore their core and priority, so the waiter runs its callback during the notifier's busy interval and waits again
 callback_outer_timeout          fail     # a wait whose timeout passes during a callback
 callback_outer_wake             fail     # waits stay queued during callbacks
 callback_outer_wake_more        fail     # waits stay queued during callbacks
@@ -31,6 +35,7 @@ callback_outer_wake_send        fail     # waits stay queued during callbacks
 callback_owner_end              pass
 callback_priority_requeue       fail     # waits stay queued during callbacks, so a cancel counts and ends them
 callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
+callback_retake                 fail     # waits stay queued during callbacks
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           fail     # a wait goes back by its old priority after a callback
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
@@ -71,8 +76,10 @@ event_bits                      pass
 event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
+event_flag_hold_callback_events fail     # waits stay queued during callbacks, the event flag's single waiter hold
 event_flag_hold_callbacks       fail     # the event flag's single waiter hold around callbacks and waits that don't block
 event_flag_hold_leak            fail     # the event flag's single waiter hold after a wait that didn't block
+event_flag_hold_take            fail     # the event flag's single waiter hold after a wait that missed without blocking
 event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass
