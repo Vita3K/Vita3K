@@ -67,7 +67,9 @@ public:
         push(waiter);
         while (true) {
             lock.unlock();
-            const WaitResult r = waiter.thread->wait(target, deadline, callbacks);
+            WaitResult r = waiter.thread->wait(target, deadline, callbacks);
+            if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+                r = waiter.thread->run_callbacks();
             lock.lock();
             // A waker's result wins, it already handed over what the waiter asked for
             if (waiter.result)
