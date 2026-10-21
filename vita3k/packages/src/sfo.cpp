@@ -142,7 +142,8 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
         const uint32_t dataSize = sfile.entries[i].entry.data_len;
         if (static_cast<uint64_t>(sfile.header.data_table_start) + sfile.entries[i].entry.data_offset + dataSize > content.size()
-            || (sfile.entries[i].entry.data_fmt == SfoDataFormat::UINT32_T && dataSize < sizeof(uint32_t))) {
+            || (sfile.entries[i].entry.data_fmt == SfoDataFormat::UINT32_T && dataSize < sizeof(uint32_t))
+            || (sfile.entries[i].entry.data_fmt == SfoDataFormat::UTF8_NULL && dataSize == 0)) {
             return false;
         }
 
