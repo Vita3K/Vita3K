@@ -456,7 +456,7 @@ bool ScreenRenderer::acquire_swapchain_image() {
     }
 
     if (acquire_result == vk::Result::eSuboptimalKHR)
-        need_rebuild = !surface_matches_window_size();
+        need_rebuild = need_rebuild || !surface_matches_window_size();
 
     // wait for the previous frame using this image to finish
     auto result = state.device.waitForFences(fences[swapchain_image_idx], VK_TRUE, next_image_timeout);
@@ -561,7 +561,7 @@ void ScreenRenderer::swap_window() {
 
     auto result = state.general_queue.presentKHR(&present_info);
     if (result == vk::Result::eSuboptimalKHR) {
-        need_rebuild = !surface_matches_window_size();
+        need_rebuild = need_rebuild || !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
         need_rebuild = true;
         need_surface_recreate = result == vk::Result::eErrorSurfaceLostKHR;
