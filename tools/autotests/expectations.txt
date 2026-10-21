@@ -76,10 +76,10 @@ event_bits                      pass
 event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
-event_flag_hold_callback_events fail     # waits stay queued during callbacks, the event flag's single waiter hold
-event_flag_hold_callbacks       fail     # the event flag's single waiter hold around callbacks and waits that don't block
-event_flag_hold_leak            fail     # the event flag's single waiter hold after a wait that didn't block
-event_flag_hold_take            fail     # the event flag's single waiter hold after a wait that missed without blocking
+event_flag_hold_callback_events fail     # waits stay queued during callbacks
+event_flag_hold_callbacks       fail     # a deadline that passes while the waiter runs callbacks gives the event flag hold back
+event_flag_hold_leak            pass
+event_flag_hold_take            pass
 event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass

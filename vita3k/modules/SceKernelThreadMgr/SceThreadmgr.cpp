@@ -728,7 +728,7 @@ EXPORT(int, _sceKernelPollEventFlag, SceUID event_id, unsigned int flags, unsign
     const EventFlagPtr event = emuenv.kernel.objects.find<EventFlag>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
-    return event->poll(flags, wait, outBits);
+    return event->poll(thread_id, flags, wait, outBits);
 }
 
 EXPORT(int, _sceKernelPulseEventWithNotifyCallback) {

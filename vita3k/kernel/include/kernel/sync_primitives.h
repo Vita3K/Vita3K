@@ -299,12 +299,14 @@ public:
     static SceInt32 check_wait(SceUInt32 pattern, SceUInt32 wait_mode);
 
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
-    SceInt32 poll(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
+    SceInt32 poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
     SceInt32 set(SceUInt32 pattern);
     SceInt32 clear(SceUInt32 pattern);
     SceInt32 cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads);
     // Fills info with what the event flag's info reports, or returns UNKNOWN_EVF_ID if it was deleted.
     SceInt32 info(SceKernelEventFlagInfo &info) const;
+    // Drops the holds of thread, which is ending.
+    void release_ended_holder(const ThreadState &thread);
 
 private:
     struct WaitEntry {
@@ -314,14 +316,24 @@ private:
     };
 
     void on_delete() override;
-    // Takes the flags if pattern matches them, or returns why it can't. The lock must be held.
-    SceInt32 try_take(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
+    // Takes the flags for the thread if pattern matches them, or returns why it can't. The lock must
+    // be held.
+    SceInt32 try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
+    // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
+    void drop_hold();
 
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
     SceUInt32 flags;
+    // Without SCE_EVENT_WAITMULTIPLE, the thread whose waits hold the flag, which another thread can't
+    // wait on or poll, and how many of its waits did. A wait that doesn't get the bits at once takes
+    // a hold, and a set, a cancel or the delete that wakes it, or its timeout, gives it back. A wait
+    // that ends without blocking or taking the bits, like one with a timeout of 0, keeps it until the
+    // thread ends or the flag is deleted.
+    SceUID holder = 0;
+    int holds = 0;
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;

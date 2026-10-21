@@ -1080,12 +1080,18 @@ SceInt32 EventFlag::check_wait(SceUInt32 pattern, SceUInt32 wait_mode) {
 
 void EventFlag::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    holder = 0;
+    holds = 0;
 }
 
-SceInt32 EventFlag::try_take(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
-    if (!(attr & SCE_EVENT_WAITMULTIPLE) && !waiters.empty()) {
+void EventFlag::drop_hold() {
+    if (holds > 0 && --holds == 0)
+        holder = 0;
+}
+
+SceInt32 EventFlag::try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
+    if (holds > 0 && holder != thread_id)
         return SCE_KERNEL_ERROR_EVF_MULTI;
-    }
 
     bool condition;
     if (wait_mode & SCE_EVENT_WAITOR) {
@@ -1119,11 +1125,21 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
     if (const SceInt32 error = check_wait(pattern, wait_mode))
         return error;
 
-    if (const SceInt32 result = try_take(pattern, wait_mode, out_bits); result != SCE_KERNEL_ERROR_EVF_COND)
+    if (const SceInt32 result = try_take(thread->id, pattern, wait_mode, out_bits); result != SCE_KERNEL_ERROR_EVF_COND)
         return result;
 
+    if (!(attr & SCE_EVENT_WAITMULTIPLE)) {
+        holder = thread->id;
+        ++holds;
+    }
+    // A wait whose deadline already passed ends without blocking, and keeps its hold
+    if (timeout && *timeout == 0)
+        return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
     const WaitResult r = wait_on(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, uid, callbacks }, { wait_mode, pattern, out_bits }, timeout);
     const SceInt32 err = guest_result(r);
+    // A wake gave the hold back already
+    if (err == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+        drop_hold();
     if ((err == SCE_KERNEL_ERROR_WAIT_TIMEOUT || err == SCE_KERNEL_ERROR_WAIT_DELETE) && out_bits) {
         // set it only on a timeout or a delete
         // otherwise set in set or cancel
@@ -1133,14 +1149,22 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
     return err;
 }
 
-SceInt32 EventFlag::poll(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
+SceInt32 EventFlag::poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
     if (const SceInt32 error = check_wait(pattern, wait_mode))
         return error;
 
-    return try_take(pattern, wait_mode, out_bits);
+    return try_take(thread_id, pattern, wait_mode, out_bits);
+}
+
+void EventFlag::release_ended_holder(const ThreadState &thread) {
+    const auto guard = lock();
+    if (!guard || holder != thread.id)
+        return;
+    holder = 0;
+    holds = 0;
 }
 
 SceInt32 EventFlag::set(SceUInt32 pattern) {
@@ -1181,6 +1205,7 @@ void EventFlag::serve() {
             flags &= ~waiting_flags;
         }
 
+        drop_hold();
         return true;
     });
 }
@@ -1203,6 +1228,7 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
     const auto set_out_bits = [&](auto &waiter) {
         if (waiter.entry.out_bits)
             *waiter.entry.out_bits = pattern;
+        drop_hold();
         return true;
     };
     const auto nb_threads = static_cast<SceUInt32>(waiters.wake_if(set_out_bits, SCE_KERNEL_ERROR_WAIT_CANCEL));
