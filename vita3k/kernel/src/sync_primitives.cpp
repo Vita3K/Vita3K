@@ -979,7 +979,8 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     if (timed_out && result == SCE_KERNEL_OK)
         return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
     // Report a wait ended by the mutex with the mutex error codes, also when the mutex was deleted
-    // before the wait went back to it
+    // before the wait went back to it. On a Vita a lightweight mutex deleted then leaves the waiter
+    // blocked instead, which isn't copied.
     if (result == SCE_KERNEL_ERROR_WAIT_DELETE || result == SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID || result == SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID)
         return lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_MUTEX : SCE_KERNEL_ERROR_WAIT_DELETE_MUTEX;
     // only heavy mutexes can be canceled
@@ -1297,6 +1298,8 @@ std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, 
             if (piece.size == 0)
                 continue;
             void *const out = piece.base.get(mem);
+            // On a Vita a send that hands bytes to a waiting DONT_REMOVE receive leaves the pipe
+            // out of step, so each later receive gets bytes from an earlier send. That isn't copied.
             const std::size_t piece_copied = (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE) ? data_buffer.Peek(out, piece.size, copied) : data_buffer.Remove(out, piece.size);
             copied += piece_copied;
             if (piece_copied < piece.size)
