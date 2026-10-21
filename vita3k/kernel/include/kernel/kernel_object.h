@@ -64,6 +64,9 @@ protected:
     // Ends what the object is doing when it is deleted. Runs once, with the lock held.
     virtual void on_delete() {}
 
+    // Whether the object was deleted. With the lock held.
+    bool was_deleted() const { return deleted; }
+
 private:
     friend class KernelObjects;
 

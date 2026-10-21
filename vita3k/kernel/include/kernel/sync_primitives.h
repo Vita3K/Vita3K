@@ -46,16 +46,68 @@ protected:
     // default.
     virtual void serve() {}
 
-    // Waits in queue like WaitQueue::wait(), until the guest timeout passes, and writes the time left
-    // back to it. A wait that ends by its deadline or its thread's end leaves the queue without a
-    // waker, so the waiters behind it are served.
+    // Blocks thread on target in queue until a waker gives it a result, the object is deleted, or
+    // the guest timeout passes, and writes the time left back to the timeout. A waiter that leaves
+    // without a waker, by its deadline, its thread's end or a callback, serves the waiters behind
+    // it. The thread runs its callbacks out of the queue, then the waiter goes back in by priority.
     template <typename Entry>
     [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout) {
+        typename WaitQueue<Entry>::Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = queue.wait(lock, thread, target, std::move(entry), deadline);
-        if (!r || *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+        // The time left when the waiter left for its callbacks, kept if it gets what it waits for at
+        // once after them
+        std::optional<SceUInt32> time_left;
+        WaitResult r;
+        waiter.priority = thread->get_priority();
+        queue.push(waiter);
+        while (true) {
+            lock.unlock();
+            r = thread->wait(target, deadline);
+            lock.lock();
+            // A waker's result wins, it already handed over what the waiter waits for
+            if (waiter.result)
+                break;
+            // Woken without a result, such as by a wake left over from an earlier wait, so it
+            // waits on
+            if (r && *r == SCE_KERNEL_OK)
+                continue;
+            queue.remove(waiter);
             serve();
-        writeback_timeout(timeout, deadline);
+
+            // The thread runs its callbacks out of the queue, then the waiter goes back in by its
+            // priority unless they ended the wait
+            if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
+                const SceUInt32 left = time_left_until(deadline);
+                lock.unlock();
+                r = thread->run_callbacks();
+                lock.lock();
+                if (r && was_deleted()) {
+                    r = SCE_KERNEL_ERROR_WAIT_DELETE;
+                } else if (r) {
+                    // It gets what it waits for at once if no waiter ahead of it goes first
+                    waiter.priority = thread->get_priority();
+                    queue.push(waiter);
+                    serve();
+                    if (waiter.result) {
+                        time_left = left;
+                    } else if (std::chrono::steady_clock::now() >= deadline) {
+                        // The deadline passed during the callbacks, so the wait ends without
+                        // blocking again
+                        queue.remove(waiter);
+                        r = SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+                    } else {
+                        continue;
+                    }
+                }
+            }
+            break;
+        }
+        if (waiter.result)
+            r = *waiter.result;
+        if (timeout && time_left)
+            *timeout = *time_left;
+        else
+            writeback_timeout(timeout, deadline);
         return r;
     }
 };
