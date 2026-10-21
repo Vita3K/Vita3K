@@ -63,8 +63,8 @@ cross_core_scheduling           fail     # threads ignore their core and priorit
 delay                           pass
 delay_negative                  pass
 delay_precision                 skip     # timing, how long short delays and timeouts take
-delay_variants                  fail     # a delay reports wait UID 0
-delay_wait_id                   fail     # a delaying thread reports wait UID 0
+delay_variants                  pass
+delay_wait_id                   pass
 delete_with_waiters             pass
 directories                     fail     # directory mode, not empty and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
@@ -327,7 +327,7 @@ thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
-thread_wait_id_idle             fail     # the wait UID of a thread that doesn't wait is 0, not -1
+thread_wait_id_idle             fail     # a thread that can run but hasn't reports RUNNING instead of READY
 timeout_left_kinds              fail     # sceKernelWaitMultipleEvents
 timeout_serves_before_run       fail     # a timed out thread isn't READY before it runs
 timeout_threshold               skip     # timing, which short timeouts end at once
@@ -367,7 +367,7 @@ wake_batch_cores                fail     # threads ignore their core
 wake_busy_cores                 fail     # threads are never READY or STANDBY and ignore their core
 wake_core_origin                fail     # threads ignore their core and priority
 wake_core_ties                  fail     # threads are never STANDBY and ignore their core
-wake_handoff                    fail     # a waiter woken by a set or an unlock still reports its wait for a while
+wake_handoff                    skip     # threads ignore their core and priority, so whether a woken waiter runs before the releaser's try is a race
 wake_kinds_order                fail     # threads ignore their core and priority
 wake_ready_areas                fail     # threads ignore their core and priority
 wake_spread                     fail     # threads ignore their core

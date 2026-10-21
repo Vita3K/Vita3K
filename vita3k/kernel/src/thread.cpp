@@ -560,9 +560,7 @@ WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt
 
 WaitResult ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(mutex);
-    // Callbacks don't nest, so inside a callback this is a plain wait
-    const bool runs_callbacks = target.callbacks && !is_processing_callbacks;
-    const auto woken = [&] { return exiting() || wake_pending || (runs_callbacks && callbacks_notified()); };
+    const auto woken = [&] { return wait_over(); };
     wait_target = target;
     update_status(ThreadStatus::waiting);
     bool satisfied = true;
@@ -572,11 +570,12 @@ WaitResult ThreadState::wait(WaitTarget target, Deadline deadline) {
         satisfied = wait_cv.wait_until(lock, deadline, woken);
     // A thread something holds goes on to its gate, which keeps it from its callbacks and its code
     update_status(ThreadStatus::running);
+    const bool callbacks_due = callback_ends_wait();
     wait_target = {};
     if (exiting())
         return std::unexpected{ ThreadExiting{} };
     wake_pending = false;
-    if (runs_callbacks && callbacks_notified())
+    if (callbacks_due)
         return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
 }
@@ -598,10 +597,13 @@ void ThreadState::wake() {
 }
 
 SceUInt32 ThreadState::process_callbacks() {
-    if (is_processing_callbacks)
-        return 0;
-
-    is_processing_callbacks = true;
+    {
+        // Thread info reads the flag too, through wait_over()
+        const std::lock_guard<std::mutex> lock(mutex);
+        if (is_processing_callbacks)
+            return 0;
+        is_processing_callbacks = true;
+    }
     SceUInt32 processed = 0;
     for (auto it = callbacks.begin(); it != callbacks.end();) {
         const CallbackPtr cb = it->lock();
@@ -629,6 +631,7 @@ SceUInt32 ThreadState::process_callbacks() {
         if (ret != 0)
             kernel.delete_callback(cb->uid);
     }
+    const std::lock_guard<std::mutex> lock(mutex);
     is_processing_callbacks = false;
     return processed;
 }
@@ -661,9 +664,14 @@ SceKernelThreadInfo ThreadState::info() {
     info.initCpuAffinityMask = init_affinity_mask;
     info.currentCpuAffinityMask = affinity_mask;
     info.entry = SceKernelThreadEntry(entry_point);
-    info.status = std::to_underlying(status);
-    info.waitType = wait_target.callbacks ? wait_target.type | WAITTYPE_CB_BIT : wait_target.type;
-    info.waitId = wait_target.id;
+    // A thread whose kernel wait is over is READY until it goes on, and waits on nothing, like on a
+    // Vita, where the waker ends the wait. A host wait, like an audio output, has no target and
+    // stays WAITING.
+    const bool ready = status == ThreadStatus::waiting && wait_target.type != 0 && wait_over();
+    const WaitTarget reported = ready ? WaitTarget{} : wait_target;
+    info.status = ready ? SCE_KERNEL_THREAD_STATUS_READY : std::to_underlying(status);
+    info.waitType = reported.callbacks ? reported.type | WAITTYPE_CB_BIT : reported.type;
+    info.waitId = reported.id;
     info.exitStatus = returned_value;
     info.fNotifyCallback = callbacks_notified() ? 1 : 0;
     return info;

@@ -34,8 +34,8 @@ using Deadline = std::chrono::steady_clock::time_point;
 struct WaitTarget {
     // One of SCE_KERNEL_WAITTYPE_*, or 0 if not waiting
     SceUInt32 type = 0;
-    // UID of the object waited on, or 0 if there is none
-    SceUID id = 0;
+    // UID of the object waited on, or -1 if there is none, like for a delay
+    SceUID id = -1;
     // The wait is the variant with callbacks, which runs notified callbacks and reports its type
     // with the callback bit
     bool callbacks = false;
