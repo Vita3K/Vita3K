@@ -422,7 +422,7 @@ bool ScreenRenderer::acquire_swapchain_image() {
     vk::Result acquire_result = vk::Result::eErrorOutOfDateKHR;
 
     current_frame++;
-    if (current_frame == swapchain_size + 1)
+    if (current_frame >= swapchain_size + 1)
         current_frame = 0;
 
     if (!ensure_swapchain()) {
