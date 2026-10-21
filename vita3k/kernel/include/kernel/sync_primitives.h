@@ -46,13 +46,16 @@ protected:
     // default.
     virtual void serve() {}
 
-    // Waits in queue like WaitQueue::wait(). A wait that ends by its deadline or its thread's end
-    // leaves the queue without a waker, so the waiters behind it are served.
+    // Waits in queue like WaitQueue::wait(), until the guest timeout passes, and writes the time left
+    // back to it. A wait that ends by its deadline or its thread's end leaves the queue without a
+    // waker, so the waiters behind it are served.
     template <typename Entry>
-    [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks) {
+    [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout, bool callbacks) {
+        const Deadline deadline = deadline_from(timeout);
         const WaitResult r = queue.wait(lock, thread, target, std::move(entry), deadline, callbacks);
         if (!r || *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
             serve();
+        writeback_timeout(timeout, deadline);
         return r;
     }
 };
