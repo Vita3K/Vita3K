@@ -457,7 +457,9 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
 
 WaitResult ThreadState::delay_until(Deadline deadline, bool callbacks) {
     while (true) {
-        const WaitResult r = wait({ SCE_KERNEL_WAITTYPE_DELAY }, deadline, callbacks);
+        WaitResult r = wait({ SCE_KERNEL_WAITTYPE_DELAY }, deadline, callbacks);
+        if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+            r = run_callbacks();
         if (!r)
             return r;
         // Reaching the deadline is the expected outcome of a delay
@@ -478,6 +480,8 @@ WaitResult ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     WaitResult r = SCE_KERNEL_OK;
     while (!take_signal()) {
         r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SIGNAL_WAIT_ID }, deadline, callbacks);
+        if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+            r = run_callbacks();
         if (!r || *r != SCE_KERNEL_OK)
             break;
     }
@@ -570,17 +574,19 @@ WaitResult ThreadState::wait(WaitTarget target, Deadline deadline, bool callback
     if (exiting())
         return std::unexpected{ ThreadExiting{} };
     wake_pending = false;
-    if (runs_callbacks && callbacks_notified()) {
-        lock.unlock();
-        process_callbacks();
-        lock.lock();
-        // The thread exited or was deleted during the callbacks, so the wait must not complete
-        if (exiting())
-            return std::unexpected{ ThreadExiting{} };
-        // The callbacks may have changed what the caller waits for, so it rechecks before waiting again
-        return SCE_KERNEL_OK;
-    }
+    if (runs_callbacks && callbacks_notified())
+        return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+}
+
+WaitResult ThreadState::run_callbacks() {
+    process_callbacks();
+    const std::lock_guard<std::mutex> lock(mutex);
+    // The thread exited or was deleted during the callbacks, so the wait must not complete
+    if (exiting())
+        return std::unexpected{ ThreadExiting{} };
+    // The callbacks may have changed what the caller waits for, so it rechecks before waiting again
+    return SCE_KERNEL_OK;
 }
 
 void ThreadState::wake() {

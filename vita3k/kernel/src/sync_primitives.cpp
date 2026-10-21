@@ -306,7 +306,9 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         }
 
         guard.unlock();
-        const WaitResult r = thread->wait({ SCE_KERNEL_WAITTYPE_EVENT, uid }, deadline, callbacks);
+        WaitResult r = thread->wait({ SCE_KERNEL_WAITTYPE_EVENT, uid }, deadline, callbacks);
+        if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+            r = thread->run_callbacks();
         guard.lock();
         if (!r) {
             waiters.remove(waiter);
