@@ -46,6 +46,11 @@ protected:
     // default.
     virtual void serve() {}
 
+    // Ends a queued wait of thread that its deadline ended, before the waiters behind it are served.
+    // Not for a wait whose deadline passed while it was out of the queue for its callbacks, which
+    // ends without being queued again.
+    virtual void timed_out(const ThreadStatePtr &) {}
+
     // Blocks thread on target in queue until a waker gives it a result, the object is deleted, or
     // the guest timeout passes, and writes the time left back to the timeout. A waiter that leaves
     // without a waker, by its deadline, its thread's end or a callback, serves the waiters behind
@@ -72,6 +77,8 @@ protected:
             if (r && *r == SCE_KERNEL_OK)
                 continue;
             queue.remove(waiter);
+            if (r && *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+                timed_out(thread);
             serve();
 
             // The thread runs its callbacks out of the queue, then the waiter goes back in by its
@@ -374,6 +381,8 @@ private:
     SceInt32 try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
+    // Gives back the hold of the wait that timed out.
+    void timed_out(const ThreadStatePtr &thread) override;
     // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
     void drop_hold();
 
@@ -382,9 +391,10 @@ private:
     SceUInt32 flags;
     // Without SCE_EVENT_WAITMULTIPLE, the thread whose waits hold the flag, which another thread can't
     // wait on or poll, and how many of its waits did. A wait that doesn't get the bits at once takes
-    // a hold, and a set, a cancel or the delete that wakes it, or its timeout, gives it back. A wait
-    // that ends without blocking or taking the bits, like one with a timeout of 0, keeps it until the
-    // thread ends or the flag is deleted.
+    // a hold, and a set, a cancel or the delete that wakes it, or its timeout while queued, gives it
+    // back. It stays while a callback has the waiter out of the queue. A wait that ends without
+    // blocking or taking the bits, like one with a timeout of 0 or whose deadline passed during its
+    // callbacks, keeps it until the thread ends or the flag is deleted.
     SceUID holder = 0;
     int holds = 0;
 };

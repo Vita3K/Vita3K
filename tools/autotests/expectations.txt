@@ -77,7 +77,7 @@ event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
 event_flag_hold_callback_events fail     # a timeout of 1 gives the event flag hold back
-event_flag_hold_callbacks       fail     # a deadline that passes while the waiter runs callbacks gives the event flag hold back
+event_flag_hold_callbacks       pass
 event_flag_hold_leak            pass
 event_flag_hold_take            pass
 event_flag_multi_waiters        pass

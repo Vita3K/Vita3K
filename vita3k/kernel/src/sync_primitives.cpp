@@ -1088,6 +1088,10 @@ void EventFlag::on_delete() {
     holds = 0;
 }
 
+void EventFlag::timed_out(const ThreadStatePtr &) {
+    drop_hold();
+}
+
 void EventFlag::drop_hold() {
     if (holds > 0 && --holds == 0)
         holder = 0;
@@ -1141,9 +1145,6 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
         return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
     const WaitResult r = wait_on(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, uid, callbacks }, { wait_mode, pattern, out_bits }, timeout);
     const SceInt32 err = guest_result(r);
-    // A wake gave the hold back already
-    if (err == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
-        drop_hold();
     if ((err == SCE_KERNEL_ERROR_WAIT_TIMEOUT || err == SCE_KERNEL_ERROR_WAIT_DELETE) && out_bits) {
         // set it only on a timeout or a delete
         // otherwise set in set or cancel
