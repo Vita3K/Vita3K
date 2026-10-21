@@ -20,6 +20,8 @@ callback_errors                 crash    # callback NULL argument errors, a NULL
 callback_event_results          fail     # events that end a wait during a callback with NOTIFY_CALLBACK, a pulse during a callback
 callback_event_waits            fail     # a simple event set by a callback ends the wait with NOTIFY_CALLBACK
 callback_info                   fail     # waits stay queued during callbacks
+callback_inner_same_object      fail     # waits stay queued during callbacks
+callback_inner_same_pipe        fail     # message pipe waits stay queued during callbacks
 callback_inner_wait             fail     # waits stay queued while a callback waits
 callback_nesting                fail     # callbacks don't run inside callbacks
 callback_outer_timeout          fail     # a wait whose timeout passes during a callback
@@ -61,8 +63,9 @@ delay_wait_id                   fail     # a delaying thread reports wait UID 0
 delete_with_waiters             pass
 directories                     fail     # directory mode, not empty and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
-display_framebuf_blocks         crash    # no framebuffer base alignment check, a framebuffer in a freed block crashes
+display_framebuf_blocks         fail     # no framebuffer base alignment check
 display_framebuf_free           skip     # whether the renderer crashes on a freed framebuffer depends on timing
+display_framebuf_set_freed      skip     # a framebuffer where a block was freed is taken, whether the renderer crashes on it depends on timing
 event_bit_mask                  pass
 event_bits                      pass
 event_edges                     pass
@@ -74,6 +77,7 @@ event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass
 event_flag_waits                pass
+event_flag_wake_release         fail     # a woken thread isn't READY before it runs, and its out bits are written at the wake
 event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
 exit_process_thread             pass
@@ -166,6 +170,7 @@ msgpipe_receiver_requeue        fail     # a receiver takes part of a FULL recei
 msgpipe_sender_requeue          fail     # senders put their bytes in behind a head that doesn't fit, no requeue on a priority change
 msgpipe_vectors                 pass
 msgpipe_waits                   pass
+msgpipe_wake_state              fail     # a receive copies its bytes when its thread runs, not in the send
 mspace                          fail     # sceClib memory space info
 multi_events                    fail     # waiting on several events, callbacks registered to events
 multi_events_and_delete         fail     # sceKernelWaitMultipleEvents, deleted events and the wait type and UID
@@ -227,6 +232,7 @@ rwlock_counts                   pass
 rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
 rwlock_requeue_writers          fail     # waiting writers don't go before readers, no requeue on a priority change
+rwlock_wake_counts              fail     # woken threads aren't READY before they run
 rwlock_wake_order               pass
 savedata_slot_id                fail     # save data slot ID range checks
 self_lower_order                fail     # a thread that lowers itself doesn't go to the head of its new priority
@@ -316,6 +322,7 @@ thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
 thread_wait_id_idle             fail     # the wait UID of a thread that doesn't wait is 0, not -1
 timeout_left_kinds              fail     # sceKernelWaitMultipleEvents
+timeout_serves_before_run       fail     # a timed out thread isn't READY before it runs, readers wait behind a timed out writer
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass
