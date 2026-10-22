@@ -1383,6 +1383,13 @@ void MsgPipe::drain(Receiver &receiver) {
     }
 }
 
+SceSize MsgPipe::available() const {
+    SceSize bytes = static_cast<SceSize>(data_buffer.Used());
+    for (const auto *sender : senders)
+        bytes += sender->entry.left;
+    return bytes;
+}
+
 bool MsgPipe::give(Sender &sender) {
     // A send reaches the first waiting receiver even with no bytes, which ends an ASAP receive
     while (auto *const receiver = receivers.front()) {
@@ -1498,8 +1505,8 @@ SceInt32 MsgPipe::try_receive(const ThreadStatePtr &thread, MemState &mem, SceUI
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
     Receiver receiver(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL, wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE);
     // Behind the receivers already waiting, or short of bytes for all of a FULL receive, it fails
-    // without writing a size. The bytes of waiting senders aren't counted.
-    if (!goes_first(receivers, thread->get_priority()) || (receiver.full && receiver.total > data_buffer.Used()))
+    // without writing a size
+    if (!goes_first(receivers, thread->get_priority()) || (receiver.full && receiver.total > available()))
         return SCE_KERNEL_ERROR_MSG_PIPE_EMPTY;
     return take(receiver) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_EMPTY;
 }

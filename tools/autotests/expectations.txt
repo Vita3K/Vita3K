@@ -180,7 +180,7 @@ msgpipe_receive_sender_stays    pass
 msgpipe_receiver_leaves         pass
 msgpipe_receiver_requeue        fail     # no requeue on a priority change
 msgpipe_sender_requeue          fail     # no requeue on a priority change
-msgpipe_try_receive_senders     fail     # a FULL try receive leaves out the bytes of waiting senders
+msgpipe_try_receive_senders     pass
 msgpipe_vectors                 pass
 msgpipe_waits                   pass
 msgpipe_wake_state              skip     # threads ignore their core and priority, so whether the woken waiter ran before its status is read is a race

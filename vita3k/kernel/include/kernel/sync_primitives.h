@@ -542,6 +542,8 @@ private:
     void fill(Sender &sender);
     // Moves the pipe's bytes to the receiver, up to what it still wants
     void drain(Receiver &receiver);
+    // Returns the bytes a receive can get at once, the pipe's and those the waiting senders still have
+    SceSize available() const;
     // Copies n bytes from the sender to the receiver, and takes them from the sender unless the
     // receiver peeks
     static void copy(Sender &sender, Receiver &receiver, SceSize n);

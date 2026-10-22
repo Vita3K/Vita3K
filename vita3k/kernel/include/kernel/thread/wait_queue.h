@@ -81,6 +81,14 @@ public:
         }
     }
 
+    // The waiters in queue order
+    auto begin() const {
+        return waiters.begin();
+    }
+    auto end() const {
+        return waiters.end();
+    }
+
     bool empty() const {
         return waiters.empty();
     }
