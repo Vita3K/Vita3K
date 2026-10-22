@@ -233,3 +233,13 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
 if(APPLE)
     target_link_libraries(modules PUBLIC "-framework SystemConfiguration")
 endif()
+
+if(NOT ANDROID AND NOT MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME appmgr-parameter-string
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/app_param_string_test.py --cxx ${CMAKE_CXX_COMPILER})
+        add_test(NAME appmgr-system-events
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/system_events_test.py --cxx ${CMAKE_CXX_COMPILER})
+    endif()
+endif()
