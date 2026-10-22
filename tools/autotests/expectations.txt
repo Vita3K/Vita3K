@@ -115,7 +115,7 @@ gxm_surface_memory              fail     # surface data alignment checks
 gxm_sync_objects                fail     # sync objects before sceGxmInitialize and their limit
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
 gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
-handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
+handoff_more                    skip     # threads ignore their core and priority, so whether the woken waiter ran before the releaser reads the state is a race
 head_leaves_more                pass
 info                            pass
 info_fields                     pass
@@ -245,7 +245,7 @@ rwlock_cancel_wake_order        skip     # threads ignore their core and priorit
 rwlock_counts                   pass
 rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
-rwlock_requeue_writers          fail     # waiting writers don't go before readers, no requeue on a priority change
+rwlock_requeue_writers          fail     # no requeue on a priority change
 rwlock_wake_counts              fail     # woken threads aren't READY before they run
 rwlock_wake_order               pass
 savedata_slot_id                fail     # save data slot ID range checks
