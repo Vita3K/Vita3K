@@ -51,6 +51,20 @@ protected:
     // ends without being queued again.
     virtual void timed_out(const ThreadStatePtr &) {}
 
+    // Runs the thread's pending callbacks with the lock released, which a wait with callbacks does once
+    // its checks passed and before it takes. The lock stays held when none would run. Returns
+    // WAIT_DELETE if the object was deleted meanwhile.
+    [[nodiscard]] WaitResult run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
+        if (!callbacks || !thread->has_pending_callbacks())
+            return SCE_KERNEL_OK;
+        lock.unlock();
+        WaitResult r = thread->run_callbacks();
+        lock.lock();
+        if (r && was_deleted())
+            r = SCE_KERNEL_ERROR_WAIT_DELETE;
+        return r;
+    }
+
     // Blocks thread on target in queue until a waker gives it a result, the object is deleted, or
     // the guest timeout passes, and writes the time left back to the timeout. A waiter that leaves
     // without a waker, by its deadline, its thread's end or a callback, serves the waiters behind
@@ -387,6 +401,8 @@ private:
     };
 
     void on_delete() override;
+    // Returns whether another thread's wait holds the flag. The lock must be held.
+    bool held_by_other(SceUID thread_id) const;
     // Takes the flags for the thread if pattern matches them, or returns why it can't. The lock must
     // be held.
     SceInt32 try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);

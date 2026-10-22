@@ -159,6 +159,8 @@ struct ThreadState {
     // Callbacks
     // Runs the notified callbacks of this thread and returns how many ran. Called by the thread itself.
     SceUInt32 process_callbacks();
+    // Returns whether a notified callback would run now, which none does inside a callback. Takes mutex.
+    bool has_pending_callbacks();
     // Adds a callback this thread created. Called by the thread itself.
     void add_callback(const CallbackPtr &cb);
     // Counts a callback of this thread that was notified and hasn't run for it yet, waking a wait

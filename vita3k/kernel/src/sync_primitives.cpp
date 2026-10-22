@@ -101,6 +101,8 @@ SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern,
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     if (wait_pattern == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     if (const SceInt32 result = try_take(wait_pattern, result_pattern, user_data); result != SCE_KERNEL_ERROR_EVENT_COND)
         return result;
@@ -287,6 +289,8 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     uint64_t current_time = get_current_time();
     if (const SceInt32 result = try_take(result_pattern, user_data, current_time); result != SCE_KERNEL_ERROR_EVENT_COND)
@@ -539,6 +543,11 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 co
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
     if (const SceInt32 error = check_count(count))
         return error;
+    // The owner's own lock takes or fails at once, without callbacks
+    if (lock_count == 0 || owner != thread->id) {
+        if (const WaitResult r = run_pending_callbacks(guard, thread, target.callbacks); !r || *r != SCE_KERNEL_OK)
+            return guest_result(r);
+    }
 
     // Owned by someone else, wait until it is handed over
     if (lock_count > 0 && owner != thread->id) {
@@ -706,6 +715,11 @@ SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
+    // The writer's own lock takes or fails at once, without callbacks
+    if (write_owner != thread->id) {
+        if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+            return guest_result(r);
+    }
 
     if (const SceInt32 result = try_take(thread, is_write); result != SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK)
         return result;
@@ -869,6 +883,8 @@ SceInt32 Semaphore::wait(const ThreadStatePtr &thread, SceInt32 need_count, SceU
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
     if (need_count <= 0 || need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     if (try_take(thread, need_count))
         return SCE_KERNEL_OK;
@@ -976,7 +992,9 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     if (const SceInt32 error = associated_mutex->release(mem, thread, 1))
         return error;
 
-    const WaitResult r = wait_on(waiters, guard, thread, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_SIGNAL : SCE_KERNEL_WAITTYPE_COND_SIGNAL, uid, callbacks }, {}, timeout);
+    WaitResult r = run_pending_callbacks(guard, thread, callbacks);
+    if (r && *r == SCE_KERNEL_OK)
+        r = wait_on(waiters, guard, thread, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_SIGNAL : SCE_KERNEL_WAITTYPE_COND_SIGNAL, uid, callbacks }, {}, timeout);
     // Deleted while the waiter ran its callbacks out of the queue, which ends it like the delete's wake
     if (r && *r == SCE_KERNEL_ERROR_WAIT_DELETE)
         return lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_COND : SCE_KERNEL_ERROR_WAIT_DELETE_COND;
@@ -1105,8 +1123,12 @@ void EventFlag::drop_hold() {
         holder = 0;
 }
 
+bool EventFlag::held_by_other(SceUID thread_id) const {
+    return holds > 0 && holder != thread_id;
+}
+
 SceInt32 EventFlag::try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
-    if (holds > 0 && holder != thread_id)
+    if (held_by_other(thread_id))
         return SCE_KERNEL_ERROR_EVF_MULTI;
 
     bool condition;
@@ -1140,6 +1162,10 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
     if (const SceInt32 error = check_wait(pattern, wait_mode))
         return error;
+    if (held_by_other(thread->id))
+        return SCE_KERNEL_ERROR_EVF_MULTI;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     if (const SceInt32 result = try_take(thread->id, pattern, wait_mode, out_bits); result != SCE_KERNEL_ERROR_EVF_COND)
         return result;
@@ -1459,9 +1485,13 @@ bool MsgPipe::goes_first(WaitQueue<Side> &side, int priority) {
 SceInt32 MsgPipe::receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks) {
     if (!is_msg_pipe_mode(wait_mode))
         return SCE_KERNEL_ERROR_ILLEGAL_MODE;
-    // DONT_WAIT ends like a try
-    if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT)
-        return try_receive(thread, mem, wait_mode, pieces, size);
+    // DONT_WAIT ends like a try, and a wait with callbacks runs them after it
+    if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT) {
+        const SceInt32 result = try_receive(thread, mem, wait_mode, pieces, size);
+        if (callbacks)
+            thread->process_callbacks();
+        return result;
+    }
     const uint64_t total = total_size(pieces);
     if (total > data_buffer.Capacity())
         return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
@@ -1470,9 +1500,15 @@ SceInt32 MsgPipe::receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
     Receiver receiver(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL, wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE);
-    // A receive of nothing ends at once, and one behind the receivers already waiting takes nothing
-    // before it waits
-    const bool done = receiver.total == 0 || (goes_first(receivers, thread->get_priority()) && take(receiver));
+    // A receive of nothing ends at once, before any callback runs
+    if (receiver.total == 0) {
+        receiver.report();
+        return SCE_KERNEL_OK;
+    }
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
+    // One behind the receivers already waiting takes nothing before it waits
+    const bool done = goes_first(receivers, thread->get_priority()) && take(receiver);
     receiver.report();
     if (done)
         return SCE_KERNEL_OK;
@@ -1482,9 +1518,13 @@ SceInt32 MsgPipe::receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32
 SceInt32 MsgPipe::send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks) {
     if (!is_msg_pipe_mode(wait_mode))
         return SCE_KERNEL_ERROR_ILLEGAL_MODE;
-    // DONT_WAIT ends like a try
-    if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT)
-        return try_send(thread, mem, wait_mode, pieces, size);
+    // DONT_WAIT ends like a try, and a wait with callbacks runs them after it
+    if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT) {
+        const SceInt32 result = try_send(thread, mem, wait_mode, pieces, size);
+        if (callbacks)
+            thread->process_callbacks();
+        return result;
+    }
     const uint64_t total = total_size(pieces);
     if (total > data_buffer.Capacity())
         return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
@@ -1493,9 +1533,15 @@ SceInt32 MsgPipe::send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wa
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
     Sender sender(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
-    // A send of nothing ends at once, and one behind the senders already waiting gives nothing
-    // before it waits
-    const bool done = sender.total == 0 || (goes_first(senders, thread->get_priority()) && give(sender));
+    // A send of nothing ends at once, before any callback runs
+    if (sender.total == 0) {
+        sender.report();
+        return SCE_KERNEL_OK;
+    }
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
+    // One behind the senders already waiting gives nothing before it waits
+    const bool done = goes_first(senders, thread->get_priority()) && give(sender);
     sender.report();
     if (done)
         return SCE_KERNEL_OK;

@@ -40,7 +40,7 @@ callback_retake                 pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           pass
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
-cb_wait_check_order             fail     # a wait with callbacks runs them before it checks its arguments and the event flag's hold
+cb_wait_check_order             pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_unlock_order            fail     # a mutex ceiling doesn't raise its owner's priority
@@ -193,7 +193,7 @@ multi_events_requeue            fail     # sceKernelWaitMultipleEvents
 multi_events_unknown_uid        fail     # sceKernelWaitMultipleEvents with unusable entries and cancels
 multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
-mutex_cancel_counts             fail     # negative mutex cancel counts, callbacks on locks that don't wait, a woken waiter's state
+mutex_cancel_counts             fail     # negative mutex cancel counts, a woken waiter's state
 mutex_ceiling                   fail     # mutex priority ceilings
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_waits                     pass
