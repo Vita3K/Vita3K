@@ -78,6 +78,7 @@ DECL_EXPORT(int, _sceKernelPollEventFlag, SceUID event_id, unsigned int flags, u
 DECL_EXPORT(SceInt32, _sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, SceUInt32 *num_wait_thread);
 DECL_EXPORT(int, _sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pNumWaitThreads);
 DECL_EXPORT(SceInt32, _sceKernelCancelEvent, SceUID eventId, SceUInt32 *pNumWaitThreads);
+DECL_EXPORT(SceInt32, _sceKernelCancelEventWithSetPattern, SceUID eventId, SceUInt32 setPattern, Ptr<SceKernelCancelEventWithSetPattern_opt> pOpt);
 DECL_EXPORT(SceInt32, _sceKernelCancelMsgPipe, SceUID msgPipeId, SceUInt32 *pNumSendWaitThreads, SceUInt32 *pNumReceiveWaitThreads);
 DECL_EXPORT(SceInt32, _sceKernelCancelMutex, SceUID mutexId, SceInt32 newCount, SceUInt32 *pNumWaitThreads);
 DECL_EXPORT(SceInt32, _sceKernelCancelRWLock, SceUID rwLockId, SceUInt32 *pNumReadWaitThreads, SceUInt32 *pNumWriteWaitThreads, SceInt32 flag);

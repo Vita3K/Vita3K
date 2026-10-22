@@ -116,9 +116,19 @@ EXPORT(SceInt32, _sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, Sc
     return event->cancel(pattern, num_wait_thread);
 }
 
-EXPORT(int, _sceKernelCancelEventWithSetPattern) {
-    TRACY_FUNC(_sceKernelCancelEventWithSetPattern);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelCancelEventWithSetPattern, SceUID eventId, SceUInt32 setPattern, Ptr<SceKernelCancelEventWithSetPattern_opt> pOpt) {
+    TRACY_FUNC(_sceKernelCancelEventWithSetPattern, eventId, setPattern, pOpt);
+    const SceKernelCancelEventWithSetPattern_opt *opt = pOpt.get(emuenv.mem);
+    if (!opt)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    SceUInt32 *num_wait_threads = opt->pNumWaitThreads.get(emuenv.mem);
+    // The count reads 0 if the cancel fails
+    if (num_wait_threads)
+        *num_wait_threads = 0;
+    const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(eventId);
+    if (!event)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    return event->cancel(setPattern, opt->userData, num_wait_threads);
 }
 
 EXPORT(SceInt32, _sceKernelCancelMsgPipe, SceUID msgPipeId, SceUInt32 *pNumSendWaitThreads, SceUInt32 *pNumReceiveWaitThreads) {

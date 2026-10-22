@@ -813,6 +813,14 @@ struct SceKernelCreateSema_opt {
     Ptr<SceKernelSemaOptParam> option;
 };
 
+// The arguments of sceKernelCancelEventWithSetPattern after the pattern, which its syscall takes
+// through a pointer
+struct SceKernelCancelEventWithSetPattern_opt {
+    SceUInt64 userData;
+    Ptr<SceUInt32> pNumWaitThreads;
+};
+static_assert(sizeof(SceKernelCancelEventWithSetPattern_opt) == 0x10, "Incorrect size");
+
 struct SceKernelCreateMsgPipeOpt {
     /** Size of the structure */
     SceSize size;

@@ -153,6 +153,8 @@ public:
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     SceInt32 clear(SceUInt32 clear_pattern);
     SceInt32 cancel(SceUInt32 *num_wait_threads);
+    // Cancels the waits like cancel(), then replaces the whole pattern and the user data.
+    SceInt32 cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads);
     // Sets result to the event's bit pattern, or returns UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 get_pattern(SceUInt32 &result) const;
     // Fills info with what the simple event's info reports, or returns UNKNOWN_EVENT_ID if it was

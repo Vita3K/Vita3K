@@ -190,6 +190,23 @@ SceInt32 SimpleEvent::cancel(SceUInt32 *num_wait_threads) {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 SimpleEvent::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
+        return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
+
+    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    // Every bit is replaced, the create event too, and no waiter is left to get them
+    pattern = set_pattern;
+    last_user_data = user_data;
+    if (num_wait_threads)
+        *num_wait_threads = nb_threads;
+
+    return SCE_KERNEL_OK;
+}
+
 SceInt32 SimpleEvent::get_pattern(SceUInt32 &result) const {
     const auto guard = lock();
     if (!guard)
