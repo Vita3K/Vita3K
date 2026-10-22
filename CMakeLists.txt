@@ -129,6 +129,8 @@ macro(get_boost)
 	endif()
 endmacro(get_boost)
 
+get_boost()
+
 if(WIN32)
 	add_compile_definitions("_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "_CRT_SECURE_NO_WARNINGS" "NOMINMAX")
 endif()
