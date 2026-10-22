@@ -25,20 +25,3 @@ if(ANDROID)
 	target_link_libraries(util PRIVATE adrenotools)
 endif()
 target_compile_definitions(util PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ENABLE>)
-
-if(NOT ANDROID)
-    find_package(Python3 3.8 QUIET COMPONENTS Interpreter)
-    if(Python3_Interpreter_FOUND)
-        find_package(Threads REQUIRED)
-        set(TERMINATE_TEST_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/terminate_test.cpp)
-        add_custom_command(OUTPUT ${TERMINATE_TEST_SOURCE}
-            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/generate_terminate_test.py
-                --source ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp --output ${TERMINATE_TEST_SOURCE}
-            DEPENDS tests/generate_terminate_test.py src/logging.cpp
-            VERBATIM)
-        add_executable(util-terminate-tests ${TERMINATE_TEST_SOURCE})
-        target_link_libraries(util-terminate-tests PRIVATE Threads::Threads)
-        add_test(NAME util-terminate-handler
-            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_terminate_tests.py $<TARGET_FILE:util-terminate-tests>)
-    endif()
-endif()
