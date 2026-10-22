@@ -185,6 +185,8 @@ public:
 private:
     void on_delete() override;
     void schedule_event();
+    // Wakes the first waiter so it checks the event again
+    void wake_first();
     // Moves next_event to the first event after current_time, or to never if the event doesn't repeat.
     void advance_next_event(uint64_t current_time);
     // Takes the event if it is set by current_time, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.

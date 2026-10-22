@@ -150,12 +150,6 @@ public:
         return wake_if([](Waiter &) { return true; }, result);
     }
 
-    // Wakes every waiter so they recheck their condition, leaving them queued.
-    void notify_all() {
-        for (Waiter *waiter : waiters)
-            waiter->thread->wake();
-    }
-
     // Queues a waiter that the caller will block itself. Used by waits that need their own loop.
     void push(Waiter &waiter) {
         auto pos = waiters.end();

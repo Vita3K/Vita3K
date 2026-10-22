@@ -222,7 +222,12 @@ void Timer::schedule_event() {
     next_event = get_current_time() + event_interval;
 
     // the first waiter has to wait for the new event time
-    waiters.notify_all();
+    wake_first();
+}
+
+void Timer::wake_first() {
+    if (WaitQueue<std::monostate>::Waiter *const first = waiters.front())
+        first->thread->wake();
 }
 
 SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats) {
@@ -312,7 +317,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         guard.lock();
         if (!r) {
             waiters.remove(waiter);
-            waiters.notify_all();
+            wake_first();
             return guest_result(r);
         }
 
@@ -323,7 +328,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         // The guest's timeout ran out before an event came
         if (std::chrono::steady_clock::now() >= guest_deadline) {
             waiters.remove(waiter);
-            waiters.notify_all();
+            wake_first();
             writeback_timeout(timeout, guest_deadline);
             return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
         }
@@ -336,8 +341,8 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
 
     event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
     advance_next_event(current_time);
-    // notify the other waiting threads
-    waiters.notify_all();
+    // the next waiter checks the event in turn
+    wake_first();
 
     return SCE_KERNEL_OK;
 }
