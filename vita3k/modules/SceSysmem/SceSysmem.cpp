@@ -119,11 +119,12 @@ static SceInt32 size_error(SceKernelMemBlockType type, SceSize size) {
 
 // The error for an alignment a block of a user type can't ask for, or 0
 static SceInt32 alignment_error(SceKernelMemBlockType type, SceSize alignment) {
+    // 0 asks for no alignment, which every type takes
+    if (alignment == 0)
+        return 0;
     const SceUInt32 phymempart = type & MEMBLOCK_TYPE_PHYMEMPART_MASK;
     if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_PHYCONT || (alignment & (alignment - 1)) != 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-    if (alignment == 0)
-        return 0;
     if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_CDRAM) {
         if (alignment < MEMBLOCK_CDRAM_MIN_ALIGNMENT)
             return SCE_KERNEL_ERROR_NO_FREE_PHYSICAL_PAGE_CDRAM;

@@ -134,7 +134,7 @@ lw_work                         pass
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_alignment              pass
-memblock_alignment_zero         fail     # an alignment of 0 for a PHYCONT type
+memblock_alignment_zero         pass
 memblock_base_block             pass
 memblock_find_gaps              fail     # lookups past a block give 0x80024700, the find ignores its size
 memblock_find_ranges            fail     # the find ignores its size, info by range is unimplemented
