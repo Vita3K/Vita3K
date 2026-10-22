@@ -37,6 +37,8 @@
 
 #include <overlay/display_manager.h>
 
+#include "instance_extensions.h"
+
 #include <algorithm>
 #include <mutex>
 #include <unordered_set>
@@ -422,6 +424,9 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 #endif
         };
         bool has_layer_settings_extension = false;
+#ifdef __APPLE__
+        bool has_portability_extension = false;
+#endif
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
             auto ite = optional_instance_extensions.find(prop.extensionName);
             if (ite != optional_instance_extensions.end()) {
@@ -429,9 +434,15 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 #ifdef __APPLE__
                 if (*ite == vk::EXTLayerSettingsExtensionName)
                     has_layer_settings_extension = true;
+                if (*ite == vk::KHRPortabilityEnumerationExtensionName)
+                    has_portability_extension = true;
 #endif
             }
         }
+
+#ifdef __APPLE__
+        const auto portability_flags = configure_portability_enumeration(instance_extensions, has_portability_extension);
+#endif
 
         // look if we can use the validation layer
         bool has_validation_layer = false;
@@ -493,8 +504,8 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
         vk::InstanceCreateInfo instance_info{
 #ifdef __APPLE__
-            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
             .pNext = instance_create_pnext,
+            .flags = portability_flags,
 #endif
             .pApplicationInfo = &app_info,
         };
@@ -1734,6 +1745,9 @@ renderer::VulkanDeviceInfo renderer::enumerate_vulkan_devices(const std::string 
 
         std::vector<const char *> instance_extensions;
         bool has_properties2 = false;
+#ifdef __APPLE__
+        bool has_portability_extension = false;
+#endif
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties(nullptr, dispatch)) {
             const std::string_view name(prop.extensionName.data());
             if (name == vk::KHRGetPhysicalDeviceProperties2ExtensionName) {
@@ -1742,14 +1756,17 @@ renderer::VulkanDeviceInfo renderer::enumerate_vulkan_devices(const std::string 
             }
 #ifdef __APPLE__
             else if (name == vk::KHRPortabilityEnumerationExtensionName) {
-                instance_extensions.push_back(vk::KHRPortabilityEnumerationExtensionName);
+                has_portability_extension = true;
             }
 #endif
         }
 
+#ifdef __APPLE__
+        const auto portability_flags = vulkan::configure_portability_enumeration(instance_extensions, has_portability_extension);
+#endif
         vk::InstanceCreateInfo instance_info{
 #ifdef __APPLE__
-            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
+            .flags = portability_flags,
 #endif
             .pApplicationInfo = &app_info,
         };

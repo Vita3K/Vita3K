@@ -79,3 +79,11 @@ endif()
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(renderer PRIVATE tracy)
 endif()
+
+if(NOT ANDROID)
+    add_executable(renderer-portability-tests tests/portability_tests.cpp)
+    target_include_directories(renderer-portability-tests PRIVATE src
+        ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator-Hpp/Vulkan-Headers/include)
+    target_link_libraries(renderer-portability-tests PRIVATE googletest)
+    add_test(NAME renderer-portability COMMAND renderer-portability-tests)
+endif()
