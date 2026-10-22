@@ -919,10 +919,12 @@ static void display_entry_thread(EmuEnvState &emuenv) {
             }
         }
 
+        // now we can remove the thread from the display queue
+        display_queue.pop();
+
         // check if we're shutting down before calling run_guest_function to avoid deadlock
         if (emuenv.display.abort.load()) {
             LOG_DEBUG("Abort detected, removing display callback data and exiting");
-            display_queue.pop();
             free(emuenv.mem, display_callback->data);
             break;
         }
@@ -941,7 +943,6 @@ static void display_entry_thread(EmuEnvState &emuenv) {
             renderer::subject_done(new_sync, display_callback->new_sync_timestamp + 1);
 
         free(emuenv.mem, display_callback->data);
-        display_queue.pop();
     }
 }
 
