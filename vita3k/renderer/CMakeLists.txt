@@ -79,3 +79,12 @@ endif()
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(renderer PRIVATE tracy)
 endif()
+
+if(NOT ANDROID)
+    add_executable(renderer-pipeline-tests tests/pipeline_failure_tests.cpp)
+    target_include_directories(renderer-pipeline-tests PRIVATE src
+        ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator-Hpp/Vulkan-Headers/include)
+    target_compile_definitions(renderer-pipeline-tests PRIVATE VK_NO_PROTOTYPES VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+    target_link_libraries(renderer-pipeline-tests PRIVATE googletest)
+    add_test(NAME renderer-pipeline-failures COMMAND renderer-pipeline-tests)
+endif()
