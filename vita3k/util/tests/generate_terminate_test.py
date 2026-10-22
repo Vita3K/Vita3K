@@ -51,11 +51,15 @@ static void previous() {
     std::fputs("previous\n", stderr);
     if (!previous_returns) std::_Exit(77);
 }
+static void normal_exit_marker() {
+    std::fputs("normal-exit\n", stderr);
+}
 """ + declarations + '\n' + handler + '\nstatic void install() {\n' + install + r"""
 }
 int main(int argc, char **argv) {
     if (argc != 3) return 90;
     const std::string mode = argv[2];
+    if (std::atexit(normal_exit_marker) != 0) return 90;
     previous_returns = mode == "return";
     std::set_terminate(previous);
     for (int i = 0; i < std::atoi(argv[1]); ++i) install();
