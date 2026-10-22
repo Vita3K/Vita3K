@@ -57,5 +57,5 @@ with tempfile.TemporaryDirectory(prefix="vita3k-system-events-") as folder:
     root = Path(folder)
     (root / "test.cpp").write_text(prelude + "\n".join(bodies) + tests)
     subprocess.run([args.cxx, "-std=c++23", "-O1", "-g", *SANITIZERS,
-                    str(root / "test.cpp"), "-o", str(root / "test")], check=True)
-    subprocess.run([str(root / "test")], check=True)
+                    str(root / "test.cpp"), "-o", str(root / "test")], check=True, timeout=120)
+    subprocess.run([str(root / "test")], check=True, timeout=10)
