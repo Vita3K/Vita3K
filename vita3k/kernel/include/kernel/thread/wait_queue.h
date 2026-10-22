@@ -58,10 +58,10 @@ public:
     explicit WaitQueue(Order order)
         : by_priority(order == Order::priority) {}
 
-    // Blocks thread on target until a waker gives it a result, ready() holds, it is being deleted, or the deadline passes.
-    // thread must be the guest thread making this HLE call. ready() is rechecked each time it is woken.
+    // Blocks thread on target until a waker gives it a result, it is being deleted, or the deadline passes.
+    // thread must be the guest thread making this HLE call.
     // With target.callbacks, the thread runs its notified callbacks while it waits.
-    [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, std::predicate<Waiter &> auto ready) {
+    [[nodiscard]] WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline) {
         Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         waiter.priority = waiter.thread->get_priority();
         push(waiter);
@@ -73,27 +73,12 @@ public:
             lock.lock();
             // A waker's result wins, it already handed over what the waiter asked for
             if (waiter.result)
-                break;
-            if (!r) {
-                remove(waiter);
-                return r;
-            }
-            if (ready(waiter))
-                break;
-            if (*r == SCE_KERNEL_ERROR_WAIT_TIMEOUT) {
+                return *waiter.result;
+            if (!r || *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT) {
                 remove(waiter);
                 return r;
             }
         }
-        remove(waiter);
-        return waiter.result.value_or(SCE_KERNEL_OK);
-    }
-
-    // Blocks thread on target until a waker gives it a result, it is being deleted, or the deadline passes.
-    // thread must be the guest thread making this HLE call.
-    // With target.callbacks, the thread runs its notified callbacks while it waits.
-    [[nodiscard]] WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline) {
-        return wait_until_ready(lock, thread, target, std::move(entry), deadline, [](Waiter &) { return false; });
     }
 
     bool empty() const {
@@ -157,15 +142,10 @@ public:
         return wake_if([](Waiter &) { return true; }, result);
     }
 
-    // Wakes a waiter so it rechecks its condition, leaving it queued.
-    static void notify(Waiter &waiter) {
-        waiter.thread->wake();
-    }
-
     // Wakes every waiter so they recheck their condition, leaving them queued.
     void notify_all() {
         for (Waiter *waiter : waiters)
-            notify(*waiter);
+            waiter->thread->wake();
     }
 
     // Queues a waiter that the caller will block itself. Used by waits that need their own loop.
