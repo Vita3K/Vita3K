@@ -59,7 +59,7 @@ cond_signal_all_order           pass
 cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
 core_choice                     fail     # the CPU fields of thread info, threads ignore their core
-create_attributes               fail     # the attributes condition variables, lightweight condition variables, timers and mutexes accept, simple event attribute 0x800
+create_attributes               fail     # the attributes condition variables, lightweight condition variables, timers and mutexes accept
 create_attrs                    fail     # the attribute bits each create accepts
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
@@ -264,10 +264,10 @@ shared_raise_cores              fail     # threads are never READY and ignore th
 shared_ready_raise              fail     # threads are never READY and ignore their core
 simple_event                    pass
 simple_event_auto_waiters       pass
-simple_event_cancel             fail     # simple event cancels with a set pattern, simple event info
-simple_event_edges              fail     # the user data of a pulse, of a set or pulse of 0 and of the delete event, attribute 0x800
-simple_event_errors             fail     # simple event info, close and delete of unknown UIDs
-simple_event_info               fail     # simple event info
+simple_event_cancel             fail     # simple event cancels with a set pattern
+simple_event_edges              fail     # the user data of the delete event
+simple_event_errors             fail     # simple event close, the delete of unknown UIDs
+simple_event_info               pass
 simple_event_null_pointers      pass
 simple_event_open_close_bits    fail     # an open or a close doesn't set the event's 0x100 or 0x200 bit
 simple_event_wait_null          pass

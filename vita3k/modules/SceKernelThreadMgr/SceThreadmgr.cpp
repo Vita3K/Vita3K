@@ -369,9 +369,23 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetEventInfo) {
-    TRACY_FUNC(_sceKernelGetEventInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetEventInfo, SceUID eventId, Ptr<SceKernelEventInfo> pInfo) {
+    TRACY_FUNC(_sceKernelGetEventInfo, eventId, pInfo);
+    const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(eventId);
+    SceKernelEventInfo full;
+    if (!event || event->info(full) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+
+    SceKernelEventInfo *info = pInfo.get(emuenv.mem);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+
+    write_info(info, full);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(SceInt32, _sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_pattern) {

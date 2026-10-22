@@ -866,6 +866,19 @@ struct SceKernelEventFlagInfo {
     SceUInt32 numWaitThreads;
 };
 
+// What sceKernelGetEventInfo reports
+struct SceKernelEventInfo {
+    SceSize size;
+    SceUID eventId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceUInt32 eventPattern;
+    SceUInt64 userData;
+    SceUInt32 numWaitThreads;
+    SceInt32 reserved;
+};
+static_assert(sizeof(SceKernelEventInfo) == 0x40, "Incorrect size");
+
 struct SceKernelMutexInfo {
     SceSize size;
     SceUID mutexId;

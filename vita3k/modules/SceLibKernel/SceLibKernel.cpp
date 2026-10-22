@@ -1359,9 +1359,9 @@ EXPORT(SceInt32, sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFlag
     return CALL_EXPORT(_sceKernelGetEventFlagInfo, evfId, pInfo);
 }
 
-EXPORT(int, sceKernelGetEventInfo) {
-    TRACY_FUNC(sceKernelGetEventInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetEventInfo, SceUID eventId, Ptr<SceKernelEventInfo> pInfo) {
+    TRACY_FUNC(sceKernelGetEventInfo, eventId, pInfo);
+    return CALL_EXPORT(_sceKernelGetEventInfo, eventId, pInfo);
 }
 
 EXPORT(SceInt32, sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_pattern) {

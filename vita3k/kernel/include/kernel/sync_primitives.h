@@ -155,6 +155,9 @@ public:
     SceInt32 cancel(SceUInt32 *num_wait_threads);
     // Sets result to the event's bit pattern, or returns UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 get_pattern(SceUInt32 &result) const;
+    // Fills info with what the simple event's info reports, or returns UNKNOWN_EVENT_ID if it was
+    // deleted.
+    SceInt32 info(SceKernelEventInfo &info) const;
 
 private:
     struct WaitEntry {

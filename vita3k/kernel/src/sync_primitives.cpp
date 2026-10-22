@@ -50,7 +50,8 @@ SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_patter
 SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
-    if (attr & ~(SCE_KERNEL_EVENT_ATTR_AUTO_RESET | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
+    // The notify attribute is accepted and reported, nothing reads it
+    if (attr & ~(SCE_KERNEL_EVENT_ATTR_AUTO_RESET | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE | SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY))
         return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
     if (init_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
@@ -129,17 +130,18 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
 
-    const SceUInt32 old_pattern = pattern;
-    const SceUInt64 old_user_data = last_user_data;
+    // A set or pulse of no bits changes nothing, not even the user data
+    if (set_pattern == 0)
+        return SCE_KERNEL_OK;
+
     pattern |= set_pattern;
     last_user_data = user_data;
     serve();
 
-    // A pulse clears its own bits, the others go back to what they were
-    if (!is_set) {
-        pattern = old_pattern & ~set_pattern;
-        last_user_data = old_user_data;
-    }
+    // A pulse clears its bits once the waiters had them, also the ones set before it, and keeps its
+    // user data
+    if (!is_set)
+        pattern &= ~set_pattern;
 
     return SCE_KERNEL_OK;
 }
@@ -193,6 +195,21 @@ SceInt32 SimpleEvent::get_pattern(SceUInt32 &result) const {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     result = pattern;
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 SimpleEvent::info(SceKernelEventInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+
+    info = {};
+    info.eventId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.eventPattern = pattern;
+    info.userData = last_user_data;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
 
