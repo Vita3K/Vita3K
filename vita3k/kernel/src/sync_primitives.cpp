@@ -794,17 +794,18 @@ SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
 }
 
 void RWLock::serve() {
-    if (lock_count > 0)
+    if (write_owner)
         return;
 
-    // The first waiting writer goes first, even before readers that waited longer. Without one,
-    // every waiting reader gets the lock at once.
-    if (auto *writer = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; })) {
+    // Without a waiting writer every waiting reader gets in, also next to readers that hold the lock.
+    // A waiting writer goes first, even before readers that waited longer, once nobody holds it.
+    auto *const writer = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; });
+    if (!writer) {
+        lock_count += static_cast<SceInt32>(waiters.wake_all());
+    } else if (lock_count == 0) {
         write_owner = writer->thread->id;
         lock_count = 1;
         waiters.wake(*writer);
-    } else {
-        lock_count = static_cast<SceInt32>(waiters.wake_all());
     }
 }
 

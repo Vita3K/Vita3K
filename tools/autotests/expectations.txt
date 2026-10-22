@@ -114,7 +114,7 @@ gxm_sync_objects                fail     # sync objects before sceGxmInitialize 
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
 gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
-head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
+head_leaves_more                fail     # waits stay queued during callbacks
 info                            pass
 info_fields                     pass
 info_sizes                      pass
@@ -329,7 +329,7 @@ thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
 thread_wait_id_idle             fail     # the wait UID of a thread that doesn't wait is 0, not -1
 timeout_left_kinds              fail     # sceKernelWaitMultipleEvents
-timeout_serves_before_run       fail     # a timed out thread isn't READY before it runs, readers wait behind a timed out writer
+timeout_serves_before_run       fail     # a timed out thread isn't READY before it runs
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass

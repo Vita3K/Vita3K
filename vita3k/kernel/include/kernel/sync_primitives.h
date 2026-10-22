@@ -272,7 +272,8 @@ private:
     SceInt32 release(const ThreadStatePtr &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
     SceInt32 try_take(const ThreadStatePtr &thread, bool is_write);
-    // Gives a lock nobody holds to the waiters that get it next.
+    // Gives the lock to the waiters that get it next: every waiting reader while no writer holds or
+    // waits for it, or else the first waiting writer once nobody holds it.
     void serve() override;
 
     // Guarded by the lock
