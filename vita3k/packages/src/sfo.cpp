@@ -169,7 +169,7 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
             break;
         case SfoDataFormat::UTF8_NULL:
             // Interpret the data as a null-terminated UTF-8 string (exclude the null byte)
-            sfile.entries[i].data.second = std::string(data.begin(), data.end() - 1);
+            sfile.entries[i].data.second = std::string(data.begin(), std::find(data.begin(), data.end(), '\0'));
             break;
         default:
             // Unknown or unsupported data format
