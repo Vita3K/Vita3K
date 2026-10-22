@@ -192,7 +192,7 @@ source.write_text(program)
 command = [args.cxx, '-std=c++23', '-O1', '-g', *SANITIZERS]
 for directory in ('external/VulkanMemoryAllocator-Hpp/Vulkan-Headers/include', 'vita3k/gxm/include',
                   'vita3k/util/include', 'vita3k/renderer/include'):
-    command += ['-I', str(args.dependencies / directory.removeprefix('external/')) if directory.startswith('external/') else str(ROOT / directory)]
+    command += ['-I', str(args.dependencies / directory[len('external/'):]) if directory.startswith('external/') else str(ROOT / directory)]
 command += [str(source), str(ROOT / 'vita3k/renderer/src/texture/pvrt-dec.cpp'), '-o', str(OUT / 'pvrtc-upload-test')]
 subprocess.run(command, check=True)
 subprocess.run([str(OUT / 'pvrtc-upload-test')], check=True)
