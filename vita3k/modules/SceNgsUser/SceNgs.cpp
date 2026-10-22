@@ -95,6 +95,7 @@ enum SceNgsErrorCode : uint32_t {
     SCE_NGS_ERROR_INVALID_STATE = 0x804A0010,
     SCE_NGS_ERROR_PARAM_OUT_OF_RANGE = 0x804A0009,
     SCE_NGS_ERROR_INVALID_HANDLE = 0x804A000C,
+    SCE_NGS_ERROR_PATCH_NOT_AVAIL = 0x804A000E,
     SCE_NGS_SIZE_MISMATCH = 0x804A000D
 };
 
@@ -759,12 +760,23 @@ EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, ngs::Voice *voice, const SceInt32 ou
     }
 
     *patch = voice->patches[output_index][output_subindex];
-    if (!(*patch) || (patch->get(emuenv.mem))->output_sub_index == -1) {
-        LOG_WARN_ONCE("Getting non-existen output patch port {}:{}", output_index, output_subindex);
-        *patch = Ptr<ngs::Patch>(0);
+    ngs::Patch *output_patch = nullptr;
+    if (*patch) {
+        if (!patch->valid(emuenv.mem)) {
+            return RET_ERROR(SCE_NGS_ERROR_INVALID_HANDLE);
+        }
+
+        output_patch = patch->get(emuenv.mem);
     }
 
-    return 0;
+    if (!output_patch || (output_patch->output_sub_index == -1)) {
+        if (output_patch)
+            *patch = Ptr<ngs::Patch>(0);
+
+        return RET_ERROR(SCE_NGS_ERROR_PATCH_NOT_AVAIL);
+    }
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
