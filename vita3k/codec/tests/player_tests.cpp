@@ -90,6 +90,23 @@ static void drain(const char *path, bool loop, unsigned cycles, unsigned expecte
     CHECK(player.receive_audio().empty());
 }
 
+static void delayed_stream(const char *path, bool video_first) {
+    PlayerState player;
+    player.queue(path);
+    unsigned first = 0;
+    while (first < 1000 && (video_first ? !player.receive_video().empty() : !player.receive_audio().empty()))
+        ++first;
+    CHECK(first == (video_first ? 24u : 47u));
+    CHECK(!player.video_playing.empty());
+
+    unsigned second = 0;
+    while (second < 1000 && (video_first ? !player.receive_audio().empty() : !player.receive_video().empty()))
+        ++second;
+    CHECK(second == (video_first ? 47u : 24u));
+    CHECK(player.video_playing.empty());
+    std::printf("Delayed %s consumer receives all %u frames after the other stream finishes\n", video_first ? "audio" : "video", second);
+}
+
 int main(int argc, char **argv) {
     CHECK(argc == 3);
     const std::string mode = argv[1];
@@ -99,7 +116,10 @@ int main(int argc, char **argv) {
         drain(argv[2], false, 1);
     else if (mode == "loop")
         drain(argv[2], true, 3);
-    else if (mode == "source") {
+    else if (mode == "delayed") {
+        delayed_stream(argv[2], true);
+        delayed_stream(argv[2], false);
+    } else if (mode == "source") {
         timestamps(argv[2]);
         drain(argv[2], false, 1, 0);
         drain(argv[2], true, 2, 0);

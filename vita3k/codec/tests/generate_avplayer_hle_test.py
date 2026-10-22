@@ -22,14 +22,14 @@ program=r"""#include <codec/state.h>
 #include <unordered_map>
 #include <vector>
 using SceUID=int; using SceSize=uint32_t;
-template<class T> struct Ptr {T *pointer=nullptr; T *get(auto &) const {return pointer;} explicit operator bool() const {return pointer!=nullptr;} };
+template<class T> struct Ptr {T *pointer=nullptr; Ptr()=default; Ptr(T *value):pointer(value){} T *get(auto &) const {return pointer;} explicit operator bool() const {return pointer!=nullptr;} };
 """+structs+r"""
 struct PlayerInfoState {PlayerState player; std::mutex mutex; bool do_loop=false,paused=false; uint64_t last_frame_time=0;};
 using PlayerPtr=std::shared_ptr<PlayerInfoState>;
 struct AvPlayerState {std::mutex mutex;std::unordered_map<int,PlayerPtr> players;};
 struct Memory {std::vector<uint8_t> bytes; unsigned allocations=0;};
 struct Store {std::shared_ptr<AvPlayerState> state=std::make_shared<AvPlayerState>(); template<class T> std::shared_ptr<T> get(){return state;}};
-struct Kernel {Store obj_store;};
+struct Kernel {Store obj_store;int get_thread(int){return 0;}};
 struct Env {Kernel kernel;Memory mem;} emuenv;
 static PlayerPtr lock_and_find(int id,auto &players,std::mutex &mutex) {std::lock_guard lock(mutex);auto it=players.find(id);return it==players.end()?nullptr:it->second;}
 static Ptr<uint8_t> get_buffer(const PlayerPtr &,MediaType,Memory &memory,uint32_t size,bool=true){memory.bytes.resize(size);++memory.allocations;return {memory.bytes.data()};}
@@ -37,10 +37,13 @@ static std::atomic<uint64_t> ticks{0};
 static uint64_t current_time(){return ticks;}
 constexpr bool REJECT_DATA_ON_PAUSE=true,CATCHUP_VIDEO_PLAYBACK=true;
 constexpr int SCE_AVPLAYER_ERROR_INVALID_ARGUMENT=-2;
+constexpr int thread_id=0,SCE_AVPLAYER_STATE_PLAY=3;
+static unsigned play_events=0;
+static void run_event_callback(Env &,int,const PlayerPtr &,int,int,Ptr<void>){++play_events;}
 #define RET_ERROR(x) (x)
 #define STUBBED(...) 0
 #define EXPORT(ret,name,...) ret name(__VA_ARGS__)
-"""+export('sceAvPlayerGetVideoData')+export('sceAvPlayerGetAudioData')+export('sceAvPlayerSetLooping')+r"""
+"""+export('sceAvPlayerGetVideoData')+export('sceAvPlayerGetAudioData')+export('sceAvPlayerSetLooping')+export('sceAvPlayerResume')+r"""
 int main(int argc,char **argv){
     assert(argc==2);
     auto p=std::make_shared<PlayerInfoState>();
@@ -68,8 +71,17 @@ int main(int argc,char **argv){
     assert(!sceAvPlayerGetVideoData(9,&frame));
     assert(!sceAvPlayerGetAudioData(9,&frame));
     assert(sceAvPlayerSetLooping(9,true)==SCE_AVPLAYER_ERROR_INVALID_ARGUMENT);
-    p->paused=true;assert(!sceAvPlayerGetVideoData(1,&frame));assert(!sceAvPlayerGetAudioData(1,&frame));
-    p->paused=false;p->player.free_video();
+    p->paused=true;ticks+=1000000;
+    assert(!sceAvPlayerGetVideoData(1,&frame));assert(!sceAvPlayerGetAudioData(1,&frame));
+    assert(sceAvPlayerResume(1)==0);assert(!p->paused && p->last_frame_time==ticks);assert(play_events==1);
+    assert(!sceAvPlayerGetVideoData(1,&frame));
+    ticks+=41667;
+    assert(sceAvPlayerGetVideoData(1,&frame));assert(frame.timestamp==83);
+    assert(!sceAvPlayerGetVideoData(1,&frame));
+    const auto resumed_time=p->last_frame_time;ticks+=1000;
+    assert(sceAvPlayerResume(1)==0);assert(p->last_frame_time==resumed_time && play_events==1);
+    assert(sceAvPlayerResume(9)==SCE_AVPLAYER_ERROR_INVALID_ARGUMENT);
+    p->player.free_video();
     before=frame;const auto allocations=emuenv.mem.allocations;ticks+=100000;
     assert(!sceAvPlayerGetVideoData(1,&frame));assert(!sceAvPlayerGetAudioData(1,&frame));
     assert(allocations==emuenv.mem.allocations);assert(std::memcmp(&frame,&before,sizeof(frame))==0);

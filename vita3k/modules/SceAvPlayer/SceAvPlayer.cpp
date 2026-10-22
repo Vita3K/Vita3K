@@ -478,6 +478,8 @@ EXPORT(int, sceAvPlayerResume, SceUID player_handle) {
     {
         const std::lock_guard lock(player_info->mutex);
         was_paused = player_info->paused;
+        if (was_paused)
+            player_info->last_frame_time = current_time();
         player_info->paused = false;
     }
     if (was_paused) {
