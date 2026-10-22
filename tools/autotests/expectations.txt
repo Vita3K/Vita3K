@@ -174,7 +174,7 @@ msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
 msgpipe_failed_sizes            pass
 msgpipe_modes                   pass
 msgpipe_order                   pass
-msgpipe_partial_head_order      fail     # a new waiter goes in front of a head that moved part of its bytes
+msgpipe_partial_head_order      pass
 msgpipe_peek_stale              fail     # a send to a DONT_REMOVE receive leaves the pipe's bytes out of step
 msgpipe_receive_sender_stays    pass
 msgpipe_receiver_leaves         pass

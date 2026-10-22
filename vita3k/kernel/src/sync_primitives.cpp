@@ -1319,6 +1319,10 @@ bool MsgPipe::Transfer::done() const {
     return full ? left == 0 : left < total;
 }
 
+bool MsgPipe::Transfer::keeps_place() const {
+    return left != total;
+}
+
 std::span<char> MsgPipe::Transfer::run(SceSize n) {
     // Steps over the pieces already moved, and empty ones
     while (offset == pieces[piece].size) {
@@ -1444,7 +1448,7 @@ template <typename Side>
 bool MsgPipe::goes_first(WaitQueue<Side> &side, int priority) {
     // Nothing goes ahead of a head that moved part of its bytes
     const auto *const head = side.front();
-    return side.first_for(priority) && (!head || head->entry.left == head->entry.total);
+    return side.first_for(priority) && (!head || !head->entry.keeps_place());
 }
 
 SceInt32 MsgPipe::receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks) {

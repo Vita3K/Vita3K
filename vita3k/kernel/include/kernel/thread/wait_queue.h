@@ -162,6 +162,9 @@ public:
         if (by_priority) {
             // Lower value is higher priority, equal priorities keep FIFO order
             pos = std::find_if(waiters.begin(), waiters.end(), [&](const Waiter *w) { return w->priority > waiter.priority; });
+            // Nothing goes in front of a head that keeps its place
+            if (pos == waiters.begin() && pos != waiters.end() && keeps_place((*pos)->entry))
+                ++pos;
         }
         waiters.insert(pos, &waiter);
     }
@@ -172,6 +175,15 @@ public:
     }
 
 private:
+    // Returns whether a waiter at the head stays there when another one would go in front of it, for
+    // entries that can say so
+    static bool keeps_place(const Entry &entry) {
+        if constexpr (requires { entry.keeps_place(); })
+            return entry.keeps_place();
+        else
+            return false;
+    }
+
     bool by_priority = false;
     std::list<Waiter *> waiters;
 };
