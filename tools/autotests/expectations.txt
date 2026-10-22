@@ -39,7 +39,7 @@ callback_requeue_order          pass
 callback_retake                 pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           pass
-cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
+cancel_calls                    pass
 cb_wait_check_order             pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
@@ -193,7 +193,7 @@ multi_events_requeue            fail     # sceKernelWaitMultipleEvents
 multi_events_unknown_uid        fail     # sceKernelWaitMultipleEvents with unusable entries and cancels
 multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
-mutex_cancel_counts             fail     # negative mutex cancel counts, a woken waiter's state
+mutex_cancel_counts             pass
 mutex_ceiling                   fail     # mutex priority ceilings
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_waits                     pass
@@ -231,7 +231,7 @@ readonly_timeouts               fail     # no write check on timeouts
 ready_changes                   fail     # threads ignore their core and priority
 ready_cpu_field                 fail     # the CPU fields of thread info, threads ignore their core
 ready_queue_order               fail     # threads ignore their core and priority
-release_errors_waiters          fail     # the waiting count a semaphore cancel writes
+release_errors_waiters          skip     # threads ignore their core and priority, so the writer a read unlock wakes may unlock before the count is read
 release_preempt                 fail     # threads ignore their core and priority
 release_preempt_more            fail     # wakes don't preempt the waker
 remote_change_preempt           fail     # threads are never STANDBY and ignore their core
@@ -240,7 +240,7 @@ requeue_lower_same              fail     # no requeue on a priority change
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_attr_bits                pass
-rwlock_cancel_order             fail     # the rwlock cancel's flag check
+rwlock_cancel_order             pass
 rwlock_cancel_wake_order        skip     # threads ignore their core and priority, so the order woken threads run in is a race
 rwlock_counts                   pass
 rwlock_errors                   fail     # closing unknown UIDs

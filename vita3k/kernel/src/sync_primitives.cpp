@@ -619,10 +619,10 @@ SceInt32 Mutex::cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
 
-    // -1 restores the lock count the mutex was created with
-    if (new_count == -1)
+    // Any negative count restores the lock count the mutex was created with
+    if (new_count < 0)
         new_count = init_count;
-    if (new_count < 0 || (new_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)))
+    if (new_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE))
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
     const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));

@@ -120,6 +120,9 @@ EXPORT(SceInt32, _sceKernelCancelMsgPipe, SceUID msgPipeId, SceUInt32 *pNumSendW
 
 EXPORT(SceInt32, _sceKernelCancelMutex, SceUID mutexId, SceInt32 newCount, SceUInt32 *pNumWaitThreads) {
     TRACY_FUNC(_sceKernelCancelMutex, mutexId, newCount, pNumWaitThreads);
+    // The count reads 0 if the cancel fails
+    if (pNumWaitThreads)
+        *pNumWaitThreads = 0;
     const MutexPtr mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexId);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
@@ -128,6 +131,17 @@ EXPORT(SceInt32, _sceKernelCancelMutex, SceUID mutexId, SceInt32 newCount, SceUI
 
 EXPORT(SceInt32, _sceKernelCancelRWLock, SceUID rwLockId, SceUInt32 *pNumReadWaitThreads, SceUInt32 *pNumWriteWaitThreads, SceInt32 flag) {
     TRACY_FUNC(_sceKernelCancelRWLock, rwLockId, pNumReadWaitThreads, pNumWriteWaitThreads, flag);
+    // The counts read 0 if the cancel fails
+    if (pNumReadWaitThreads)
+        *pNumReadWaitThreads = 0;
+    if (pNumWriteWaitThreads)
+        *pNumWriteWaitThreads = 0;
+    // The flag is checked once the UID names an object, before its class is
+    if (!emuenv.kernel.objects.find(rwLockId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+    // Only 0 and 1 are flags, compared as unsigned
+    if (static_cast<SceUInt32>(flag) > SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_FLAGS);
     const RWLockPtr rwlock = emuenv.kernel.objects.find<RWLock>(rwLockId);
     if (!rwlock)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
@@ -136,6 +150,9 @@ EXPORT(SceInt32, _sceKernelCancelRWLock, SceUID rwLockId, SceUInt32 *pNumReadWai
 
 EXPORT(int, _sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pNumWaitThreads) {
     TRACY_FUNC(_sceKernelCancelSema, semaId, setCount, pNumWaitThreads);
+    // The count reads 0 if the cancel fails
+    if (pNumWaitThreads)
+        *pNumWaitThreads = 0;
     const SemaphorePtr semaphore = emuenv.kernel.objects.find<Semaphore>(semaId);
     if (!semaphore)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
