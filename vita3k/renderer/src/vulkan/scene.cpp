@@ -406,6 +406,8 @@ static void framebuffer_fetch_barrier(VKContext &context) {
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
     const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
+    if (!context.state.features.use_mask_bit && gxm_fragment_program.is_maskupdate)
+        return;
 
     void *indices_ptr = indices.get(mem);
 

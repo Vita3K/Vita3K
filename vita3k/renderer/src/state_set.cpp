@@ -54,11 +54,22 @@ COMMAND_SET_STATE(region_clip) {
     const uint32_t yMin = helper.pop<uint32_t>() * factor;
     const uint32_t yMax = helper.pop<uint32_t>() * factor;
 
-    render_context->record.region_clip_min.x = static_cast<SceInt>(align_down(xMin, SCE_GXM_TILE_SIZEX));
-    render_context->record.region_clip_min.y = static_cast<SceInt>(align_down(yMin, SCE_GXM_TILE_SIZEY));
-    // borders are inclusive
-    render_context->record.region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX)) - 1;
-    render_context->record.region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY)) - 1;
+    // Vulkan does not emulate the GXM mask bit; VitaGL represents its fine-grained
+    // mask with a mask-update program followed by this region clip.
+    const bool exact_mask_clip = renderer.current_backend == Backend::Vulkan
+        && render_context->record.is_maskupdate;
+    if (exact_mask_clip) {
+        render_context->record.region_clip_min.x = static_cast<SceInt>(xMin);
+        render_context->record.region_clip_min.y = static_cast<SceInt>(yMin);
+        render_context->record.region_clip_max.x = static_cast<SceInt>(xMax);
+        render_context->record.region_clip_max.y = static_cast<SceInt>(yMax);
+    } else {
+        render_context->record.region_clip_min.x = static_cast<SceInt>(align_down(xMin, SCE_GXM_TILE_SIZEX));
+        render_context->record.region_clip_min.y = static_cast<SceInt>(align_down(yMin, SCE_GXM_TILE_SIZEY));
+        // borders are inclusive
+        render_context->record.region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX)) - 1;
+        render_context->record.region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY)) - 1;
+    }
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
