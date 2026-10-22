@@ -59,6 +59,12 @@ protected:
     [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout) {
         typename WaitQueue<Entry>::Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         const Deadline deadline = deadline_from(timeout);
+        // A deadline already gone ends the wait before it is queued, so no waker can serve it and
+        // nothing that ends a queued wait, like timed_out(), runs
+        if (std::chrono::steady_clock::now() >= deadline) {
+            writeback_timeout(timeout, deadline);
+            return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+        }
         // The time left when the waiter left for its callbacks, kept if it gets what it waits for at
         // once after them
         std::optional<SceUInt32> time_left;

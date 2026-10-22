@@ -1141,9 +1141,6 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
         holder = thread->id;
         ++holds;
     }
-    // A wait whose deadline already passed ends without blocking, and keeps its hold
-    if (timeout && *timeout == 0)
-        return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
     const WaitResult r = wait_on(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, uid, callbacks }, { wait_mode, pattern, out_bits }, timeout);
     const SceInt32 err = guest_result(r);
     if ((err == SCE_KERNEL_ERROR_WAIT_TIMEOUT || err == SCE_KERNEL_ERROR_WAIT_DELETE) && out_bits) {
