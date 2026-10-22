@@ -139,6 +139,15 @@ protected:
     }
 };
 
+// The ID of the one process Vita3K runs
+constexpr SceUID PROCESS_ID = 1;
+
+// Returns the user data of a system event a thread caused, like a delete: its UID in the high word
+// and the process ID in the low word.
+constexpr SceUInt64 system_event_user_data(SceUID thread_id) {
+    return (static_cast<SceUInt64>(thread_id) << 32) | static_cast<SceUInt32>(PROCESS_ID);
+}
+
 class SimpleEvent final : public WithUidClass<SyncPrimitive, UidClass::simple_event> {
 public:
     const bool auto_reset;
@@ -151,6 +160,9 @@ public:
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
+    // Sets one of the system events, like the open event, with user_data for its waiters, or returns
+    // UNKNOWN_EVENT_ID if it was deleted.
+    SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
     SceInt32 clear(SceUInt32 clear_pattern);
     SceInt32 cancel(SceUInt32 *num_wait_threads);
     // Cancels the waits like cancel(), then replaces the whole pattern and the user data.
@@ -168,9 +180,12 @@ private:
         SceUInt64 *user_data;
     };
 
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
+    // Sets or pulses the bits with user_data and gives them to the waits they match. The lock must be
+    // held.
+    void fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     // Gives the event's bits to the waits they match.
     void serve() override;
 
@@ -209,7 +224,7 @@ private:
         SceUInt32 *result_pattern;
     };
 
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     void schedule_event();
     // Wakes the first waiter so it checks the event again
     void wake_first();
@@ -260,7 +275,7 @@ private:
         SceInt32 need_count;
     };
 
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     // Takes need_count if the count covers it and no waiter is queued ahead of thread. The lock
     // must be held.
     bool try_take(const ThreadStatePtr &thread, SceInt32 need_count);
@@ -306,7 +321,7 @@ protected:
     SceUID owner;
 
 private:
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
     // Returns ILLEGAL_COUNT for a lock or unlock count the mutex can't take, or SCE_KERNEL_OK
     SceInt32 check_count(SceInt32 count) const;
@@ -362,7 +377,7 @@ private:
         bool is_write;
     };
 
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     SceInt32 acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
     SceInt32 try_acquire(const ThreadStatePtr &thread, bool is_write);
     SceInt32 release(const ThreadStatePtr &thread, bool is_write);
@@ -412,7 +427,7 @@ private:
         SceUInt32 *out_bits;
     };
 
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     // Returns whether another thread's wait holds the flag. The lock must be held.
     bool held_by_other(SceUID thread_id) const;
     // Takes the flags for the thread if pattern matches them, or returns why it can't. The lock must
@@ -473,7 +488,7 @@ protected:
     WaitQueue<std::monostate> waiters;
 
 private:
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_cond; }
 };
 
@@ -561,7 +576,7 @@ private:
         Receiver(MemState &mem, std::span<const MsgPipeVector> pieces, SceSize *size, SceSize total, bool full, bool peek);
     };
 
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     // Carries on the first receiver's and the first sender's transfers until neither ends
     void serve() override;
     // Moves the sender's bytes to the waiting receivers, then puts the rest into the pipe. Returns

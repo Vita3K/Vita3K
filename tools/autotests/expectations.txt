@@ -265,11 +265,11 @@ shared_ready_raise              fail     # threads are never READY and ignore th
 simple_event                    pass
 simple_event_auto_waiters       pass
 simple_event_cancel             pass
-simple_event_edges              fail     # the user data of the delete event
-simple_event_errors             fail     # simple event close, the delete of unknown UIDs
+simple_event_edges              pass
+simple_event_errors             pass
 simple_event_info               pass
 simple_event_null_pointers      pass
-simple_event_open_close_bits    fail     # an open or a close doesn't set the event's 0x100 or 0x200 bit
+simple_event_open_close_bits    pass
 simple_event_wait_null          pass
 stagnant_mask                   pass
 standby_changes                 fail     # threads are never STANDBY

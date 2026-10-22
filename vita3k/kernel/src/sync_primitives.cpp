@@ -58,21 +58,9 @@ SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 i
     return SCE_KERNEL_OK;
 }
 
-void SimpleEvent::on_delete() {
-    // Waits for the delete event end with it, the others with an error
-    waiters.wake_if([&](auto &waiter) {
-        const WaitEntry &wait = waiter.entry;
-        if (!(wait.pattern & SCE_KERNEL_EVENT_DELETE))
-            return false;
-
-        if (wait.result_pattern)
-            *wait.result_pattern = (pattern | SCE_KERNEL_EVENT_DELETE) & wait.pattern;
-
-        if (wait.user_data)
-            *wait.user_data = last_user_data;
-
-        return true;
-    });
+void SimpleEvent::on_delete(SceUID deleter) {
+    // The waits for the delete event get it with the deleting thread's user data, then the others end
+    fire(SCE_KERNEL_EVENT_DELETE, system_event_user_data(deleter), true);
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
@@ -130,9 +118,22 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
 
+    fire(set_pattern, user_data, is_set);
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 SimpleEvent::set_system_event(SceUInt32 event, SceUInt64 user_data) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    fire(event, user_data, true);
+    return SCE_KERNEL_OK;
+}
+
+void SimpleEvent::fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
     // A set or pulse of no bits changes nothing, not even the user data
     if (set_pattern == 0)
-        return SCE_KERNEL_OK;
+        return;
 
     pattern |= set_pattern;
     last_user_data = user_data;
@@ -142,8 +143,6 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
     // user data
     if (!is_set)
         pattern &= ~set_pattern;
-
-    return SCE_KERNEL_OK;
 }
 
 void SimpleEvent::serve() {
@@ -244,7 +243,7 @@ Timer::Timer(SceUInt32 attr, const char *name)
     : WithUidClass(attr, name)
     , waiters(attr) {}
 
-void Timer::on_delete() {
+void Timer::on_delete(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
@@ -540,7 +539,7 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
     return SCE_KERNEL_OK;
 }
 
-void Mutex::on_delete() {
+void Mutex::on_delete(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     owner = 0;
 }
@@ -742,7 +741,7 @@ SceInt32 RWLock::check_create(const char *name, SceUInt32 attr) {
     return SCE_KERNEL_OK;
 }
 
-void RWLock::on_delete() {
+void RWLock::on_delete(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
@@ -932,7 +931,7 @@ SceInt32 Semaphore::check_create(const char *name, SceUInt32 attr, SceInt32 init
     return SCE_KERNEL_OK;
 }
 
-void Semaphore::on_delete() {
+void Semaphore::on_delete(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
@@ -1039,7 +1038,7 @@ Condvar::Condvar(SceUInt32 attr, const char *name, MutexPtr associated_mutex)
     , associated_mutex(std::move(associated_mutex))
     , waiters(attr) {}
 
-void Condvar::on_delete() {
+void Condvar::on_delete(SceUID) {
     waiters.wake_all(lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_COND : SCE_KERNEL_ERROR_WAIT_DELETE_COND);
 }
 
@@ -1168,7 +1167,7 @@ SceInt32 EventFlag::check_wait(SceUInt32 pattern, SceUInt32 wait_mode) {
     return SCE_KERNEL_OK;
 }
 
-void EventFlag::on_delete() {
+void EventFlag::on_delete(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     holder = 0;
     holds = 0;
@@ -1380,7 +1379,7 @@ static bool is_msg_pipe_mode(SceUInt32 wait_mode) {
     return !(wait_mode & ~(SCE_KERNEL_MSG_PIPE_MODE_FULL | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT | SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE));
 }
 
-void MsgPipe::on_delete() {
+void MsgPipe::on_delete(SceUID) {
     // Wake up every thread
     senders.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     receivers.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);

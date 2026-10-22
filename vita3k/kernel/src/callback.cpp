@@ -54,7 +54,7 @@ void Callback::cancel() {
         this->reset();
 }
 
-void Callback::on_delete() {
+void Callback::on_delete(SceUID) {
     this->reset();
 }
 

@@ -287,7 +287,7 @@ EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
     TRACY_FUNC(_sceKernelDeleteLwCond, workarea);
     SceUID lightweight_condition_id = workarea.get(emuenv.mem)->uid;
 
-    if (!emuenv.kernel.objects.remove<LwCond>(lightweight_condition_id))
+    if (!emuenv.kernel.objects.remove<LwCond>(lightweight_condition_id, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
 
     workarea.get(emuenv.mem)->uid = SCE_UID_INVALID_UID;
@@ -302,7 +302,7 @@ EXPORT(int, _sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 
     const auto lightweight_mutex_id = workarea.get(emuenv.mem)->uid;
 
-    if (!emuenv.kernel.objects.remove<LwMutex>(lightweight_mutex_id))
+    if (!emuenv.kernel.objects.remove<LwMutex>(lightweight_mutex_id, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
 
     return SCE_KERNEL_OK;
@@ -1209,9 +1209,15 @@ EXPORT(int, sceKernelCloseSema) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCloseSimpleEvent) {
-    TRACY_FUNC(sceKernelCloseSimpleEvent);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCloseSimpleEvent, SceUID event_id) {
+    TRACY_FUNC(sceKernelCloseSimpleEvent, event_id);
+    const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
+    if (!event)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SIMPLE_EVENT_ID);
+    // The event stays, only the close event tells its waiters. A delete that came first wins.
+    if (event->set_system_event(SCE_KERNEL_EVENT_CLOSE, system_event_user_data(thread_id)) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SIMPLE_EVENT_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCloseTimer) {
@@ -1306,14 +1312,14 @@ EXPORT(int, sceKernelDelayThreadCB200, SceUInt delay) {
 
 EXPORT(int, sceKernelDeleteCallback, SceUID callbackId) {
     TRACY_FUNC(sceKernelDeleteCallback, callbackId);
-    if (!emuenv.kernel.delete_callback(callbackId))
+    if (!emuenv.kernel.delete_callback(callbackId, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
     return 0;
 }
 
 EXPORT(int, sceKernelDeleteCond, SceUID condition_variable_id) {
     TRACY_FUNC(sceKernelDeleteCond, condition_variable_id);
-    if (!emuenv.kernel.objects.remove<HeavyCond>(condition_variable_id))
+    if (!emuenv.kernel.objects.remove<HeavyCond>(condition_variable_id, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_COND_ID);
 
     return SCE_KERNEL_OK;
@@ -1321,7 +1327,7 @@ EXPORT(int, sceKernelDeleteCond, SceUID condition_variable_id) {
 
 EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
     TRACY_FUNC(sceKernelDeleteEventFlag, event_id);
-    if (!emuenv.kernel.objects.remove<EventFlag>(event_id))
+    if (!emuenv.kernel.objects.remove<EventFlag>(event_id, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
 
     return SCE_KERNEL_OK;
@@ -1329,7 +1335,7 @@ EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
 
 EXPORT(SceInt32, sceKernelDeleteMsgPipe, SceUID msgPipeId) {
     TRACY_FUNC(sceKernelDeleteMsgPipe, msgPipeId);
-    if (!emuenv.kernel.objects.remove<MsgPipe>(msgPipeId))
+    if (!emuenv.kernel.objects.remove<MsgPipe>(msgPipeId, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
 
     return SCE_KERNEL_OK;
@@ -1337,7 +1343,7 @@ EXPORT(SceInt32, sceKernelDeleteMsgPipe, SceUID msgPipeId) {
 
 EXPORT(int, sceKernelDeleteMutex, SceUID mutexid) {
     TRACY_FUNC(sceKernelDeleteMutex, mutexid);
-    if (!emuenv.kernel.objects.remove<HeavyMutex>(mutexid))
+    if (!emuenv.kernel.objects.remove<HeavyMutex>(mutexid, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
 
     return SCE_KERNEL_OK;
@@ -1345,7 +1351,7 @@ EXPORT(int, sceKernelDeleteMutex, SceUID mutexid) {
 
 EXPORT(SceInt32, sceKernelDeleteRWLock, SceUID lock_id) {
     TRACY_FUNC(sceKernelDeleteRWLock, lock_id);
-    if (!emuenv.kernel.objects.remove<RWLock>(lock_id))
+    if (!emuenv.kernel.objects.remove<RWLock>(lock_id, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
 
     return SCE_KERNEL_OK;
@@ -1353,7 +1359,7 @@ EXPORT(SceInt32, sceKernelDeleteRWLock, SceUID lock_id) {
 
 EXPORT(int, sceKernelDeleteSema, SceUID semaid) {
     TRACY_FUNC(sceKernelDeleteSema, semaid);
-    if (!emuenv.kernel.objects.remove<Semaphore>(semaid))
+    if (!emuenv.kernel.objects.remove<Semaphore>(semaid, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
 
     return SCE_KERNEL_OK;
@@ -1361,8 +1367,8 @@ EXPORT(int, sceKernelDeleteSema, SceUID semaid) {
 
 EXPORT(int, sceKernelDeleteSimpleEvent, SceUID event_id) {
     TRACY_FUNC(sceKernelDeleteSimpleEvent, event_id);
-    if (!emuenv.kernel.objects.remove<SimpleEvent>(event_id))
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    if (!emuenv.kernel.objects.remove<SimpleEvent>(event_id, thread_id))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SIMPLE_EVENT_ID);
 
     return SCE_KERNEL_OK;
 }
@@ -1382,7 +1388,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
 
 EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
     TRACY_FUNC(sceKernelDeleteTimer, timer_handle);
-    if (!emuenv.kernel.objects.remove<Timer>(timer_handle))
+    if (!emuenv.kernel.objects.remove<Timer>(timer_handle, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     return SCE_KERNEL_OK;
@@ -1414,7 +1420,7 @@ EXPORT(int, sceKernelGetMsgPipeCreatorId) {
 EXPORT(int, sceKernelGetProcessId) {
     TRACY_FUNC(sceKernelGetProcessId);
     STUBBED("pid: 1");
-    return 1;
+    return PROCESS_ID;
 }
 
 EXPORT(uint64_t, sceKernelGetSystemTimeWide) {
@@ -1572,6 +1578,9 @@ EXPORT(SceUID, sceKernelOpenSimpleEvent, const char *pName) {
     if (!found)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 
+    // A delete that came first wins, as if the name wasn't found
+    if (found->set_system_event(SCE_KERNEL_EVENT_OPEN, system_event_user_data(thread_id)) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
     return found->uid;
 }
 

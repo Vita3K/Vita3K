@@ -64,7 +64,7 @@ public:
 
 private:
     // Drops the pending notifications, so the callback never runs again
-    void on_delete() override;
+    void on_delete(SceUID deleter) override;
     // Clears the notifications and tells the owner if there were any. The lock must be held.
     void reset();
 

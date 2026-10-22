@@ -58,11 +58,13 @@
 #define SCE_KERNEL_EVENT_ATTR_MANUAL_RESET 0x00000000U
 #define SCE_KERNEL_EVENT_ATTR_AUTO_RESET 0x00000100U
 
-// System events of a simple event: set when it is created, reported to waits for it when it is
-// deleted, and the result of a wait that ends with an error
+// System events of a simple event: set when it is created, deleted, opened and closed, and the
+// result of a wait that ends with an error
 #define SCE_KERNEL_EVENT_CREATE 0x00000004U
 #define SCE_KERNEL_EVENT_DELETE 0x00000008U
 #define SCE_KERNEL_EVENT_ERROR 0x00000010U
+#define SCE_KERNEL_EVENT_OPEN 0x00000100U
+#define SCE_KERNEL_EVENT_CLOSE 0x00000200U
 // The bits of a simple event a game may set and clear, the others are system events
 #define SCE_KERNEL_EVENT_USER_DEFINED_MASK 0xFF000000U
 
