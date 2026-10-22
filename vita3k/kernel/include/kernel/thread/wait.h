@@ -36,6 +36,9 @@ struct WaitTarget {
     SceUInt32 type = 0;
     // UID of the object waited on, or 0 if there is none
     SceUID id = 0;
+    // The wait is the variant with callbacks, which runs notified callbacks and reports its type
+    // with the callback bit
+    bool callbacks = false;
 };
 
 // Converts a guest timeout in microseconds into a deadline. A null timeout waits forever.

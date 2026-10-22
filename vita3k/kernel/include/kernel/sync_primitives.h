@@ -50,9 +50,9 @@ protected:
     // back to it. A wait that ends by its deadline or its thread's end leaves the queue without a
     // waker, so the waiters behind it are served.
     template <typename Entry>
-    [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout, bool callbacks) {
+    [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout) {
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = queue.wait(lock, thread, target, std::move(entry), deadline, callbacks);
+        const WaitResult r = queue.wait(lock, thread, target, std::move(entry), deadline);
         if (!r || *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
             serve();
         writeback_timeout(timeout, deadline);
@@ -190,7 +190,7 @@ public:
 
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks);
     // Same as acquire, but reports the wait as target, for a condition variable taking its mutex back
-    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, WaitTarget target, bool callbacks);
+    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, WaitTarget target);
     SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
     SceInt32 release(MemState &mem, const ThreadStatePtr &thread, SceInt32 unlock_count);
     SceInt32 cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);

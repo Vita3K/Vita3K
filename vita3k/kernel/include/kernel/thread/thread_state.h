@@ -141,9 +141,9 @@ struct ThreadState {
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
     [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks);
     // Waits on target until woken by wake(), the thread exits or is deleted, or the deadline passes.
-    // With callbacks, a notified callback ends it with NOTIFY_CALLBACK, and the caller runs it with
-    // run_callbacks(). A stale wake can end it early, so callers must recheck their condition.
-    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline, bool callbacks);
+    // With target.callbacks, a notified callback ends it with NOTIFY_CALLBACK, and the caller runs
+    // it with run_callbacks(). A stale wake can end it early, so callers must recheck their condition.
+    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline);
     // Runs the notified callbacks for a wait that ended with NOTIFY_CALLBACK, with no lock held.
     // Returns ThreadExiting if the thread exits or is deleted meanwhile.
     [[nodiscard]] WaitResult run_callbacks();

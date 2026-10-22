@@ -457,7 +457,7 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
 
 WaitResult ThreadState::delay_until(Deadline deadline, bool callbacks) {
     while (true) {
-        WaitResult r = wait({ SCE_KERNEL_WAITTYPE_DELAY }, deadline, callbacks);
+        WaitResult r = wait({ .type = SCE_KERNEL_WAITTYPE_DELAY, .callbacks = callbacks }, deadline);
         if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
         if (!r)
@@ -479,7 +479,7 @@ WaitResult ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     const Deadline deadline = deadline_from(timeout);
     WaitResult r = SCE_KERNEL_OK;
     while (!take_signal()) {
-        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SIGNAL_WAIT_ID }, deadline, callbacks);
+        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SIGNAL_WAIT_ID, callbacks }, deadline);
         if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
         if (!r || *r != SCE_KERNEL_OK)
@@ -553,15 +553,15 @@ WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt
     }
     std::unique_lock<std::mutex> end_lock(end_waiters_mutex);
     lock.unlock();
-    return end_waiters.wait(end_lock, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id }, { exit_status }, deadline, callbacks);
+    return end_waiters.wait(end_lock, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id, callbacks }, { exit_status }, deadline);
 }
 
-WaitResult ThreadState::wait(WaitTarget target, Deadline deadline, bool callbacks) {
+WaitResult ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(mutex);
     // Callbacks don't nest, so inside a callback this is a plain wait
-    const bool runs_callbacks = callbacks && !is_processing_callbacks;
+    const bool runs_callbacks = target.callbacks && !is_processing_callbacks;
     const auto woken = [&] { return exiting() || wake_pending || (runs_callbacks && callbacks_notified()); };
-    wait_target = { callbacks ? target.type | WAITTYPE_CB_BIT : target.type, target.id };
+    wait_target = target;
     update_status(ThreadStatus::waiting);
     bool satisfied = true;
     if (deadline == Deadline::max())
@@ -660,7 +660,7 @@ SceKernelThreadInfo ThreadState::info() {
     info.currentCpuAffinityMask = affinity_mask;
     info.entry = SceKernelThreadEntry(entry_point);
     info.status = std::to_underlying(status);
-    info.waitType = wait_target.type;
+    info.waitType = wait_target.callbacks ? wait_target.type | WAITTYPE_CB_BIT : wait_target.type;
     info.waitId = wait_target.id;
     info.exitStatus = returned_value;
     info.fNotifyCallback = callbacks_notified() ? 1 : 0;

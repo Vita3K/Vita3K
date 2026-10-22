@@ -88,7 +88,7 @@ void wait_vblank(DisplayState &display, const ThreadStatePtr &wait_thread, const
         return;
 
     // Nothing runs after the wait, so a thread exiting during it needs no handling here
-    (void)display.vblank_waiters.wait(lock, wait_thread, { SCE_KERNEL_WAITTYPE_EVENT }, { target_vcount }, Deadline::max(), is_cb);
+    (void)display.vblank_waiters.wait(lock, wait_thread, { .type = SCE_KERNEL_WAITTYPE_EVENT, .callbacks = is_cb }, { target_vcount }, Deadline::max());
 }
 
 static void reset_swapchain_cycle(DisplayState &display, Address sync_object) {
