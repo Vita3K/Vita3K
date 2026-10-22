@@ -65,7 +65,7 @@ constexpr bool log_file_stat = false;
 namespace vfs {
 
 bool read_file(const VitaIoDevice device, FileBuffer &buf, const fs::path &vita_fs_path, const fs::path &vfs_file_path) {
-    const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, vita_fs_path).generic_path();
+    const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, vita_fs_path);
     return fs_utils::read_data(host_file_path, buf);
 }
 
@@ -381,7 +381,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
             if (!fs::exists(system_path.parent_path())) {
                 fs::create_directories(system_path.parent_path());
             }
-            fs::ofstream file(system_path);
+            std::ofstream file(system_path);
         }
     }
 
@@ -574,11 +574,11 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &v
 
 #ifdef _WIN32
     struct _stati64 sb;
-    if (_wstati64(file_path.generic_path().wstring().c_str(), &sb) < 0)
+    if (_wstati64(file_path.generic_wstring().c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #else
     struct stat64 sb;
-    if (stat64(file_path.generic_path().string().c_str(), &sb) < 0)
+    if (stat64(file_path.generic_string().c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #endif
 
@@ -656,10 +656,10 @@ int remove_file(IOState &io, const char *file, const fs::path &vita_fs_path, con
 
     LOG_TRACE_IF(log_file_op, "{}: Removing file {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
 
-    boost::system::error_code error_code{};
-    auto res = fs::detail::remove(emulated_path, &error_code);
+    std::error_code error_code{};
+    const auto res = fs::remove(emulated_path, error_code);
 
-    if (!(res && !(error_code.value()))) {
+    if (!res || error_code.value()) {
         LOG_ERROR("Cannot remove file: {} ({})", file, device::construct_normalized_path(device, translated_path));
         LOG_ERROR("Error code: {} ({})", error_code.value(), error_code.message());
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -697,7 +697,7 @@ int rename(IOState &io, const char *old_name, const char *new_name, const fs::pa
 
     LOG_TRACE_IF(log_file_op, "{}: Renaming file {} to {} ({} to {})", export_name, old_name, new_name, emulated_old_path, emulated_new_path);
 
-    boost::system::error_code error_code{};
+    std::error_code error_code{};
     fs::rename(emulated_old_path, emulated_new_path, error_code);
 
     if (error_code.value()) {
@@ -774,8 +774,7 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const fs::path 
         const auto d_name_utf8 = get_file_in_dir(d);
         strncpy(dent->d_name, d_name_utf8.c_str(), sizeof(dent->d_name));
 
-        const auto cur_path = dir->second.get_system_location() / d_name_utf8;
-        if (!(cur_path.filename_is_dot() || cur_path.filename_is_dot_dot())) {
+        if (d_name_utf8 != "." && d_name_utf8 != "..") {
             const auto file_path = std::string(dir->second.get_vita_loc()) + '/' + d_name_utf8;
 
             LOG_TRACE_IF(log_file_op, "{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));
@@ -818,7 +817,9 @@ int create_dir(IOState &io, const char *dir, int mode, const fs::path &vita_fs_p
     if (fs::exists(emulated_path))
         return IO_ERROR(SCE_ERROR_ERRNO_EEXIST);
 
-    const auto parent_path = fs::path(emulated_path).remove_trailing_separator().parent_path();
+    auto parent_path = emulated_path.parent_path();
+    if (!emulated_path.has_filename())
+        parent_path = parent_path.parent_path();
     if (!fs::exists(parent_path)) // Vita cannot recursively create directories
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
 

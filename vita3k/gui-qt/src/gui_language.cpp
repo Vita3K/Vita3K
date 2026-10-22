@@ -66,8 +66,8 @@ std::unique_ptr<QTranslator> s_qt_translator;
 
 static QStringList translation_search_paths(const fs::path &static_assets_path) {
     return {
-        QString::fromUtf8((static_assets_path / "translations").string().c_str()),
-        QString::fromUtf8((static_assets_path / "../Resources/translations").string().c_str()),
+        QString::fromStdString(fs_utils::path_to_utf8(static_assets_path / "translations")),
+        QString::fromStdString(fs_utils::path_to_utf8(static_assets_path / "../Resources/translations")),
     };
 }
 

@@ -280,7 +280,7 @@ void PatchManagerDialog::download_patches() {
         } else {
             const fs::path path = patchlist_xml_path(patch_dir);
             const fs::path temp_path = fs::path(path).concat(".tmp");
-            boost::system::error_code error;
+            std::error_code error;
             bool saved = false;
             fs::create_directories(patch_dir, error);
             if (!error && fs_utils::dump_data(temp_path, xml.data(), static_cast<std::streamsize>(xml.size()))) {

@@ -333,9 +333,9 @@ void collect_directory_metrics(const fs::path &root, std::uintmax_t &total_size,
     if (!fs::exists(root))
         return;
 
-    boost::system::error_code error_code;
+    std::error_code error_code;
     if (const auto root_time = fs::last_write_time(root, error_code); !error_code)
-        latest_write_time = std::max(latest_write_time, root_time);
+        latest_write_time = std::max(latest_write_time, fs_utils::to_time_t(root_time));
 
     fs::recursive_directory_iterator end;
     for (fs::recursive_directory_iterator it(root, error_code); !error_code && it != end; it.increment(error_code)) {
@@ -347,7 +347,7 @@ void collect_directory_metrics(const fs::path &root, std::uintmax_t &total_size,
         }
 
         if (const auto write_time = fs::last_write_time(current, error_code); !error_code)
-            latest_write_time = std::max(latest_write_time, write_time);
+            latest_write_time = std::max(latest_write_time, fs_utils::to_time_t(write_time));
         error_code.clear();
     }
 }
@@ -894,7 +894,7 @@ std::optional<fs::path> synthesize_vita_theme_qss(
         cycle_enabled,
         vita_fs_path);
 
-    boost::system::error_code error_code;
+    std::error_code error_code;
     fs::create_directories(output_directory, error_code);
     if (error_code) {
         LOG_ERROR("Failed to create Vita theme output directory {}: {}",
@@ -903,7 +903,7 @@ std::optional<fs::path> synthesize_vita_theme_qss(
         return std::nullopt;
     }
 
-    fs::ofstream output(qss_path, fs::ofstream::binary | fs::ofstream::trunc);
+    std::ofstream output(qss_path, std::ofstream::binary | std::ofstream::trunc);
     if (!output) {
         LOG_ERROR("Failed to open generated Vita theme stylesheet path {}", qss_path);
         return std::nullopt;

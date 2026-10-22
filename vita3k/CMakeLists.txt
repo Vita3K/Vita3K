@@ -177,14 +177,11 @@ if(ANDROID)
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		# we need to exclude all symbols except SDL
 		set(LIBS_TO_EXCLUDE
-			"libboost_atomic.a"
 			"libboost_container.a"
 			"libboost_date_time.a"
 			"libboost_exception.a"
-			"libboost_filesystem.a"
 			"libboost_program_options.a"
 			"libboost_regex.a"
-			"libboost_system.a"
 			"libssl.a"
 			"libfmt.a"
 			"libcrypto.a"

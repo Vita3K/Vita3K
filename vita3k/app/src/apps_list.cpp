@@ -56,7 +56,7 @@ static int64_t get_path_write_time(const fs::path &path) {
         return -1;
 
     try {
-        return static_cast<int64_t>(fs::last_write_time(path));
+        return static_cast<int64_t>(fs::last_write_time(path).time_since_epoch().count());
     } catch (const std::exception &e) {
         LOG_WARN("Failed to read timestamp for '{}': {}", path, e.what());
         return -1;
@@ -70,7 +70,7 @@ static std::vector<AppCacheSource> collect_app_cache_sources(const EmuEnvState &
 
     std::vector<AppCacheSource> sources;
     for (const auto &entry : fs::directory_iterator(app_path)) {
-        if (entry.path().empty() || !fs::is_directory(entry.path()) || entry.path().filename_is_dot() || entry.path().filename_is_dot_dot())
+        if (entry.path().empty() || !fs::is_directory(entry.path()))
             continue;
         if (entry.path().filename().string().ends_with("_dec"))
             continue;

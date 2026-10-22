@@ -19,7 +19,7 @@
 
 namespace exfat {
 
-static fs::path get_exfat_file_name(fs::ifstream &img, const uint8_t continuations, const uint8_t name_length) {
+static fs::path get_exfat_file_name(std::ifstream &img, const uint8_t continuations, const uint8_t name_length) {
     std::wstring name;
     auto name_length_remaining = name_length;
 
@@ -59,7 +59,7 @@ static uint64_t get_cluster_offset(const ExFATSuperBlock &super_block, uint32_t 
     return static_cast<uint64_t>(super_block.cluster_sector_start) * sector_size + (static_cast<uint64_t>(cluster) - 2) * cluster_size;
 }
 
-static void traverse_directory(fs::ifstream &img, const uint64_t img_size, std::vector<std::streampos> &offset_stack, const ExFATSuperBlock &super_block,
+static void traverse_directory(std::ifstream &img, const uint64_t img_size, std::vector<std::streampos> &offset_stack, const ExFATSuperBlock &super_block,
     const uint32_t cluster, const fs::path &output_path, fs::path current_dir) {
     // Seek to the cluster offset
     img.seekg(get_cluster_offset(super_block, cluster));
@@ -102,7 +102,7 @@ static void traverse_directory(fs::ifstream &img, const uint64_t img_size, std::
                 img.seekg(get_cluster_offset(super_block, file_info.start_cluster));
 
                 // Create the file and write the data
-                fs::ofstream output_file(current_output_path, std::ios::binary);
+                std::ofstream output_file(current_output_path, std::ios::binary);
                 const auto file_size = file_info.size;
                 std::vector<char> buffer(file_size);
                 img.read(buffer.data(), file_size);
@@ -130,7 +130,7 @@ static void traverse_directory(fs::ifstream &img, const uint64_t img_size, std::
 
 void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &vita_fs_path) {
     // Open the partition file for reading in binary mode
-    fs::ifstream img(partition_path / partition, std::ios::binary);
+    std::ifstream img(partition_path / partition, std::ios::binary);
     if (!img.is_open()) {
         LOG_ERROR("Failed to open partition file");
         return;

@@ -161,7 +161,7 @@ static uint32_t get_space_size(const uint32_t str_size) {
 }
 
 static bool load_system_dreg(RegMgrState &regmgr) {
-    fs::ifstream file(regmgr.system_dreg_path, std::ios::in | std::ios::binary);
+    std::ifstream file(regmgr.system_dreg_path, std::ios::in | std::ios::binary);
     if (file.is_open()) {
         // Initialize the space buffer
         std::vector<char> space(spaceSize + 1);
@@ -221,7 +221,7 @@ static bool load_system_dreg(RegMgrState &regmgr) {
 }
 
 static void save_system_dreg(RegMgrState &regmgr) {
-    fs::ofstream file(regmgr.system_dreg_path, std::ios::out | std::ios::binary);
+    std::ofstream file(regmgr.system_dreg_path, std::ios::out | std::ios::binary);
     if (file.is_open()) {
         // Initialize the space buffer
         std::vector<char> space(spaceSize + 1);

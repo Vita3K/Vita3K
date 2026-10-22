@@ -217,7 +217,7 @@ static YAML::Node get(const Config &self) {
 
 // Load a function to the node network, and then update the members
 static bool load_new_config(Config &self, const fs::path &path) {
-    fs::ifstream fin(path);
+    std::ifstream fin(path);
     YAML::Node yaml_node = YAML::Load(fin);
     const bool legacy_keyboard_bindings = has_legacy_keyboard_bindings(yaml_node);
     update_members(self, yaml_node);
@@ -240,7 +240,7 @@ static std::set<std::string> get_file_set(const fs::path &loc, bool dirs_only = 
             cur_set.insert(it->path().stem().string());
         }
 
-        boost::system::error_code err{};
+        std::error_code err{};
         it.increment(err);
     }
     return cur_set;
@@ -308,7 +308,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     emitter << out_node;
     emitter << YAML::EndDoc;
 
-    fs::ofstream fo(output);
+    std::ofstream fo(output);
     if (!fo) {
         return InvalidApplicationPath;
     }

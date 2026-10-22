@@ -34,7 +34,7 @@ namespace renderer {
 bool get_shaders_cache_hashs(State &renderer) {
     const std::string hash_file_name = fmt::format("hashs-{}.dat", (renderer.current_backend == Backend::OpenGL) ? "gl" : "vk");
 
-    fs::ifstream shaders_hashs(renderer.shaders_path / hash_file_name, std::ios::in | std::ios::binary);
+    std::ifstream shaders_hashs(renderer.shaders_path / hash_file_name, std::ios::in | std::ios::binary);
     if (!shaders_hashs.is_open())
         return false;
 
@@ -89,7 +89,7 @@ bool get_shaders_cache_hashs(State &renderer) {
 void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders_cache_hashs) {
     fs::create_directories(renderer.shaders_path);
     std::string hash_file_name = fmt::format("hashs-{}.dat", (renderer.current_backend == Backend::OpenGL) ? "gl" : "vk");
-    fs::ofstream shaders_hashs(renderer.shaders_path / hash_file_name, std::ios::out | std::ios::binary);
+    std::ofstream shaders_hashs(renderer.shaders_path / hash_file_name, std::ios::out | std::ios::binary);
 
     if (shaders_hashs.is_open()) {
         // Write Size of shaders cache hashes list
@@ -116,12 +116,12 @@ void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders
 }
 
 static bool load_shader(const fs::path &shader_name, char **destination, std::size_t &size_read) {
-    fs::ifstream is(shader_name, fs::ifstream::binary);
+    std::ifstream is(shader_name, std::ifstream::binary);
     if (!is) {
         return false;
     }
 
-    is.seekg(0, fs::ifstream::end);
+    is.seekg(0, std::ifstream::end);
     size_read = is.tellg();
     is.seekg(0);
 

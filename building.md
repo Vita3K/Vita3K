@@ -177,11 +177,6 @@ Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which wi
   git submodule update --init --recursive
   ```
 
-- If Boost failed to build, you can use the system Boost package (Linux and macOS only).
-
-  ```sh
-  brew install boost # for macOS
-  sudo apt install libboost-filesystem-dev libboost-program-options-dev libboost-system-dev # for Ubuntu/Debian
-  ```
+- Only header-only Boost libraries are used, so Boost does not need to be built. By default, a system Boost is used when found, otherwise the one included with the repository.
 
   If needed, CMake options `VITA3K_FORCE_CUSTOM_BOOST` and `VITA3K_FORCE_SYSTEM_BOOST` can be set to change the way the CMake project looks for Boost.

@@ -18,7 +18,6 @@
 #include "io/functions.h"
 #include "io/io.h"
 
-#include <boost/filesystem/operations.hpp>
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>

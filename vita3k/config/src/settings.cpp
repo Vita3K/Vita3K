@@ -356,7 +356,7 @@ int delete_all_custom_configs(const fs::path &config_path) {
         if (file_name.rfind("config_", 0) != 0)
             continue;
 
-        boost::system::error_code error;
+        std::error_code error;
         if (fs::remove(entry.path(), error) && !error)
             ++removed;
     }

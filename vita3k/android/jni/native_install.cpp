@@ -137,7 +137,7 @@ Java_org_vita3k_emulator_NativeLib_findPkgZrif(JNIEnv *env, jclass, jstring pkg_
 JNIEXPORT jstring JNICALL
 Java_org_vita3k_emulator_NativeLib_convertRifToZrif(JNIEnv *env, jclass, jstring path_str) {
     const std::string path = jstring_to_string(env, path_str);
-    fs::ifstream binfile(path, std::ios::in | std::ios::binary | std::ios::ate);
+    std::ifstream binfile(path, std::ios::in | std::ios::binary | std::ios::ate);
     if (!binfile.is_open()) {
         LOG_ERROR("Failed to open license from path: {}", path);
         return env->NewStringUTF("");

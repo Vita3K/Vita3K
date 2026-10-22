@@ -642,12 +642,12 @@ static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const fs::pa
 
                 auto dir_name = mee.get_filename();
 
-                traverse_directory(img, baby, dir_path / std::wstring(dir_name.begin(), dir_name.end()) / "");
+                traverse_directory(img, baby, dir_path / std::wstring(dir_name.begin(), dir_name.end()));
             }
         }
 
         if (mee.entry.file_attributes & (int)Fat16::EntryAttribute::ARCHIVE) {
-            extract_file(img, mee, dir_path / "");
+            extract_file(img, mee, dir_path);
         }
     }
 }
@@ -1110,7 +1110,7 @@ void decrypt_selfs(const fs::path &input_path, const fs::path &cache_path, const
     for (auto &entry : fs::recursive_directory_iterator(input_path)) {
         if (entry.is_regular_file() && is_self(entry.path())) {
             // Open the self file
-            fs::ifstream f(entry.path(), std::ios::binary);
+            std::ifstream f(entry.path(), std::ios::binary);
             if (!f) {
                 LOG_ERROR("Failed to open self {}", fs_utils::path_to_utf8(entry.path().filename()));
                 continue;
@@ -1142,7 +1142,7 @@ void decrypt_selfs(const fs::path &input_path, const fs::path &cache_path, const
             // Write the decrypted self to the output path
             const auto output_file_path = output_path / fs::relative(entry.path(), input_path);
             fs::create_directories(output_file_path.parent_path());
-            fs::ofstream out(output_file_path, std::ios::binary);
+            std::ofstream out(output_file_path, std::ios::binary);
             if (!out) {
                 LOG_ERROR("Failed to write decrypted self {}", fs_utils::path_to_utf8(output_file_path));
                 continue;

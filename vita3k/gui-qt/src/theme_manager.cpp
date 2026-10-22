@@ -38,7 +38,6 @@
 #include <QStyle>
 #include <QStyleFactory>
 #include <QUrl>
-#include <boost/filesystem/operations.hpp>
 #include <qlist.h>
 
 #include <algorithm>

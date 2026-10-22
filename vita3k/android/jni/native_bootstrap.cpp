@@ -67,15 +67,15 @@ std::string get_os_version() {
 
 bool initialize_session(const fs::path &storage_path, Root &root_paths, std::unique_ptr<EmuEnvState> &emuenv) {
     try {
-        const fs::path vita_path = storage_path / "vita" / "";
+        const fs::path vita_path = storage_path / "vita";
 
         root_paths.set_static_assets_path({});
         root_paths.set_vita_fs_path(vita_path);
         root_paths.set_log_path(storage_path);
         root_paths.set_config_path(storage_path);
         root_paths.set_shared_path(storage_path);
-        root_paths.set_cache_path(storage_path / "cache" / "");
-        root_paths.set_patch_path(storage_path / "patch" / "");
+        root_paths.set_cache_path(storage_path / "cache");
+        root_paths.set_patch_path(storage_path / "patch");
 
         if (!fs::exists(root_paths.get_vita_fs_path()))
             fs::create_directories(root_paths.get_vita_fs_path());
@@ -182,7 +182,7 @@ Java_org_vita3k_emulator_NativeLib_init(JNIEnv *env, jclass, jstring storage_pat
     }
 
     const std::string storage = jstring_to_string(env, storage_path_str);
-    const fs::path storage_path = fs::path(storage) / "";
+    const fs::path storage_path = fs::path(storage);
     Root root_paths;
     std::unique_ptr<EmuEnvState> emuenv;
     if (!initialize_session(storage_path, root_paths, emuenv))

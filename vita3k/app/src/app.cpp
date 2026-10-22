@@ -208,11 +208,10 @@ bool ensure_current_user(EmuEnvState &emuenv) {
 }
 
 bool switch_emulator_path(EmuEnvState &emuenv, const fs::path &vita_fs_path) {
-    const fs::path normalized_vita_fs_path = vita_fs_path / "";
-    if (normalized_vita_fs_path.empty())
+    if (vita_fs_path.empty())
         return false;
 
-    emuenv.vita_fs_path = normalized_vita_fs_path;
+    emuenv.vita_fs_path = vita_fs_path;
     emuenv.cfg.set_vita_fs_path(emuenv.vita_fs_path);
 
     ::io_deinit(emuenv.io);

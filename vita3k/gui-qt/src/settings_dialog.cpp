@@ -1427,11 +1427,10 @@ void SettingsDialog::mark_dirty() {
 }
 
 void SettingsDialog::set_pending_vita_fs_path(const fs::path &vita_fs_path) {
-    const fs::path normalized_vita_fs_path = vita_fs_path / "";
-    if (normalized_vita_fs_path.empty() || normalized_vita_fs_path == m_pending_vita_fs_path)
+    if (vita_fs_path.empty() || vita_fs_path == m_pending_vita_fs_path)
         return;
 
-    m_pending_vita_fs_path = normalized_vita_fs_path;
+    m_pending_vita_fs_path = vita_fs_path;
     update_current_emu_path_label();
     mark_dirty();
 }
