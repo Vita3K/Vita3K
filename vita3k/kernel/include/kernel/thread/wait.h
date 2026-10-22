@@ -34,8 +34,11 @@ using Deadline = std::chrono::steady_clock::time_point;
 struct WaitTarget {
     // One of SCE_KERNEL_WAITTYPE_*, or 0 if not waiting
     SceUInt32 type = 0;
-    // UID of the object waited on, or 0 if there is none
-    SceUID id = 0;
+    // UID of the object waited on, or -1 if there is none, like for a delay
+    SceUID id = -1;
+    // The wait is the variant with callbacks, which runs notified callbacks and reports its type
+    // with the callback bit
+    bool callbacks = false;
 };
 
 // Converts a guest timeout in microseconds into a deadline. A null timeout waits forever.
@@ -45,12 +48,17 @@ inline Deadline deadline_from(const SceUInt32 *timeout) {
     return std::chrono::steady_clock::now() + std::chrono::microseconds(*timeout);
 }
 
+// Returns the microseconds left before the deadline, 0 once it passed.
+inline SceUInt32 time_left_until(Deadline deadline) {
+    const auto left = std::chrono::duration_cast<std::chrono::microseconds>(deadline - std::chrono::steady_clock::now()).count();
+    return left > 0 ? static_cast<SceUInt32>(left) : 0;
+}
+
 // Writes the time left before the deadline back to a guest timeout.
 inline void writeback_timeout(SceUInt32 *timeout, Deadline deadline) {
     if (!timeout || deadline == Deadline::max())
         return;
-    const auto left = std::chrono::duration_cast<std::chrono::microseconds>(deadline - std::chrono::steady_clock::now()).count();
-    *timeout = left > 0 ? static_cast<SceUInt32>(left) : 0;
+    *timeout = time_left_until(deadline);
 }
 
 // Turns a wait result into the value returned to the guest.

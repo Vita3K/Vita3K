@@ -19,20 +19,25 @@ callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
 callback_event_results          fail     # events that end a wait during a callback with NOTIFY_CALLBACK, a pulse during a callback
 callback_event_waits            fail     # a simple event set by a callback ends the wait with NOTIFY_CALLBACK
-callback_info                   fail     # waits stay queued during callbacks
-callback_inner_same_object      fail     # waits stay queued during callbacks
+callback_info                   pass
+callback_inner_same_object      pass
 callback_inner_same_pipe        fail     # message pipe waits stay queued during callbacks
-callback_inner_wait             fail     # waits stay queued while a callback waits
+callback_inner_wait             pass
 callback_nesting                fail     # callbacks don't run inside callbacks
-callback_outer_timeout          fail     # a wait whose timeout passes during a callback
-callback_outer_wake             fail     # waits stay queued during callbacks
-callback_outer_wake_more        fail     # waits stay queued during callbacks
-callback_outer_wake_send        fail     # waits stay queued during callbacks
+callback_notify_departure_state skip     # threads ignore their core and priority, so whether the notified waiter already ran when the main thread looks is a race
+callback_notify_preempt         skip     # threads ignore their core and priority, so whether the callback runs inside the notify is a race
+callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
+callback_notify_time_left       fail     # threads ignore their core and priority, so the waiter runs its callback during the notifier's busy interval and waits again
+callback_outer_timeout          pass
+callback_outer_wake             fail     # a simple event wait a callback outlasted returns NOTIFY_CALLBACK, message pipe waits stay queued during callbacks
+callback_outer_wake_more        pass
+callback_outer_wake_send        fail     # message pipe waits stay queued during callbacks
 callback_owner_end              pass
-callback_priority_requeue       fail     # waits stay queued during callbacks, so a cancel counts and ends them
-callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
+callback_priority_requeue       fail     # no requeue on a priority change
+callback_requeue_order          pass
+callback_retake                 pass
 callback_stack                  fail     # callbacks don't run inside callbacks
-callback_wait_requeue           fail     # a wait goes back by its old priority after a callback
+callback_wait_requeue           pass
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
@@ -58,8 +63,8 @@ cross_core_scheduling           fail     # threads ignore their core and priorit
 delay                           pass
 delay_negative                  pass
 delay_precision                 skip     # timing, how long short delays and timeouts take
-delay_variants                  fail     # a delay reports wait UID 0
-delay_wait_id                   fail     # a delaying thread reports wait UID 0
+delay_variants                  pass
+delay_wait_id                   pass
 delete_with_waiters             pass
 directories                     fail     # directory mode, not empty and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
@@ -71,13 +76,15 @@ event_bits                      pass
 event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
-event_flag_hold_callbacks       fail     # the event flag's single waiter hold around callbacks and waits that don't block
-event_flag_hold_leak            fail     # the event flag's single waiter hold after a wait that didn't block
+event_flag_hold_callback_events fail     # a timeout of 1 gives the event flag hold back
+event_flag_hold_callbacks       pass
+event_flag_hold_leak            pass
+event_flag_hold_take            pass
 event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass
 event_flag_waits                pass
-event_flag_wake_release         fail     # a woken thread isn't READY before it runs, and its out bits are written at the wake
+event_flag_wake_release         fail     # a woken thread isn't READY before it runs, its out bits are written at the wake, and a notified waiter leaves the queue only once its thread runs
 event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
 exit_process_thread             pass
@@ -107,7 +114,7 @@ gxm_sync_objects                fail     # sync objects before sceGxmInitialize 
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
 gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
-head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
+head_leaves_more                pass
 info                            pass
 info_fields                     pass
 info_sizes                      pass
@@ -198,7 +205,7 @@ out_past_block_end              fail     # no write check on output parameters, 
 outside_mask_rerun              fail     # threads ignore their core
 owner_end                       pass
 owner_end_more                  pass
-poll_calls                      fail     # a poll takes a count a queued waiter waits for, the bits failed polls write
+poll_calls                      fail     # the bits failed event flag polls write, message pipe try calls past waiting threads
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_migrate                 fail     # threads ignore their core
 preempt_status                  fail     # threads ignore their core and priority
@@ -238,11 +245,11 @@ savedata_slot_id                fail     # save data slot ID range checks
 self_lower_order                fail     # a thread that lowers itself doesn't go to the head of its new priority
 self_priority_drop              fail     # threads ignore their core and priority
 sema_errors                     crash    # closing unknown UIDs, a NULL name
-sema_head_leaves                fail     # a semaphore wait takes a count past an earlier waiter that needs more
+sema_head_leaves                fail     # a head that leaves by a priority drop doesn't let the next waiter take
 sema_mutex_edges                pass
 sema_poll_negative              pass
-sema_requeue_wake               fail     # a waiter gets a count behind a head that doesn't fit, no requeue on a priority change
-sema_take_past_waiters          fail     # a semaphore wait or poll takes past queued waiters
+sema_requeue_wake               fail     # no requeue on a priority change
+sema_take_past_waiters          pass
 sema_waits                      pass
 semaphore                       pass
 shader_patcher_callback         fail     # a library callback's caller gets its FPSCR and TPIDRURW back after it
@@ -320,9 +327,9 @@ thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
-thread_wait_id_idle             fail     # the wait UID of a thread that doesn't wait is 0, not -1
+thread_wait_id_idle             fail     # a thread that can run but hasn't reports RUNNING instead of READY
 timeout_left_kinds              fail     # sceKernelWaitMultipleEvents
-timeout_serves_before_run       fail     # a timed out thread isn't READY before it runs, readers wait behind a timed out writer
+timeout_serves_before_run       fail     # a timed out thread isn't READY before it runs
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass
@@ -360,7 +367,7 @@ wake_batch_cores                fail     # threads ignore their core
 wake_busy_cores                 fail     # threads are never READY or STANDBY and ignore their core
 wake_core_origin                fail     # threads ignore their core and priority
 wake_core_ties                  fail     # threads are never STANDBY and ignore their core
-wake_handoff                    fail     # a waiter woken by a set or an unlock still reports its wait for a while
+wake_handoff                    skip     # threads ignore their core and priority, so whether a woken waiter runs before the releaser's try is a race
 wake_kinds_order                fail     # threads ignore their core and priority
 wake_ready_areas                fail     # threads ignore their core and priority
 wake_spread                     fail     # threads ignore their core

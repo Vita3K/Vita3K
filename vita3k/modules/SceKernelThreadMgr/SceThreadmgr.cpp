@@ -728,7 +728,7 @@ EXPORT(int, _sceKernelPollEventFlag, SceUID event_id, unsigned int flags, unsign
     const EventFlagPtr event = emuenv.kernel.objects.find<EventFlag>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
-    return event->poll(flags, wait, outBits);
+    return event->poll(thread_id, flags, wait, outBits);
 }
 
 EXPORT(int, _sceKernelPulseEventWithNotifyCallback) {
@@ -1539,7 +1539,7 @@ EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
-    return semaphore->poll(needCount);
+    return semaphore->poll(emuenv.kernel.get_thread(thread_id), needCount);
 }
 
 EXPORT(SceInt32, sceKernelPulseEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {

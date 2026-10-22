@@ -141,9 +141,9 @@ struct ThreadState {
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
     [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks);
     // Waits on target until woken by wake(), the thread exits or is deleted, or the deadline passes.
-    // With callbacks, a notified callback ends it with NOTIFY_CALLBACK, and the caller runs it with
-    // run_callbacks(). A stale wake can end it early, so callers must recheck their condition.
-    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline, bool callbacks);
+    // With target.callbacks, a notified callback ends it with NOTIFY_CALLBACK, and the caller runs
+    // it with run_callbacks(). A stale wake can end it early, so callers must recheck their condition.
+    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline);
     // Runs the notified callbacks for a wait that ended with NOTIFY_CALLBACK, with no lock held.
     // Returns ThreadExiting if the thread exits or is deleted meanwhile.
     [[nodiscard]] WaitResult run_callbacks();
@@ -245,6 +245,12 @@ private:
     int start_at(Address entry, SceSize arglen, Ptr<void> argp, bool run_entry_callback);
     // Whether a callback of this thread was notified and hasn't run yet
     bool callbacks_notified() const { return notified_callbacks > 0; }
+    // Whether a notified callback ends the current wait. Callbacks don't nest, so a wait inside a
+    // callback runs none. With mutex held.
+    bool callback_ends_wait() const { return wait_target.callbacks && !is_processing_callbacks && callbacks_notified(); }
+    // Whether the thread's current wait is over, by a wake, its end or a callback it runs, though
+    // the thread hasn't gone on yet. With mutex held.
+    bool wait_over() const { return exiting() || wake_pending || callback_ends_wait(); }
     // Keeps the thread from going on into guest code while anything holds it, unless it's ending.
     // With mutex held through lock.
     void wait_while_held(std::unique_lock<std::mutex> &lock, StopPoint where);
@@ -298,7 +304,7 @@ private:
     // Callbacks
     // Callbacks of this thread with notifications they haven't run for.
     SceUInt32 notified_callbacks = 0;
-    // Set while the thread runs its callbacks. They don't nest.
+    // Set while the thread runs its callbacks. They don't nest. With mutex held.
     bool is_processing_callbacks = false;
     // Callbacks this thread created, in creation order. The kernel owns them. Only this thread
     // touches the list.

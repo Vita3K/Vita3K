@@ -60,14 +60,14 @@ public:
 
     // Blocks thread on target until a waker gives it a result, ready() holds, it is being deleted, or the deadline passes.
     // thread must be the guest thread making this HLE call. ready() is rechecked each time it is woken.
-    // With callbacks, the thread runs its notified callbacks while it waits.
-    [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks, std::predicate<Waiter &> auto ready) {
+    // With target.callbacks, the thread runs its notified callbacks while it waits.
+    [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, std::predicate<Waiter &> auto ready) {
         Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         waiter.priority = waiter.thread->get_priority();
         push(waiter);
         while (true) {
             lock.unlock();
-            WaitResult r = waiter.thread->wait(target, deadline, callbacks);
+            WaitResult r = waiter.thread->wait(target, deadline);
             if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
                 r = waiter.thread->run_callbacks();
             lock.lock();
@@ -91,9 +91,9 @@ public:
 
     // Blocks thread on target until a waker gives it a result, it is being deleted, or the deadline passes.
     // thread must be the guest thread making this HLE call.
-    // With callbacks, the thread runs its notified callbacks while it waits.
-    [[nodiscard]] WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks) {
-        return wait_until_ready(lock, thread, target, std::move(entry), deadline, callbacks, [](Waiter &) { return false; });
+    // With target.callbacks, the thread runs its notified callbacks while it waits.
+    [[nodiscard]] WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline) {
+        return wait_until_ready(lock, thread, target, std::move(entry), deadline, [](Waiter &) { return false; });
     }
 
     bool empty() const {
@@ -107,6 +107,14 @@ public:
     // Returns the waiter that would be woken first, or null.
     Waiter *front() {
         return waiters.empty() ? nullptr : waiters.front();
+    }
+
+    // Returns whether a thread of this priority would be first in the queue, ahead of every waiter.
+    bool first_for(int priority) const {
+        if (waiters.empty())
+            return true;
+        // Lower value is higher priority, and equal priorities keep FIFO order
+        return by_priority && waiters.front()->priority > priority;
     }
 
     // Returns the first waiter accepted by pick, or null.
