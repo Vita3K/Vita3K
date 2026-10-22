@@ -71,6 +71,7 @@ enum class GenericParameterType {
 };
 
 using GxmVertexOutputTexCoordInfos = std::array<uint8_t, 10>;
+using GxmTexCoordLinkMap = std::array<uint8_t, 10>;
 
 void log_parameter(const SceGxmProgramParameter &parameter);
 
@@ -88,6 +89,7 @@ GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parame
  * \return SceGxmVertexProgramOutput (bitfield)
  */
 SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, GxmVertexOutputTexCoordInfos *coord_infos = nullptr);
+GxmTexCoordLinkMap get_texcoord_link_map(const SceGxmProgram *vertex_program);
 SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program);
 
 int get_parameter_type_size(const SceGxmParameterType type);

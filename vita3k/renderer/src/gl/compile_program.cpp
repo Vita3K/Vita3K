@@ -214,16 +214,16 @@ void pre_compile_program(GLState &renderer, const ShadersHash &hash) {
 }
 
 static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const FeatureState &features, const Sha256Hash &hash,
-    ShaderCache &cache, const GLenum type, const shader::Hints &hints, bool shader_cache, bool spirv, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, uint32_t &shaders_count_compiled) {
+    ShaderCache &cache, const GLenum type, const shader::Hints &hints, const shader::TexCoordLinkMap *fragment_texcoord_map, bool shader_cache, bool spirv, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, uint32_t &shaders_count_compiled) {
     const auto cached = cache.find(hash);
     if (cached == cache.end()) {
         SharedGLObject obj = nullptr;
 
         // Need to compile new one and add it to cache
         if (features.spirv_shader && spirv) {
-            obj = compile_spirv(type, load_spirv_shader(*program, features, false, hints, maskupdate, shader_cache_path, shader_log_path, shader_version + "spv", shader_cache));
+            obj = compile_spirv(type, load_spirv_shader(*program, features, false, hash, hints, fragment_texcoord_map, maskupdate, shader_cache_path, shader_log_path, shader_version + "spv", shader_cache));
         } else {
-            obj = compile_glsl(type, load_glsl_shader(*program, features, hints, maskupdate, shader_cache_path, shader_log_path, shader_version, shader_cache));
+            obj = compile_glsl(type, load_glsl_shader(*program, features, hash, hints, fragment_texcoord_map, maskupdate, shader_cache_path, shader_log_path, shader_version, shader_cache));
         }
 
         cache.emplace(hash, obj);
@@ -266,9 +266,8 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     // update the hints
     context.shader_hints.color_format = state.color_surface.colorFormat;
     context.shader_hints.attributes = &vertex_program_gxm.attributes;
-
     const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem), features, fragment_program.hash, renderer.fragment_shader_cache,
-        GL_FRAGMENT_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled);
+        GL_FRAGMENT_SHADER, context.shader_hints, &fragment_program.link_info.texcoord_map, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled);
 
     if (!fragment_shader) {
         LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", hex_string(fragment_program.hash));
@@ -276,7 +275,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     }
 
     const SharedGLObject vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem), features, vertex_program.hash, renderer.vertex_shader_cache,
-        GL_VERTEX_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled);
+        GL_VERTEX_SHADER, context.shader_hints, nullptr, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled);
 
     if (!vertex_shader) {
         LOG_CRITICAL("Error in get/compiled vertex shader:\n{}", hex_string(vertex_program.hash));

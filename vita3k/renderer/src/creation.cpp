@@ -32,6 +32,9 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
+#include <cstring>
+#include <vector>
+
 namespace renderer {
 
 static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
@@ -177,8 +180,24 @@ COMMAND(handle_memory_unmap) {
     complete_command(renderer, helper, 0);
 }
 
+static Sha256Hash get_fragment_program_hash(const SceGxmProgram &program, const FragmentProgramLinkInfo &link_info) {
+    constexpr size_t metadata_size = 10 + 2 * sizeof(uint32_t);
+    std::vector<uint8_t> linked_program(program.size + metadata_size);
+    std::memcpy(linked_program.data(), &program, program.size);
+    std::memcpy(linked_program.data() + program.size, link_info.texcoord_map.data(), link_info.texcoord_map.size());
+
+    size_t offset = program.size + link_info.texcoord_map.size();
+    const auto append_u32 = [&](uint32_t value) {
+        for (uint32_t byte = 0; byte < sizeof(value); byte++)
+            linked_program[offset++] = static_cast<uint8_t>(value >> (byte * 8));
+    };
+    append_u32(static_cast<uint32_t>(link_info.output_format));
+    append_u32(static_cast<uint32_t>(link_info.multisample_mode));
+    return sha256(linked_program.data(), linked_program.size());
+}
+
 // Client
-bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map) {
+bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, const FragmentProgramLinkInfo &link_info, GXPPtrMap &gxp_ptr_map) {
     switch (state.current_backend) {
     case Backend::OpenGL:
         gl::create(fp, dynamic_cast<gl::GLState &>(state), program, blend);
@@ -193,8 +212,8 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
         return false;
     }
 
-    // Try to hash this shader
-    fp->hash = sha256(&program, program.size);
+    fp->link_info = link_info;
+    fp->hash = get_fragment_program_hash(program, link_info);
     gxp_ptr_map.emplace(fp->hash, &program);
 
     fp->buffer_count = shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);

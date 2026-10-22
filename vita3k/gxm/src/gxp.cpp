@@ -196,6 +196,25 @@ SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, GxmV
     return static_cast<SceGxmVertexProgramOutputs>(res);
 }
 
+GxmTexCoordLinkMap get_texcoord_link_map(const SceGxmProgram *vertex_program) {
+    GxmTexCoordLinkMap link_map;
+    if (!vertex_program) {
+        for (uint8_t semantic = 0; semantic < link_map.size(); semantic++)
+            link_map[semantic] = semantic;
+        return link_map;
+    }
+
+    link_map.fill(9);
+    const SceGxmVertexProgramOutputs outputs = get_vertex_outputs(*vertex_program);
+    uint8_t packed_slot = 0;
+    for (uint8_t semantic = 0; semantic < link_map.size(); semantic++) {
+        const uint32_t output = SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 << semantic;
+        if (outputs & output)
+            link_map[semantic] = packed_slot++;
+    }
+    return link_map;
+}
+
 SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
     if (!program.is_fragment())
         return _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
