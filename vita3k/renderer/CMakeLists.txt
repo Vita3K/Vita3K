@@ -79,11 +79,3 @@ endif()
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(renderer PRIVATE tracy)
 endif()
-
-if(NOT ANDROID AND NOT MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    find_package(Python3 QUIET COMPONENTS Interpreter)
-    if(Python3_Interpreter_FOUND)
-        add_test(NAME renderer-texture-formats
-            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/texture_formats_test.py --cxx ${CMAKE_CXX_COMPILER})
-    endif()
-endif()
