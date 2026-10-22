@@ -37,11 +37,11 @@ program = r"""
 #include <string>
 static int critical_count, flush_count;
 static bool previous_returns;
-static void critical() {
-    std::fputs("critical\n", stderr);
+static void critical(const char *message, ...) {
+    std::fprintf(stderr, "critical: %s\n", message);
     if (++critical_count > 1) std::_Exit(88);
 }
-#define LOG_CRITICAL(...) critical()
+#define LOG_CRITICAL(...) critical(__VA_ARGS__)
 static void flush() {
     ++flush_count;
     std::fputs("flush\n", stderr);

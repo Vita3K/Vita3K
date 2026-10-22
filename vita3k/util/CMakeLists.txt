@@ -27,7 +27,7 @@ endif()
 target_compile_definitions(util PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ENABLE>)
 
 if(NOT ANDROID)
-    find_package(Python3 QUIET COMPONENTS Interpreter)
+    find_package(Python3 3.8 QUIET COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
         find_package(Threads REQUIRED)
         set(TERMINATE_TEST_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/terminate_test.cpp)
