@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 
 #include <future>
+#include <thread>
 
 static CAMetalLayer *layer_for(NSView *view) {
     return (__bridge CAMetalLayer *)get_metal_layer_from_view((__bridge void *)view);
@@ -79,8 +80,17 @@ TEST(metal_layer, worker_only_retrieves_prepared_layer) {
     @autoreleasepool {
         NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 320, 240)];
         CAMetalLayer *layer = layer_for(view);
-        auto worker = std::async(std::launch::async, [view] { return get_metal_layer_from_view((__bridge void *)view); });
-        ASSERT_EQ(worker.wait_for(std::chrono::seconds(5)), std::future_status::ready);
-        EXPECT_EQ(worker.get(), (__bridge void *)layer);
+        std::promise<void *> result;
+        auto finished = result.get_future();
+        // The worker retains the view even if the timeout detaches it.
+        std::thread worker([view, result = std::move(result)]() mutable {
+            result.set_value(get_metal_layer_from_view((__bridge void *)view));
+        });
+        if (finished.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+            worker.detach();
+            FAIL() << "Render-thread layer retrieval did not finish within five seconds";
+        }
+        worker.join();
+        EXPECT_EQ(finished.get(), (__bridge void *)layer);
     }
 }
