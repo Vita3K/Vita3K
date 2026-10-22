@@ -61,5 +61,5 @@ int main() {
 }
 '''
 _temporary=tempfile.TemporaryDirectory(prefix='vita3k-app-param-');out=Path(_temporary.name);(out/'app-param-string-test.cpp').write_text(prelude+body+tests)
-subprocess.run([args.cxx,'-std=c++23','-O1','-g',*SANITIZERS,str(out/'app-param-string-test.cpp'),'-o',str(out/'app-param-string-test')],check=True)
-subprocess.run([str(out/'app-param-string-test')],check=True)
+subprocess.run([args.cxx,'-std=c++23','-O1','-g',*SANITIZERS,str(out/'app-param-string-test.cpp'),'-o',str(out/'app-param-string-test')],check=True,timeout=120)
+subprocess.run([str(out/'app-param-string-test')],check=True,timeout=10)
