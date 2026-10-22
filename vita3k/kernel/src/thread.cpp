@@ -596,6 +596,11 @@ void ThreadState::wake() {
     wait_cv.notify_all();
 }
 
+bool ThreadState::has_pending_callbacks() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    return !is_processing_callbacks && callbacks_notified();
+}
+
 SceUInt32 ThreadState::process_callbacks() {
     {
         // Thread info reads the flag too, through wait_over()

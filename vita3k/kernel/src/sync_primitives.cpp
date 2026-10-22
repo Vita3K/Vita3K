@@ -23,6 +23,8 @@
 #include <util/align.h>
 #include <util/log.h>
 
+#include <algorithm>
+
 SyncPrimitive::SyncPrimitive(SceUInt32 attr, const char *name)
     : attr(attr)
     , name(name, strnlen(name, KERNELOBJECT_MAX_NAME_LENGTH)) {}
@@ -99,6 +101,8 @@ SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern,
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     if (wait_pattern == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     if (const SceInt32 result = try_take(wait_pattern, result_pattern, user_data); result != SCE_KERNEL_ERROR_EVENT_COND)
         return result;
@@ -220,7 +224,12 @@ void Timer::schedule_event() {
     next_event = get_current_time() + event_interval;
 
     // the first waiter has to wait for the new event time
-    waiters.notify_all();
+    wake_first();
+}
+
+void Timer::wake_first() {
+    if (WaitQueue<std::monostate>::Waiter *const first = waiters.front())
+        first->thread->wake();
 }
 
 SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats) {
@@ -280,6 +289,8 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     uint64_t current_time = get_current_time();
     if (const SceInt32 result = try_take(result_pattern, user_data, current_time); result != SCE_KERNEL_ERROR_EVENT_COND)
@@ -310,7 +321,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         guard.lock();
         if (!r) {
             waiters.remove(waiter);
-            waiters.notify_all();
+            wake_first();
             return guest_result(r);
         }
 
@@ -321,7 +332,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         // The guest's timeout ran out before an event came
         if (std::chrono::steady_clock::now() >= guest_deadline) {
             waiters.remove(waiter);
-            waiters.notify_all();
+            wake_first();
             writeback_timeout(timeout, guest_deadline);
             return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
         }
@@ -334,8 +345,8 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
 
     event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
     advance_next_event(current_time);
-    // notify the other waiting threads
-    waiters.notify_all();
+    // the next waiter checks the event in turn
+    wake_first();
 
     return SCE_KERNEL_OK;
 }
@@ -532,6 +543,11 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 co
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
     if (const SceInt32 error = check_count(count))
         return error;
+    // The owner's own lock takes or fails at once, without callbacks
+    if (lock_count == 0 || owner != thread->id) {
+        if (const WaitResult r = run_pending_callbacks(guard, thread, target.callbacks); !r || *r != SCE_KERNEL_OK)
+            return guest_result(r);
+    }
 
     // Owned by someone else, wait until it is handed over
     if (lock_count > 0 && owner != thread->id) {
@@ -699,6 +715,11 @@ SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
+    // The writer's own lock takes or fails at once, without callbacks
+    if (write_owner != thread->id) {
+        if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+            return guest_result(r);
+    }
 
     if (const SceInt32 result = try_take(thread, is_write); result != SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK)
         return result;
@@ -862,6 +883,8 @@ SceInt32 Semaphore::wait(const ThreadStatePtr &thread, SceInt32 need_count, SceU
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
     if (need_count <= 0 || need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     if (try_take(thread, need_count))
         return SCE_KERNEL_OK;
@@ -969,7 +992,9 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     if (const SceInt32 error = associated_mutex->release(mem, thread, 1))
         return error;
 
-    const WaitResult r = wait_on(waiters, guard, thread, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_SIGNAL : SCE_KERNEL_WAITTYPE_COND_SIGNAL, uid, callbacks }, {}, timeout);
+    WaitResult r = run_pending_callbacks(guard, thread, callbacks);
+    if (r && *r == SCE_KERNEL_OK)
+        r = wait_on(waiters, guard, thread, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_SIGNAL : SCE_KERNEL_WAITTYPE_COND_SIGNAL, uid, callbacks }, {}, timeout);
     // Deleted while the waiter ran its callbacks out of the queue, which ends it like the delete's wake
     if (r && *r == SCE_KERNEL_ERROR_WAIT_DELETE)
         return lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_COND : SCE_KERNEL_ERROR_WAIT_DELETE_COND;
@@ -1098,8 +1123,12 @@ void EventFlag::drop_hold() {
         holder = 0;
 }
 
+bool EventFlag::held_by_other(SceUID thread_id) const {
+    return holds > 0 && holder != thread_id;
+}
+
 SceInt32 EventFlag::try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
-    if (holds > 0 && holder != thread_id)
+    if (held_by_other(thread_id))
         return SCE_KERNEL_ERROR_EVF_MULTI;
 
     bool condition;
@@ -1133,6 +1162,10 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
     if (const SceInt32 error = check_wait(pattern, wait_mode))
         return error;
+    if (held_by_other(thread->id))
+        return SCE_KERNEL_ERROR_EVF_MULTI;
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
 
     if (const SceInt32 result = try_take(thread->id, pattern, wait_mode, out_bits); result != SCE_KERNEL_ERROR_EVF_COND)
         return result;
@@ -1141,9 +1174,6 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
         holder = thread->id;
         ++holds;
     }
-    // A wait whose deadline already passed ends without blocking, and keeps its hold
-    if (timeout && *timeout == 0)
-        return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
     const WaitResult r = wait_on(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, uid, callbacks }, { wait_mode, pattern, out_bits }, timeout);
     const SceInt32 err = guest_result(r);
     if ((err == SCE_KERNEL_ERROR_WAIT_TIMEOUT || err == SCE_KERNEL_ERROR_WAIT_DELETE) && out_bits) {
@@ -1268,8 +1298,8 @@ SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
 
 MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size)
     : WithUidClass(attr, name)
-    , senders(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_S ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
-    , receivers(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_R ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
+    , senders(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_S ? WaitQueue<Sender>::Order::priority : WaitQueue<Sender>::Order::fifo)
+    , receivers(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_R ? WaitQueue<Receiver>::Order::priority : WaitQueue<Receiver>::Order::fifo)
     // A pipe's buffer is a whole number of 4 KiB pages
     , data_buffer(align(buf_size, 0x1000)) {}
 
@@ -1296,16 +1326,6 @@ void MsgPipe::on_delete() {
     receivers.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
-void MsgPipe::wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available) {
-    auto *waiter = waiters.find_if([&](auto &w) {
-        return !w.entry.notified && w.entry.request_size <= available;
-    });
-    if (waiter) {
-        waiter->entry.notified = true;
-        WaitQueue<WaitEntry>::notify(*waiter);
-    }
-}
-
 // The size of all the pieces together
 static uint64_t total_size(std::span<const MsgPipeVector> pieces) {
     uint64_t total = 0;
@@ -1314,116 +1334,254 @@ static uint64_t total_size(std::span<const MsgPipeVector> pieces) {
     return total;
 }
 
-std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks) {
-    const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
+MsgPipe::Transfer::Transfer(MemState &mem, std::span<const MsgPipeVector> pieces, SceSize *size, SceSize total, bool full)
+    : pieces(pieces)
+    , mem(&mem)
+    , size(size)
+    , total(total)
+    , left(total)
+    , full(full) {}
 
-    if (!is_msg_pipe_mode(wait_mode))
-        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_MODE);
-    if (total_size(pieces) > data_buffer.Capacity())
-        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
-    const SceSize size = static_cast<SceSize>(total_size(pieces));
+MsgPipe::Receiver::Receiver(MemState &mem, std::span<const MsgPipeVector> pieces, SceSize *size, SceSize total, bool full, bool peek)
+    : Transfer(mem, pieces, size, total, full)
+    , peek(peek) {}
 
-    // Fills the pieces in order with what the pipe holds
-    const auto copyOut = [&] {
-        std::size_t copied = 0;
-        for (const MsgPipeVector &piece : pieces) {
-            if (piece.size == 0)
-                continue;
-            void *const out = piece.base.get(mem);
-            // On a Vita a send that hands bytes to a waiting DONT_REMOVE receive leaves the pipe
-            // out of step, so each later receive gets bytes from an earlier send. That isn't copied.
-            const std::size_t piece_copied = (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE) ? data_buffer.Peek(out, piece.size, copied) : data_buffer.Remove(out, piece.size);
-            copied += piece_copied;
-            if (piece_copied < piece.size)
-                break;
-        }
-        return copied;
-    };
-
-    auto guard = lock();
-    if (!guard)
-        return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
-
-    // An ASAP receive needs at least 1 byte to move, so one of 0 bytes never ends
-    const auto can_receive = [&] {
-        const std::size_t availableSize = data_buffer.Used();
-        return ASAP ? size >= 1 && availableSize >= 1 : availableSize >= size;
-    };
-
-    if (!can_receive()) {
-        if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT)
-            return std::unexpected(SCE_KERNEL_ERROR_MSG_PIPE_EMPTY);
-
-        // sleep until we can read, if ASAP we can read as low as 1 byte
-        const WaitEntry entry{ .request_size = ASAP ? 1 : size };
-        const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = receivers.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid, callbacks }, entry, deadline, [&](auto &waiter) {
-            waiter.entry.notified = false;
-            return can_receive();
-        });
-        writeback_timeout(timeout, deadline);
-        // The thread is exiting, which the guest never sees
-        if (!r)
-            return 0;
-        if (*r != SCE_KERNEL_OK)
-            return std::unexpected(*r);
-    }
-
-    const SceSize copied_size = (SceSize)copyOut();
-    wake_waiter(senders, data_buffer.Free());
-    return copied_size;
+bool MsgPipe::Transfer::done() const {
+    return full ? left == 0 : left < total;
 }
 
-std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks) {
-    const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
+bool MsgPipe::Transfer::keeps_place() const {
+    return left != total;
+}
 
+std::span<char> MsgPipe::Transfer::run(SceSize n) {
+    // Steps over the pieces already moved, and empty ones
+    while (offset == pieces[piece].size) {
+        ++piece;
+        offset = 0;
+    }
+    const MsgPipeVector &current = pieces[piece];
+    return std::span{ current.base.cast<char>().get(*mem), current.size }.subspan(offset, std::min(n, current.size - offset));
+}
+
+void MsgPipe::Transfer::advance(SceSize n) {
+    offset += n;
+    left -= n;
+}
+
+void MsgPipe::Transfer::report() const {
+    if (size)
+        *size = total - left;
+}
+
+void MsgPipe::copy(Sender &sender, Receiver &receiver, SceSize n) {
+    // A copy of the sender moves through its pieces, and a peek leaves the sender where it was
+    Sender from = sender;
+    while (n > 0) {
+        const std::span<char> in = from.run(n);
+        const std::span<char> out = receiver.run(static_cast<SceSize>(in.size()));
+        std::ranges::copy(in.first(out.size()), out.begin());
+        const SceSize moved = static_cast<SceSize>(out.size());
+        from.advance(moved);
+        receiver.advance(moved);
+        n -= moved;
+    }
+    if (!receiver.peek)
+        sender = from;
+}
+
+void MsgPipe::fill(Sender &sender) {
+    // ASAP puts what fits, FULL all of its rest or nothing
+    const SceSize room = static_cast<SceSize>(data_buffer.Free());
+    if (sender.full && sender.left > room)
+        return;
+    SceSize n = std::min(sender.left, room);
+    while (n > 0) {
+        const std::span<char> in = sender.run(n);
+        const SceSize moved = static_cast<SceSize>(data_buffer.Insert(in.data(), in.size()));
+        sender.advance(moved);
+        n -= moved;
+    }
+}
+
+void MsgPipe::drain(Receiver &receiver) {
+    const SceSize held = static_cast<SceSize>(data_buffer.Used());
+    // A peek reads on from where it got to, and leaves the bytes in the pipe
+    SceSize at = receiver.peek ? std::min(receiver.total - receiver.left, held) : 0;
+    SceSize n = std::min(receiver.left, held - at);
+    while (n > 0) {
+        const std::span<char> out = receiver.run(n);
+        const SceSize moved = static_cast<SceSize>(receiver.peek ? data_buffer.Peek(out.data(), out.size(), at) : data_buffer.Remove(out.data(), out.size()));
+        at += moved;
+        receiver.advance(moved);
+        n -= moved;
+    }
+}
+
+SceSize MsgPipe::available() const {
+    SceSize bytes = static_cast<SceSize>(data_buffer.Used());
+    for (const auto *sender : senders)
+        bytes += sender->entry.left;
+    return bytes;
+}
+
+bool MsgPipe::give(Sender &sender) {
+    // A send reaches the first waiting receiver even with no bytes, which ends an ASAP receive
+    while (auto *const receiver = receivers.front()) {
+        Receiver &to = receiver->entry;
+        copy(sender, to, std::min(to.left, sender.left));
+        to.report();
+        // A FULL receive that still wants bytes stays the first one
+        if (to.full && to.left > 0)
+            break;
+        receivers.wake(*receiver);
+        if (sender.left == 0)
+            break;
+    }
+    fill(sender);
+    sender.report();
+    return sender.done();
+}
+
+bool MsgPipe::take(Receiver &receiver) {
+    drain(receiver);
+    // Each waiting sender gives its bytes to the receiver while it wants some, then puts its rest
+    // into the pipe, up to the first sender that stays
+    while (auto *const sender = senders.front()) {
+        Sender &from = sender->entry;
+        copy(from, receiver, std::min(receiver.left, from.left));
+        // A peek frees nothing
+        if (receiver.peek)
+            break;
+        fill(from);
+        from.report();
+        if (!from.done())
+            break;
+        senders.wake(*sender);
+    }
+    receiver.report();
+    return receiver.done();
+}
+
+void MsgPipe::serve() {
+    // The first receiver goes first, so the pipe's bytes go out before those of waiting senders
+    while (true) {
+        if (auto *const receiver = receivers.front(); receiver && take(receiver->entry))
+            receivers.wake(*receiver);
+        else if (auto *const sender = senders.front(); sender && give(sender->entry))
+            senders.wake(*sender);
+        else
+            break;
+    }
+}
+
+template <typename Side>
+bool MsgPipe::goes_first(WaitQueue<Side> &side, int priority) {
+    // Nothing goes ahead of a head that moved part of its bytes
+    const auto *const head = side.front();
+    return side.first_for(priority) && (!head || !head->entry.keeps_place());
+}
+
+SceInt32 MsgPipe::receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks) {
     if (!is_msg_pipe_mode(wait_mode))
-        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_MODE);
-    if (total_size(pieces) > data_buffer.Capacity())
-        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
-    const SceSize size = static_cast<SceSize>(total_size(pieces));
+        return SCE_KERNEL_ERROR_ILLEGAL_MODE;
+    // DONT_WAIT ends like a try, and a wait with callbacks runs them after it
+    if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT) {
+        const SceInt32 result = try_receive(thread, mem, wait_mode, pieces, size);
+        if (callbacks)
+            thread->process_callbacks();
+        return result;
+    }
+    const uint64_t total = total_size(pieces);
+    if (total > data_buffer.Capacity())
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
 
     auto guard = lock();
     if (!guard)
-        return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
-
-    // An ASAP send needs at least 1 byte to move, so one of 0 bytes never ends
-    const auto can_send = [&] {
-        const std::size_t freeSize = data_buffer.Free();
-        return ASAP ? size >= 1 && freeSize >= 1 : freeSize >= size;
-    };
-
-    if (!can_send()) {
-        if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT)
-            return std::unexpected(SCE_KERNEL_ERROR_MSG_PIPE_FULL);
-
-        // sleep until there's more space, if ASAP we can insert as low as 1 byte
-        const WaitEntry entry{ .request_size = ASAP ? 1 : size };
-        const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = senders.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid, callbacks }, entry, deadline, [&](auto &waiter) {
-            waiter.entry.notified = false;
-            return can_send();
-        });
-        writeback_timeout(timeout, deadline);
-        // The thread is exiting, which the guest never sees
-        if (!r)
-            return 0;
-        if (*r != SCE_KERNEL_OK)
-            return std::unexpected(*r);
+        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+    Receiver receiver(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL, wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE);
+    // A receive of nothing ends at once, before any callback runs
+    if (receiver.total == 0) {
+        receiver.report();
+        return SCE_KERNEL_OK;
     }
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
+    // One behind the receivers already waiting takes nothing before it waits
+    const bool done = goes_first(receivers, thread->get_priority()) && take(receiver);
+    receiver.report();
+    if (done)
+        return SCE_KERNEL_OK;
+    return guest_result(wait_on(receivers, guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid, callbacks }, receiver, timeout));
+}
 
-    // Copies the pieces in order into the pipe, as far as it has room
-    std::size_t copied = 0;
-    for (const MsgPipeVector &piece : pieces) {
-        if (piece.size == 0)
-            continue;
-        const std::size_t piece_copied = data_buffer.Insert(piece.base.get(mem), piece.size);
-        copied += piece_copied;
-        if (piece_copied < piece.size)
-            break;
+SceInt32 MsgPipe::send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks) {
+    if (!is_msg_pipe_mode(wait_mode))
+        return SCE_KERNEL_ERROR_ILLEGAL_MODE;
+    // DONT_WAIT ends like a try, and a wait with callbacks runs them after it
+    if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT) {
+        const SceInt32 result = try_send(thread, mem, wait_mode, pieces, size);
+        if (callbacks)
+            thread->process_callbacks();
+        return result;
     }
-    wake_waiter(receivers, data_buffer.Used());
-    return static_cast<SceSize>(copied);
+    const uint64_t total = total_size(pieces);
+    if (total > data_buffer.Capacity())
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+
+    auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+    Sender sender(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
+    // A send of nothing ends at once, before any callback runs
+    if (sender.total == 0) {
+        sender.report();
+        return SCE_KERNEL_OK;
+    }
+    if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
+        return guest_result(r);
+    // One behind the senders already waiting gives nothing before it waits
+    const bool done = goes_first(senders, thread->get_priority()) && give(sender);
+    sender.report();
+    if (done)
+        return SCE_KERNEL_OK;
+    return guest_result(wait_on(senders, guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid, callbacks }, sender, timeout));
+}
+
+SceInt32 MsgPipe::try_receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size) {
+    if (!is_msg_pipe_mode(wait_mode))
+        return SCE_KERNEL_ERROR_ILLEGAL_MODE;
+    const uint64_t total = total_size(pieces);
+    if (total > data_buffer.Capacity())
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+    Receiver receiver(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL, wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE);
+    // Behind the receivers already waiting, or short of bytes for all of a FULL receive, it fails
+    // without writing a size
+    if (!goes_first(receivers, thread->get_priority()) || (receiver.full && receiver.total > available()))
+        return SCE_KERNEL_ERROR_MSG_PIPE_EMPTY;
+    return take(receiver) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_EMPTY;
+}
+
+SceInt32 MsgPipe::try_send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size) {
+    if (!is_msg_pipe_mode(wait_mode))
+        return SCE_KERNEL_ERROR_ILLEGAL_MODE;
+    const uint64_t total = total_size(pieces);
+    if (total > data_buffer.Capacity())
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+    Sender sender(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
+    // Behind the senders already waiting, or short of room for all of a FULL send, it fails without
+    // writing a size
+    if (!goes_first(senders, thread->get_priority()) || (sender.full && sender.total > data_buffer.Free()))
+        return SCE_KERNEL_ERROR_MSG_PIPE_FULL;
+    return give(sender) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_FULL;
 }
 
 SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads) {

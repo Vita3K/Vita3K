@@ -21,17 +21,18 @@ callback_event_results          fail     # events that end a wait during a callb
 callback_event_waits            fail     # a simple event set by a callback ends the wait with NOTIFY_CALLBACK
 callback_info                   pass
 callback_inner_same_object      pass
-callback_inner_same_pipe        fail     # message pipe waits stay queued during callbacks
+callback_inner_same_pipe        pass
 callback_inner_wait             pass
 callback_nesting                fail     # callbacks don't run inside callbacks
 callback_notify_departure_state skip     # threads ignore their core and priority, so whether the notified waiter already ran when the main thread looks is a race
+callback_notify_equal_priority  skip     # threads ignore their core and priority, so whether a notify switches to the waiter is a race
 callback_notify_preempt         skip     # threads ignore their core and priority, so whether the callback runs inside the notify is a race
 callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
 callback_notify_time_left       fail     # threads ignore their core and priority, so the waiter runs its callback during the notifier's busy interval and waits again
 callback_outer_timeout          pass
-callback_outer_wake             fail     # a simple event wait a callback outlasted returns NOTIFY_CALLBACK, message pipe waits stay queued during callbacks
+callback_outer_wake             fail     # a simple event wait a callback outlasted returns NOTIFY_CALLBACK
 callback_outer_wake_more        pass
-callback_outer_wake_send        fail     # message pipe waits stay queued during callbacks
+callback_outer_wake_send        pass
 callback_owner_end              pass
 callback_priority_requeue       fail     # no requeue on a priority change
 callback_requeue_order          pass
@@ -39,6 +40,7 @@ callback_retake                 pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           pass
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
+cb_wait_check_order             pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_unlock_order            fail     # a mutex ceiling doesn't raise its owner's priority
@@ -76,7 +78,7 @@ event_bits                      pass
 event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
-event_flag_hold_callback_events fail     # a timeout of 1 gives the event flag hold back
+event_flag_hold_callback_events pass
 event_flag_hold_callbacks       pass
 event_flag_hold_leak            pass
 event_flag_hold_take            pass
@@ -132,6 +134,7 @@ lw_work                         pass
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_alignment              pass
+memblock_alignment_zero         pass
 memblock_base_block             pass
 memblock_find_gaps              fail     # lookups past a block give 0x80024700, the find ignores its size
 memblock_find_ranges            fail     # the find ignores its size, info by range is unimplemented
@@ -165,19 +168,23 @@ module_start_threads            fail     # thread event handlers don't run for m
 module_start_vfp                pass
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
+msgpipe_callback_rejoin_order   pass
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
-msgpipe_failed_sizes            fail     # failed try calls in FULL mode or while another thread waits write a size, a FULL receive that times out takes no bytes
-msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe
-msgpipe_order                   fail     # a send reaches only one waiting receiver
+msgpipe_failed_sizes            pass
+msgpipe_modes                   pass
+msgpipe_order                   pass
+msgpipe_partial_head_order      pass
 msgpipe_peek_stale              fail     # a send to a DONT_REMOVE receive leaves the pipe's bytes out of step
-msgpipe_receive_sender_stays    fail     # a receive serves only one waiting sender, not each that fits
-msgpipe_receiver_leaves         fail     # bytes sent to a waiting receive stay in the pipe
-msgpipe_receiver_requeue        fail     # a receiver takes part of a FULL receive at once, no requeue on a priority change
-msgpipe_sender_requeue          fail     # senders put their bytes in behind a head that doesn't fit, no requeue on a priority change
+msgpipe_receive_sender_stays    pass
+msgpipe_receiver_leaves         pass
+msgpipe_receiver_requeue        fail     # no requeue on a priority change
+msgpipe_sender_requeue          fail     # no requeue on a priority change
+msgpipe_try_receive_senders     pass
 msgpipe_vectors                 pass
 msgpipe_waits                   pass
-msgpipe_wake_state              fail     # a receive copies its bytes when its thread runs, not in the send
+msgpipe_wake_state              skip     # threads ignore their core and priority, so whether the woken waiter ran before its status is read is a race
+msgpipe_zero_bytes              pass
 mspace                          fail     # sceClib memory space info
 multi_events                    fail     # waiting on several events, callbacks registered to events
 multi_events_and_delete         fail     # sceKernelWaitMultipleEvents, deleted events and the wait type and UID
@@ -186,7 +193,7 @@ multi_events_requeue            fail     # sceKernelWaitMultipleEvents
 multi_events_unknown_uid        fail     # sceKernelWaitMultipleEvents with unusable entries and cancels
 multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
-mutex_cancel_counts             fail     # negative mutex cancel counts, callbacks on locks that don't wait, a woken waiter's state
+mutex_cancel_counts             fail     # negative mutex cancel counts, a woken waiter's state
 mutex_ceiling                   fail     # mutex priority ceilings
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_waits                     pass
@@ -205,7 +212,7 @@ out_past_block_end              fail     # no write check on output parameters, 
 outside_mask_rerun              fail     # threads ignore their core
 owner_end                       pass
 owner_end_more                  pass
-poll_calls                      fail     # the bits failed event flag polls write, message pipe try calls past waiting threads
+poll_calls                      fail     # the bits failed event flag polls write
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_migrate                 fail     # threads ignore their core
 preempt_status                  fail     # threads ignore their core and priority
@@ -322,7 +329,9 @@ thread_stack_free               fail     # the stack free size is the room below
 thread_stack_free_scan          fail     # the stack free size is the room below the stack pointer, not a scan of the stack
 thread_stack_negative           pass
 thread_stack_zero               pass
-thread_start_registers          fail     # the arguments and sp 8 bytes below the stack top, not 16, the CPSR a thread reads
+thread_start_arg_registers      fail     # the arguments 8 bytes aligned, the size in r0 for a NULL pointer
+thread_start_cpsr               fail     # the CPSR a thread reads has no mode bits
+thread_start_registers          fail     # the arguments and sp 8 bytes below the stack top, not 16
 thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_suspend_for_vm_stops     pass
@@ -337,6 +346,7 @@ timer_callback                  fail     # callbacks registered to timers
 timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
+timer_event_wakes_all           fail     # a pulse reaches only the first waiter, no timer event info
 timer_info_cancel               fail     # timer info fields
 timer_modes                     fail     # sceKernelSetTimerTime
 timer_oneshot_refire            fail     # a one shot timer that fired never fires again
@@ -357,7 +367,7 @@ unmapped_in                     crash    # no pointer checks, an unmapped option
 unmapped_out                    crash    # no write check on output parameters, an unmapped pointer crashes
 vblank_wake_core                fail     # threads ignore their core and priority
 wait_delete_timeout             pass
-wait_info_retries               fail     # a woken thread reports RUNNING instead of READY, bytes sent to a waiting receive stay in the pipe
+wait_info_retries               fail     # a woken thread reports RUNNING instead of READY
 wait_order                      pass
 wait_own_end                    pass
 wait_priority_change            fail     # a waiter changed to any priority goes behind the others at it

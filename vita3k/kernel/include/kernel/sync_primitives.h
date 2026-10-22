@@ -51,6 +51,20 @@ protected:
     // ends without being queued again.
     virtual void timed_out(const ThreadStatePtr &) {}
 
+    // Runs the thread's pending callbacks with the lock released, which a wait with callbacks does once
+    // its checks passed and before it takes. The lock stays held when none would run. Returns
+    // WAIT_DELETE if the object was deleted meanwhile.
+    [[nodiscard]] WaitResult run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
+        if (!callbacks || !thread->has_pending_callbacks())
+            return SCE_KERNEL_OK;
+        lock.unlock();
+        WaitResult r = thread->run_callbacks();
+        lock.lock();
+        if (r && was_deleted())
+            r = SCE_KERNEL_ERROR_WAIT_DELETE;
+        return r;
+    }
+
     // Blocks thread on target in queue until a waker gives it a result, the object is deleted, or
     // the guest timeout passes, and writes the time left back to the timeout. A waiter that leaves
     // without a waker, by its deadline, its thread's end or a callback, serves the waiters behind
@@ -59,6 +73,12 @@ protected:
     [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout) {
         typename WaitQueue<Entry>::Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         const Deadline deadline = deadline_from(timeout);
+        // A deadline already gone ends the wait before it is queued, so no waker can serve it and
+        // nothing that ends a queued wait, like timed_out(), runs
+        if (std::chrono::steady_clock::now() >= deadline) {
+            writeback_timeout(timeout, deadline);
+            return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+        }
         // The time left when the waiter left for its callbacks, kept if it gets what it waits for at
         // once after them
         std::optional<SceUInt32> time_left;
@@ -179,6 +199,8 @@ public:
 private:
     void on_delete() override;
     void schedule_event();
+    // Wakes the first waiter so it checks the event again
+    void wake_first();
     // Moves next_event to the first event after current_time, or to never if the event doesn't repeat.
     void advance_next_event(uint64_t current_time);
     // Takes the event if it is set by current_time, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
@@ -379,6 +401,8 @@ private:
     };
 
     void on_delete() override;
+    // Returns whether another thread's wait holds the flag. The lock must be held.
+    bool held_by_other(SceUID thread_id) const;
     // Takes the flags for the thread if pattern matches them, or returns why it can't. The lock must
     // be held.
     SceInt32 try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
@@ -476,28 +500,81 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size);
 
-    // Both move the bytes of the pieces in order, and return the size transferred, or the error
-    std::expected<SceSize, SceInt32> receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks);
-    std::expected<SceSize, SceInt32> send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks);
+    // Both move the bytes of the pieces in order, waiting until a FULL call moved all of them or an
+    // ASAP call any. The size moved so far is kept in size, which may be null.
+    SceInt32 receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
+    SceInt32 send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
+    // Both move what they can at once, without waiting
+    SceInt32 try_receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
+    SceInt32 try_send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
     SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
     // Fills info with what the message pipe's info reports, or returns UNKNOWN_MSG_PIPE_ID if it was
     // deleted.
     SceInt32 info(SceKernelMppInfo &info) const;
 
 private:
-    struct WaitEntry {
-        SceSize request_size;
-        // Woken to recheck the buffer and has not done so yet
-        bool notified = false;
+    // How far a send or a receive got, kept in its waiter so that whoever moves bytes carries it on
+    struct Transfer {
+        std::span<const MsgPipeVector> pieces;
+        MemState *mem;
+        // Where the caller gets the size moved, or null
+        SceSize *size;
+        SceSize total;
+        SceSize left;
+        bool full;
+        // The piece the next byte goes to or comes from, and how far into it
+        std::size_t piece = 0;
+        SceSize offset = 0;
+
+        Transfer(MemState &mem, std::span<const MsgPipeVector> pieces, SceSize *size, SceSize total, bool full);
+        // Returns whether it moved what its mode asks for
+        bool done() const;
+        // Returns whether it moved part of its bytes, which keeps it at the head of its queue
+        bool keeps_place() const;
+        // Returns the guest bytes at its position, at most n and within one piece
+        std::span<char> run(SceSize n);
+        void advance(SceSize n);
+        // Writes the size moved so far for the caller
+        void report() const;
+    };
+
+    struct Sender : Transfer {
+        using Transfer::Transfer;
+    };
+
+    struct Receiver : Transfer {
+        // A DONT_REMOVE receive, which copies bytes without taking them
+        bool peek;
+
+        Receiver(MemState &mem, std::span<const MsgPipeVector> pieces, SceSize *size, SceSize total, bool full, bool peek);
     };
 
     void on_delete() override;
-    // Wakes the first waiter whose request now fits and that was not woken already, so it retries its transfer
-    static void wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available);
+    // Carries on the first receiver's and the first sender's transfers until neither ends
+    void serve() override;
+    // Moves the sender's bytes to the waiting receivers, then puts the rest into the pipe. Returns
+    // whether the sender is done.
+    bool give(Sender &sender);
+    // Moves bytes to the receiver from the pipe, then from the waiting senders, which put their rest
+    // into the pipe. Returns whether the receiver is done.
+    bool take(Receiver &receiver);
+    // Puts as much of the sender's rest into the pipe as its mode allows
+    void fill(Sender &sender);
+    // Moves the pipe's bytes to the receiver, up to what it still wants
+    void drain(Receiver &receiver);
+    // Returns the bytes a receive can get at once, the pipe's and those the waiting senders still have
+    SceSize available() const;
+    // Copies n bytes from the sender to the receiver, and takes them from the sender unless the
+    // receiver peeks
+    static void copy(Sender &sender, Receiver &receiver, SceSize n);
+    // Returns whether a new call goes ahead of the calls already waiting on its side
+    template <typename Side>
+    static bool goes_first(WaitQueue<Side> &side, int priority);
 
-    // Guarded by the lock
-    WaitQueue<WaitEntry> senders;
-    WaitQueue<WaitEntry> receivers;
+    // Guarded by the lock. At most one side waits, except right after a waiter came back from its
+    // callbacks.
+    WaitQueue<Sender> senders;
+    WaitQueue<Receiver> receivers;
     ByteRingBuffer data_buffer;
 };
 
