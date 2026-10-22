@@ -51,11 +51,11 @@ cond                            pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
 cond_errors                     fail     # close, signal to a thread errors, create attributes, open with a NULL name
 cond_mutex_delete               pass
-cond_relock_requeue             fail     # a condition waiter taking its mutex back reports the condition, no requeue on a priority change
+cond_relock_requeue             fail     # a condition waiter taking its mutex back isn't requeued on a priority change
 cond_rwlock_edges               pass
-cond_semantics                  fail     # a signaled condition waiter whose timeout passes while it waits for the mutex
+cond_semantics                  pass
 cond_signal                     pass
-cond_signal_all_order           fail     # a condition waiter waiting for its mutex reports the condition's UID
+cond_signal_all_order           pass
 cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
 core_choice                     fail     # the CPU fields of thread info, threads ignore their core
@@ -124,8 +124,8 @@ local_ready_requeue             fail     # threads are never READY or STANDBY
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
 lw_cond_errors                  fail     # create checks of the attribute, a NULL mutex and a NULL work area, a signal to thread 0
-lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back reports the condition, no requeue on a priority change
-lw_cond_semantics               fail     # a signaled waiter whose timeout passes
+lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back isn't requeued on a priority change
+lw_cond_semantics               pass
 lw_info_by_id_uid               fail     # the uid the lightweight condition variable info by UID reports
 lw_mutex                        pass
 lw_mutex_errors                 pass
