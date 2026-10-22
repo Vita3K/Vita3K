@@ -124,7 +124,7 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
         // Calculate the size of the key for the current entry by subtracting the offsets
         if (sfile.entries[i].entry.key_offset >= sfile.entries[i + 1].entry.key_offset
-            || sfile.header.key_table_start + sfile.entries[i + 1].entry.key_offset > sfile.header.data_table_start) {
+            || static_cast<uint64_t>(sfile.header.key_table_start) + sfile.entries[i + 1].entry.key_offset > sfile.header.data_table_start) {
             return false;
         }
         uint32_t keySize = sfile.entries[i + 1].entry.key_offset - sfile.entries[i].entry.key_offset;
