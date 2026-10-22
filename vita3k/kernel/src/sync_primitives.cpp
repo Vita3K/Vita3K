@@ -256,7 +256,7 @@ void Timer::schedule_event() {
 }
 
 void Timer::wake_first() {
-    if (WaitQueue<std::monostate>::Waiter *const first = waiters.front())
+    if (WaitQueue<WaitEntry>::Waiter *const first = waiters.front())
         first->thread->wake();
 }
 
@@ -325,7 +325,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         return result;
 
     const Deadline guest_deadline = deadline_from(timeout);
-    WaitQueue<std::monostate>::Waiter waiter{ .thread = thread, .priority = thread->get_priority() };
+    WaitQueue<WaitEntry>::Waiter waiter{ .thread = thread, .priority = thread->get_priority(), .entry = { result_pattern } };
     waiters.push(waiter);
 
     while (true) {
@@ -347,6 +347,12 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = thread->run_callbacks();
         guard.lock();
+        // A waker that ended the wait meanwhile, like an event that reached every waiter at once,
+        // wins over the deadline and the thread's end
+        if (waiter.result) {
+            writeback_timeout(timeout, guest_deadline);
+            return *waiter.result;
+        }
         if (!r) {
             waiters.remove(waiter);
             wake_first();
@@ -371,6 +377,15 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
     if (result_pattern)
         *result_pattern = SCE_KERNEL_EVENT_TIMER;
 
+    // An event of a manual reset timer reaches every waiter at once, the events of an auto reset one
+    // go to the waiters in turn
+    if (!(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)) {
+        waiters.wake_if([](auto &w) {
+            if (w.entry.result_pattern)
+                *w.entry.result_pattern = SCE_KERNEL_EVENT_TIMER;
+            return true;
+        });
+    }
     event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
     advance_next_event(current_time);
     // the next waiter checks the event in turn
@@ -459,6 +474,22 @@ SceInt32 Timer::get_base(uint64_t &time) const {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
     time = base;
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 Timer::event_info(SceKernelEventInfo &info) const {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+
+    // A set event that came is set, also before a wait or a poll took it
+    const bool fired = event_set || (!is_pulse && next_event < get_current_time());
+    info = {};
+    info.eventId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.eventPattern = SCE_KERNEL_EVENT_CREATE | (fired ? SCE_KERNEL_EVENT_TIMER : 0);
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }
 

@@ -200,8 +200,15 @@ public:
     // Sets time to the clock time the count runs from, 0 if the timer never started, or returns
     // UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 get_base(uint64_t &time) const;
+    // Fills info with what the event info of the timer reports, or returns UNKNOWN_EVENT_ID if it was
+    // deleted.
+    SceInt32 event_info(SceKernelEventInfo &info) const;
 
 private:
+    struct WaitEntry {
+        SceUInt32 *result_pattern;
+    };
+
     void on_delete() override;
     void schedule_event();
     // Wakes the first waiter so it checks the event again
@@ -215,7 +222,7 @@ private:
 
     // Guarded by the lock
     // Only the first waiter waits for the next event, the others wait for their turn
-    WaitQueue<std::monostate> waiters;
+    WaitQueue<WaitEntry> waiters;
 
     bool is_started = false;
     bool is_repeat = false;

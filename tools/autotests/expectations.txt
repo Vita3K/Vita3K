@@ -346,13 +346,13 @@ timer_callback                  fail     # callbacks registered to timers
 timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
-timer_event_wakes_all           fail     # a pulse reaches only the first waiter, no timer event info
+timer_event_wakes_all           pass
 timer_info_cancel               fail     # timer info fields
 timer_modes                     fail     # sceKernelSetTimerTime
 timer_oneshot_refire            fail     # a one shot timer that fired never fires again
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
-timer_waiters                   fail     # a manual reset timer's bit after its event, a pulse wakes one waiter
+timer_waiters                   pass
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority
 tls                             crash    # TLS key 256 and slots by thread UID

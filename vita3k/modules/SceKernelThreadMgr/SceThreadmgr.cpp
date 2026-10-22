@@ -381,9 +381,14 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
 
 EXPORT(SceInt32, _sceKernelGetEventInfo, SceUID eventId, Ptr<SceKernelEventInfo> pInfo) {
     TRACY_FUNC(_sceKernelGetEventInfo, eventId, pInfo);
-    const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(eventId);
+    // A timer is an event too
     SceKernelEventInfo full;
-    if (!event || event->info(full) != SCE_KERNEL_OK)
+    SceInt32 found = SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(eventId))
+        found = event->info(full);
+    else if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(eventId))
+        found = timer->event_info(full);
+    if (found != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 
     SceKernelEventInfo *info = pInfo.get(emuenv.mem);
