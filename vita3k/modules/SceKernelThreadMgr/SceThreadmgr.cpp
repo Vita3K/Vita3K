@@ -54,14 +54,25 @@ static void write_info(T *info, T full, SceSize size) {
 
 // Waits on a simple event or a timer, which are both events.
 static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
+    // The wait fills copies that start at 0 and go to the guest when it returns, so the values a wait
+    // doesn't write read 0, and callbacks run meanwhile see the guest's own
+    SceUInt32 pattern = 0;
+    SceUInt64 data = 0;
+    SceUInt32 *const pattern_copy = result_pattern ? &pattern : nullptr;
+    SceUInt64 *const data_copy = user_data ? &data : nullptr;
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
-    const TimerPtr timer = event ? nullptr : emuenv.kernel.objects.find<Timer>(event_id);
-    if (!event && !timer)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
-    if (event)
-        return event->wait(thread, bit_pattern, result_pattern, user_data, timeout, callbacks);
-    return timer->wait(thread, result_pattern, user_data, timeout, callbacks);
+    SceInt32 result;
+    if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
+        result = event->wait(thread, bit_pattern, pattern_copy, data_copy, timeout, callbacks);
+    else if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(event_id))
+        result = timer->wait(thread, pattern_copy, data_copy, timeout, callbacks);
+    else
+        result = RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    if (result_pattern)
+        *result_pattern = pattern;
+    if (user_data)
+        *user_data = data;
+    return result;
 }
 
 EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, Ptr<SceKernelCreateLwMutex_opt> opt) {
@@ -727,6 +738,11 @@ EXPORT(int, _sceKernelPMonThreadGetCounter) {
 
 EXPORT(int, _sceKernelPollEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
     TRACY_FUNC(_sceKernelPollEvent, event_id, bit_pattern, result_pattern, user_data);
+    // The values a poll doesn't write read 0
+    if (result_pattern)
+        *result_pattern = 0;
+    if (user_data)
+        *user_data = 0;
     if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
         return event->poll(bit_pattern, result_pattern, user_data);
     // this may also be a timer event

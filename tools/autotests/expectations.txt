@@ -264,8 +264,8 @@ shared_raise_cores              fail     # threads are never READY and ignore th
 shared_ready_raise              fail     # threads are never READY and ignore their core
 simple_event                    pass
 simple_event_auto_waiters       pass
-simple_event_cancel             fail     # simple event cancels with a set pattern, the user data a cancel leaves
-simple_event_edges              fail     # a wait for pattern 0, what failed waits write, attribute 0x800
+simple_event_cancel             fail     # simple event cancels with a set pattern, simple event info
+simple_event_edges              fail     # the user data of a pulse, of a set or pulse of 0 and of the delete event, attribute 0x800
 simple_event_errors             fail     # simple event info, close and delete of unknown UIDs
 simple_event_info               fail     # simple event info
 simple_event_null_pointers      pass

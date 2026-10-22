@@ -76,11 +76,8 @@ void SimpleEvent::on_delete() {
 }
 
 SceInt32 SimpleEvent::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
-    if (!(pattern & wait_pattern)) {
-        if (result_pattern)
-            *result_pattern = 0;
+    if (!(pattern & wait_pattern))
         return SCE_KERNEL_ERROR_EVENT_COND;
-    }
 
     if (result_pattern)
         *result_pattern = pattern & wait_pattern;
@@ -99,22 +96,19 @@ SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern,
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    if (wait_pattern == 0)
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     if (const WaitResult r = run_pending_callbacks(guard, thread, callbacks); !r || *r != SCE_KERNEL_OK)
         return guest_result(r);
 
+    // A wait for pattern 0 matches nothing, so it lasts until its timeout, a cancel or a delete
     if (const SceInt32 result = try_take(wait_pattern, result_pattern, user_data); result != SCE_KERNEL_ERROR_EVENT_COND)
         return result;
 
     const WaitResult r = wait_on(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENT, uid, callbacks }, { wait_pattern, result_pattern, user_data }, timeout);
     const SceInt32 err = guest_result(r);
-    // A timed out wait keeps the 0 try_take wrote, one ended by a delete or a cancel gets the error
-    // event, and set_or_pulse or on_delete writes the bits of one that succeeds
+    // A wait ended by a delete or a cancel gets the error event and no user data, and set_or_pulse
+    // or on_delete writes what one that succeeds gets
     if (err < 0 && err != SCE_KERNEL_ERROR_WAIT_TIMEOUT && result_pattern)
         *result_pattern = SCE_KERNEL_EVENT_ERROR;
-    if (err < 0 && user_data)
-        *user_data = last_user_data;
     return err;
 }
 
