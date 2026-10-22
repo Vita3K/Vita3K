@@ -260,6 +260,13 @@ struct PlayerState {
     uint64_t framerate_microseconds = 0;
 
     uint64_t last_timestamp = 0;
+    uint64_t last_audio_timestamp = 0;
+    bool looping = false;
+    bool demux_eof = false;
+    bool video_eof = true;
+    bool audio_eof = true;
+    bool video_draining = false;
+    bool audio_draining = false;
     uint32_t last_channels = 0;
     uint32_t last_sample_rate = 0;
     uint32_t last_sample_count = 0;
@@ -272,6 +279,7 @@ struct PlayerState {
     void switch_video(const std::string &path);
 
     bool next_packet(int32_t stream_id);
+    void finish_stream(int32_t stream_id);
 
     std::vector<int16_t> receive_audio();
     std::vector<uint8_t> receive_video();
