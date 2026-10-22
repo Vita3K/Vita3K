@@ -24,11 +24,13 @@
 #include <audio/state.h>
 #include <config/state.h>
 #include <ctrl/functions.h>
+#include <ctrl/state.h>
 #include <emuenv/state.h>
 #include <ime/functions.h>
 #include <motion/event_handler.h>
 #include <renderer/state.h>
 #include <touch/functions.h>
+#include <touch/state.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -50,6 +52,55 @@ void reset_session_audio(EmuEnvState &emuenv) {
     LOG_DEBUG("Resetting audio backend '{}' after SDL session shutdown", emuenv.audio.audio_backend);
     emuenv.audio.adapter.reset();
     emuenv.audio.audio_backend.clear();
+}
+
+void update_mouse_input(EmuEnvState &emuenv, SDL_Window *window) {
+    auto &touch = emuenv.touch;
+    auto &overlay = emuenv.ctrl.overlay_mouse;
+    if (!window) {
+        touch.renderer_focused = false;
+        touch.mouse_button_left = false;
+        touch.mouse_button_right = false;
+        overlay.pressed.store(false, std::memory_order_relaxed);
+        return;
+    }
+
+#ifdef __ANDROID__
+    return;
+#else
+    if (touch.finger_count > 0)
+        return;
+
+    float window_x = 0.f;
+    float window_y = 0.f;
+    const SDL_MouseButtonFlags buttons = SDL_GetMouseState(&window_x, &window_y);
+    int window_width = 0;
+    int window_height = 0;
+    int drawable_width = 0;
+    int drawable_height = 0;
+    SDL_GetWindowSize(window, &window_width, &window_height);
+    SDL_GetWindowSizeInPixels(window, &drawable_width, &drawable_height);
+
+    const float scale_x = window_width > 0 && drawable_width > 0
+        ? static_cast<float>(drawable_width) / static_cast<float>(window_width)
+        : 1.f;
+    const float scale_y = window_height > 0 && drawable_height > 0
+        ? static_cast<float>(drawable_height) / static_cast<float>(window_height)
+        : 1.f;
+    const bool focused = SDL_GetKeyboardFocus() == window || SDL_GetMouseFocus() == window;
+
+    touch.mouse_x = window_x * scale_x;
+    touch.mouse_y = window_y * scale_y;
+    touch.renderer_focused = focused;
+    touch.mouse_button_left = focused && (buttons & SDL_BUTTON_LMASK) != 0;
+    touch.mouse_button_right = focused && (buttons & SDL_BUTTON_RMASK) != 0;
+
+    overlay.x.store(window_width > 0 ? window_x * 960.f / window_width : window_x,
+        std::memory_order_relaxed);
+    overlay.y.store(window_height > 0 ? window_y * 544.f / window_height : window_y,
+        std::memory_order_relaxed);
+    overlay.pressed.store(touch.mouse_button_left, std::memory_order_relaxed);
+#endif
 }
 
 void notify_ime_changed(const Hooks &hooks) {
@@ -162,6 +213,7 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
         const auto cleanup_launch = [&](const app::AppSessionStopReason reason) {
             if (hooks.on_stop)
                 hooks.on_stop();
+            update_mouse_input(emuenv, nullptr);
             session.stop(reason);
             reset_session_audio(emuenv);
 
@@ -348,6 +400,8 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
                     break;
                 }
             }
+
+            update_mouse_input(emuenv, window);
 
             if (!pending_launch_request) {
                 if (auto request = emuenv.take_app_launch_request()) {
