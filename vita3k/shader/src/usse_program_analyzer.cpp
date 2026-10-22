@@ -586,7 +586,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, const AnalyzeReadFuncti
             }
         }
 
-        if (current_code_inst) {
+        if (current_code_inst && current_code->offset <= request.end_offset) {
             current_code->size = request.end_offset - current_code->offset + 1;
             request.block_node->add_children(current_code_inst);
         }
