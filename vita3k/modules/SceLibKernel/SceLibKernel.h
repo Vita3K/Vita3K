@@ -19,8 +19,14 @@
 
 #include <module/module.h>
 
+#include <io/types.h>
+
 struct SceKernelModuleInfo;
 
 DECL_EXPORT(SceInt32, sceKernelGetThreadCurrentPriority);
 DECL_EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *info);
 DECL_EXPORT(int, sceClibPrintf, const char *fmt, module::vargs args);
+DECL_EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat);
+DECL_EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode);
+DECL_EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeekMode whence);
+DECL_EXPORT(int, sceIoClose, const SceUID fd);
