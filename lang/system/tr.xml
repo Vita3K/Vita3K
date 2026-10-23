@@ -328,10 +328,12 @@ Kupa özelliğini destekleyen bir uygulamayı kullanarak kupa kazanabilirsiniz.<
 		<not_earned>Kazanılmadı</not_earned>
 		<original>Orijinal</original>
 		<sort>Sırala</sort>
+		<sync_with_server>Sunucu ile Senkronize Et</sync_with_server>
 		<trophies>Kupalar</trophies>
 		<grade>Derece</grade>
 		<progress>İlerleme</progress>
 		<updated>Güncelleme Tarihi</updated>
+		<syncing_trophy>Kupa bilgisi sunucu ile senkronize ediliyor...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

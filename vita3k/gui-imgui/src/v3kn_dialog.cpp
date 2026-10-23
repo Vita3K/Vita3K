@@ -276,8 +276,17 @@ void init_v3kn_user_info(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     const auto user_info = v3kn::get_v3kn_user_info(emuenv);
-    if (user_info.online_id.empty() || user_info.token.empty())
+    if (user_info.online_id.empty() || user_info.token.empty() || !v3kn::is_v3kn_logged_in())
         return;
+
+    v3kn::start_trophy_auto_sync(emuenv, [lang](const v3kn::Error &sync_error) {
+        init_info_message({
+            .function = "trophy_sync",
+            .title = lang.common.main.at("error"),
+            .level = spdlog::level::err,
+            .msg = sync_error.message,
+        });
+    });
 
     const auto server_index = vector_utils::find_index(V3KN_SERVER_LIST_URL, user_info.host);
     const auto cache_index = server_index < V3KN_SERVER_LIST_CACHE_NAME.size() ? server_index : static_cast<size_t>(v3kn::V3knServer::Official);

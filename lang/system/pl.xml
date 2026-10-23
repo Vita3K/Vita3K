@@ -803,12 +803,14 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 		<not_earned>Nie zdobyto</not_earned>
 		<original>Oryginalne</original>
 		<sort>Sortuj</sort>
+		<sync_with_server>Synchronizuj z serwerem</sync_with_server>
 		<trophies>Trofea</trophies>
 		<grade>Stopień</grade>
 		<progress>Postęp</progress>
 		<updated>Zaktualizowano</updated>
 		<advance>Dalej</advance>
 		<show_hidden>Pokaż ukryte trofea</show_hidden>
+		<syncing_trophy>Synchronizowanie informacji o trofeach z serwerem...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

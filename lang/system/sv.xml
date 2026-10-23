@@ -321,10 +321,12 @@ Du kan få trophies om du använder en applikation som stöder trophy-funktionen
 		<not_earned>Ej vunnen</not_earned>
 		<original>Ursprunglig</original>
 		<sort>Sortera</sort>
+		<sync_with_server>Synkronisera med server</sync_with_server>
 		<trophies>Trophies</trophies>
 		<grade>Grad</grade>
 		<progress>Framsteg</progress>
 		<updated>Uppdaterat</updated>
+		<syncing_trophy>Synkroniserar trophy-information med servern...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

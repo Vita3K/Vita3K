@@ -320,10 +320,12 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 		<not_earned>Ei ansaittu</not_earned>
 		<original>Alkuperäinen</original>
 		<sort>Lajittele</sort>
+		<sync_with_server>Synkronoi palvelimen kanssa</sync_with_server>
 		<trophies>Trophyt</trophies>
 		<grade>Luokka</grade>
 		<progress>Edistyminen</progress>
 		<updated>Päivitetty</updated>
+		<syncing_trophy>Synkronoidaan trophy-tietoja palvelimen kanssa...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

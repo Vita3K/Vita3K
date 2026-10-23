@@ -751,10 +751,12 @@
 		<not_earned>Не получен</not_earned>
 		<original>Исходный</original>
 		<sort>Сортировка</sort>
+		<sync_with_server>Синхронизировать с сервером</sync_with_server>
 		<trophies>Призы</trophies>
 		<grade>Категория</grade>
 		<progress>Выполнено</progress>
 		<updated>Обновлен</updated>
+		<syncing_trophy>Синхронизация информации о призах с сервером...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

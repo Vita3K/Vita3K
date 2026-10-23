@@ -41,7 +41,7 @@ struct SaveDataInfo {
 };
 
 struct TrophySync {
-    time_t last_updated;
+    time_t last_updated = 0;
     std::vector<std::string> unlocked_ids;
     uint32_t platinum = 0;
     uint32_t gold = 0;
@@ -54,7 +54,7 @@ struct TrophyProgressInfo {
     std::map<std::string, uint32_t> progress = {};
     std::map<std::string, std::vector<std::string>> unlocked_ids = {};
     std::map<std::string, std::map<np::trophy::SceNpTrophyGrade, uint32_t>> unlocked_type_count = {};
-    time_t last_updated;
+    time_t last_updated = 0;
 };
 
 enum SaveDataType {
@@ -76,9 +76,13 @@ bool load_and_compute_trophy_stats(EmuEnvState &emuenv, np::trophy::Context &con
 namespace v3kn {
 
 struct Error;
+using TrophySyncErrorCallback = std::function<void(const Error &)>;
 
 bool get_savedata_info(EmuEnvState &emuenv, const std::string &titleid, Error &error);
 void download_savedata(EmuEnvState &emuenv, const std::string &titleid, std::function<void(const Error &)> on_error);
 void upload_savedata(EmuEnvState &emuenv, const std::string &titleid, std::function<void(const Error &)> on_error);
+void start_trophy_sync(EmuEnvState &emuenv, std::map<std::string, TrophySync> trophy_progress, std::atomic<float> &sync_progress, std::atomic<bool> &sync_cancel, std::vector<std::string> &sync_downloaded, TrophySyncErrorCallback on_error = {});
+void start_trophy_auto_sync(EmuEnvState &emuenv, TrophySyncErrorCallback on_error = {});
+void add_pending_trophy_sync(EmuEnvState &emuenv, const std::string &np_com_id);
 
 } // namespace v3kn

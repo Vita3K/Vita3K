@@ -353,10 +353,12 @@ Vita3K를 즐기러 GOGO!</completed_setup>
 		<not_earned>미획득</not_earned>
 		<original>오리지널</original>
 		<sort>정렬</sort>
+		<sync_with_server>서버와 동기화하기</sync_with_server>
 		<trophies>트로피 수</trophies>
 		<grade>그레이드</grade>
 		<progress>달성률</progress>
 		<updated>갱신일</updated>
+		<syncing_trophy>트로피 정보를 서버와 동기화 중입니다...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

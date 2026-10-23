@@ -212,6 +212,13 @@ void init_v3kn_user_info(EmuEnvState &emuenv, Error &error) {
 
         user_info.host = user_node.child("host").text().as_string(V3KN_SERVER_LIST_URL[static_cast<uint32_t>(V3knServer::Official)]);
         user_info.online_id = user_node.child("online_id").text().as_string();
+        if (user_info.online_id.empty()) {
+            user_info.online_id = user_node.child("NPID").text().as_string();
+            if (!user_info.online_id.empty()) {
+                save_v3kn_user_info(emuenv);
+                LOG_INFO("V3KN user info: migrated legacy npid field to online_id for {}", user_info.online_id);
+            }
+        }
         user_info.password = user_node.child("password").text().as_string();
         user_info.token = user_node.child("token").text().as_string();
 

@@ -339,10 +339,12 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 		<not_earned>Niet verdiend</not_earned>
 		<original>Origineel</original>
 		<sort>Sorteren</sort>
+		<sync_with_server>Synchroniseren met server</sync_with_server>
 		<trophies>Trofeeën</trophies>
 		<grade>Rang</grade>
 		<progress>Voortgang</progress>
 		<updated>Geüpdatet</updated>
+		<syncing_trophy>Bezig met synchroniseren van trofee-informatie met de server...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

@@ -401,10 +401,12 @@ Você pode conquistar troféus usando um aplicativo compatível com o recurso de
 		<not_earned>Não conquistado</not_earned>
 		<original>Original</original>
 		<sort>Classificar</sort>
+		<sync_with_server>Sincronizar com servidor</sync_with_server>
 		<trophies>Troféus</trophies>
 		<grade>Grau</grade>
 		<progress>Progresso</progress>
 		<updated>Atualizado</updated>
+		<syncing_trophy>Sincronizando informações de troféu com o servidor...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

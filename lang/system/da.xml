@@ -316,10 +316,12 @@ Du kan opnå trophies ved at bruge et program, der understøtter trophy-funktion
 		<not_earned>Ikke opnået</not_earned>
 		<original>Original</original>
 		<sort>Sortér</sort>
+		<sync_with_server>Synkroniser med server</sync_with_server>
 		<trophies>Trophies</trophies>
 		<grade>Grade</grade>
 		<progress>Forløb</progress>
 		<updated>Opdateret</updated>
+		<syncing_trophy>Synkroniserer trophy-information med serveren...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

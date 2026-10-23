@@ -319,10 +319,12 @@ Pode ganhar troféus utilizando uma aplicação que suporte a funcionalidade de 
 		<not_earned>Sem ganhos</not_earned>
 		<original>Original</original>
 		<sort>Ordenar</sort>
+		<sync_with_server>Sincronizar com o servidor</sync_with_server>
 		<trophies>Troféus</trophies>
 		<grade>Grau</grade>
 		<progress>Progresso</progress>
 		<updated>Atualizado</updated>
+		<syncing_trophy>A sincronizar informações de troféus com o servidor...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

@@ -339,10 +339,12 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 		<not_earned>No ganado</not_earned>
 		<original>Original</original>
 		<sort>Ordenar</sort>
+		<sync_with_server>Sincronizar con servidor</sync_with_server>
 		<trophies>Trofeos</trophies>
 		<grade>Grado</grade>
 		<progress>Progreso</progress>
 		<updated>Actualizado</updated>
+		<syncing_trophy>Sincronizando la información de trofeos con el servidor...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

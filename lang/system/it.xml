@@ -341,10 +341,12 @@ Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_
 		<not_earned>Non guadagnato</not_earned>
 		<original>Originale</original>
 		<sort>Ordina</sort>
+		<sync_with_server>Sincronizza con il server</sync_with_server>
 		<trophies>Trofei</trophies>
 		<grade>Grado</grade>
 		<progress>Avanzamento</progress>
 		<updated>Aggiornato</updated>
+		<syncing_trophy>Sincronizzazione delle informazioni sui trofei con il server...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

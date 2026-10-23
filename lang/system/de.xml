@@ -329,10 +329,12 @@ Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unter
 		<not_earned>Nicht verdient</not_earned>
 		<original>Original</original>
 		<sort>Sortierung</sort>
+		<sync_with_server>Mit Server synchronisieren</sync_with_server>
 		<trophies>Trophäen</trophies>
 		<grade>Wertigkeit</grade>
 		<progress>Fortschritt</progress>
 		<updated>Aktualisiert</updated>
+		<syncing_trophy>Synchronisiert Trophäen-Informationen mit dem Server ...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

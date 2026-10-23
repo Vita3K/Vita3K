@@ -677,10 +677,12 @@ GUIでのアジア地域のフォントサポートに必須です。
 		<not_earned>未獲得</not_earned>
 		<original>オリジナル</original>
 		<sort>並べ替え</sort>
+		<sync_with_server>サーバーと同期する</sync_with_server>
 		<trophies>トロフィー数</trophies>
 		<grade>グレード</grade>
 		<progress>達成率</progress>
 		<updated>更新日</updated>
+		<syncing_trophy>トロフィー情報をサーバーと同期中です...</syncing_trophy>
 	</trophy_collection>
 	
 	<user_management>
