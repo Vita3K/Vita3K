@@ -40,15 +40,13 @@ public:
 protected:
     SyncPrimitive(SceUInt32 attr, const char *name);
 
-    // Gives what the object holds to the waiters it can complete, in queue order. Runs with the lock
-    // held, from each operation that gives the object something to hand out, and from wait_on() when
-    // a waiter leaves without being given anything. An object with nothing to hand out keeps this
-    // default.
+    // Wakes the waiters that can now get what they wait for, in queue order. Called with the lock
+    // held when the object gets something new to give, and by wait_loop() when a waiter leaves the
+    // queue without being woken.
     virtual void serve() {}
 
     // Ends a queued wait of thread that its deadline ended, before the waiters behind it are served.
-    // Not for a wait whose deadline passed while it was out of the queue for its callbacks, which
-    // ends without being queued again.
+    // Not called if the deadline passed before the wait was queued.
     virtual void timed_out(const ThreadStatePtr &) {}
 
     // Runs the thread's pending callbacks with the lock released, which a wait with callbacks does once
@@ -65,77 +63,52 @@ protected:
         return r;
     }
 
-    // Blocks thread on target in queue until a waker gives it a result, the object is deleted, or
-    // the guest timeout passes, and writes the time left back to the timeout. A waiter that leaves
-    // without a waker, by its deadline, its thread's end or a callback, serves the waiters behind
-    // it. The thread runs its callbacks out of the queue, then the waiter goes back in by priority.
-    template <typename Entry>
-    [[nodiscard]] WaitResult wait_on(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout) {
+    // Waits on queue. Each round runs the pending callbacks, calls attempt, then sleeps until woken,
+    // and a callback notify starts a new round. attempt returns the result once the thread got what
+    // it waits for, or nullopt to keep waiting. It is passed the result of the last sleep
+    // (SCE_KERNEL_OK the first time). timeout is updated after every sleep.
+    template <typename Entry, typename Attempt>
+    [[nodiscard]] WaitResult wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout, Attempt attempt) {
         typename WaitQueue<Entry>::Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         const Deadline deadline = deadline_from(timeout);
-        // A deadline already gone ends the wait before it is queued, so no waker can serve it and
-        // nothing that ends a queued wait, like timed_out(), runs
-        if (std::chrono::steady_clock::now() >= deadline) {
-            writeback_timeout(timeout, deadline);
-            return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
-        }
-        // The time left when the waiter left for its callbacks, kept if it gets what it waits for at
-        // once after them
-        std::optional<SceUInt32> time_left;
-        WaitResult r;
-        waiter.priority = thread->get_priority();
-        queue.push(waiter);
+        // The result of the last sleep
+        WaitResult result = SCE_KERNEL_OK;
         while (true) {
-            lock.unlock();
-            r = thread->wait(target, deadline);
-            lock.lock();
+            if (const WaitResult r = run_pending_callbacks(lock, thread, target.callbacks); !r || *r != SCE_KERNEL_OK)
+                return r;
+            if (const std::optional<SceInt32> taken = attempt(waiter.entry, *result))
+                return *taken;
+            // Timed out before being queued, so timed_out() isn't called
+            if (std::chrono::steady_clock::now() >= deadline) {
+                if (timeout)
+                    *timeout = 0;
+                return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+            }
+            // A callback is already pending, so start a new round without sleeping
+            if (target.callbacks && thread->has_pending_callbacks()) {
+                result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
+                continue;
+            }
+            waiter.priority = thread->get_priority();
+            queue.push(waiter);
+            // Ignore stray wakeups, like one left over from an earlier wait
+            do {
+                lock.unlock();
+                result = thread->wait(target, deadline);
+                lock.lock();
+            } while (!waiter.result && result && *result == SCE_KERNEL_OK);
+            if (timeout)
+                *timeout = time_left_until(deadline);
             // A waker's result wins, it already handed over what the waiter waits for
             if (waiter.result)
-                break;
-            // Woken without a result, such as by a wake left over from an earlier wait, so it
-            // waits on
-            if (r && *r == SCE_KERNEL_OK)
-                continue;
+                return *waiter.result;
             queue.remove(waiter);
-            if (r && *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+            if (result && *result == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
                 timed_out(thread);
             serve();
-
-            // The thread runs its callbacks out of the queue, then the waiter goes back in by its
-            // priority unless they ended the wait
-            if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
-                const SceUInt32 left = time_left_until(deadline);
-                lock.unlock();
-                r = thread->run_callbacks();
-                lock.lock();
-                if (r && was_deleted()) {
-                    r = SCE_KERNEL_ERROR_WAIT_DELETE;
-                } else if (r) {
-                    // It gets what it waits for at once if no waiter ahead of it goes first
-                    waiter.priority = thread->get_priority();
-                    queue.push(waiter);
-                    serve();
-                    if (waiter.result) {
-                        time_left = left;
-                    } else if (std::chrono::steady_clock::now() >= deadline) {
-                        // The deadline passed during the callbacks, so the wait ends without
-                        // blocking again
-                        queue.remove(waiter);
-                        r = SCE_KERNEL_ERROR_WAIT_TIMEOUT;
-                    } else {
-                        continue;
-                    }
-                }
-            }
-            break;
+            if (!result || *result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+                return result;
         }
-        if (waiter.result)
-            r = *waiter.result;
-        if (timeout && time_left)
-            *timeout = *time_left;
-        else
-            writeback_timeout(timeout, deadline);
-        return r;
     }
 };
 
@@ -433,6 +406,9 @@ private:
     // Takes the flags for the thread if pattern matches them, or returns why it can't. The lock must
     // be held.
     SceInt32 try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
+    // Completes wait if the flags match its pattern: writes its out bits, clears the flags its mode
+    // asks for and releases its hold. Returns false if they don't match. The lock must be held.
+    bool take(const WaitEntry &wait);
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
     // Gives back the hold of the wait that timed out.
@@ -443,12 +419,11 @@ private:
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
     SceUInt32 flags;
-    // Without SCE_EVENT_WAITMULTIPLE, the thread whose waits hold the flag, which another thread can't
-    // wait on or poll, and how many of its waits did. A wait that doesn't get the bits at once takes
-    // a hold, and a set, a cancel or the delete that wakes it, or its timeout while queued, gives it
-    // back. It stays while a callback has the waiter out of the queue. A wait that ends without
-    // blocking or taking the bits, like one with a timeout of 0 or whose deadline passed during its
-    // callbacks, keeps it until the thread ends or the flag is deleted.
+    // Without SCE_EVENT_WAITMULTIPLE, the thread whose waits hold the flag and how many waits hold
+    // it. Other threads can't wait on or poll a held flag. A wait releases its hold when it gets the
+    // bits, when a cancel or delete wakes it, or when it times out in the queue. A wait that ends
+    // before sleeping without getting the bits, like one with a timeout of 0, keeps its hold until
+    // the thread ends or the flag is deleted.
     SceUID holder = 0;
     int holds = 0;
 };

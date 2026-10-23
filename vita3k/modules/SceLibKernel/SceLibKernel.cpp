@@ -1598,7 +1598,11 @@ EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock
     const SceInt32 taken = mutex->try_acquire(emuenv.mem, thread, lock_count);
     if (taken != SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN)
         return taken;
-    return mutex->acquire(emuenv.mem, thread, lock_count, ptimeout, true);
+    SceUInt32 time_left = ptimeout ? *ptimeout : 0;
+    const SceInt32 result = mutex->acquire(emuenv.mem, thread, lock_count, ptimeout ? &time_left : nullptr, true);
+    if (ptimeout)
+        *ptimeout = time_left;
+    return result;
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
@@ -1943,7 +1947,11 @@ EXPORT(SceInt32, sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, Sce
     const EventFlagPtr event = emuenv.kernel.objects.find<EventFlag>(evfId);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
-    return event->wait(emuenv.kernel.get_thread(thread_id), bitPattern, waitMode, pResultPat, pTimeout, false);
+    SceUInt32 time_left = pTimeout ? *pTimeout : 0;
+    const SceInt32 result = event->wait(emuenv.kernel.get_thread(thread_id), bitPattern, waitMode, pResultPat, pTimeout ? &time_left : nullptr, false);
+    if (pTimeout)
+        *pTimeout = time_left;
+    return result;
 }
 
 EXPORT(SceInt32, sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
@@ -1967,7 +1975,11 @@ EXPORT(int, sceKernelWaitLwCond, Ptr<SceKernelLwCondWork> workarea, SceUInt32 *t
     const CondvarPtr condvar = emuenv.kernel.objects.find<LwCond>(cond_id);
     if (!condvar)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
-    return condvar->wait(emuenv.mem, emuenv.kernel.get_thread(thread_id), timeout, false);
+    SceUInt32 time_left = timeout ? *timeout : 0;
+    const SceInt32 result = condvar->wait(emuenv.mem, emuenv.kernel.get_thread(thread_id), timeout ? &time_left : nullptr, false);
+    if (timeout)
+        *timeout = time_left;
+    return result;
 }
 
 EXPORT(SceInt32, sceKernelWaitLwCondCB, Ptr<SceKernelLwCondWork> pWork, SceUInt32 *pTimeout) {
