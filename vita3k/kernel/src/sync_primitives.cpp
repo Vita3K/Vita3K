@@ -548,13 +548,17 @@ SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 c
     bool is_recursive = (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
 
     // Already owned
-    if (lock_count > 0) {
+    if (owner) {
         // Owned by ourselves
         if (owner == thread->id) {
             if (is_recursive) {
                 if (lightweight()) {
-                    // A lightweight mutex doesn't check for overflow, its count just wraps
-                    lock_count = static_cast<SceInt32>(static_cast<SceUInt32>(lock_count) + static_cast<SceUInt32>(count));
+                    // A lightweight count wraps past the maximum, and a lock that would leave it
+                    // below 0 fails
+                    const int64_t sum = static_cast<int64_t>(lock_count) + count;
+                    if (sum < 0)
+                        return SCE_KERNEL_ERROR_LW_MUTEX_LOCK_OVF;
+                    lock_count = static_cast<SceInt32>(static_cast<SceUInt32>(sum));
                     workarea.get(mem)->lockCount = lock_count;
                     return SCE_KERNEL_OK;
                 }
@@ -602,13 +606,13 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 co
     if (const SceInt32 error = check_count(count))
         return error;
     // The owner's own lock takes or fails at once, without callbacks
-    if (lock_count == 0 || owner != thread->id) {
+    if (owner != thread->id) {
         if (const WaitResult r = run_pending_callbacks(guard, thread, target.callbacks); !r || *r != SCE_KERNEL_OK)
             return guest_result(r);
     }
 
     // Owned by someone else, wait until it is handed over
-    if (lock_count > 0 && owner != thread->id) {
+    if (owner && owner != thread->id) {
         const WaitResult r = wait_on(waiters, guard, thread, target, { count }, timeout);
 
         // A deleted mutex has no owner, and its work area may be freed already
@@ -663,7 +667,7 @@ void Mutex::release_ended_owner(const ThreadState &thread) {
 }
 
 void Mutex::serve() {
-    if (lock_count > 0)
+    if (owner)
         return;
     if (auto *waiter = waiters.front()) {
         lock_count = waiter->entry.lock_count;

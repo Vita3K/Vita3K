@@ -140,7 +140,7 @@ lw_cond_errors                  fail     # create checks of the attribute, a NUL
 lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back isn't requeued on a priority change
 lw_cond_semantics               pass
 lw_info_by_id_uid               fail     # the uid the lightweight condition variable info by UID reports
-lw_mutex                        fail     # a lightweight mutex whose count wrapped counts as free
+lw_mutex                        pass
 lw_mutex_errors                 pass
 lw_mutex_semantics              pass
 lw_work                         pass
