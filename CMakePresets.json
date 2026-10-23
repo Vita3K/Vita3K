@@ -183,8 +183,8 @@
     },
     {
       "name": "ci-macos-x64",
-      "inherits": "macos-xcode",
-      "description": "CI preset for macOS x86_64 builds",
+      "inherits": "macos-ninja",
+      "description": "CI preset for macOS x86_64 builds. Uses Ninja generator.",
       "cacheVariables": {
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
         "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
@@ -195,8 +195,8 @@
     },
     {
       "name": "ci-macos-arm64",
-      "inherits": "macos-xcode",
-      "description": "CI preset for macOS arm64 builds",
+      "inherits": "macos-ninja",
+      "description": "CI preset for macOS arm64 builds.  Uses Ninja generator.",
       "cacheVariables": {
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
         "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
