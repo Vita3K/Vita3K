@@ -86,16 +86,17 @@ SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern,
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
 
-    // A wait for pattern 0 matches nothing, so it lasts until its timeout, a cancel or a delete
-    const WaitResult r = wait_loop(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENT, uid, callbacks }, { wait_pattern, result_pattern, user_data }, timeout, [&](WaitEntry &, SceInt32) -> std::optional<SceInt32> {
+    // A wait for pattern 0 matches nothing, so it lasts until its timeout, a cancel or a delete. If
+    // the bits are taken right after a callback notify, the wait returns NOTIFY_CALLBACK.
+    const WaitResult r = wait_loop(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENT, uid, callbacks }, { wait_pattern, result_pattern, user_data }, timeout, [&](WaitEntry &, SceInt32 last) -> std::optional<SceInt32> {
         if (try_take(wait_pattern, result_pattern, user_data) == SCE_KERNEL_OK)
-            return SCE_KERNEL_OK;
+            return last;
         return std::nullopt;
     });
     const SceInt32 err = guest_result(r);
-    // A wait ended by a delete or a cancel gets the error event and no user data, and set_or_pulse
-    // or on_delete writes what one that succeeds gets
-    if (err < 0 && err != SCE_KERNEL_ERROR_WAIT_TIMEOUT && result_pattern)
+    // A wait ended by a delete or a cancel gets the error event and no user data. If the wait got
+    // the bits, they are already written, also when it returns NOTIFY_CALLBACK.
+    if (err < 0 && err != SCE_KERNEL_ERROR_WAIT_TIMEOUT && err != SCE_KERNEL_ERROR_NOTIFY_CALLBACK && result_pattern)
         *result_pattern = SCE_KERNEL_EVENT_ERROR;
     return err;
 }

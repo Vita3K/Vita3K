@@ -18,8 +18,8 @@ callback_changes                pass
 callback_deleted_object         pass
 callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
-callback_event_results          fail     # events that end a wait during a callback with NOTIFY_CALLBACK, a pulse during a callback
-callback_event_waits            fail     # a simple event set by a callback ends the wait with NOTIFY_CALLBACK
+callback_event_results          fail     # a timer event during a callback ends the wait with 0, event calls don't take message pipe UIDs
+callback_event_waits            pass
 callback_info                   pass
 callback_inner_same_object      pass
 callback_inner_same_pipe        pass
@@ -31,7 +31,7 @@ callback_notify_preempt         skip     # threads ignore their core and priorit
 callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
 callback_notify_time_left       fail     # threads ignore their core and priority, so the waiter runs its callback during the notifier's busy interval and waits again
 callback_outer_timeout          pass
-callback_outer_wake             fail     # a simple event wait a callback outlasted returns NOTIFY_CALLBACK
+callback_outer_wake             pass
 callback_outer_wake_more        pass
 callback_outer_wake_send        pass
 callback_owner_end              pass
@@ -44,7 +44,7 @@ cancel_calls                    pass
 cancel_unknown_counts           fail     # failed event flag, simple event, message pipe and timer cancels leave their counts as they were
 cb_wait_callback_writes_timeout pass
 cb_wait_check_order             pass
-cb_wait_early_notify_timeout    fail     # a simple event take after callbacks returns 0
+cb_wait_early_notify_timeout    pass
 cb_wait_initial_callback_deadline pass
 cb_wait_take_final_check        fail     # a message pipe call that takes at once doesn't run the callbacks notified during it before it returns
 cb_wait_timeout_copy            pass
