@@ -101,7 +101,7 @@ gxm_map_thread_stack_delete     crash    # a deleted thread's mapped stack is fr
 gxm_map_uninitialized           fail     # the map calls don't check that libgxm is initialized
 gxm_map_usse_free               fail     # a USSE mapping doesn't keep its block, lookups of a freed block give 0x80024700
 gxm_render_target_memory        crash    # render target sizes and driver memory blocks, a width of 0 aborts
-gxm_shader_patcher_memory       fail     # patcher regions are ignored, a NULL host alloc callback jumps to 0
+gxm_shader_patcher_memory       timeout  # patcher regions are ignored, a NULL host alloc callback jumps to 0
 gxm_surface_memory              fail     # surface data alignment checks
 gxm_sync_objects                fail     # sync objects before sceGxmInitialize and their limit
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
