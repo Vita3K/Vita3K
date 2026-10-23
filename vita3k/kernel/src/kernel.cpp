@@ -163,8 +163,8 @@ SceUID KernelState::create_callback(const ThreadStatePtr &thread, const char *na
     return uid;
 }
 
-bool KernelState::delete_callback(SceUID id) {
-    return objects.remove<Callback>(id);
+bool KernelState::delete_callback(SceUID id, SceUID deleter) {
+    return objects.remove<Callback>(id, deleter);
 }
 
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point) {

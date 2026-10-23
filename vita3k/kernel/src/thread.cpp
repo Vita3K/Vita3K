@@ -241,7 +241,7 @@ void ThreadState::run_loop(bool top_level) {
         lock.unlock();
         for (const auto &weak_cb : callbacks) {
             if (const CallbackPtr cb = weak_cb.lock())
-                kernel.delete_callback(cb->uid);
+                kernel.delete_callback(cb->uid, id);
         }
         callbacks.clear();
         lock.lock();
@@ -634,7 +634,7 @@ SceUInt32 ThreadState::process_callbacks() {
         }
         // A callback that returns nonzero deletes itself
         if (ret != 0)
-            kernel.delete_callback(cb->uid);
+            kernel.delete_callback(cb->uid, id);
     }
     const std::lock_guard<std::mutex> lock(mutex);
     is_processing_callbacks = false;

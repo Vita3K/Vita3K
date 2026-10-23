@@ -1165,9 +1165,16 @@ EXPORT(SceInt32, sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, Sce
     return CALL_EXPORT(_sceKernelCancelEventFlag, event_id, pattern, num_wait_thread);
 }
 
-EXPORT(int, sceKernelCancelEventWithSetPattern) {
-    TRACY_FUNC(sceKernelCancelEventWithSetPattern);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCancelEventWithSetPattern, SceUID eventId, SceUInt32 setPattern, SceUInt64 userData, Ptr<SceUInt32> pNumWaitThreads) {
+    TRACY_FUNC(sceKernelCancelEventWithSetPattern, eventId, setPattern, userData, pNumWaitThreads);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+
+    Ptr<SceKernelCancelEventWithSetPattern_opt> options = Ptr<SceKernelCancelEventWithSetPattern_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCancelEventWithSetPattern_opt)));
+    options.get(emuenv.mem)->userData = userData;
+    options.get(emuenv.mem)->pNumWaitThreads = pNumWaitThreads;
+    const SceInt32 res = CALL_EXPORT(_sceKernelCancelEventWithSetPattern, eventId, setPattern, options);
+    stack_free(*thread->cpu, sizeof(SceKernelCancelEventWithSetPattern_opt));
+    return res;
 }
 
 EXPORT(SceInt32, sceKernelCancelMsgPipe, SceUID msgPipeId, SceUInt32 *pNumSendWaitThreads, SceUInt32 *pNumReceiveWaitThreads) {
@@ -1359,9 +1366,9 @@ EXPORT(SceInt32, sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFlag
     return CALL_EXPORT(_sceKernelGetEventFlagInfo, evfId, pInfo);
 }
 
-EXPORT(int, sceKernelGetEventInfo) {
-    TRACY_FUNC(sceKernelGetEventInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetEventInfo, SceUID eventId, Ptr<SceKernelEventInfo> pInfo) {
+    TRACY_FUNC(sceKernelGetEventInfo, eventId, pInfo);
+    return CALL_EXPORT(_sceKernelGetEventInfo, eventId, pInfo);
 }
 
 EXPORT(SceInt32, sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_pattern) {
