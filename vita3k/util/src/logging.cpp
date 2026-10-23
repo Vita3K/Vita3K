@@ -72,7 +72,7 @@ static void terminate_handler() {
         LOG_CRITICAL("Unhandled C++ exception. UNKNOWN");
     }
     flush();
-    if (s_previous_terminate && s_previous_terminate != terminate_handler)
+    if (s_previous_terminate)
         s_previous_terminate();
     std::abort();
 }
