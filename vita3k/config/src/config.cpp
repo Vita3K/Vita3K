@@ -47,7 +47,7 @@ static bool is_numeric_scalar(const YAML::Node &node) {
     if (value.empty())
         return false;
 
-    return std::all_of(value.begin(), value.end(), [](const unsigned char c) {
+    return std::ranges::all_of(value, [](const unsigned char c) {
         return std::isdigit(c) != 0;
     });
 }

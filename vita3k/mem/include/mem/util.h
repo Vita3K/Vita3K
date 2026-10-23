@@ -20,8 +20,8 @@
 #include <cstdint>
 #include <functional>
 
-typedef uint32_t Address;
-typedef std::function<bool(Address, bool)> ProtectCallback;
+using Address = uint32_t;
+using ProtectCallback = std::function<bool(Address, bool)>;
 
 // Powers of 10
 constexpr size_t KB(size_t kb) {

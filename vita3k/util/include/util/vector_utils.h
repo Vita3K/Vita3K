@@ -18,7 +18,9 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace vector_utils {
@@ -32,20 +34,22 @@ namespace vector_utils {
  */
 template <typename T, typename A = std::allocator<T>, typename H = std::hash<T>, typename P = std::equal_to<T>>
 std::vector<T, A> merge_vectors(const std::vector<T, A> &cur, const std::vector<T, A> &append) {
-    std::vector<T, A> new_vector = cur;
-    new_vector.insert(new_vector.end(), append.begin(), append.end());
+    std::vector<T, A> new_vector(cur.get_allocator());
+    new_vector.reserve(cur.size() + append.size());
+    new_vector.append_range(cur);
+    new_vector.append_range(append);
 
     std::unordered_set<T, H, P, A> s;
-    for (const auto &i : new_vector)
-        s.insert(i);
-    new_vector.assign(s.begin(), s.end());
-    std::sort(new_vector.begin(), new_vector.end());
+    for (auto &&i : new_vector)
+        s.insert(std::move(i));
+    new_vector.assign_range(s);
+    std::ranges::sort(new_vector, std::less<>{});
     return new_vector;
 }
 
 template <typename T, typename V>
 size_t find_index(const T &v, const V &value) {
-    auto it = std::find(v.begin(), v.end(), value);
+    auto it = std::ranges::find(v, value);
     if (it != v.end()) {
         // The value was found, return its index
         return std::distance(v.begin(), it);
@@ -67,7 +71,7 @@ bool push_if_not_exists(T &v, const V &value) {
 
 template <typename T, typename V>
 bool erase_first(T &v, const V &value) {
-    auto it = std::find(v.begin(), v.end(), value);
+    auto it = std::ranges::find(v, value);
     if (it != v.end()) {
         v.erase(it);
         return true;

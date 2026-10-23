@@ -1238,6 +1238,12 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
             for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
                 slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
                 emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
+                // old Vita3K versions could create invalid save ID's of >256. If detected, clear and skip them instead of aborting
+                if (slot_list[i].id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX) {
+                    emuenv.common_dialog.savedata.title[i].clear();
+                    emuenv.common_dialog.savedata.slot_info[i].isExist = 0;
+                    continue;
+                }
                 emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
                 check_save_file(i, emuenv, export_name);
             }
@@ -1362,7 +1368,7 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         break;
     case SCE_SAVEDATA_DIALOG_MODE_LIST: {
         list_param = p->listParam.get(emuenv.mem);
-        const uint32_t slot_list_size = std::min(list_param->slotListSize, (uint32_t)SCE_SAVEDATA_DIALOG_SLOTLIST_MAXSIZE);
+        const uint32_t slot_list_size = std::min(list_param->slotListSize, static_cast<uint32_t>(SCE_SAVEDATA_DIALOG_SLOTLIST_MAXSIZE));
         emuenv.common_dialog.savedata.slot_list_size = slot_list_size;
         emuenv.common_dialog.savedata.list_style = list_param->itemStyle;
 
@@ -1385,12 +1391,16 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
             }
         }
 
+        // Old versions of Vita3K allowed save IDs of >256, and a fix stopped loading /any/ saves after finding /only one/ invalid ID.
+        // Games that made saves of -1 weren't stopped before, but after the fix users seemingly had their saves "disappear"
+        // since -1 = 0xFFFFFFFF > 256, thereby tripping the check.
+        // Real hardware can never encounter this, so only *skip* invalid slots but *abort* if they are all invalid.
         const std::span slots(list_param->slotList.get(emuenv.mem), slot_list_size);
-        const bool has_invalid_id = std::ranges::any_of(slots, [](const SceAppUtilSaveDataSlot &slot) {
+        const bool all_ids_invalid = !slots.empty() && std::ranges::all_of(slots, [](const SceAppUtilSaveDataSlot &slot) {
             return slot.id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX;
         });
 
-        if (has_invalid_id) {
+        if (all_ids_invalid) {
             // Hardware finishes the sub status with this error and slot id -1
             emuenv.common_dialog.savedata.slot_id[0] = 0xFFFFFFFF;
             emuenv.common_dialog.result = (SceCommonDialogResult)SCE_SAVEDATA_DIALOG_ERROR_PARAM;
@@ -1401,6 +1411,8 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         for (SceUInt i = 0; i < slot_list_size; i++) {
             slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
             emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
+            if (slot_list[i].id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX) // same skip as above
+                continue;
             emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
             check_save_file(i, emuenv, export_name);
         }

@@ -574,7 +574,7 @@ jintArray make_restart_required_array(JNIEnv *env, const std::vector<config::Res
         return nullptr;
 
     std::vector<jint> ints(values.size());
-    std::transform(values.begin(), values.end(), ints.begin(), [](config::RestartRequiredSetting setting) {
+    std::ranges::transform(values, ints.begin(), [](config::RestartRequiredSetting setting) {
         return static_cast<jint>(setting);
     });
     env->SetIntArrayRegion(result, 0, static_cast<jsize>(ints.size()), ints.data());
@@ -615,7 +615,7 @@ bool default_gpu_is_mali(EmuEnvState *emuenv) {
             gpu_name = device_info->gpu_names[1];
     }
 
-    std::transform(gpu_name.begin(), gpu_name.end(), gpu_name.begin(), [](unsigned char ch) {
+    std::ranges::transform(gpu_name, gpu_name.begin(), [](unsigned char ch) {
         return static_cast<char>(std::tolower(ch));
     });
     return gpu_name.find("mali") != std::string::npos;

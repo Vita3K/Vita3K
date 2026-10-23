@@ -17,4 +17,4 @@ struct Epoll {
     int wait(SceNetEpollEvent *events, int maxevents, int timeout);
 };
 
-typedef std::shared_ptr<Epoll> EpollPtr;
+using EpollPtr = std::shared_ptr<Epoll>;

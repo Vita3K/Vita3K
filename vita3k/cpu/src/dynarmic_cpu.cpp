@@ -77,7 +77,7 @@ public:
             return &dacr;
         }
 
-        LOG_WARN("Unhandled CP15 MCR: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, (int)CRn, (int)CRm, opc2);
+        LOG_WARN("Unhandled CP15 MCR: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, static_cast<int>(CRn), static_cast<int>(CRm), opc2);
         return CallbackOrAccessOneWord{};
     }
 
@@ -107,7 +107,7 @@ public:
             return &dacr;
         }
 
-        LOG_WARN("Unhandled CP15 MRC: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, (int)CRn, (int)CRm, opc2);
+        LOG_WARN("Unhandled CP15 MRC: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, static_cast<int>(CRn), static_cast<int>(CRm), opc2);
         return CallbackOrAccessOneWord{};
     }
 
@@ -158,6 +158,8 @@ public:
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A32::VAddr addr) override {
         if (cpu->log_mem)
             LOG_TRACE("Instruction fetch at address 0x{:X}", addr);
+        if (addr < KiB(4))
+            return std::nullopt;
         return MemoryRead32(addr);
     }
 
@@ -165,7 +167,7 @@ public:
         ArmDynarmicCallback &self = *reinterpret_cast<ArmDynarmicCallback *>(self_);
 
         std::string disassembly = [&]() -> std::string {
-            if (!address || !Ptr<uint32_t>{ (uint32_t)address }.valid(*self.parent->mem)) {
+            if (!address || !Ptr<uint32_t>{ static_cast<uint32_t>(address) }.valid(*self.parent->mem)) {
                 return "invalid address";
             }
             return disassemble(*self.parent, address);
@@ -175,7 +177,7 @@ public:
 
     void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
         if (cpu->log_code) {
-            ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
+            ir.CallHostFunction(&TraceInstruction, ir.Imm64(reinterpret_cast<uint64_t>(this)), ir.Imm64(pc), ir.Imm64(is_thumb));
         }
     }
 
@@ -305,6 +307,12 @@ public:
             break;
         }
         case Dynarmic::A32::Exception::WaitForInterrupt: {
+            cpu->halted = true;
+            cpu->jit->HaltExecution();
+            break;
+        }
+        case Dynarmic::A32::Exception::NoExecuteFault: {
+            LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, parent->thread_id, this->cpu->save_context().description());
             cpu->halted = true;
             cpu->jit->HaltExecution();
             break;

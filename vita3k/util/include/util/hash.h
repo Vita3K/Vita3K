@@ -24,7 +24,7 @@
 using Sha256Hash = std::array<uint8_t, 32>;
 
 Sha256Hash sha256(const void *data, size_t size);
-typedef std::array<char, 65> Sha256HashText;
+using Sha256HashText = std::array<char, 65>;
 
 void hex_buf(const std::uint8_t *hash, char *dst, const std::size_t source_size);
 

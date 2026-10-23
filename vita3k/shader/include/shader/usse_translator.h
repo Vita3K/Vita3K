@@ -124,8 +124,8 @@ private:
     // Translation helpers
     //
 
-#define BEGIN_REPEAT(repeat_count)                           \
-    const auto repeat_count_num = (uint8_t)repeat_count + 1; \
+#define BEGIN_REPEAT(repeat_count)                                        \
+    const auto repeat_count_num = static_cast<uint8_t>(repeat_count) + 1; \
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
 #define END_REPEAT() }
 

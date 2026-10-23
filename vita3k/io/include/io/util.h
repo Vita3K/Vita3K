@@ -24,7 +24,7 @@
 #include <io/types.h>
 #include <util/fs.h>
 
-typedef uint8_t TtyType;
+using TtyType = uint8_t;
 
 inline constexpr TtyType TTY_UNKNOWN = 0b00;
 inline constexpr TtyType TTY_IN = 0b01;

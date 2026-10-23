@@ -325,9 +325,9 @@ int Camera::read(SceCameraRead *read, void *pIBase, void *pUBase, void *pVBase, 
             sizeIBase = std::min(sizeIBase, (SceSize)(pImpl->frame->pitch * pImpl->frame->h));
             sizeUBase = std::min(sizeUBase, (SceSize)(pImpl->frame->pitch * pImpl->frame->h / 4));
             sizeVBase = std::min(sizeVBase, (SceSize)(pImpl->frame->pitch * pImpl->frame->h / 4));
-            memcpy(pIBase, (uint8_t *)pImpl->frame->pixels, sizeIBase);
-            memcpy(pVBase, (uint8_t *)pImpl->frame->pixels + (pImpl->frame->pitch * pImpl->frame->h), sizeUBase);
-            memcpy(pUBase, (uint8_t *)pImpl->frame->pixels + (pImpl->frame->pitch * pImpl->frame->h * 5 / 4), sizeVBase);
+            memcpy(pIBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels), sizeIBase);
+            memcpy(pVBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels) + (pImpl->frame->pitch * pImpl->frame->h), sizeUBase);
+            memcpy(pUBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels) + (pImpl->frame->pitch * pImpl->frame->h * 5 / 4), sizeVBase);
         } else if (this->info.format == SCE_CAMERA_FORMAT_YUV422_PLANE) {
             // convert SDL_PIXELFORMAT_YUY2 Y0+U0+Y1+V0 to planar format
             const int width = pImpl->frame->w;
@@ -336,10 +336,10 @@ int Camera::read(SceCameraRead *read, void *pIBase, void *pUBase, void *pVBase, 
                 LOG_ERROR("Failed to lock camera frame surface: {}", SDL_GetError());
                 goto BAD_FRAME;
             };
-            uint8_t const *packed = (uint8_t *)pImpl->frame->pixels;
-            uint8_t *Y = (uint8_t *)pIBase;
-            uint8_t *U = (uint8_t *)pUBase;
-            uint8_t *V = (uint8_t *)pVBase;
+            uint8_t const *packed = reinterpret_cast<uint8_t *>(pImpl->frame->pixels);
+            uint8_t *Y = reinterpret_cast<uint8_t *>(pIBase);
+            uint8_t *U = reinterpret_cast<uint8_t *>(pUBase);
+            uint8_t *V = reinterpret_cast<uint8_t *>(pVBase);
             int pitch = pImpl->frame->pitch;
             for (ptrdiff_t y = 0; y < height; y++) {
                 uint8_t const *row = packed + y * pitch;

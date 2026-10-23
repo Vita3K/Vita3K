@@ -727,14 +727,14 @@ static void mapDecompressedData(Pixel32 *pOutput, int width, const Pixel32 *pWor
         }
     }
 }
-static int pvrtcDecompress(uint8_t *pCompressedData, Pixel32 *pDecompressedData, uint32_t ui32Width, uint32_t ui32Height, uint8_t ui8Bpp, uint32_t uiII) {
+static int pvrtcDecompress(const uint8_t *pCompressedData, Pixel32 *pDecompressedData, uint32_t ui32Width, uint32_t ui32Height, uint8_t ui8Bpp, uint32_t uiII) {
     uint32_t ui32WordWidth = 4;
     uint32_t ui32WordHeight = 4;
     if (ui8Bpp == 2) {
         ui32WordWidth = 8;
     }
 
-    uint32_t *pWordMembers = reinterpret_cast<uint32_t *>(pCompressedData);
+    const uint32_t *pWordMembers = reinterpret_cast<const uint32_t *>(pCompressedData);
     Pixel32 *pOutData = pDecompressedData;
 
     // Calculate number of words
@@ -804,7 +804,7 @@ uint32_t PVRTDecompressPVRTC(const void *pCompressedData, uint32_t Do2bitMode, u
     }
 
     // Decompress the surface.
-    int retval = pvrtcDecompress((uint8_t *)pCompressedData, pDecompressedData, XTrueDim, YTrueDim, (Do2bitMode == 1 ? 2 : 4), DoPvrtType);
+    int retval = pvrtcDecompress(reinterpret_cast<const uint8_t *>(pCompressedData), pDecompressedData, XTrueDim, YTrueDim, (Do2bitMode == 1 ? 2 : 4), DoPvrtType);
 
     // If the dimensions were too small, then copy the new buffer back into the output buffer.
     if ((XTrueDim != XDim) || (YTrueDim != YDim)) {
@@ -860,7 +860,7 @@ static uint32_t ETCTextureDecompress(const void *pSrcData, uint32_t x, uint32_t 
             blockTop = *(input++);
             blockBot = *(input++);
 
-            output = (uint32_t *)pDestData + i * x + m;
+            output = reinterpret_cast<uint32_t *>(pDestData) + i * x + m;
 
             // check flipbit
             bFlip = (blockTop & ETC_FLIP) != 0;

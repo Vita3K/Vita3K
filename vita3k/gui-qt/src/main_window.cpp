@@ -189,10 +189,7 @@ void MainWindow::register_auxiliary_window(QWidget *window) {
 }
 
 void MainWindow::prune_auxiliary_windows() {
-    m_auxiliary_windows.erase(
-        std::remove_if(m_auxiliary_windows.begin(), m_auxiliary_windows.end(),
-            [](const QPointer<QWidget> &window) { return window.isNull(); }),
-        m_auxiliary_windows.end());
+    std::erase_if(m_auxiliary_windows, [](const QPointer<QWidget> &window) { return window.isNull(); });
 }
 
 bool MainWindow::close_auxiliary_windows() {

@@ -24,7 +24,7 @@
 
 struct MemState;
 
-typedef std::function<bool(uint8_t *addr, bool write)> AccessViolationHandler;
+using AccessViolationHandler = std::function<bool(uint8_t *addr, bool write)>;
 
 constexpr Address user_main_memory_start = 0x80000000U;
 

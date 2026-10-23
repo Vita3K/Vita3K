@@ -261,12 +261,92 @@ if(NOT ANDROID)
 endif()
 
 if(APPLE)
-	set(VITA3K_APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/../dist/image/Vita3K.icon")
-	target_sources(vita3k PRIVATE "${VITA3K_APP_ICON}")
-	set_source_files_properties("${VITA3K_APP_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-	set_target_properties(vita3k PROPERTIES
-		XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "Vita3K"
-		XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS "YES")
+	set(VITA3K_APPLE_ICON "${CMAKE_SOURCE_DIR}/dist/image/Vita3K.icon")
+	set(VITA3K_ICON_SVG "${CMAKE_CURRENT_SOURCE_DIR}/${VITA3K_APP_ID}.svg")
+	set(MAC_ICON_OUT "${CMAKE_CURRENT_BINARY_DIR}/app_icon")
+
+	if(NOT XCODE_VERSION)
+		execute_process(
+			COMMAND xcodebuild -version
+			OUTPUT_VARIABLE xcodebuild_version
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			ERROR_QUIET)
+		if(xcodebuild_version MATCHES "Xcode ([0-9]+(\\.[0-9]+)+)")
+			set(XCODE_VERSION ${CMAKE_MATCH_1})
+		endif()
+	endif()
+
+	if(XCODE_VERSION VERSION_GREATER_EQUAL "26.0")
+		if(CMAKE_GENERATOR STREQUAL "Xcode")
+			# If Xcode generator AND have Xcode 26 or greater, have Xcode compile the icon
+			target_sources(vita3k PRIVATE "${VITA3K_APPLE_ICON}")
+			set_source_files_properties("${VITA3K_APPLE_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+			set_target_properties(vita3k PROPERTIES
+				XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "Vita3K"
+				XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS "YES")
+		else()
+			# If not xcode generator but we have the required xcode, invoke actool manually to make an Assets.car + Vita3K.icns
+			file(GLOB_RECURSE VITA3K_ICON_DEPS LIST_DIRECTORIES true CONFIGURE_DEPENDS "${VITA3K_APPLE_ICON}/*")
+			add_custom_command(
+				OUTPUT "${MAC_ICON_OUT}/Assets.car" "${MAC_ICON_OUT}/Vita3K.icns"
+				COMMAND ${CMAKE_COMMAND} -E make_directory "${MAC_ICON_OUT}"
+				COMMAND actool "${VITA3K_APPLE_ICON}"
+					--compile "${MAC_ICON_OUT}"
+					--app-icon Vita3K
+					--include-all-app-icons
+					--platform macosx
+					--target-device mac
+					--minimum-deployment-target "${CMAKE_OSX_DEPLOYMENT_TARGET}"
+					--output-partial-info-plist "${MAC_ICON_OUT}/partial.plist" # plist unused but actool won't compile the icon without it
+				DEPENDS "${VITA3K_APPLE_ICON}" ${VITA3K_ICON_DEPS}
+				COMMENT "Compiling Vita3K.icon with actool"
+				VERBATIM)
+			set_source_files_properties(
+				"${MAC_ICON_OUT}/Assets.car" "${MAC_ICON_OUT}/Vita3K.icns"
+				PROPERTIES GENERATED TRUE MACOSX_PACKAGE_LOCATION "Resources")
+			target_sources(vita3k PRIVATE "${MAC_ICON_OUT}/Assets.car" "${MAC_ICON_OUT}/Vita3K.icns")
+			set(MACOSX_BUNDLE_ICON_FILE "Vita3K")
+
+			# cmake writes the Info.plist as read only so undo it, set CFBundleIconName, redo it
+			# CFBundleIconName is the new *OS key for dynamic/Liquid Glass icons. Xcode does this automatically
+			add_custom_command(TARGET vita3k POST_BUILD
+				COMMAND chmod u+w "$<TARGET_FILE_DIR:vita3k>/../Info.plist"
+				COMMAND plutil -replace CFBundleIconName -string "Vita3K" "$<TARGET_FILE_DIR:vita3k>/../Info.plist"
+				COMMAND chmod u-w "$<TARGET_FILE_DIR:vita3k>/../Info.plist"
+				COMMENT "Setting CFBundleIconName for Assets.car icon"
+				VERBATIM)
+		endif()
+	else()
+		# Otherwise if Xcode tools are less than 26, generate an .icns from the svg so at least there's something
+		set(VITA3K_ICONSET "${MAC_ICON_OUT}/Vita3K.iconset")
+		set(VITA3K_ICON_1024 "${MAC_ICON_OUT}/icon_1024.png")
+		set(VITA3K_ICNS "${MAC_ICON_OUT}/Vita3K.icns")
+
+		set(VITA3K_ICON_CMDS "")
+		foreach(size 16 32 128 256 512)
+			math(EXPR size2x "${size} * 2")
+			list(APPEND VITA3K_ICON_CMDS	# builds a command list
+				COMMAND sips -z ${size} ${size} "${VITA3K_ICON_1024}"
+					--out "${VITA3K_ICONSET}/icon_${size}x${size}.png"
+				COMMAND sips -z ${size2x} ${size2x} "${VITA3K_ICON_1024}"
+					--out "${VITA3K_ICONSET}/icon_${size}x${size}@2x.png")
+		endforeach()
+
+		add_custom_command(
+			OUTPUT "${VITA3K_ICNS}"
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${VITA3K_ICONSET}"
+			# sips can only convert from svg on macos 13+ which is our minimum version target anyhow
+			COMMAND sips -s format png -z 1024 1024 "${VITA3K_ICON_SVG}" --out "${VITA3K_ICON_1024}"
+			${VITA3K_ICON_CMDS}	# executes commands list
+			COMMAND iconutil -c icns -o "${VITA3K_ICNS}" "${VITA3K_ICONSET}"
+			DEPENDS "${VITA3K_ICON_SVG}"
+			COMMENT "Manually building ${VITA3K_APP_ID}.svg into Vita3K.icns"
+			VERBATIM)
+		set_source_files_properties("${VITA3K_ICNS}" PROPERTIES
+			GENERATED TRUE MACOSX_PACKAGE_LOCATION "Resources")
+		target_sources(vita3k PRIVATE "${VITA3K_ICNS}")
+		set(MACOSX_BUNDLE_ICON_FILE "Vita3K")
+	endif()
 
 	add_custom_command(
 		TARGET vita3k

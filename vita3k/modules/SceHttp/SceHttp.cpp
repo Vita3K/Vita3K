@@ -226,7 +226,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
         }
         case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
         default:
-            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
+            LOG_WARN("Returning missing case of parse_url {}", static_cast<int>(parseRet));
             assert(false);
             return parseRet;
         }
@@ -329,7 +329,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
 
         long verify_flag = SSL_get_verify_result((SSL *)tmpl->second.ssl);
         if (verify_flag != X509_V_OK && verify_flag != X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
-            LOG_ERROR("Certificate verification error ({}) but continuing...\n", (int)verify_flag);
+            LOG_ERROR("Certificate verification error ({}) but continuing...\n", static_cast<int>(verify_flag));
     }
 
     emuenv.http.connections.emplace(connId, SceConnection{ tmplId, urlStr, enableKeepalive, isSecure, sockfd });
@@ -408,7 +408,7 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
         }
         case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
         default:
-            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
+            LOG_WARN("Returning missing case of parse_url {}", static_cast<int>(parseRet));
             assert(false);
             return parseRet;
         }
@@ -1448,7 +1448,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
         }
         case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
         default:
-            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
+            LOG_WARN("Returning missing case of parse_url {}", static_cast<int>(parseRet));
             assert(false);
             return parseRet;
         }

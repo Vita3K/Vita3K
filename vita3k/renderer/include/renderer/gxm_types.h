@@ -139,10 +139,10 @@ struct SceGxmDeferredContextParams {
     uint32_t fragmentBufferMemSize;
 };
 
-typedef Ptr<const void> UniformBuffer;
-typedef std::array<UniformBuffer, SCE_GXM_REAL_MAX_UNIFORM_BUFFER> UniformBuffers;
-typedef SceGxmTexture TextureData;
-typedef Ptr<const void> StreamData;
+using UniformBuffer = Ptr<const void>;
+using UniformBuffers = std::array<UniformBuffer, SCE_GXM_REAL_MAX_UNIFORM_BUFFER>;
+using TextureData = SceGxmTexture;
+using StreamData = Ptr<const void>;
 
 struct GxmViewport {
     SceGxmViewportMode enable = SCE_GXM_VIEWPORT_ENABLED;
@@ -299,7 +299,7 @@ struct SceGxmRegisteredProgram {
     Ptr<const SceGxmProgram> program;
 };
 
-typedef Ptr<SceGxmRegisteredProgram> SceGxmShaderPatcherId;
+using SceGxmShaderPatcherId = Ptr<SceGxmRegisteredProgram>;
 
 typedef Ptr<void> SceGxmShaderPatcherHostAllocCallback(Ptr<void> userData, uint32_t size);
 typedef void SceGxmShaderPatcherHostFreeCallback(Ptr<void> userData, Ptr<void> mem);

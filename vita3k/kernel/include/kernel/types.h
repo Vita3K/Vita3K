@@ -58,11 +58,13 @@
 #define SCE_KERNEL_EVENT_ATTR_MANUAL_RESET 0x00000000U
 #define SCE_KERNEL_EVENT_ATTR_AUTO_RESET 0x00000100U
 
-// System events of a simple event: set when it is created, reported to waits for it when it is
-// deleted, and the result of a wait that ends with an error
+// System events of a simple event: set when it is created, deleted, opened and closed, and the
+// result of a wait that ends with an error
 #define SCE_KERNEL_EVENT_CREATE 0x00000004U
 #define SCE_KERNEL_EVENT_DELETE 0x00000008U
 #define SCE_KERNEL_EVENT_ERROR 0x00000010U
+#define SCE_KERNEL_EVENT_OPEN 0x00000100U
+#define SCE_KERNEL_EVENT_CLOSE 0x00000200U
 // The bits of a simple event a game may set and clear, the others are system events
 #define SCE_KERNEL_EVENT_USER_DEFINED_MASK 0xFF000000U
 
@@ -813,6 +815,14 @@ struct SceKernelCreateSema_opt {
     Ptr<SceKernelSemaOptParam> option;
 };
 
+// The arguments of sceKernelCancelEventWithSetPattern after the pattern, which its syscall takes
+// through a pointer
+struct SceKernelCancelEventWithSetPattern_opt {
+    SceUInt64 userData;
+    Ptr<SceUInt32> pNumWaitThreads;
+};
+static_assert(sizeof(SceKernelCancelEventWithSetPattern_opt) == 0x10, "Incorrect size");
+
 struct SceKernelCreateMsgPipeOpt {
     /** Size of the structure */
     SceSize size;
@@ -865,6 +875,19 @@ struct SceKernelEventFlagInfo {
     SceUInt32 currentPattern;
     SceUInt32 numWaitThreads;
 };
+
+// What sceKernelGetEventInfo reports
+struct SceKernelEventInfo {
+    SceSize size;
+    SceUID eventId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceUInt32 eventPattern;
+    SceUInt64 userData;
+    SceUInt32 numWaitThreads;
+    SceInt32 reserved;
+};
+static_assert(sizeof(SceKernelEventInfo) == 0x40, "Incorrect size");
 
 struct SceKernelMutexInfo {
     SceSize size;

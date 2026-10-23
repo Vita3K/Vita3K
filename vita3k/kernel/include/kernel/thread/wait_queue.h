@@ -156,7 +156,8 @@ public:
         if (by_priority) {
             // Lower value is higher priority, equal priorities keep FIFO order
             pos = std::find_if(waiters.begin(), waiters.end(), [&](const Waiter *w) { return w->priority > waiter.priority; });
-            // Nothing goes in front of a head that keeps its place
+            // A waiter whose place is the front goes right behind a head that keeps its place, so
+            // it lands ahead of the waiters already behind that head, whatever their priority
             if (pos == waiters.begin() && pos != waiters.end() && keeps_place((*pos)->entry))
                 ++pos;
         }

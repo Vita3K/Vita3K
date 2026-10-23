@@ -309,8 +309,8 @@ COMMAND(handle_transfer_downscale) {
             auto perform_downscale = [&]<typename T>(T type) {
                 for (size_t y = 0; y < dst->height; y++) {
                     // stride is in bytes
-                    T *src_line = reinterpret_cast<T *>(src_ptr + (size_t)src->stride * y * 2);
-                    T *dst_line = reinterpret_cast<T *>(dst_ptr + (size_t)dst->stride * y);
+                    T *src_line = reinterpret_cast<T *>(src_ptr + static_cast<size_t>(src->stride) * y * 2);
+                    T *dst_line = reinterpret_cast<T *>(dst_ptr + static_cast<size_t>(dst->stride) * y);
                     for (size_t x = 0; x < dst->width; x++) {
                         dst_line[x] = src_line[2 * x];
                     }
@@ -363,7 +363,7 @@ COMMAND(handle_transfer_fill) {
             const auto dest_offset = ((x + dest->x) * bytes_per_pixel) + ((y + dest->y) * dest->stride);
 
             // Set pointer of destination
-            auto dest_ptr = (uint8_t *)dest->address.get(mem) + dest_offset;
+            auto dest_ptr = reinterpret_cast<uint8_t *>(dest->address.get(mem)) + dest_offset;
 
             // Fill color in destination
             memcpy(dest_ptr, &fill_color, bytes_per_pixel);

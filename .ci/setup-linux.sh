@@ -4,7 +4,7 @@ set -euo pipefail
 sudo add-apt-repository universe
 sudo apt update
 sudo apt -y install \
-    libboost-program-options1.83-dev \
+    libboost-program-options1.88-dev \
     libgtk-3-dev \
     ninja-build \
     libfuse2 \

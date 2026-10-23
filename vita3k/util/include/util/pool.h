@@ -31,7 +31,7 @@ class PoolItem;
 template <typename T>
 class Pool {
 public:
-    typedef std::unique_ptr<T, std::function<void(T *)>> Ptr;
+    using Ptr = std::unique_ptr<T, std::function<void(T *)>>;
     Pool() = default;
 
     Pool(const Pool &) = delete;

@@ -113,7 +113,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
     if (overlap) {
         GLColorSurfaceCacheInfo &info = *ite->second;
-        auto used_iterator = std::find(last_use_color_surface_index.begin(), last_use_color_surface_index.end(), ite->first);
+        auto used_iterator = std::ranges::find(last_use_color_surface_index, ite->first);
 
         if (stored_height) {
             *stored_height = info.original_height;
@@ -571,7 +571,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
     }
 
     if (found_index != static_cast<std::size_t>(-1)) {
-        auto ite = std::find(last_use_depth_stencil_surface_index.begin(), last_use_depth_stencil_surface_index.end(), found_index);
+        auto ite = std::ranges::find(last_use_depth_stencil_surface_index, found_index);
         if (ite != last_use_depth_stencil_surface_index.end()) {
             last_use_depth_stencil_surface_index.erase(ite);
             last_use_depth_stencil_surface_index.push_back(found_index);

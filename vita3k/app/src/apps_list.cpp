@@ -83,7 +83,7 @@ static std::vector<AppCacheSource> collect_app_cache_sources(const EmuEnvState &
         });
     }
 
-    std::sort(sources.begin(), sources.end(), [](const AppCacheSource &lhs, const AppCacheSource &rhs) {
+    std::ranges::sort(sources, [](const AppCacheSource &lhs, const AppCacheSource &rhs) {
         return lhs.title_id < rhs.title_id;
     });
 
@@ -224,7 +224,7 @@ static std::vector<AppTime>::iterator find_app_time(
     const std::string &user_id,
     const std::string &app_path) {
     auto &v = state.app_times[user_id];
-    return std::find_if(v.begin(), v.end(), [&](const AppTime &t) {
+    return std::ranges::find_if(v, [&](const AppTime &t) {
         return t.app_path == app_path;
     });
 }
@@ -394,7 +394,7 @@ void save_app_times(EmuEnvState &emuenv) {
     auto time_child = doc.append_child("time");
 
     for (auto &[user_id, app_times] : state.app_times) {
-        std::sort(app_times.begin(), app_times.end(), [](const AppTime &a, const AppTime &b) {
+        std::ranges::sort(app_times, [](const AppTime &a, const AppTime &b) {
             return a.last_time_used > b.last_time_used;
         });
 
@@ -469,7 +469,7 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
     {
         auto &state = emuenv.app.apps_list;
         std::lock_guard<std::mutex> lock(state.mutex);
-        const auto it = std::find_if(state.apps.begin(), state.apps.end(),
+        const auto it = std::ranges::find_if(state.apps,
             [&](const AppEntry &app) { return app.path == app_path; });
         if (it == state.apps.end()) {
             LOG_WARN("'{}' not found in apps list.", app_path);
@@ -530,16 +530,10 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
         auto &state = emuenv.app.apps_list;
         std::lock_guard<std::mutex> lock(state.mutex);
 
-        state.apps.erase(
-            std::remove_if(state.apps.begin(), state.apps.end(),
-                [&](const AppEntry &app) { return app.path == app_path; }),
-            state.apps.end());
+        std::erase_if(state.apps, [&](const AppEntry &app) { return app.path == app_path; });
 
         for (auto &[user_id, times] : state.app_times) {
-            times.erase(
-                std::remove_if(times.begin(), times.end(),
-                    [&](const AppTime &t) { return t.app_path == app_path; }),
-                times.end());
+            std::erase_if(times, [&](const AppTime &t) { return t.app_path == app_path; });
         }
 
         save_app_times(emuenv);
@@ -570,7 +564,7 @@ bool set_app_info(EmuEnvState &emuenv, const std::string &app_path) {
     const auto &state = emuenv.app.apps_list;
     std::lock_guard<std::mutex> lock(state.mutex);
 
-    const auto it = std::find_if(state.apps.begin(), state.apps.end(), [&](const AppEntry &app) { return app.path == app_path; });
+    const auto it = std::ranges::find_if(state.apps, [&](const AppEntry &app) { return app.path == app_path; });
 
     if (it == state.apps.end()) {
         LOG_ERROR("{} not found in apps list.", app_path);

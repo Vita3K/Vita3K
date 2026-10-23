@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace string_utils {
@@ -33,6 +34,6 @@ void replace(std::string &str, std::string_view in, std::string_view out);
 std::vector<uint8_t> string_to_byte_array(std::string_view string);
 std::string toupper(std::string s);
 std::string tolower(std::string s);
-int stoi_def(const std::string &str, int default_value = 0, const char *name = "value");
+int stoi_def(std::string_view str, int default_value = 0, const char *name = "value");
 
 } // namespace string_utils

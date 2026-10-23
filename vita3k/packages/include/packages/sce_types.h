@@ -135,9 +135,8 @@ enum class CompressionType {
     DEFLATE = 2
 };
 
-typedef std::unordered_map<
-    KeyType, std::unordered_map<SceType, std::unordered_map<SelfType, std::vector<KeyEntry>>>>
-    keystore;
+using keystore = std::unordered_map<
+    KeyType, std::unordered_map<SceType, std::unordered_map<SelfType, std::vector<KeyEntry>>>>;
 
 class KeyStore {
 private:

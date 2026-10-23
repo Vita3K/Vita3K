@@ -61,8 +61,8 @@ protected:
         return guard;
     }
 
-    // Ends what the object is doing when it is deleted. Runs once, with the lock held.
-    virtual void on_delete() {}
+    // Ends what the object is doing when the thread deleter deletes it. Runs once, with the lock held.
+    virtual void on_delete(SceUID deleter) {}
 
     // Whether the object was deleted. With the lock held.
     bool was_deleted() const { return deleted; }
@@ -70,12 +70,12 @@ protected:
 private:
     friend class KernelObjects;
 
-    // Marks the object deleted and runs on_delete().
-    void mark_deleted() {
+    // Marks the object deleted by the thread deleter and runs on_delete().
+    void mark_deleted(SceUID deleter) {
         const std::lock_guard<std::mutex> guard(mutex);
         assert(!deleted);
         deleted = true;
-        on_delete();
+        on_delete(deleter);
     }
 
     mutable std::mutex mutex;
@@ -124,9 +124,10 @@ public:
         return std::static_pointer_cast<T>(it->second);
     }
 
-    // Removes the T with this UID and marks it deleted. Returns false if there is none.
+    // Removes the T with this UID, so no later lookup finds it, then marks it deleted by the thread
+    // deleter. Returns false if there is none.
     template <KernelObjectClass T>
-    bool remove(SceUID uid) {
+    bool remove(SceUID uid, SceUID deleter) {
         std::shared_ptr<KernelObject> obj;
         {
             const std::lock_guard<std::mutex> lock(mutex);
@@ -136,7 +137,7 @@ public:
             obj = std::move(objects.extract(it).mapped());
         }
         // Without the table lock, so lookups never wait for on_delete()
-        obj->mark_deleted();
+        obj->mark_deleted(deleter);
         return true;
     }
 

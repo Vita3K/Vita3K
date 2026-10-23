@@ -42,11 +42,11 @@ inline bool operator==(const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
     return (lhs.name == rhs.name) && (lhs.program == rhs.program);
 }
 
-typedef std::map<Sha256Hash, SharedGLObject> ShaderCache;
-typedef std::tuple<Sha256Hash, Sha256Hash> ProgramHashes;
-typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
+using ShaderCache = std::map<Sha256Hash, SharedGLObject>;
+using ProgramHashes = std::tuple<Sha256Hash, Sha256Hash>;
+using ProgramCache = std::map<ProgramHashes, SharedGLObject>;
 typedef std::vector<ExcludedUniform> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
-typedef std::map<GLuint, GLenum> UniformTypes;
+using UniformTypes = std::map<GLuint, GLenum>;
 
 class GLTextureCache : public TextureCache {
 public:

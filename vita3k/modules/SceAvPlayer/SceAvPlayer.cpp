@@ -255,7 +255,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         auto remaining = file_size;
         uint32_t offset = 0;
         while (remaining) {
-            const auto buf_size = std::min((uint32_t)KiB(512), remaining);
+            const auto buf_size = std::min(static_cast<uint32_t>(KiB(512)), remaining);
             // zero in 5 parameter means high dword of uint64_t parameter. see previous todo
             thread->run_callback(player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0, buf_size });
             temp_file.write(buf_ptr, buf_size);

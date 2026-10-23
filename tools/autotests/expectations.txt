@@ -39,7 +39,7 @@ callback_requeue_order          pass
 callback_retake                 pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           pass
-cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
+cancel_calls                    pass
 cb_wait_check_order             pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
@@ -51,15 +51,15 @@ cond                            pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
 cond_errors                     fail     # close, signal to a thread errors, create attributes, open with a NULL name
 cond_mutex_delete               pass
-cond_relock_requeue             fail     # a condition waiter taking its mutex back reports the condition, no requeue on a priority change
+cond_relock_requeue             fail     # a condition waiter taking its mutex back isn't requeued on a priority change
 cond_rwlock_edges               pass
-cond_semantics                  fail     # a signaled condition waiter whose timeout passes while it waits for the mutex
+cond_semantics                  pass
 cond_signal                     pass
-cond_signal_all_order           fail     # a condition waiter waiting for its mutex reports the condition's UID
+cond_signal_all_order           pass
 cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
 core_choice                     fail     # the CPU fields of thread info, threads ignore their core
-create_attributes               fail     # the attributes condition variables, lightweight condition variables, timers and mutexes accept, simple event attribute 0x800
+create_attributes               fail     # the attributes condition variables, lightweight condition variables, timers and mutexes accept
 create_attrs                    fail     # the attribute bits each create accepts
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
@@ -115,7 +115,7 @@ gxm_surface_memory              fail     # surface data alignment checks
 gxm_sync_objects                fail     # sync objects before sceGxmInitialize and their limit
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
 gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
-handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
+handoff_more                    skip     # threads ignore their core and priority, so whether the woken waiter ran before the releaser reads the state is a race
 head_leaves_more                pass
 info                            pass
 info_fields                     pass
@@ -124,8 +124,8 @@ local_ready_requeue             fail     # threads are never READY or STANDBY
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
 lw_cond_errors                  fail     # create checks of the attribute, a NULL mutex and a NULL work area, a signal to thread 0
-lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back reports the condition, no requeue on a priority change
-lw_cond_semantics               fail     # a signaled waiter whose timeout passes
+lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back isn't requeued on a priority change
+lw_cond_semantics               pass
 lw_info_by_id_uid               fail     # the uid the lightweight condition variable info by UID reports
 lw_mutex                        pass
 lw_mutex_errors                 pass
@@ -193,7 +193,7 @@ multi_events_requeue            fail     # sceKernelWaitMultipleEvents
 multi_events_unknown_uid        fail     # sceKernelWaitMultipleEvents with unusable entries and cancels
 multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
-mutex_cancel_counts             fail     # negative mutex cancel counts, a woken waiter's state
+mutex_cancel_counts             pass
 mutex_ceiling                   fail     # mutex priority ceilings
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_waits                     pass
@@ -212,7 +212,7 @@ out_past_block_end              fail     # no write check on output parameters, 
 outside_mask_rerun              fail     # threads ignore their core
 owner_end                       pass
 owner_end_more                  pass
-poll_calls                      fail     # the bits failed event flag polls write
+poll_calls                      pass
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_migrate                 fail     # threads ignore their core
 preempt_status                  fail     # threads ignore their core and priority
@@ -231,7 +231,7 @@ readonly_timeouts               fail     # no write check on timeouts
 ready_changes                   fail     # threads ignore their core and priority
 ready_cpu_field                 fail     # the CPU fields of thread info, threads ignore their core
 ready_queue_order               fail     # threads ignore their core and priority
-release_errors_waiters          fail     # the waiting count a semaphore cancel writes
+release_errors_waiters          skip     # threads ignore their core and priority, so the writer a read unlock wakes may unlock before the count is read
 release_preempt                 fail     # threads ignore their core and priority
 release_preempt_more            fail     # wakes don't preempt the waker
 remote_change_preempt           fail     # threads are never STANDBY and ignore their core
@@ -240,12 +240,12 @@ requeue_lower_same              fail     # no requeue on a priority change
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_attr_bits                pass
-rwlock_cancel_order             fail     # the rwlock cancel's flag check
+rwlock_cancel_order             pass
 rwlock_cancel_wake_order        skip     # threads ignore their core and priority, so the order woken threads run in is a race
 rwlock_counts                   pass
 rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
-rwlock_requeue_writers          fail     # waiting writers don't go before readers, no requeue on a priority change
+rwlock_requeue_writers          fail     # no requeue on a priority change
 rwlock_wake_counts              fail     # woken threads aren't READY before they run
 rwlock_wake_order               pass
 savedata_slot_id                fail     # save data slot ID range checks
@@ -264,12 +264,12 @@ shared_raise_cores              fail     # threads are never READY and ignore th
 shared_ready_raise              fail     # threads are never READY and ignore their core
 simple_event                    pass
 simple_event_auto_waiters       pass
-simple_event_cancel             fail     # simple event cancels with a set pattern, the user data a cancel leaves
-simple_event_edges              fail     # a wait for pattern 0, what failed waits write, attribute 0x800
-simple_event_errors             fail     # simple event info, close and delete of unknown UIDs
-simple_event_info               fail     # simple event info
+simple_event_cancel             pass
+simple_event_edges              pass
+simple_event_errors             pass
+simple_event_info               pass
 simple_event_null_pointers      pass
-simple_event_open_close_bits    fail     # an open or a close doesn't set the event's 0x100 or 0x200 bit
+simple_event_open_close_bits    pass
 simple_event_wait_null          pass
 stagnant_mask                   pass
 standby_changes                 fail     # threads are never STANDBY
@@ -346,13 +346,13 @@ timer_callback                  fail     # callbacks registered to timers
 timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
-timer_event_wakes_all           fail     # a pulse reaches only the first waiter, no timer event info
+timer_event_wakes_all           pass
 timer_info_cancel               fail     # timer info fields
 timer_modes                     fail     # sceKernelSetTimerTime
 timer_oneshot_refire            fail     # a one shot timer that fired never fires again
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
-timer_waiters                   fail     # a manual reset timer's bit after its event, a pulse wakes one waiter
+timer_waiters                   pass
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority
 tls                             crash    # TLS key 256 and slots by thread UID

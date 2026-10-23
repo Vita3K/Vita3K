@@ -515,7 +515,7 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
                 const size_t first_pixel_offset_in_linear = (j * stride) + hori_tile * 32;
 
                 memcpy(buffer.data() + first_pixel_offset_in_tile * bytes_per_pixel,
-                    (const char *)(pixels) + first_pixel_offset_in_linear * bytes_per_pixel, 32 * bytes_per_pixel);
+                    reinterpret_cast<const char *>(pixels) + first_pixel_offset_in_linear * bytes_per_pixel, 32 * bytes_per_pixel);
             }
         }
         memcpy(pixels, buffer.data(), buffer.size());

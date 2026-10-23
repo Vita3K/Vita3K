@@ -344,7 +344,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             const Address a = format0_entry->addend;
 
             LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0]: offset: {}, code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, patch_start: {}, s: {}, p: {}, a: {}. {}",
-                format0_entry->offset, format0_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), log_hex(p), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(p).get(mem)));
+                format0_entry->offset, format0_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), log_hex(p), log_hex(a), log_hex(reinterpret_cast<uint64_t>(Ptr<uint32_t>(p).get(mem))));
 
             if (!relocate_entry(Ptr<uint32_t>(p).get(mem), format0_entry->code, s, a, p)) {
                 return false;
@@ -354,7 +354,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
 
             if (format0_entry->code2 != 0) {
                 LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT0/2]: code: {}, sym_seg: {}, sym_start: {}, s: {}, patch_seg: {}, p: {}, a: {}. {}",
-                    format0_entry->code2, format0_entry->symbol_segment, symbol_seg_start, format0_entry->patch_segment, log_hex(patch_seg_start), log_hex(s), log_hex(addr2), log_hex(a), log_hex((uint64_t)Ptr<uint32_t>(addr2).get(mem)));
+                    format0_entry->code2, format0_entry->symbol_segment, symbol_seg_start, format0_entry->patch_segment, log_hex(patch_seg_start), log_hex(s), log_hex(addr2), log_hex(a), log_hex(reinterpret_cast<uint64_t>(Ptr<uint32_t>(addr2).get(mem))));
 
                 if (!relocate_entry(Ptr<uint32_t>(addr2).get(mem), format0_entry->code2, s, a, addr2)) {
                     return false;
@@ -608,7 +608,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 }
             }
 
-            assert((uint32_t)orgval >= (uint32_t)segbase);
+            assert(static_cast<uint32_t>(orgval) >= static_cast<uint32_t>(segbase));
             const auto addend = orgval - segbase;
 
             g_type2 = 0;
@@ -660,7 +660,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                     }
                 }
 
-                assert((uint32_t)orgval >= (uint32_t)segbase);
+                assert(static_cast<uint32_t>(orgval) >= static_cast<uint32_t>(segbase));
                 const auto addend = orgval - segbase;
 
                 g_type2 = 0;

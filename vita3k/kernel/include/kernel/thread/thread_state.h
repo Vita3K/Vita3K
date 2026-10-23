@@ -38,9 +38,9 @@ struct ThreadState;
 struct ThreadParams;
 struct KernelState;
 
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
-typedef std::function<std::string(Address)> ResolveNIDName;
+using CPUStatePtr = std::unique_ptr<CPUState, std::function<void(CPUState *)>>;
+using CallImport = std::function<void(CPUState &, uint32_t, SceUID)>;
+using ResolveNIDName = std::function<std::string(Address)>;
 
 // The attribute of every user thread, which thread info always reports
 constexpr SceUInt32 THREAD_ATTR_USER = 0x80000000U;
@@ -324,4 +324,4 @@ private:
     WaitQueue<EndWaitEntry> end_waiters;
 };
 
-typedef std::shared_ptr<ThreadState> ThreadStatePtr;
+using ThreadStatePtr = std::shared_ptr<ThreadState>;
