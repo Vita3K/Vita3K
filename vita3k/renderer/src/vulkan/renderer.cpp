@@ -37,11 +37,11 @@
 
 #include <overlay/display_manager.h>
 
-#include "instance_extensions.h"
-
 #include <algorithm>
 #include <mutex>
+#include <string_view>
 #include <unordered_set>
+#include <vector>
 
 #ifdef __APPLE__
 #include <MoltenVK/mvk_vulkan.h>
@@ -78,6 +78,19 @@ decltype(AHardwareBuffer_allocate) *_AHardwareBuffer_allocate;
 decltype(AHardwareBuffer_lock) *_AHardwareBuffer_lock;
 decltype(AHardwareBuffer_unlock) *_AHardwareBuffer_unlock;
 decltype(AHardwareBuffer_release) *_AHardwareBuffer_release;
+#endif
+
+#ifdef __APPLE__
+static vk::InstanceCreateFlags configure_portability_enumeration(std::vector<const char *> &extensions, bool supported) {
+    std::erase_if(extensions, [](const char *name) {
+        return std::string_view(name) == vk::KHRPortabilityEnumerationExtensionName;
+    });
+    if (!supported)
+        return {};
+
+    extensions.push_back(vk::KHRPortabilityEnumerationExtensionName);
+    return vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+}
 #endif
 
 static void debug_log_message(std::string_view msg) {
@@ -1762,7 +1775,7 @@ renderer::VulkanDeviceInfo renderer::enumerate_vulkan_devices(const std::string 
         }
 
 #ifdef __APPLE__
-        const auto portability_flags = vulkan::configure_portability_enumeration(instance_extensions, has_portability_extension);
+        const auto portability_flags = configure_portability_enumeration(instance_extensions, has_portability_extension);
 #endif
         vk::InstanceCreateInfo instance_info{
 #ifdef __APPLE__
