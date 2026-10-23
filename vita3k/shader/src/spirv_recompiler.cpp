@@ -1881,6 +1881,11 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             } else if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE) {
                 b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPointSize);
                 b.createStore(o_val, out_var);
+            } else if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0 || vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1) {
+                const spv::Id zero = utils::make_uniform_vector_from_type(b, out_type, 0.0f);
+                const spv::Id one = utils::make_uniform_vector_from_type(b, out_type, 1.0f);
+                o_val = b.createBuiltinCall(out_type, utils.std_builtins, GLSLstd450FClamp, { o_val, zero, one });
+                b.createStore(o_val, out_var);
             } else {
                 b.createStore(o_val, out_var);
             }
