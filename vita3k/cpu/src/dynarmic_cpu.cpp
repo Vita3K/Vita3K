@@ -158,6 +158,8 @@ public:
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A32::VAddr addr) override {
         if (cpu->log_mem)
             LOG_TRACE("Instruction fetch at address 0x{:X}", addr);
+        if (addr < KiB(4))
+            return std::nullopt;
         return MemoryRead32(addr);
     }
 
@@ -305,6 +307,12 @@ public:
             break;
         }
         case Dynarmic::A32::Exception::WaitForInterrupt: {
+            cpu->halted = true;
+            cpu->jit->HaltExecution();
+            break;
+        }
+        case Dynarmic::A32::Exception::NoExecuteFault: {
+            LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, parent->thread_id, this->cpu->save_context().description());
             cpu->halted = true;
             cpu->jit->HaltExecution();
             break;
