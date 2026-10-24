@@ -31,9 +31,12 @@
  * \brief Loads (compiles, links) GLSL shaders at specified file paths
  * \param vertex_file_path File path of the vertex shader
  * \param fragment_file_path File path of the fragment shader
+ * \param vertex_prelude Source inserted before the vertex shader file (defines, shared code)
+ * \param fragment_prelude Source inserted before the fragment shader file (defines, shared code)
  * \return SharedGLObject that holds the resulting program id. Empty if loading was unsuccessful
  */
-UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path &fragment_file_path) {
+UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path &fragment_file_path,
+    std::string_view vertex_prelude, std::string_view fragment_prelude) {
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 
@@ -65,15 +68,17 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     // Compile vertex shader
     const GLchar *vs_sources[] = {
         gl_version.c_str(),
+        vertex_prelude.data(),
         vs_code.data()
     };
 
     GLint vs_lengths[] = {
         (GLint)gl_version.size(),
+        (GLint)vertex_prelude.size(),
         (GLint)vs_code.size()
     };
 
-    glShaderSource(vs, 2, vs_sources, vs_lengths);
+    glShaderSource(vs, 3, vs_sources, vs_lengths);
     glCompileShader(vs);
 
     // Check vertex shader
@@ -90,13 +95,15 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     // Compile fragment shader
     const GLchar *fs_sources[] = {
         gl_version.c_str(),
+        fragment_prelude.data(),
         fs_code.data()
     };
     GLint fs_lengths[] = {
         (GLint)gl_version.size(),
+        (GLint)fragment_prelude.size(),
         (GLint)fs_code.size()
     };
-    glShaderSource(fs, 2, fs_sources, fs_lengths);
+    glShaderSource(fs, 3, fs_sources, fs_lengths);
     glCompileShader(fs);
 
     // Check fragment shader

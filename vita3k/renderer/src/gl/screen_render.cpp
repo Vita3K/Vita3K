@@ -16,21 +16,55 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <glutil/shader.h>
+#include <renderer/AreaTex.h>
+#include <renderer/SearchTex.h>
 #include <renderer/gl/screen_render.h>
 #include <util/log.h>
+
+#include <string>
+#include <vector>
 
 namespace renderer::gl {
 
 const SharedGLObject &ScreenRenderer::current_shader() const {
-    switch (filter) {
-    case Filter::FXAA: return m_render_shader_fxaa;
-    case Filter::Bicubic: return m_render_shader_bicubic;
+    switch (m_filter) {
+    case ScreenFilter::FXAA: return m_render_shader_fxaa;
+    case ScreenFilter::SMAA: return m_smaa_shader_neighborhood;
+    case ScreenFilter::BICUBIC: return m_render_shader_bicubic;
+    case ScreenFilter::FSR: return m_fsr_shader_rcas;
     default: return m_render_shader_nofilter; // Bilinear / Nearest
     }
 }
 
 GLuint ScreenRenderer::current_sampler() const {
-    return (filter == Filter::Nearest) ? m_sampler_nearest : m_sampler_linear;
+    return (m_filter == ScreenFilter::NEAREST) ? m_sampler_nearest : m_sampler_linear;
+}
+
+void ScreenRenderer::setup_vertex_attributes(GLuint program) {
+    const GLint pos_attrib = glGetAttribLocation(program, "position_vertex");
+    const GLint uv_attrib = glGetAttribLocation(program, "uv_vertex");
+
+    // 1st attribute: positions
+    glVertexAttribPointer(
+        pos_attrib, // attribute index
+        3, // size
+        GL_FLOAT, // type
+        GL_FALSE, // normalized?
+        screen_vertex_size, // stride
+        reinterpret_cast<void *>(0) // array buffer offset
+    );
+    glEnableVertexAttribArray(pos_attrib);
+
+    // 2nd attribute: uvs
+    glVertexAttribPointer(
+        uv_attrib, // attribute index
+        2, // size
+        GL_FLOAT, // type
+        GL_FALSE, // normalized?
+        screen_vertex_size, // stride
+        reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
+    );
+    glEnableVertexAttribArray(uv_attrib);
 }
 
 bool ScreenRenderer::init(const fs::path &static_assets) {
@@ -63,6 +97,11 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    // SMAA is optional, the filter simply stays unavailable if it could not be set up
+    init_smaa(static_assets);
+    // so is FSR
+    init_fsr(static_assets);
+
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
 
@@ -77,37 +116,300 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_DYNAMIC_DRAW);
 
-    const auto &shader = current_shader();
-
-    GLint posAttrib = glGetAttribLocation(*shader, "position_vertex");
-    GLint uvAttrib = glGetAttribLocation(*shader, "uv_vertex");
-
-    // 1st attribute: positions
-    glVertexAttribPointer(
-        posAttrib, // attribute index
-        3, // size
-        GL_FLOAT, // type
-        GL_FALSE, // normalized?
-        screen_vertex_size, // stride
-        reinterpret_cast<void *>(0) // array buffer offset
-    );
-    glEnableVertexAttribArray(posAttrib);
-
-    // 2nd attribute: uvs
-    glVertexAttribPointer(
-        uvAttrib, // attribute index
-        2, // size
-        GL_FLOAT, // type
-        GL_FALSE, // normalized?
-        screen_vertex_size, // stride
-        reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
-    );
-    glEnableVertexAttribArray(uvAttrib);
+    setup_vertex_attributes(*m_render_shader_nofilter);
 
     glClearColor(32.0f / 255.0f, 178.0f / 255.0f, 170.0f / 255.0f, 1.0f);
     glClearDepthf(1.0f);
 
     return true;
+}
+
+void ScreenRenderer::set_filter(ScreenFilter new_filter) {
+    if (new_filter == ScreenFilter::SMAA && !m_smaa_shader_neighborhood) {
+        LOG_WARN("SMAA is not available, falling back to bilinear");
+        new_filter = ScreenFilter::BILINEAR;
+    }
+    if (new_filter == ScreenFilter::FSR && !m_fsr_shader_rcas) {
+        LOG_WARN("FSR is not available, falling back to bilinear");
+        new_filter = ScreenFilter::BILINEAR;
+    }
+    m_filter = new_filter;
+}
+
+bool ScreenRenderer::init_smaa(const fs::path &static_assets) {
+    const auto builtin_shaders_path = static_assets / "shaders-builtin/opengl";
+
+    // the SMAA library is a single header shared with the vulkan backend, it is pasted
+    // in front of each shader (along with its configuration) instead of being #included
+    std::vector<char> smaa_library;
+    if (!fs_utils::read_data(static_assets / "shaders-builtin/SMAA.hlsl", smaa_library)) {
+        LOG_ERROR("Couldn't open SMAA.hlsl, SMAA will not be available");
+        return false;
+    }
+
+    // SMAA_GLSL_3 only needs GLSL 1.30 features, so the same code works on GLES 3.0
+    const std::string config = "#define SMAA_GLSL_3 1\n"
+                               "#define SMAA_PRESET_HIGH 1\n"
+                               "uniform vec4 rt_metrics;\n"
+                               "#define SMAA_RT_METRICS rt_metrics\n";
+    // the pixel shaders use discard, which is not allowed in a vertex shader
+    const std::string vertex_prelude = config + "#define SMAA_INCLUDE_PS 0\n" + std::string(smaa_library.data(), smaa_library.size());
+    const std::string fragment_prelude = config + "#define SMAA_INCLUDE_VS 0\n" + std::string(smaa_library.data(), smaa_library.size());
+
+    m_smaa_shader_edge = ::gl::load_shaders(builtin_shaders_path / "smaa_edge.vert",
+        builtin_shaders_path / "smaa_edge.frag", vertex_prelude, fragment_prelude);
+    m_smaa_shader_blend = ::gl::load_shaders(builtin_shaders_path / "smaa_blend.vert",
+        builtin_shaders_path / "smaa_blend.frag", vertex_prelude, fragment_prelude);
+    m_smaa_shader_neighborhood = ::gl::load_shaders(builtin_shaders_path / "smaa_neighborhood.vert",
+        builtin_shaders_path / "smaa_neighborhood.frag", vertex_prelude, fragment_prelude);
+
+    if (!m_smaa_shader_edge || !m_smaa_shader_blend || !m_smaa_shader_neighborhood) {
+        LOG_ERROR("Couldn't compile the SMAA shaders, SMAA will not be available");
+        m_smaa_shader_edge.reset();
+        m_smaa_shader_blend.reset();
+        m_smaa_shader_neighborhood.reset();
+        return false;
+    }
+
+    // bind each sampler to the texture unit it is given in render_smaa_offscreen / render
+    glUseProgram(*m_smaa_shader_blend);
+    glUniform1i(glGetUniformLocation(*m_smaa_shader_blend, "edges_tex"), 0);
+    glUniform1i(glGetUniformLocation(*m_smaa_shader_blend, "area_tex"), 1);
+    glUniform1i(glGetUniformLocation(*m_smaa_shader_blend, "search_tex"), 2);
+    glUseProgram(*m_smaa_shader_neighborhood);
+    glUniform1i(glGetUniformLocation(*m_smaa_shader_neighborhood, "fb"), 0);
+    glUniform1i(glGetUniformLocation(*m_smaa_shader_neighborhood, "blend_tex"), 1);
+    glUseProgram(0);
+
+    // upload the two precomputed lookup tables
+    // their rows are not always a multiple of 4 bytes (the search texture is 66 wide)
+    GLint last_unpack_alignment;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &last_unpack_alignment);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    const auto upload_lut = [](GLuint &texture, GLenum internal_format, GLenum format,
+                                GLsizei width, GLsizei height, const void *data, GLint filter) {
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    };
+
+    upload_lut(m_smaa_area_texture, GL_RG8, GL_RG, AREATEX_WIDTH, AREATEX_HEIGHT, areaTexBytes, GL_LINEAR);
+    upload_lut(m_smaa_search_texture, GL_R8, GL_RED, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, searchTexBytes, GL_NEAREST);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, last_unpack_alignment);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // the offscreen passes always cover the whole source texture, so unlike the screen
+    // quad their uvs never change
+    static const screen_vertices_t offscreen_vertices = {
+        { { -1.f, -1.f, 0.0f }, { 0.f, 0.f } },
+        { { 1.f, -1.f, 0.0f }, { 1.f, 0.f } },
+        { { 1.f, 1.f, 0.0f }, { 1.f, 1.f } },
+        { { -1.f, 1.f, 0.0f }, { 0.f, 1.f } }
+    };
+
+    glGenVertexArrays(1, &m_smaa_vao);
+    glBindVertexArray(m_smaa_vao);
+    glGenBuffers(1, &m_smaa_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_smaa_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(offscreen_vertices), offscreen_vertices, GL_STATIC_DRAW);
+    glBindVertexArray(0);
+
+    glGenFramebuffers(1, &m_smaa_edges_fbo);
+    glGenFramebuffers(1, &m_smaa_blend_fbo);
+    glGenTextures(1, &m_smaa_edges_texture);
+    glGenTextures(1, &m_smaa_blend_texture);
+
+    return true;
+}
+
+void ScreenRenderer::resize_smaa_targets(GLsizei width, GLsizei height) {
+    if (width == m_smaa_width && height == m_smaa_height)
+        return;
+
+    const auto attach = [&](GLuint fbo, GLuint texture) {
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            LOG_ERROR("Incomplete SMAA framebuffer ({}x{})", width, height);
+    };
+
+    attach(m_smaa_edges_fbo, m_smaa_edges_texture);
+    attach(m_smaa_blend_fbo, m_smaa_blend_texture);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    m_smaa_width = width;
+    m_smaa_height = height;
+}
+
+void ScreenRenderer::render_smaa_offscreen(GLuint texture, const SceFVector2 &texture_size) {
+    const auto width = static_cast<GLsizei>(texture_size.x);
+    const auto height = static_cast<GLsizei>(texture_size.y);
+    resize_smaa_targets(width, height);
+
+    glViewport(0, 0, width, height);
+    glBindVertexArray(m_smaa_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_smaa_vbo);
+
+    const auto run_pass = [&](GLuint fbo, GLuint program) {
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glUseProgram(program);
+        glUniform4f(glGetUniformLocation(program, "rt_metrics"),
+            1.0f / texture_size.x, 1.0f / texture_size.y, texture_size.x, texture_size.y);
+        setup_vertex_attributes(program);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, screen_vertex_count);
+    };
+
+    // the lookup tables carry their own filtering (linear for the area one, point for
+    // the search one), a leftover sampler object would override it
+    glBindSampler(0, 0);
+    glBindSampler(1, 0);
+    glBindSampler(2, 0);
+
+    // pass 1: edge detection, reads the source color
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    run_pass(m_smaa_edges_fbo, *m_smaa_shader_edge);
+
+    // pass 2: blending weight calculation, reads the edges and both lookup tables
+    glBindTexture(GL_TEXTURE_2D, m_smaa_edges_texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_smaa_area_texture);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_smaa_search_texture);
+    run_pass(m_smaa_blend_fbo, *m_smaa_shader_blend);
+
+    // leave the lookup tables behind, pass 3 needs unit 1 for the blend texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
+}
+
+bool ScreenRenderer::init_fsr(const fs::path &static_assets) {
+    const auto builtin_shaders_path = static_assets / "shaders-builtin";
+
+    // the FidelityFX library is made of two headers shared with the vulkan backend,
+    // they are pasted in front of each shader (along with its configuration)
+    std::vector<char> ffx_a;
+    std::vector<char> ffx_fsr1;
+    if (!fs_utils::read_data(builtin_shaders_path / "ffx_a.h", ffx_a) || !fs_utils::read_data(builtin_shaders_path / "ffx_fsr1.h", ffx_fsr1)) {
+        LOG_ERROR("Couldn't open the FidelityFX headers, FSR will not be available");
+        return false;
+    }
+
+    // packHalf2x16 needs GLSL 4.20, and the library only uses it for a constant the 32-bit path never reads
+    std::string config = "#define A_GPU 1\n"
+                         "#define A_GLSL 1\n"
+                         "#define packHalf2x16(v) 0u\n";
+#ifdef __ANDROID__
+    // GLSL ES 3.0 has neither textureGather nor the bitfield functions (the library only
+    // uses the latter in helpers we do not call), and defaults to mediump integers
+    config += "precision highp int;\n"
+              "precision highp sampler2D;\n"
+              "#define FSR_EMULATE_GATHER 1\n"
+              "uint bitfieldExtract(uint value, int offset, int bits) { return (value >> uint(offset)) & ((1u << uint(bits)) - 1u); }\n"
+              "uint bitfieldInsert(uint base, uint insert, int offset, int bits) {\n"
+              "    uint mask = ((1u << uint(bits)) - 1u) << uint(offset);\n"
+              "    return (base & ~mask) | ((insert << uint(offset)) & mask);\n"
+              "}\n";
+#endif
+
+    const std::string library = std::string(ffx_a.data(), ffx_a.size()) + std::string(ffx_fsr1.data(), ffx_fsr1.size());
+    const std::string easu_prelude = config + "#define FSR_EASU_F 1\n" + library;
+    const std::string rcas_prelude = config + "#define FSR_RCAS_F 1\n" + library;
+
+    const auto opengl_shaders_path = builtin_shaders_path / "opengl";
+    m_fsr_shader_easu = ::gl::load_shaders(opengl_shaders_path / "render_main.vert",
+        opengl_shaders_path / "fsr_easu.frag", "", easu_prelude);
+    m_fsr_shader_rcas = ::gl::load_shaders(opengl_shaders_path / "render_main.vert",
+        opengl_shaders_path / "fsr_rcas.frag", "", rcas_prelude);
+
+    if (!m_fsr_shader_easu || !m_fsr_shader_rcas) {
+        LOG_ERROR("Couldn't compile the FSR shaders, FSR will not be available");
+        m_fsr_shader_easu.reset();
+        m_fsr_shader_rcas.reset();
+        return false;
+    }
+
+    return true;
+}
+
+void ScreenRenderer::resize_fsr_target(GLsizei width, GLsizei height) {
+    if (m_fsr_texture && width == m_fsr_width && height == m_fsr_height)
+        return;
+
+    if (!m_fsr_texture) {
+        glGenFramebuffers(1, &m_fsr_fbo);
+        glGenTextures(1, &m_fsr_texture);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, m_fsr_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fsr_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fsr_texture, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        LOG_ERROR("Incomplete FSR framebuffer ({}x{})", width, height);
+
+    m_fsr_width = width;
+    m_fsr_height = height;
+}
+
+void ScreenRenderer::render_fsr(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const SceFVector2 &texture_size, GLuint default_fbo) {
+    const auto width = static_cast<GLsizei>(viewport_size.x);
+    const auto height = static_cast<GLsizei>(viewport_size.y);
+    if (width <= 0 || height <= 0)
+        return;
+
+    resize_fsr_target(width, height);
+
+    // pass 1: upscale the displayed part of the source to the size it has on screen
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fsr_fbo);
+    glViewport(0, 0, width, height);
+    glUseProgram(*m_fsr_shader_easu);
+    setup_vertex_attributes(*m_fsr_shader_easu);
+    glUniform4f(glGetUniformLocation(*m_fsr_shader_easu, "input_region"),
+        uvs[0] * texture_size.x, uvs[1] * texture_size.y,
+        (uvs[2] - uvs[0]) * texture_size.x, (uvs[3] - uvs[1]) * texture_size.y);
+    glUniform2f(glGetUniformLocation(*m_fsr_shader_easu, "texture_size"), texture_size.x, texture_size.y);
+    glUniform2f(glGetUniformLocation(*m_fsr_shader_easu, "output_size"), static_cast<float>(width), static_cast<float>(height));
+    glDrawArrays(GL_TRIANGLE_FAN, 0, screen_vertex_count);
+
+    // pass 2: sharpen it onto the screen, one to one
+    const auto origin_x = static_cast<GLint>(viewport_pos.x);
+    const auto origin_y = static_cast<GLint>(viewport_pos.y);
+    glBindFramebuffer(GL_FRAMEBUFFER, default_fbo);
+    glViewport(origin_x, origin_y, width, height);
+    glBindTexture(GL_TEXTURE_2D, m_fsr_texture);
+    glBindSampler(0, m_sampler_nearest);
+    glUseProgram(*m_fsr_shader_rcas);
+    setup_vertex_attributes(*m_fsr_shader_rcas);
+    glUniform2f(glGetUniformLocation(*m_fsr_shader_rcas, "output_origin"), static_cast<float>(origin_x), static_cast<float>(origin_y));
+    // in stops, same default as the vulkan backend
+    glUniform1f(glGetUniformLocation(*m_fsr_shader_rcas, "sharpness"), 0.2f);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, screen_vertex_count);
 }
 
 void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo) {
@@ -143,12 +445,21 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     GLboolean last_color_mask[4];
     glGetBooleanv(GL_COLOR_WRITEMASK, last_color_mask);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, default_fbo);
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+#ifndef __ANDROID__
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+
+    // the first two SMAA passes render the whole source into offscreen targets, the last
+    // one is the screen pass below
+    if (m_filter == ScreenFilter::SMAA)
+        render_smaa_offscreen(texture, texture_size);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, default_fbo);
 
     glViewport(static_cast<GLint>(viewport_pos.x), static_cast<GLint>(viewport_pos.y), static_cast<GLsizei>(viewport_size.x),
         static_cast<GLsizei>(viewport_size.y));
@@ -161,9 +472,6 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     const auto &shader = current_shader();
-
-    const GLint posAttrib = glGetAttribLocation(*shader, "position_vertex");
-    const GLint uvAttrib = glGetAttribLocation(*shader, "uv_vertex");
 
     glUseProgram(*shader);
     glBindVertexArray(m_vao);
@@ -206,35 +514,12 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_DYNAMIC_DRAW);
     }
 
-    // 1st attribute: positions
-    glVertexAttribPointer(
-        posAttrib, // attribute index
-        3, // size
-        GL_FLOAT, // type
-        GL_FALSE, // normalized?
-        screen_vertex_size, // stride
-        reinterpret_cast<void *>(0) // array buffer offset
-    );
-    glEnableVertexAttribArray(posAttrib);
-
-    // 2nd attribute: uvs
-    glVertexAttribPointer(
-        uvAttrib, // attribute index
-        2, // size
-        GL_FLOAT, // type
-        GL_FALSE, // normalized?
-        screen_vertex_size, // stride
-        reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
-    );
-    glEnableVertexAttribArray(uvAttrib);
+    setup_vertex_attributes(*shader);
 
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindSampler(0, current_sampler());
-#ifndef __ANDROID__
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
 
-    if (filter == Filter::FXAA) {
+    if (m_filter == ScreenFilter::FXAA) {
         // FXAA must run at the input (render) resolution, 1:1 with the source texture,
         // otherwise it operates on an already upscaled (blurred) image.
         // Pass 1: run FXAA into an intermediate FBO sized to the render resolution.
@@ -279,9 +564,27 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
             static_cast<GLint>(viewport_pos.x + viewport_size.x),
             static_cast<GLint>(viewport_pos.y + viewport_size.y),
             GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    } else if (m_filter == ScreenFilter::FSR) {
+        render_fsr(viewport_pos, viewport_size, uvs, texture_size, default_fbo);
     } else {
-        // Bilinear / Nearest / Bicubic draw directly to the screen.
+        if (m_filter == ScreenFilter::SMAA) {
+            const GLint rt_metrics_location = glGetUniformLocation(*shader, "rt_metrics");
+            glUniform4f(rt_metrics_location, 1 / texture_size.x, 1 / texture_size.y, texture_size.x, texture_size.y);
+            // the blending weights computed by the offscreen passes cover the whole source,
+            // so they are addressed with the same uvs as the color texture
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, m_smaa_blend_texture);
+            glActiveTexture(GL_TEXTURE0);
+        }
+        // Bilinear / Nearest / Bicubic / SMAA draw directly to the screen.
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+
+    if (m_filter == ScreenFilter::SMAA) {
+        // only unit 0 is saved and restored below
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE0);
     }
 
     // Restore modified GL state
@@ -345,6 +648,45 @@ void ScreenRenderer::destroy() {
 
     glDeleteTextures(1, &m_screen_texture);
     m_screen_texture = 0;
+
+    glDeleteFramebuffers(1, &m_smaa_edges_fbo);
+    glDeleteFramebuffers(1, &m_smaa_blend_fbo);
+    m_smaa_edges_fbo = 0;
+    m_smaa_blend_fbo = 0;
+
+    glDeleteTextures(1, &m_smaa_edges_texture);
+    glDeleteTextures(1, &m_smaa_blend_texture);
+    glDeleteTextures(1, &m_smaa_area_texture);
+    glDeleteTextures(1, &m_smaa_search_texture);
+    m_smaa_edges_texture = 0;
+    m_smaa_blend_texture = 0;
+    m_smaa_area_texture = 0;
+    m_smaa_search_texture = 0;
+
+    glDeleteBuffers(1, &m_smaa_vbo);
+    m_smaa_vbo = 0;
+    glDeleteVertexArrays(1, &m_smaa_vao);
+    m_smaa_vao = 0;
+
+    m_smaa_width = 0;
+    m_smaa_height = 0;
+
+    m_smaa_shader_edge.reset();
+    m_smaa_shader_blend.reset();
+    m_smaa_shader_neighborhood.reset();
+
+    m_fsr_shader_easu.reset();
+    m_fsr_shader_rcas.reset();
+    if (m_fsr_fbo) {
+        glDeleteFramebuffers(1, &m_fsr_fbo);
+        m_fsr_fbo = 0;
+    }
+    if (m_fsr_texture) {
+        glDeleteTextures(1, &m_fsr_texture);
+        m_fsr_texture = 0;
+    }
+    m_fsr_width = 0;
+    m_fsr_height = 0;
 }
 
 ScreenRenderer::~ScreenRenderer() {

@@ -132,6 +132,79 @@ public:
     }
 };
 
+class SMAAScreenFilter : public ScreenFilter {
+private:
+    // offscreen render targets, one (edges, blend) pair per swapchain image,
+    // sized to the source texture resolution (lazily (re)created)
+    std::vector<vkutil::Image> edges_images;
+    std::vector<vkutil::Image> blend_images;
+    std::vector<vk::Framebuffer> edges_framebuffers;
+    std::vector<vk::Framebuffer> blend_framebuffers;
+    uint32_t cached_src_width = 0;
+    uint32_t cached_src_height = 0;
+
+    // precomputed SMAA lookup tables (shared, read-only)
+    vkutil::Image area_tex;
+    vkutil::Image search_tex;
+
+    // render pass used by the edge and blend passes (one RGBA8 color attachment)
+    vk::RenderPass offscreen_render_pass;
+
+    // one SPIR-V module per stage, all compiled from SMAA.hlsl
+    vk::ShaderModule edge_vertex_shader;
+    vk::ShaderModule edge_fragment_shader;
+    vk::ShaderModule blend_vertex_shader;
+    vk::ShaderModule blend_fragment_shader;
+    vk::ShaderModule neighborhood_vertex_shader;
+    vk::ShaderModule neighborhood_fragment_shader;
+
+    vk::DescriptorSetLayout edge_set_layout;
+    vk::DescriptorSetLayout blend_set_layout;
+    vk::DescriptorSetLayout neighborhood_set_layout;
+    vk::DescriptorPool descriptor_pool;
+    std::vector<vk::DescriptorSet> edge_sets; // per swapchain image
+    std::vector<vk::DescriptorSet> blend_sets;
+    std::vector<vk::DescriptorSet> neighborhood_sets;
+
+    vk::PipelineLayout edge_pipeline_layout;
+    vk::PipelineLayout blend_pipeline_layout;
+    vk::PipelineLayout neighborhood_pipeline_layout;
+    vk::Pipeline edge_pipeline;
+    vk::Pipeline blend_pipeline;
+    vk::Pipeline neighborhood_pipeline;
+
+    vk::Sampler linear_sampler;
+    vk::Sampler point_sampler;
+
+    // host-visible quad buffer (swapchain_size * 2 quads)
+    vkutil::Buffer vao;
+
+    void create_samplers();
+    void create_render_pass();
+    void load_shaders();
+    void create_lut_textures();
+    void create_descriptors();
+    void create_pipelines();
+    vk::Pipeline build_pipeline(vk::ShaderModule vertex_shader, vk::ShaderModule fragment_shader,
+        vk::PipelineLayout layout, vk::RenderPass render_pass);
+    void ensure_targets(uint32_t width, uint32_t height);
+    void destroy_targets();
+    void bind_fullscreen_quad(vk::CommandBuffer cmd, bool sub_region, const Viewport &viewport);
+
+public:
+    SMAAScreenFilter(ScreenRenderer &screen_renderer)
+        : ScreenFilter(screen_renderer) {}
+    ~SMAAScreenFilter();
+    void init() override;
+    void render(bool is_pre_renderpass, vk::ImageView src_img, vk::ImageLayout src_layout, const Viewport &viewport) override;
+    std::string_view get_name() override {
+        return "SMAA";
+    }
+    // pass 3 draws into the default (clearing) render pass, like the single-pass
+    // filters, so we do NOT need the post-processing render pass.
+    // -> leave need_post_processing_render_pass() at its default (false).
+};
+
 class FSRScreenFilter : public ScreenFilter {
 private:
     // dst of the easu shader, src of the rcas shader

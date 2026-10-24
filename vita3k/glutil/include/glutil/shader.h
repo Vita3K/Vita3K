@@ -20,6 +20,11 @@
 #include <glutil/object.h>
 #include <util/fs.h>
 
+#include <string_view>
+
 namespace gl {
-UniqueGLObject load_shaders(const fs::path &vertex_file_path, const fs::path &fragment_file_path);
-}
+// the preludes are inserted between the #version line and the shader file, which is
+// where #define and #include-like shared sources have to go
+UniqueGLObject load_shaders(const fs::path &vertex_file_path, const fs::path &fragment_file_path,
+    std::string_view vertex_prelude = "", std::string_view fragment_prelude = "");
+} // namespace gl
