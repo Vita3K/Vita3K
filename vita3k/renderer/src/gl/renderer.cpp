@@ -239,8 +239,8 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
     // Some AMD integrated GPUs return zero from imageLoad() on the mask texture after
     // sync_mask() cleared it with glClearTexImage (fast clear metadata is not resolved
     // for read-only image bindings), which turns the whole frame black.
-    gl_state.features.use_mask_bit = !config.disable_mask_bit;
-    if (config.disable_mask_bit)
+    gl_state.features.use_mask_bit = !config.current_config.disable_mask_bit;
+    if (config.current_config.disable_mask_bit)
         LOG_WARN("Mask bit emulation is disabled by the settings");
 #endif
 
