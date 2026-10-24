@@ -267,6 +267,7 @@ void Timer::catch_up() {
     if (next_event > now)
         return;
     fire(SCE_KERNEL_EVENT_TIMER, 0, !is_pulse);
+    // A one shot event leaves the queue but stays armed, so a start or a set time can queue it again
     if (!is_repeat) {
         next_event = std::numeric_limits<uint64_t>::max();
         return;
@@ -278,10 +279,11 @@ void Timer::catch_up() {
     if (waiters.empty() && next <= now)
         next += ((now - next) / interval + 1) * interval;
     next_event = std::max(next, now + TIMER_EVENT_FLOOR);
+    schedule = next_event - base;
 }
 
-void Timer::schedule_event() {
-    next_event = get_current_time() + std::max(event_interval, TIMER_EVENT_FLOOR);
+void Timer::queue_event(uint64_t deadline) {
+    next_event = std::max(deadline, get_current_time() + TIMER_EVENT_FLOOR);
     // The first waiter sleeps until the old event time, so wake it to see the new one
     if (const auto *const first = waiters.front())
         first->thread->wake();
@@ -305,9 +307,13 @@ SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repe
     is_pulse = type == SCE_KERNEL_TIMER_TYPE_PULSE_EVENT;
     is_repeat = repeats != 0;
     event_interval = interval;
-
+    armed = true;
+    schedule = count() + interval;
+    // A stopped timer queues the event when it starts
     if (is_started)
-        schedule_event();
+        queue_event(get_current_time() + interval);
+    else
+        next_event = std::numeric_limits<uint64_t>::max();
 
     return SCE_KERNEL_OK;
 }
@@ -393,12 +399,13 @@ SceInt32 Timer::start() {
         return 1;
     catch_up();
 
-    // The count goes on from where it stopped
+    // The count goes on from where it stopped, and an armed event is due after the time it has left,
+    // at once if it already fired
     is_started = true;
-    base = get_current_time() - stopped_count;
-
-    if (event_interval != 0)
-        schedule_event();
+    const uint64_t now = get_current_time();
+    base = now - stopped_count;
+    if (armed)
+        queue_event(now + (schedule > stopped_count ? schedule - stopped_count : 0));
 
     return SCE_KERNEL_OK;
 }
@@ -426,10 +433,16 @@ std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
     catch_up();
 
     const uint64_t old_count = count();
-    if (is_started)
-        base = get_current_time() - new_time;
-    else
+    if (is_started) {
+        const uint64_t now = get_current_time();
+        base = now - new_time;
+        // If the new time is before the armed event's time, the event is due when the count reaches
+        // it again. Otherwise it stays due when it was.
+        if (armed && new_time < schedule)
+            queue_event(now + (schedule - new_time));
+    } else {
         stopped_count = new_time;
+    }
     return old_count;
 }
 
@@ -461,6 +474,7 @@ SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
 
     const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     // The event set with sceKernelSetTimerEvent is canceled too
+    armed = false;
     is_repeat = false;
     is_pulse = false;
     event_interval = 0;

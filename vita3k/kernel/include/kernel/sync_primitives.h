@@ -232,9 +232,9 @@ private:
     // Fires the event if it is due: sets or pulses SCE_KERNEL_EVENT_TIMER, and queues a repeating
     // event again an interval after it was due.
     void catch_up() override;
-    // Queues the event an interval from now, and wakes the first waiter so it sees the new time. The
-    // lock must be held.
-    void schedule_event();
+    // Queues the event to be due at the clock time deadline, and wakes the first waiter so it sees
+    // the new time. The lock must be held.
+    void queue_event(uint64_t deadline);
     // Gives the event's bits to the waits they match, and wakes the first waiter left.
     void serve() override;
     // Returns when the next event is due, on the clock of wait deadlines. The lock must be held.
@@ -244,13 +244,17 @@ private:
 
     // Guarded by the lock
     bool is_started = false;
+    // An event is set, and a fired one shot event stays armed
+    bool armed = false;
     bool is_repeat = false;
     bool is_pulse = false;
     // The clock time the count runs from while the timer is started, 0 if it never started
     uint64_t base = 0;
     // The count while the timer is stopped
     uint64_t stopped_count = 0;
-    // The clock time the next event is due, the maximum while none is armed
+    // The count the armed event is due at
+    uint64_t schedule = 0;
+    // The clock time the next event is due, the maximum while none is queued
     uint64_t next_event = std::numeric_limits<uint64_t>::max();
     uint64_t event_interval = 0;
 };
