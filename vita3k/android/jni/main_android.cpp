@@ -17,6 +17,10 @@
 
 #include "android_state.h"
 
+#include <app/functions.h>
+#include <config/state.h>
+#include <ctrl/functions.h>
+#include <gui-imgui/functions.h>
 #include <ime/keyboard.h>
 #include <motion/functions.h>
 #include <sdl-frontend/session.h>
@@ -25,7 +29,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include <algorithm>
+#include <cstdlib>
+#include <regex>
 #include <string>
+#include <utility>
 
 namespace {
 
@@ -64,6 +72,9 @@ extern "C" {
 // SDL3 entry point — called by SDLActivity's native thread when the Emulator activity starts.
 // argv is populated from Emulator.getArguments(), e.g. {"-r", "PCSE00000"}.
 SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
+    const bool imgui_frontend = std::any_of(argv, argv + argc, [](const char *arg) {
+        return std::string(arg) == "--imgui";
+    });
     std::string title_id;
     for (int i = 0; i < argc; i++) {
         if (std::string(argv[i]) == "-r" && i + 1 < argc) {
@@ -72,17 +83,57 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
         }
     }
 
-    if (title_id.empty()) {
+    if (title_id.empty() && !imgui_frontend) {
         LOG_ERROR("No title ID provided");
         return -1;
     }
 
     auto *emuenv = get_emuenv();
-    auto *session_controller = get_app_session_controller();
     if (!emuenv) {
         LOG_ERROR("Emulator not initialized");
         return -1;
     }
+
+    if (imgui_frontend) {
+        AppLaunchRequest launch_request{ .app_path = title_id };
+        for (int i = 0; i < argc; ++i) {
+            const std::string arg = argv[i];
+            if (arg != "--self" && arg != "--app-args")
+                continue;
+            if (i + 1 >= argc) {
+                LOG_ERROR("Missing value for {}", arg);
+                return -1;
+            }
+
+            const std::string value = argv[++i];
+            if (arg == "--self") {
+                launch_request.self_path = value;
+            } else if (!value.empty()) {
+                const std::regex separator(",\\s+");
+                launch_request.argv = std::vector<std::string>(
+                    std::sregex_token_iterator(value.begin(), value.end(), separator, -1),
+                    std::sregex_token_iterator());
+            }
+        }
+        if (title_id.empty() && (!launch_request.self_path.empty() || !launch_request.argv.empty())) {
+            LOG_ERROR("An app title ID is required with --self or --app-args");
+            return -1;
+        }
+        if (!title_id.empty()) {
+            emuenv->cfg.run_app_path = title_id;
+            app::set_current_config(*emuenv, title_id);
+        }
+
+        if (!title_id.empty())
+            emuenv->post_app_launch_request(std::move(launch_request));
+        if (gui::run_frontend(*emuenv) == RendererInitFailed)
+            return -1;
+        // The process must not survive the frontend: static and global native state would leak into the next launch.
+        // Exiting with 0 once everything is cleaned up avoids Android reporting a crash.
+        exit(0);
+    }
+
+    auto *session_controller = get_app_session_controller();
     if (!session_controller) {
         LOG_ERROR("App session controller is unavailable");
         return -1;
