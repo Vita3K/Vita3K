@@ -76,14 +76,12 @@ static renderer::SyncWaitResult wait_cmd(MemState &mem, CommandList &command_lis
 }
 
 // commands that neither signal the guest nor read guest memory written by a surface readback
-// SignalSyncObject only wakes the display queue, and the frame it queues is presented after process_batches completes every readback
 static bool can_run_before_readbacks(CommandOpcode opcode) {
     switch (opcode) {
     case CommandOpcode::Draw:
     case CommandOpcode::SetState:
     case CommandOpcode::SetContext:
     case CommandOpcode::SyncSurfaceData:
-    case CommandOpcode::SignalSyncObject:
     case CommandOpcode::WaitSyncObject:
     case CommandOpcode::NewFrame:
         return true;

@@ -681,10 +681,22 @@ void GLState::complete_readbacks(MemState &mem, bool wait) {
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, readback.pbo);
         const auto *mapped = static_cast<const uint8_t *>(glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, static_cast<GLsizeiptr>(readback.size), GL_MAP_READ_BIT));
-        if (mapped && pixels) {
+        // the mapping can fail (out of memory), read the buffer back with a copy instead of leaving the guest surface stale
+        std::vector<uint8_t> fallback;
+        const uint8_t *source = mapped;
+        if (!mapped) {
+            LOG_ERROR_ONCE("Mapping a surface readback buffer failed, copying it instead");
+            fallback.resize(readback.size);
+            glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, static_cast<GLsizeiptr>(readback.size), fallback.data());
+            if (glGetError() == GL_NO_ERROR)
+                source = fallback.data();
+            else
+                LOG_ERROR("Could not read back a surface, the guest surface at {} is left unchanged", fmt::ptr(pixels));
+        }
+        if (source && pixels) {
             if (readback.use_temp) {
                 readback_scratch.resize(readback.size);
-                std::memcpy(readback_scratch.data(), mapped, readback.size);
+                std::memcpy(readback_scratch.data(), source, readback.size);
                 post_process_pixels_data(*this, pixels, readback_scratch.data(), readback.width, readback.height, surface.strideInPixels, surface);
             } else {
                 // only the visible part of each line is written, like glReadPixels would
@@ -692,10 +704,10 @@ void GLState::complete_readbacks(MemState &mem, bool wait) {
                 const size_t line = gxm::get_stride_in_bytes(surface.colorFormat, surface.width);
                 auto *dst = reinterpret_cast<uint8_t *>(pixels);
                 if (line == stride) {
-                    std::memcpy(dst, mapped, stride * surface.height);
+                    std::memcpy(dst, source, stride * surface.height);
                 } else {
                     for (uint32_t y = 0; y < surface.height; y++)
-                        std::memcpy(dst + y * stride, mapped + y * stride, line);
+                        std::memcpy(dst + y * stride, source + y * stride, line);
                 }
                 post_process_pixels_data(*this, pixels, reinterpret_cast<uint8_t *>(pixels), readback.width, readback.height, surface.strideInPixels, surface);
             }
