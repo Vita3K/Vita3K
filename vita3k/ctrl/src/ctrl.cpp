@@ -281,6 +281,13 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     reset_axes();
 }
 
+SceUInt32 ctrl_peek_buttons(EmuEnvState &emuenv, int port) {
+    SceUInt32 buttons = 0;
+    SceUInt8 lx, ly, rx, ry;
+    retrieve_ctrl_data(emuenv, port, false, false, false, buttons, lx, ly, rx, ry);
+    return buttons;
+}
+
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext) {
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         const char *export_name = "sceCtrl*Buffer*";
