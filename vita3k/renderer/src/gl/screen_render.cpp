@@ -31,6 +31,7 @@ const SharedGLObject &ScreenRenderer::current_shader() const {
     case ScreenFilter::FXAA: return m_render_shader_fxaa;
     case ScreenFilter::SMAA: return m_smaa_shader_neighborhood;
     case ScreenFilter::BICUBIC: return m_render_shader_bicubic;
+    case ScreenFilter::FSR: return m_fsr_shader_rcas;
     default: return m_render_shader_nofilter; // Bilinear / Nearest
     }
 }
@@ -98,6 +99,8 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
 
     // SMAA is optional, the filter simply stays unavailable if it could not be set up
     init_smaa(static_assets);
+    // so is FSR
+    init_fsr(static_assets);
 
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
@@ -124,6 +127,10 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
 void ScreenRenderer::set_filter(ScreenFilter new_filter) {
     if (new_filter == ScreenFilter::SMAA && !m_smaa_shader_neighborhood) {
         LOG_WARN("SMAA is not available, falling back to bilinear");
+        new_filter = ScreenFilter::BILINEAR;
+    }
+    if (new_filter == ScreenFilter::FSR && !m_fsr_shader_rcas) {
+        LOG_WARN("FSR is not available, falling back to bilinear");
         new_filter = ScreenFilter::BILINEAR;
     }
     m_filter = new_filter;
@@ -295,6 +302,116 @@ void ScreenRenderer::render_smaa_offscreen(GLuint texture, const SceFVector2 &te
     glActiveTexture(GL_TEXTURE0);
 }
 
+bool ScreenRenderer::init_fsr(const fs::path &static_assets) {
+    const auto builtin_shaders_path = static_assets / "shaders-builtin";
+
+    // the FidelityFX library is made of two headers shared with the vulkan backend,
+    // they are pasted in front of each shader (along with its configuration)
+    std::vector<char> ffx_a;
+    std::vector<char> ffx_fsr1;
+    if (!fs_utils::read_data(builtin_shaders_path / "ffx_a.h", ffx_a) || !fs_utils::read_data(builtin_shaders_path / "ffx_fsr1.h", ffx_fsr1)) {
+        LOG_ERROR("Couldn't open the FidelityFX headers, FSR will not be available");
+        return false;
+    }
+
+    // packHalf2x16 needs GLSL 4.20, and the library only uses it for a constant the 32-bit path never reads
+    std::string config = "#define A_GPU 1\n"
+                         "#define A_GLSL 1\n"
+                         "#define packHalf2x16(v) 0u\n";
+#ifdef __ANDROID__
+    // GLSL ES 3.0 has neither textureGather nor the bitfield functions (the library only
+    // uses the latter in helpers we do not call), and defaults to mediump integers
+    config += "precision highp int;\n"
+              "precision highp sampler2D;\n"
+              "#define FSR_EMULATE_GATHER 1\n"
+              "uint bitfieldExtract(uint value, int offset, int bits) { return (value >> uint(offset)) & ((1u << uint(bits)) - 1u); }\n"
+              "uint bitfieldInsert(uint base, uint insert, int offset, int bits) {\n"
+              "    uint mask = ((1u << uint(bits)) - 1u) << uint(offset);\n"
+              "    return (base & ~mask) | ((insert << uint(offset)) & mask);\n"
+              "}\n";
+#endif
+
+    const std::string library = std::string(ffx_a.data(), ffx_a.size()) + std::string(ffx_fsr1.data(), ffx_fsr1.size());
+    const std::string easu_prelude = config + "#define FSR_EASU_F 1\n" + library;
+    const std::string rcas_prelude = config + "#define FSR_RCAS_F 1\n" + library;
+
+    const auto opengl_shaders_path = builtin_shaders_path / "opengl";
+    m_fsr_shader_easu = ::gl::load_shaders(opengl_shaders_path / "render_main.vert",
+        opengl_shaders_path / "fsr_easu.frag", "", easu_prelude);
+    m_fsr_shader_rcas = ::gl::load_shaders(opengl_shaders_path / "render_main.vert",
+        opengl_shaders_path / "fsr_rcas.frag", "", rcas_prelude);
+
+    if (!m_fsr_shader_easu || !m_fsr_shader_rcas) {
+        LOG_ERROR("Couldn't compile the FSR shaders, FSR will not be available");
+        m_fsr_shader_easu.reset();
+        m_fsr_shader_rcas.reset();
+        return false;
+    }
+
+    return true;
+}
+
+void ScreenRenderer::resize_fsr_target(GLsizei width, GLsizei height) {
+    if (m_fsr_texture && width == m_fsr_width && height == m_fsr_height)
+        return;
+
+    if (!m_fsr_texture) {
+        glGenFramebuffers(1, &m_fsr_fbo);
+        glGenTextures(1, &m_fsr_texture);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, m_fsr_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fsr_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fsr_texture, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        LOG_ERROR("Incomplete FSR framebuffer ({}x{})", width, height);
+
+    m_fsr_width = width;
+    m_fsr_height = height;
+}
+
+void ScreenRenderer::render_fsr(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const SceFVector2 &texture_size, GLuint default_fbo) {
+    const auto width = static_cast<GLsizei>(viewport_size.x);
+    const auto height = static_cast<GLsizei>(viewport_size.y);
+    if (width <= 0 || height <= 0)
+        return;
+
+    resize_fsr_target(width, height);
+
+    // pass 1: upscale the displayed part of the source to the size it has on screen
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fsr_fbo);
+    glViewport(0, 0, width, height);
+    glUseProgram(*m_fsr_shader_easu);
+    setup_vertex_attributes(*m_fsr_shader_easu);
+    glUniform4f(glGetUniformLocation(*m_fsr_shader_easu, "input_region"),
+        uvs[0] * texture_size.x, uvs[1] * texture_size.y,
+        (uvs[2] - uvs[0]) * texture_size.x, (uvs[3] - uvs[1]) * texture_size.y);
+    glUniform2f(glGetUniformLocation(*m_fsr_shader_easu, "texture_size"), texture_size.x, texture_size.y);
+    glUniform2f(glGetUniformLocation(*m_fsr_shader_easu, "output_size"), static_cast<float>(width), static_cast<float>(height));
+    glDrawArrays(GL_TRIANGLE_FAN, 0, screen_vertex_count);
+
+    // pass 2: sharpen it onto the screen, one to one
+    const auto origin_x = static_cast<GLint>(viewport_pos.x);
+    const auto origin_y = static_cast<GLint>(viewport_pos.y);
+    glBindFramebuffer(GL_FRAMEBUFFER, default_fbo);
+    glViewport(origin_x, origin_y, width, height);
+    glBindTexture(GL_TEXTURE_2D, m_fsr_texture);
+    glBindSampler(0, m_sampler_nearest);
+    glUseProgram(*m_fsr_shader_rcas);
+    setup_vertex_attributes(*m_fsr_shader_rcas);
+    glUniform2f(glGetUniformLocation(*m_fsr_shader_rcas, "output_origin"), static_cast<float>(origin_x), static_cast<float>(origin_y));
+    // in stops, same default as the vulkan backend
+    glUniform1f(glGetUniformLocation(*m_fsr_shader_rcas, "sharpness"), 0.2f);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, screen_vertex_count);
+}
+
 void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo) {
     // Code for backup and restore is taken from ImGui project ImGui_ImplSdlGL3_RenderDrawData
     // Backup GL state
@@ -447,6 +564,8 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
             static_cast<GLint>(viewport_pos.x + viewport_size.x),
             static_cast<GLint>(viewport_pos.y + viewport_size.y),
             GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    } else if (m_filter == ScreenFilter::FSR) {
+        render_fsr(viewport_pos, viewport_size, uvs, texture_size, default_fbo);
     } else {
         if (m_filter == ScreenFilter::SMAA) {
             const GLint rt_metrics_location = glGetUniformLocation(*shader, "rt_metrics");
@@ -555,6 +674,19 @@ void ScreenRenderer::destroy() {
     m_smaa_shader_edge.reset();
     m_smaa_shader_blend.reset();
     m_smaa_shader_neighborhood.reset();
+
+    m_fsr_shader_easu.reset();
+    m_fsr_shader_rcas.reset();
+    if (m_fsr_fbo) {
+        glDeleteFramebuffers(1, &m_fsr_fbo);
+        m_fsr_fbo = 0;
+    }
+    if (m_fsr_texture) {
+        glDeleteTextures(1, &m_fsr_texture);
+        m_fsr_texture = 0;
+    }
+    m_fsr_width = 0;
+    m_fsr_height = 0;
 }
 
 ScreenRenderer::~ScreenRenderer() {

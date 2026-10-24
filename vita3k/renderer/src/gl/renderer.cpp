@@ -795,7 +795,7 @@ std::vector<uint32_t> GLState::dump_frame(DisplayState &display, uint32_t &width
 
 int GLState::get_supported_filters() {
     return static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR)
-        | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA) | static_cast<int>(Filter::SMAA);
+        | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA) | static_cast<int>(Filter::SMAA) | static_cast<int>(Filter::FSR);
 }
 
 void GLState::set_screen_filter(const std::string_view &filter) {
@@ -805,6 +805,8 @@ void GLState::set_screen_filter(const std::string_view &filter) {
         screen_renderer.set_filter(ScreenFilter::FXAA);
     else if (filter == "SMAA")
         screen_renderer.set_filter(ScreenFilter::SMAA);
+    else if (filter == "FSR")
+        screen_renderer.set_filter(ScreenFilter::FSR);
     else if (filter == "Bicubic")
         screen_renderer.set_filter(ScreenFilter::BICUBIC);
     else

@@ -29,6 +29,7 @@ enum class ScreenFilter {
     BICUBIC,
     FXAA,
     SMAA,
+    FSR,
 };
 
 class ScreenRenderer {
@@ -67,6 +68,13 @@ private:
     void resize_smaa_targets(GLsizei width, GLsizei height);
     // runs the edge detection and blending weight passes into the offscreen targets
     void render_smaa_offscreen(GLuint texture, const SceFVector2 &texture_size);
+    // compiles the two FSR programs (upscaling then sharpening), returns false
+    // (and leaves FSR unusable) if anything went wrong
+    bool init_fsr(const fs::path &static_assets);
+    // (re)creates the intermediate upscaled target when the output size changes
+    void resize_fsr_target(GLsizei width, GLsizei height);
+    // upscales the source into the intermediate target, then sharpens it onto the screen
+    void render_fsr(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const SceFVector2 &texture_size, GLuint default_fbo);
     void setup_vertex_attributes(GLuint program);
 
     ScreenFilter m_filter = ScreenFilter::BILINEAR;
@@ -106,6 +114,14 @@ private:
     GLuint m_smaa_blend_fbo{ 0 };
     GLsizei m_smaa_width{ 0 };
     GLsizei m_smaa_height{ 0 };
+
+    // FSR: EASU upscales into an intermediate target of the output size, RCAS sharpens it onto the screen
+    SharedGLObject m_fsr_shader_easu;
+    SharedGLObject m_fsr_shader_rcas;
+    GLuint m_fsr_texture{ 0 };
+    GLuint m_fsr_fbo{ 0 };
+    GLsizei m_fsr_width{ 0 };
+    GLsizei m_fsr_height{ 0 };
 };
 
 } // namespace renderer::gl
