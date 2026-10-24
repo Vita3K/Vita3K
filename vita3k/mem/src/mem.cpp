@@ -73,6 +73,8 @@ bool init(MemState &state, const bool use_page_table) {
 
     assert(state.host_page_size >= 4096); // Limit imposed by Unicorn.
 
+    state.invalid_access_logged.clear();
+
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
 #ifdef _WIN32

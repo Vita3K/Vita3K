@@ -21,6 +21,7 @@
 #include <mem/functions.h>
 #include <mem/util.h>
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -77,4 +78,6 @@ struct MemState {
     bool use_page_table = false;
     PageTable page_table;
     std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
+
+    std::atomic_flag invalid_access_logged;
 };
