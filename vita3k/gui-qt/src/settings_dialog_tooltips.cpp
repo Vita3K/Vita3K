@@ -93,7 +93,7 @@ QString SettingsDialogTooltips::category_summary(SettingsTab tab) const {
     case SettingsTab::Network:
         return tr("Configure network related settings here.");
     case SettingsTab::Advanced:
-        return tr("Settings most users do not need to change: module loading and shader options.");
+        return tr("Settings most users do not need to change: module loading, shader and OpenGL options.");
     case SettingsTab::Debug:
         return tr("Internal diagnostics, GPU debugging, and watch controls live here. These settings are mainly for developers.");
     default:

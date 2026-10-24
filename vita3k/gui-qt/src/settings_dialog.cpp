@@ -1213,6 +1213,7 @@ void SettingsDialog::setup_connections() {
         { m_ui->texture_export_format, tr("Texture Exporting Format"), m_tooltips->texture_export_format },
         { m_ui->shader_cache, tr("Enable Shader Cache"), m_tooltips->shader_cache },
         { m_ui->spirv_shader, tr("Use SPIR-V Shader"), m_tooltips->spirv_shader },
+        { m_ui->disable_mask_bit, tr("Disable Mask Bit Emulation"), m_tooltips->disable_mask_bit },
         { m_ui->fps_hack, tr("FPS Hack"), m_tooltips->fps_hack },
         // Audio
         { m_ui->audio_backend_box, tr("Audio Backend"), m_tooltips->audio_backend },
@@ -1289,7 +1290,6 @@ void SettingsDialog::setup_connections() {
         { m_ui->log_uniforms, tr("Log Shader Uniforms"), m_tooltips->log_uniforms },
         { m_ui->color_surface_debug, tr("Save color surfaces"), m_tooltips->color_surface_debug },
         { m_ui->validation_layer, tr("Vulkan Validation Layer"), m_tooltips->validation_layer },
-        { m_ui->disable_mask_bit, tr("Disable Mask Bit Emulation"), m_tooltips->disable_mask_bit },
         { m_ui->dump_elfs, tr("ELF Dumping"), m_tooltips->dump_elfs },
         { m_ui->gb_debug_tracy_section, tr("Tracy Profiler"), m_tooltips->gb_debug_tracy_section },
         { m_ui->tracy_primitive_impl, tr("Primitive Implementation"), m_tooltips->tracy_primitive_impl },

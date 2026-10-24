@@ -2954,6 +2954,25 @@ QGroupBox[flat=&quot;true&quot;]::title {
               </widget>
              </item>
              <item>
+              <widget class="QGroupBox" name="gb_advanced_gl_section">
+               <property name="title">
+                <string>OpenGL</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_advanced_gl_section_layout">
+                <property name="spacing">
+                 <number>8</number>
+                </property>
+                <item>
+                 <widget class="QCheckBox" name="disable_mask_bit">
+                  <property name="text">
+                   <string>Disable Mask Bit Emulation</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
               <spacer name="advanced_tab_content_spacer">
                <property name="orientation">
                 <enum>Qt::Orientation::Vertical</enum>
@@ -3121,13 +3140,6 @@ QGroupBox[flat=&quot;true&quot;]::title {
                     <widget class="QCheckBox" name="validation_layer">
                      <property name="text">
                       <string>Vulkan Validation Layer</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="disable_mask_bit">
-                     <property name="text">
-                      <string>Disable Mask Bit Emulation</string>
                      </property>
                     </widget>
                    </item>
