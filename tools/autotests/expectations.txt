@@ -38,6 +38,7 @@ callback_owner_end              pass
 callback_priority_requeue       fail     # no requeue on a priority change
 callback_requeue_order          pass
 callback_retake                 pass
+callback_retake_more            pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           pass
 cancel_calls                    pass
