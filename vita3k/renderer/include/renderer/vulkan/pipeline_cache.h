@@ -18,6 +18,7 @@
 #pragma once
 
 #include <blockingconcurrentqueue.h>
+#include <shader/spirv_recompiler.h>
 #include <util/containers.h>
 #include <vkutil/vkutil.h>
 
@@ -35,10 +36,6 @@ enum SceGxmPrimitiveType : uint32_t;
 struct MemState;
 
 using Sha256Hash = std::array<uint8_t, 32>;
-
-namespace shader {
-struct Hints;
-}
 
 namespace renderer {
 
@@ -94,7 +91,7 @@ private:
     unordered_map_stable<Sha256Hash, vk::ShaderModule> masked_fetch_shaders;
     unordered_map_stable<uint64_t, vk::Pipeline> pipelines;
 
-    vk::PipelineShaderStageCreateInfo retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb = false);
+    vk::PipelineShaderStageCreateInfo retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, const shader::TexCoordLinkMap *fragment_texcoord_map = nullptr, bool is_srgb = false);
     vk::PipelineVertexInputStateCreateInfo get_vertex_input_state(const SceGxmVertexProgram &vertex_program, MemState &mem);
 
     // queue containing request sent by the main thread to the compile threads

@@ -157,9 +157,8 @@ static R load_shader_generic(const fs::path &shader_path) {
     return source;
 }
 
-static shader::GeneratedShader load_shader_generic(shader::Target target, const SceGxmProgram &program, const FeatureState &features, const shader::Hints &hints, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shaderlog_path, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
-    // TODO: no need to recompute the hash here
-    const std::string hash_text = hex_string(get_shader_hash(program));
+static shader::GeneratedShader load_shader_generic(shader::Target target, const SceGxmProgram &program, const FeatureState &features, const Sha256Hash &hash, const shader::Hints &hints, const shader::TexCoordLinkMap *fragment_texcoord_map, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shaderlog_path, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
+    const std::string hash_text = hex_string(hash);
     // Set Shader Hash with Version
     const std::string hash_hex_ver = fmt::format("{}-{}", shader_version, hash_text);
     const auto get_shader_path = [&](const char *ext) {
@@ -203,7 +202,7 @@ static shader::GeneratedShader load_shader_generic(shader::Target target, const 
         return true;
     };
 
-    shader::GeneratedShader source = shader::convert_gxp(program, hash_text, features, target, hints, maskupdate, false, write_data_with_ext);
+    shader::GeneratedShader source = shader::convert_gxp(program, hash_text, features, target, hints, fragment_texcoord_map, maskupdate, false, write_data_with_ext);
 
     // Copy shader generate to shaders cache
     const auto shaders_cache_path = fs::path(shader_cache_path);
@@ -217,7 +216,7 @@ static shader::GeneratedShader load_shader_generic(shader::Target target, const 
     return source;
 }
 
-std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const shader::Hints &hints, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, bool shader_cache) {
+std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const Sha256Hash &hash, const shader::Hints &hints, const shader::TexCoordLinkMap *fragment_texcoord_map, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, bool shader_cache) {
     SceGxmProgramType program_type = program.get_type();
 
     auto shader_type_to_str = [](SceGxmProgramType type) {
@@ -226,17 +225,17 @@ std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &f
 
     const char *shader_type_str = shader_type_to_str(program_type);
 
-    return load_shader_generic(shader::Target::GLSLOpenGL, program, features, hints, maskupdate, shader_cache_path, shader_log_path, shader_type_str, shader_version, shader_cache).glsl;
+    return load_shader_generic(shader::Target::GLSLOpenGL, program, features, hash, hints, fragment_texcoord_map, maskupdate, shader_cache_path, shader_log_path, shader_type_str, shader_version, shader_cache).glsl;
 }
 
-std::vector<uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, bool is_vulkan, const shader::Hints &hints, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, bool shader_cache) {
+std::vector<uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, bool is_vulkan, const Sha256Hash &hash, const shader::Hints &hints, const shader::TexCoordLinkMap *fragment_texcoord_map, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, bool shader_cache) {
     const shader::Target target = is_vulkan ? shader::Target::SpirVVulkan : shader::Target::SpirVOpenGL;
     auto shader_type_to_str = [](SceGxmProgramType type) {
         return (type == SceGxmProgramType::Vertex) ? "vert.spv.txt" : ((type == SceGxmProgramType::Fragment) ? "frag.spv.txt" : "unknown.spv.txt");
     };
     const char *shader_type_str = shader_type_to_str(program.get_type());
 
-    return load_shader_generic(target, program, features, hints, maskupdate, shader_cache_path, shader_log_path, shader_type_str, shader_version, shader_cache).spirv;
+    return load_shader_generic(target, program, features, hash, hints, fragment_texcoord_map, maskupdate, shader_cache_path, shader_log_path, shader_type_str, shader_version, shader_cache).spirv;
 }
 
 std::string pre_load_shader_glsl(const fs::path &shader_path) {

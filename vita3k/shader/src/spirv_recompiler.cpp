@@ -115,6 +115,7 @@ struct TranslationState {
     bool is_vulkan = false;
     spv::ImageFormat image_storage_format = spv::ImageFormat::ImageFormatUnknown;
     const Hints *hints = nullptr;
+    TexCoordLinkMap fragment_texcoord_map{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 };
 
 struct VertexProgramOutputProperties {
@@ -396,7 +397,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     const SceGxmProgramParameter *const gxp_parameters = program.program_parameters();
 
     // Store the coords
-    std::array<shader::usse::Coord, 11> coords;
+    std::array<shader::usse::Coord, 11> coords{};
+    std::array<spv::Id, 10> linked_texcoord_inputs{};
+    linked_texcoord_inputs.fill(spv::NoResult);
 
     spv::Id f32 = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(f32, 4);
@@ -412,6 +415,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         // 4 bit flag indicates a PA!
         if ((descriptor->attribute_info & 0x4000F000) != 0xF000) {
             std::uint32_t input_id = (descriptor->attribute_info & 0x4000F000);
+            if (!(input_id & 0x40000000) && input_id <= 0x9000) {
+                const uint32_t semantic = input_id / 0x1000;
+                input_id = translation_state.fragment_texcoord_map[semantic] * 0x1000;
+            }
 
             std::string pa_name;
             std::uint32_t pa_loc = 0;
@@ -467,11 +474,18 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
                 pa_iter_var = b.createBinOp(spv::OpFDiv, v4, pa_iter_var, res_multiplier);
             } else {
-                spv::Decoration precision = get_data_type_size(pa_dtype) < 4 ? spv::DecorationRelaxedPrecision : spv::NoPrecision;
-                pa_iter_var = b.createVariable(precision, spv::StorageClassInput, pa_iter_type, pa_name.c_str());
-                b.addDecoration(pa_iter_var, spv::DecorationLocation, pa_loc);
-
-                translation_state.interfaces.push_back(pa_iter_var);
+                const bool is_texcoord = input_id <= 0x9000;
+                const uint32_t linked_slot = is_texcoord ? input_id / 0x1000 : 0;
+                if (is_texcoord && linked_texcoord_inputs[linked_slot] != spv::NoResult) {
+                    pa_iter_var = linked_texcoord_inputs[linked_slot];
+                } else {
+                    spv::Decoration precision = get_data_type_size(pa_dtype) < 4 ? spv::DecorationRelaxedPrecision : spv::NoPrecision;
+                    pa_iter_var = b.createVariable(precision, spv::StorageClassInput, pa_iter_type, pa_name.c_str());
+                    b.addDecoration(pa_iter_var, spv::DecorationLocation, pa_loc);
+                    translation_state.interfaces.push_back(pa_iter_var);
+                    if (is_texcoord)
+                        linked_texcoord_inputs[linked_slot] = pa_iter_var;
+                }
             }
 
             translation_state.var_to_regs.push_back(
@@ -503,6 +517,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         }
 
         uint32_t tex_coord_index = (descriptor->attribute_info & 0x40F);
+        if (tex_coord_index <= 9)
+            tex_coord_index = translation_state.fragment_texcoord_map[tex_coord_index];
 
         // Process texture query variable (iterator), stored on a PA (primary attribute) register
         if (tex_coord_index != 0xF) {
@@ -1318,7 +1334,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (const auto &input : program_input.inputs) {
         std::visit(overloaded{
                        [&](const LiteralInputSource &s) {
-                           literal_pairs.emplace_back(input.offset, b.makeFloatConstant(s.data));
+                           // GXP literals are register payloads. A float constant can be folded to a
+                           // denormal literal and flushed before a later integer bitcast on Metal.
+                           const spv::Id bits = b.makeUintConstant(s.data_bits);
+                           literal_pairs.emplace_back(input.offset,
+                               b.createUnaryOp(spv::OpBitcast, f32_type, bits));
                            // Pair sort automatically sort offset for us
                            std::ranges::sort(literal_pairs);
                        },
@@ -1410,8 +1430,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             // Create new literal composite
             spv::Id composite_var;
             if (constituents.size() > 1) {
-                composite_var = b.makeCompositeConstant(b.makeVectorType(f32_type, static_cast<int>(constituents.size())),
-                    constituents);
+                composite_var = b.createCompositeConstruct(
+                    b.makeVectorType(f32_type, static_cast<int>(constituents.size())), constituents);
             } else {
                 composite_var = constituents[0];
             }
@@ -1723,7 +1743,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     VertexProgramOutputPropertiesMap vertex_properties_map;
     // list is used here to gurantee the vertex outputs are written in right order
     std::list<SceGxmVertexProgramOutputs> vertex_outputs_list;
-    const auto add_vertex_output_info = [&](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count, std::uint32_t location) {
+    const auto add_vertex_output_info = [&](SceGxmVertexProgramOutputs vo, const std::string &name, std::uint32_t component_count, std::uint32_t location) {
         vertex_properties_map.emplace(vo, VertexProgramOutputProperties{ name, component_count, location });
         vertex_outputs_list.push_back(vo);
     };
@@ -1732,16 +1752,14 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "v_Color1", 4, 2);
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "v_Fog", 2, 3);
 
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "v_TexCoord0", calculate_copy_comp_count(coord_infos[0]), 4);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "v_TexCoord1", calculate_copy_comp_count(coord_infos[1]), 5);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "v_TexCoord2", calculate_copy_comp_count(coord_infos[2]), 6);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "v_TexCoord3", calculate_copy_comp_count(coord_infos[3]), 7);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "v_TexCoord4", calculate_copy_comp_count(coord_infos[4]), 8);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "v_TexCoord5", calculate_copy_comp_count(coord_infos[5]), 9);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "v_TexCoord6", calculate_copy_comp_count(coord_infos[6]), 10);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "v_TexCoord7", calculate_copy_comp_count(coord_infos[7]), 11);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", calculate_copy_comp_count(coord_infos[8]), 12);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", calculate_copy_comp_count(coord_infos[9]), 13);
+    const gxp::GxmTexCoordLinkMap texcoord_link_map = gxp::get_texcoord_link_map(&program);
+    uint8_t linked_texcoord_count = 0;
+    for (uint8_t semantic = 0; semantic < texcoord_link_map.size(); semantic++) {
+        const auto output = static_cast<SceGxmVertexProgramOutputs>(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 << semantic);
+        add_vertex_output_info(output, fmt::format("v_TexCoord{}", texcoord_link_map[semantic]), calculate_copy_comp_count(coord_infos[semantic]), 4 + texcoord_link_map[semantic]);
+        if (vertex_outputs & output)
+            linked_texcoord_count++;
+    }
 
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1, 14);
     // TODO: these should be translated to gl_ClipDistance
@@ -1892,6 +1910,17 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
             o_op.num += properties.component_count;
         }
+    }
+
+    if (linked_texcoord_count < texcoord_link_map.size()) {
+        const spv::Id f32 = b.makeFloatType(32);
+        const spv::Id v4 = b.makeVectorType(f32, 4);
+        const spv::Id zero = b.makeFloatConstant(0.0f);
+        const spv::Id zero_v4 = b.makeCompositeConstant(v4, { zero, zero, zero, zero });
+        const spv::Id null_texcoord = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, v4, "v_TexCoord9");
+        b.addDecoration(null_texcoord, spv::DecorationLocation, 13);
+        translation_state.interfaces.push_back(null_texcoord);
+        b.createStore(zero_v4, null_texcoord);
     }
 
     b.makeReturn(false);
@@ -2196,7 +2225,7 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
 // * Functions (exposed API) *
 // ***************************
 
-GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const Hints &hints, bool maskupdate,
+GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const Hints &hints, const TexCoordLinkMap *fragment_texcoord_map, bool maskupdate,
     bool force_shader_debug, const std::function<bool(const std::string &ext, const std::string &dump)> &dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
@@ -2204,6 +2233,8 @@ GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &sha
     translation_state.is_target_glsl = (target == Target::GLSLOpenGL);
     translation_state.is_vulkan = (target == Target::SpirVVulkan);
     translation_state.hints = &hints;
+    if (fragment_texcoord_map)
+        translation_state.fragment_texcoord_map = *fragment_texcoord_map;
 
     if (!features.support_unknown_format) {
         // take the color format of the current surface, hoping the shader is not used on two surfaces with different formats (this should be the case)
@@ -2253,7 +2284,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath_utf8) 
     std::fill_n(hints.vertex_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
     std::fill_n(hints.fragment_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
 
-    convert_gxp(*reinterpret_cast<SceGxmProgram *>(gxp_program.data()), shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, hints, false, true);
+    convert_gxp(*reinterpret_cast<SceGxmProgram *>(gxp_program.data()), shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, hints, nullptr, false, true);
 }
 
 } // namespace shader
