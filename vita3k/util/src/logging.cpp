@@ -32,6 +32,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #endif
 
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <mutex>
@@ -44,6 +45,8 @@ static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
 static constexpr size_t ASYNC_LOG_QUEUE_SIZE = 65536;
 static std::vector<spdlog::sink_ptr> sinks;
 static std::once_flag s_async_logging_once;
+static std::once_flag s_terminate_handler_once;
+static std::terminate_handler s_previous_terminate = nullptr;
 
 static std::function<void(std::string, int)> s_log_callback;
 static std::mutex s_log_callback_mutex;
@@ -53,6 +56,25 @@ static void rebuild_default_logger();
 
 static void flush() {
     spdlog::details::registry::instance().flush_all();
+}
+
+static void terminate_handler() {
+    try {
+        auto eptr = std::current_exception();
+        if (eptr) {
+            std::rethrow_exception(eptr);
+        } else {
+            LOG_CRITICAL("Unhandled 'std::terminate()' call");
+        }
+    } catch (const std::exception &e) {
+        LOG_CRITICAL("Unhandled C++ exception. {}", e.what());
+    } catch (...) {
+        LOG_CRITICAL("Unhandled C++ exception. UNKNOWN");
+    }
+    flush();
+    if (s_previous_terminate)
+        s_previous_terminate();
+    std::abort();
 }
 
 template <typename Mutex>
@@ -115,25 +137,11 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
     spdlog::flush_on(spdlog::level::trace);
 #endif
 
-    register_log_exception_handler();
-
-    static std::terminate_handler old_terminate = nullptr;
-    old_terminate = std::set_terminate([]() {
-        try {
-            auto eptr = std::current_exception();
-            if (eptr) {
-                std::rethrow_exception(eptr);
-            } else {
-                LOG_CRITICAL("Unhandled 'std::terminate()' call");
-            }
-        } catch (const std::exception &e) {
-            LOG_CRITICAL("Unhandled C++ exception. {}", e.what());
-        } catch (...) {
-            LOG_CRITICAL("Unhandled C++ exception. UNKNOWN");
-        }
-        flush();
-        if (old_terminate)
-            old_terminate();
+    std::call_once(s_terminate_handler_once, []() {
+        register_log_exception_handler();
+        // Publish the predecessor before making our handler callable.
+        s_previous_terminate = std::get_terminate();
+        std::set_terminate(terminate_handler);
     });
     return Success;
 }
