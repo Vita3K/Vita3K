@@ -72,6 +72,7 @@ internal fun OverlayLayoutEditorDialog(
         )
 
         OverlayEditorPalette(
+            overlayView = overlayView,
             onDone = ::finishEditor,
             onReset = {
                 overlayView?.setLayout(OverlayStore.defaultLayout(context))

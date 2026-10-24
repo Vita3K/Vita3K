@@ -264,7 +264,18 @@ object OverlayStore {
                 ).coerceNormalizedCoordinate()
             )
         }
-        return OverlayLayout(positions).normalized()
+        val customizations = defaultEntries.mapNotNull { entry ->
+            val prefix = customizationPrefix(scopeId, entry.buttonType)
+            if (!prefs.contains("${prefix}:visible") && !prefs.contains("${prefix}:scale") &&
+                !prefs.contains("${prefix}:opacity") && !prefs.contains("${prefix}:sensitivity")) null
+            else entry.buttonType to OverlayCustomization(
+                prefs.getBoolean("${prefix}:visible", true),
+                prefs.getInt("${prefix}:scale", 100),
+                prefs.getInt("${prefix}:opacity", 100),
+                prefs.getInt("${prefix}:sensitivity", 100)
+            ).normalized()
+        }.toMap()
+        return OverlayLayout(positions, customizations).normalized()
     }
 
     private fun legacyGlobalState(context: Context): OverlayState {
@@ -325,6 +336,12 @@ object OverlayStore {
             editor.putFloat(positionKey(scopeId, entry.buttonType, KEY_POSITION_Y_SUFFIX), position.normalizedY)
             editor.remove(scopePrefix(scopeId) + ":" + KEY_LAYOUT_PREFIX + ":portrait:" + entry.buttonType + KEY_POSITION_X_SUFFIX)
             editor.remove(scopePrefix(scopeId) + ":" + KEY_LAYOUT_PREFIX + ":portrait:" + entry.buttonType + KEY_POSITION_Y_SUFFIX)
+            val customization = layout.customizationFor(entry.buttonType).normalized()
+            val prefix = customizationPrefix(scopeId, entry.buttonType)
+            editor.putBoolean("${prefix}:visible", customization.visible)
+            editor.putInt("${prefix}:scale", customization.scalePercent)
+            editor.putInt("${prefix}:opacity", customization.opacityPercent)
+            editor.putInt("${prefix}:sensitivity", customization.sensitivityPercent)
         }
     }
 
@@ -338,6 +355,11 @@ object OverlayStore {
             editor.remove(positionKey(scopeId, entry.buttonType, KEY_POSITION_Y_SUFFIX))
             editor.remove(scopePrefix(scopeId) + ":" + KEY_LAYOUT_PREFIX + ":portrait:" + entry.buttonType + KEY_POSITION_X_SUFFIX)
             editor.remove(scopePrefix(scopeId) + ":" + KEY_LAYOUT_PREFIX + ":portrait:" + entry.buttonType + KEY_POSITION_Y_SUFFIX)
+            val prefix = customizationPrefix(scopeId, entry.buttonType)
+            editor.remove("${prefix}:visible")
+            editor.remove("${prefix}:scale")
+            editor.remove("${prefix}:opacity")
+            editor.remove("${prefix}:sensitivity")
         }
     }
 
@@ -349,6 +371,8 @@ object OverlayStore {
     private fun configKey(scopeId: String?, key: String): String =
         scopePrefix(scopeId) + ":" + KEY_CONFIG_PREFIX + ":" + key
 
+    private fun customizationPrefix(scopeId: String?, buttonType: Int): String =
+        scopePrefix(scopeId) + ":" + KEY_LAYOUT_PREFIX + ":control:" + buttonType
     private fun positionKey(scopeId: String?, buttonType: Int, suffix: String): String =
         scopePrefix(scopeId) + ":" + KEY_LAYOUT_PREFIX + ":landscape:" + buttonType + suffix
 
