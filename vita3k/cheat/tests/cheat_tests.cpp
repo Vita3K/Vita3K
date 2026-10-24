@@ -23,8 +23,11 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstring>
 #include <fstream>
+#include <random>
+#include <system_error>
 
 namespace {
 
@@ -41,12 +44,13 @@ protected:
         memset(Ptr<uint8_t>(scratch).get(mem), 0, scratch_size);
 
         // A fixed name would let concurrent test processes delete each other's files.
-        directory = fs::temp_directory_path() / fs::unique_path("vita3k-cheat-tests-%%%%-%%%%-%%%%-%%%%");
+        directory = fs::temp_directory_path() / fmt::format("vita3k-cheat-tests-{}-{}",
+            std::chrono::steady_clock::now().time_since_epoch().count(), std::random_device{}());
         fs::create_directories(directory);
     }
 
     void TearDown() override {
-        boost::system::error_code error;
+        std::error_code error;
         fs::remove_all(directory, error);
 
         deinit_mem(mem);

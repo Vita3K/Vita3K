@@ -126,7 +126,7 @@ static bool has_section(const fs::path &path, const std::string &wanted) {
 
 fs::path find_cheat_file(const fs::path &cheats_dir, const std::string &title_id) {
     // Runs during boot, so a folder that cannot be read must mean "no cheats" rather than throw.
-    boost::system::error_code ec;
+    std::error_code ec;
     if (title_id.empty() || !fs::is_directory(cheats_dir, ec))
         return {};
 
@@ -136,7 +136,7 @@ fs::path find_cheat_file(const fs::path &cheats_dir, const std::string &title_id
     fs::directory_iterator it(cheats_dir, ec);
     for (; !ec && (it != fs::directory_iterator()); it.increment(ec)) {
         const fs::path &path = it->path();
-        boost::system::error_code status_ec;
+        std::error_code status_ec;
         if (!fs::is_regular_file(path, status_ec))
             continue;
 
@@ -301,13 +301,13 @@ bool save_cheat_file(const CheatFile &file) {
         out.close();
         if (out.fail()) {
             LOG_ERROR("Failed to write cheat file {}", temporary);
-            boost::system::error_code error;
+            std::error_code error;
             fs::remove(temporary, error);
             return false;
         }
     }
 
-    boost::system::error_code error;
+    std::error_code error;
     fs::rename(temporary, file.path, error);
     if (error) {
         LOG_ERROR("Failed to replace cheat file {}: {}", file.path, error.message());

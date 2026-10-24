@@ -157,6 +157,7 @@ void CheatsDialog::on_reload() {
 }
 
 void CheatsDialog::set_app(const std::string &title_id, const QString &app_title) {
+    m_explicit_title = !title_id.empty();
     m_title_id = title_id;
     m_app_title = app_title;
     reload();
@@ -168,10 +169,9 @@ bool CheatsDialog::is_live() const {
 }
 
 void CheatsDialog::reload() {
-    if (m_title_id.empty()) {
+    if (!m_explicit_title) {
         m_title_id = cheat::loaded_title_id(emuenv.cheat);
-        if (m_app_title.isEmpty())
-            m_app_title = QString::fromStdString(emuenv.current_app_title);
+        m_app_title = QString::fromStdString(emuenv.current_app_title);
     }
 
     if (is_live()) {

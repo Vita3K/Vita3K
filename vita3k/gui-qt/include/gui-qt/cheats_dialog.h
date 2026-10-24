@@ -66,6 +66,7 @@ private:
 
     std::string m_title_id;
     QString m_app_title;
+    bool m_explicit_title = false;
     cheat::CheatFile m_file;
     // Set while the table is being filled, so that filling it does not toggle any cheat.
     bool m_populating = false;
