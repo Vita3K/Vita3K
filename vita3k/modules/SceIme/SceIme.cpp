@@ -45,6 +45,11 @@ EXPORT(SceInt32, sceImeClose) {
     TRACY_FUNC(sceImeClose);
     emuenv.ime.state = false;
 
+    {
+        std::lock_guard lock(emuenv.ime.mutex);
+        emuenv.ime.clear_pending_event();
+    }
+
     if (emuenv.ime.param.inputTextBuffer.address())
         free(emuenv.mem, emuenv.ime.param.inputTextBuffer.address());
     emuenv.ime.param.inputTextBuffer = Ptr<SceWChar16>();
@@ -89,15 +94,14 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
     else
         emuenv.ime.caps_level = 1;
 
-    emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
+    emuenv.ime.clear_pending_event();
     emuenv.ime.state = true;
 
 #ifdef __ANDROID__
     ime::set_keyboard_active(true);
 #endif
 
-    SceImeEvent e{};
-    memset(&e, 0, sizeof(e));
+    emuenv.ime.queue_event(SCE_IME_EVENT_OPEN);
 
     return 0;
 }
@@ -109,7 +113,10 @@ EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
 
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
+    *e = {};
+    e->id = SCE_IME_EVENT_UPDATE_CARET;
     e->param.caretIndex = caret->index;
+    emuenv.ime.caretIndex = emuenv.ime.edit_text.caretIndex = caret->index;
     CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
     free(emuenv.mem, event.address());
 
@@ -123,6 +130,8 @@ EXPORT(SceInt32, sceImeSetPreeditGeometry, const SceImePreeditGeometry *preedit)
 
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
+    *e = {};
+    e->id = SCE_IME_EVENT_CHANGE_SIZE;
     e->param.rect.height = preedit->height;
     e->param.rect.x = preedit->x;
     e->param.rect.y = preedit->y;
@@ -142,20 +151,30 @@ EXPORT(SceInt32, sceImeUpdate) {
     if (!emuenv.ime.state)
         return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
 
-    std::lock_guard lock(emuenv.ime.mutex);
+    uint32_t event_id;
+    Ptr<SceImeEvent> event;
+    {
+        std::lock_guard lock(emuenv.ime.mutex);
 
-    if (emuenv.ime.event_id == SCE_IME_EVENT_OPEN)
-        return 0;
+        if (emuenv.ime.pending_events.empty())
+            return 0;
 
-    Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
-    SceImeEvent *e = event.get(emuenv.mem);
-    e->id = emuenv.ime.event_id;
-    memcpy(emuenv.ime.edit_text.str.get(emuenv.mem), emuenv.ime.str.c_str(), (emuenv.ime.str.length() + 1) * sizeof(SceWChar16));
-    e->param.text = emuenv.ime.edit_text;
-    e->param.caretIndex = emuenv.ime.caretIndex;
-    CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
+        event_id = emuenv.ime.pending_events.front();
+        emuenv.ime.pending_events.pop_front();
+
+        event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
+        SceImeEvent *e = event.get(emuenv.mem);
+        *e = {};
+        e->id = event_id;
+        memcpy(emuenv.ime.edit_text.str.get(emuenv.mem), emuenv.ime.str.c_str(), (emuenv.ime.str.length() + 1) * sizeof(SceWChar16));
+        if (event_id == SCE_IME_EVENT_UPDATE_CARET)
+            e->param.caretIndex = emuenv.ime.caretIndex;
+        else
+            e->param.text = emuenv.ime.edit_text;
+    }
+
+    CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, event.get(emuenv.mem));
     free(emuenv.mem, event.address());
-    emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
 
     return 0;
 }
