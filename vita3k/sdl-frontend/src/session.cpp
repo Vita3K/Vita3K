@@ -54,6 +54,17 @@ void reset_session_audio(EmuEnvState &emuenv) {
     emuenv.audio.audio_backend.clear();
 }
 
+void update_keyboard(EmuEnvState &emuenv, SDL_Window *window) {
+    const bool active = window && SDL_GetKeyboardFocus() == window && !is_any_ime_active(emuenv);
+    int key_count = 0;
+    const bool *keys = active ? SDL_GetKeyboardState(&key_count) : nullptr;
+    update_keyboard_state(emuenv, [&](input::PhysicalKeyCode key) {
+        const uint32_t scancode = input::physical_key_to_sdl_scancode(key);
+        return keys && key_count > 0 && scancode != SDL_SCANCODE_UNKNOWN
+            && scancode < static_cast<uint32_t>(key_count) && keys[scancode];
+    });
+}
+
 void update_mouse_input(EmuEnvState &emuenv, SDL_Window *window) {
     auto &touch = emuenv.touch;
     auto &overlay = emuenv.ctrl.overlay_mouse;
@@ -214,6 +225,7 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             if (hooks.on_stop)
                 hooks.on_stop();
             update_mouse_input(emuenv, nullptr);
+            update_keyboard(emuenv, nullptr);
             session.stop(reason);
             reset_session_audio(emuenv);
 
@@ -350,7 +362,15 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
                     break;
 
                 case SDL_EVENT_KEY_DOWN:
-                    handle_ime_keydown(emuenv, hooks, event.key);
+                    if (handle_ime_keydown(emuenv, hooks, event.key))
+                        break;
+                    if (!event.key.repeat && SDL_GetKeyboardFocus() == window && !is_any_ime_active(emuenv)
+                        && event.key.scancode != SDL_SCANCODE_UNKNOWN && hooks.on_guide_button) {
+                        const auto &cfg = emuenv.cfg;
+                        if (event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton)
+                            || event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton_alt))
+                            hooks.on_guide_button();
+                    }
                     break;
 
                 case SDL_EVENT_TEXT_EDITING:
@@ -402,6 +422,7 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             }
 
             update_mouse_input(emuenv, window);
+            update_keyboard(emuenv, window);
 
             if (!pending_launch_request) {
                 if (auto request = emuenv.take_app_launch_request()) {
