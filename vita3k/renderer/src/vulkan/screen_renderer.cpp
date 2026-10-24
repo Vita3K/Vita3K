@@ -21,6 +21,7 @@
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <exception>
 
@@ -194,29 +195,6 @@ bool ScreenRenderer::setup() {
         state.deep_stencil_use = vk::Format::eD16Unorm;
     }
 
-    // preferred order : mailbox > fifo_relaxed > fifo > whatever
-    // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
-    // this one should always be available
-    present_mode = vk::PresentModeKHR::eImmediate;
-    const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
-    for (const auto &mode : present_modes) {
-        if (mode == vk::PresentModeKHR::eMailbox) {
-            present_mode = mode;
-            break;
-        }
-
-        if (mode == vk::PresentModeKHR::eFifoRelaxed) {
-            present_mode = mode;
-        }
-        if (present_mode == vk::PresentModeKHR::eFifoRelaxed)
-            continue;
-
-        if (mode == vk::PresentModeKHR::eFifo) {
-            present_mode = mode;
-        }
-    }
-    LOG_INFO("Present mode: {}", vk::to_string(present_mode));
-
     create_render_pass();
 
     create_swapchain();
@@ -230,7 +208,35 @@ bool ScreenRenderer::setup() {
     return true;
 }
 
+void ScreenRenderer::choose_present_mode() {
+    const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
+    const auto supported = [&](vk::PresentModeKHR mode) {
+        return std::find(present_modes.begin(), present_modes.end(), mode) != present_modes.end();
+    };
+
+    // preferred order : mailbox > fifo_relaxed > fifo, with immediate after mailbox when v-sync is off
+    // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
+    const vk::PresentModeKHR previous = present_mode;
+    if (supported(vk::PresentModeKHR::eMailbox))
+        present_mode = vk::PresentModeKHR::eMailbox;
+    else if (!vsync && supported(vk::PresentModeKHR::eImmediate))
+        present_mode = vk::PresentModeKHR::eImmediate;
+    else if (supported(vk::PresentModeKHR::eFifoRelaxed))
+        present_mode = vk::PresentModeKHR::eFifoRelaxed;
+    else
+        present_mode = vk::PresentModeKHR::eFifo;
+    LOG_INFO_IF(present_mode != previous, "Present mode: {}", vk::to_string(present_mode));
+}
+
+void ScreenRenderer::set_vsync(const bool enabled) {
+    if (vsync == enabled)
+        return;
+    vsync = enabled;
+    need_rebuild = true;
+}
+
 void ScreenRenderer::create_swapchain() {
+    choose_present_mode();
     surface_capabilities = state.physical_device.getSurfaceCapabilitiesKHR(surface);
 
     if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
@@ -416,7 +422,7 @@ bool ScreenRenderer::acquire_swapchain_image() {
     vk::Result acquire_result = vk::Result::eErrorOutOfDateKHR;
 
     current_frame++;
-    if (current_frame == swapchain_size + 1)
+    if (current_frame >= swapchain_size + 1)
         current_frame = 0;
 
     if (!ensure_swapchain()) {
@@ -450,7 +456,7 @@ bool ScreenRenderer::acquire_swapchain_image() {
     }
 
     if (acquire_result == vk::Result::eSuboptimalKHR)
-        need_rebuild = !surface_matches_window_size();
+        need_rebuild = need_rebuild || !surface_matches_window_size();
 
     // wait for the previous frame using this image to finish
     auto result = state.device.waitForFences(fences[swapchain_image_idx], VK_TRUE, next_image_timeout);
@@ -555,7 +561,7 @@ void ScreenRenderer::swap_window() {
 
     auto result = state.general_queue.presentKHR(&present_info);
     if (result == vk::Result::eSuboptimalKHR) {
-        need_rebuild = !surface_matches_window_size();
+        need_rebuild = need_rebuild || !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
         need_rebuild = true;
         need_surface_recreate = result == vk::Result::eErrorSurfaceLostKHR;
