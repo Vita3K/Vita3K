@@ -100,6 +100,7 @@ public:
     QString log_uniforms;
     QString color_surface_debug;
     QString validation_layer;
+    QString disable_mask_bit;
     QString dump_elfs;
     QString gb_debug_tracy_section;
     QString tracy_primitive_impl;
