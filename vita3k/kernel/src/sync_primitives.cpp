@@ -464,7 +464,7 @@ SceInt32 Timer::get_base(uint64_t &time) const {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
-    time = base;
+    time = is_started ? base : 0;
     return SCE_KERNEL_OK;
 }
 

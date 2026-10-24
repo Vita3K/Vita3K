@@ -359,7 +359,7 @@ timeout_serves_before_run       fail     # a timed out thread isn't READY before
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass
-timer_base_remaining            fail     # sceKernelGetTimerEventRemainingTime, a stopped timer's base
+timer_base_remaining            fail     # sceKernelGetTimerEventRemainingTime
 timer_callback                  fail     # callbacks registered to timers
 timer_delete_event              fail     # a timer's delete doesn't fire its delete event
 timer_edges                     pass

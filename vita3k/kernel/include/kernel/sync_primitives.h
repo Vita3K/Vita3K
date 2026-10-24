@@ -223,7 +223,7 @@ public:
     std::expected<uint64_t, SceInt32> set_time(uint64_t new_time);
     // Sets time to how much time the timer counted, or returns UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 get_time(uint64_t &time) const;
-    // Sets time to the clock time the count runs from, 0 if the timer never started, or returns
+    // Sets time to the clock time the count runs from, 0 while the timer is stopped, or returns
     // UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 get_base(uint64_t &time) const;
     // Fills info with what the timer's info reports, with the clock time the count runs from as the
