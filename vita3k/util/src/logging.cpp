@@ -53,15 +53,12 @@ static std::mutex s_log_callback_mutex;
 
 static void register_log_exception_handler();
 static void rebuild_default_logger();
-static void install_terminate_handler();
 
 static void flush() {
     spdlog::details::registry::instance().flush_all();
 }
 
 static void terminate_handler() {
-    // Wait for any concurrent installation to finish publishing the predecessor.
-    install_terminate_handler();
     try {
         auto eptr = std::current_exception();
         if (eptr) {
@@ -78,12 +75,6 @@ static void terminate_handler() {
     if (s_previous_terminate)
         s_previous_terminate();
     std::abort();
-}
-
-static void install_terminate_handler() {
-    std::call_once(s_terminate_handler_once, []() noexcept {
-        s_previous_terminate = std::set_terminate(terminate_handler);
-    });
 }
 
 template <typename Mutex>
@@ -146,9 +137,12 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
     spdlog::flush_on(spdlog::level::trace);
 #endif
 
-    register_log_exception_handler();
-
-    install_terminate_handler();
+    std::call_once(s_terminate_handler_once, []() {
+        register_log_exception_handler();
+        // Publish the predecessor before making our handler callable.
+        s_previous_terminate = std::get_terminate();
+        std::set_terminate(terminate_handler);
+    });
     return Success;
 }
 
