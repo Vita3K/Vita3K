@@ -227,7 +227,22 @@ static void align_to_page(MemState &state, Address &addr, Address &size) {
     size = end - addr;
 }
 
+static void note_protected_pages(MemState &state, Address addr, uint32_t size, bool is_protected) {
+    if (size == 0)
+        return;
+    const Address first = align_down(addr, state.host_page_size);
+    const Address last = align_down(addr + size - 1, state.host_page_size);
+    const std::lock_guard<std::mutex> lock(state.protected_pages_mutex);
+    for (Address page = first; page <= last; page += state.host_page_size) {
+        if (is_protected)
+            state.protected_pages.insert(page);
+        else
+            state.protected_pages.erase(page);
+    }
+}
+
 void unprotect_inner(MemState &state, Address addr, uint32_t size) {
+    note_protected_pages(state, addr, size, false);
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
     }
@@ -250,6 +265,7 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
 }
 
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
+    note_protected_pages(state, addr, size, true);
     uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
 
     uint8_t *target = &addr_ptr[addr];
@@ -296,6 +312,14 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     }
     if (LOG_PROTECT) {
         fmt::print("Access: {}\n", log_hex(vaddr));
+    }
+
+    {
+        const std::lock_guard<std::mutex> pages_lock(state.protected_pages_mutex);
+        // Another thread faulted on this page first and already handled it
+        const Address page = align_down(vaddr, state.host_page_size);
+        if (page != 0 && !state.protected_pages.contains(page))
+            return true;
     }
 
     auto it = state.protect_tree.lower_bound(vaddr);
