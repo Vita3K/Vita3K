@@ -29,9 +29,11 @@ extern "C" {
 
 #include <algorithm>
 #include <cstring>
+#include <fstream>
 #ifndef _WIN32
 #include <sys/stat.h>
 #endif
+#include <system_error>
 #include <vector>
 
 namespace {
@@ -146,7 +148,7 @@ bool extract_7z(std::span<const uint8_t> data, const std::filesystem::path &out_
 
             const fs::path out_path = root / relative_path;
 
-            boost::system::error_code ec;
+            std::error_code ec;
             fs::create_directories(out_path.parent_path(), ec);
             if (ec) {
                 LOG_ERROR("Failed to create the directory for {}: {}", out_path, ec.message());
@@ -178,7 +180,7 @@ bool extract_7z(std::span<const uint8_t> data, const std::filesystem::path &out_
             }
 #endif
 
-            fs::ofstream out(out_path, std::ios::binary);
+            std::ofstream out(out_path, std::ios::binary);
             if (!out) {
                 LOG_ERROR("Failed to open {} for writing", out_path);
                 success = false;
