@@ -15,10 +15,11 @@ cache_mount                     fail     # sceAppUtilCacheMount's init and mount
 callback                        pass
 callback_after_wake             skip     # threads ignore their core and priority, so whether the woken thread ran before the notify is a race
 callback_changes                pass
+callback_deleted_object         pass
 callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
-callback_event_results          fail     # events that end a wait during a callback with NOTIFY_CALLBACK, a pulse during a callback
-callback_event_waits            fail     # a simple event set by a callback ends the wait with NOTIFY_CALLBACK
+callback_event_results          fail     # a timer event during a callback ends the wait with 0, event calls don't take message pipe UIDs
+callback_event_waits            pass
 callback_info                   pass
 callback_inner_same_object      pass
 callback_inner_same_pipe        pass
@@ -30,7 +31,7 @@ callback_notify_preempt         skip     # threads ignore their core and priorit
 callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
 callback_notify_time_left       fail     # threads ignore their core and priority, so the waiter runs its callback during the notifier's busy interval and waits again
 callback_outer_timeout          pass
-callback_outer_wake             fail     # a simple event wait a callback outlasted returns NOTIFY_CALLBACK
+callback_outer_wake             pass
 callback_outer_wake_more        pass
 callback_outer_wake_send        pass
 callback_owner_end              pass
@@ -40,7 +41,14 @@ callback_retake                 pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           pass
 cancel_calls                    pass
+cancel_unknown_counts           fail     # failed event flag, simple event, message pipe and timer cancels leave their counts as they were
+cb_wait_callback_writes_timeout pass
 cb_wait_check_order             pass
+cb_wait_early_notify_timeout    pass
+cb_wait_initial_callback_deadline pass
+cb_wait_take_final_check        fail     # a message pipe call that takes at once doesn't run the callbacks notified during it before it returns
+cb_wait_timeout_copy            pass
+cb_wait_zero_timeout_notify     fail     # callbacks notified during a wait don't run before it returns
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_unlock_order            fail     # a mutex ceiling doesn't raise its owner's priority
@@ -48,9 +56,12 @@ ceiling_waiter                  fail     # a mutex ceiling doesn't raise its own
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass
+cond_callback_after_wake        skip     # threads ignore their core and priority, so whether the waiter ran before the notify is a race
+cond_callback_departure         pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
 cond_errors                     fail     # close, signal to a thread errors, create attributes, open with a NULL name
 cond_mutex_delete               pass
+cond_mutex_delete_wakes         fail     # a mutex delete ends its conditions' waits only at their timeout
 cond_relock_requeue             fail     # a condition waiter taking its mutex back isn't requeued on a priority change
 cond_rwlock_edges               pass
 cond_semantics                  pass
@@ -85,8 +96,10 @@ event_flag_hold_take            pass
 event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass
+event_flag_wait_out_bits        fail     # a refused event flag wait leaves its out bits as they were
 event_flag_waits                pass
 event_flag_wake_release         fail     # a woken thread isn't READY before it runs, its out bits are written at the wake, and a notified waiter leaves the queue only once its thread runs
+event_initial_user_data         fail     # simple events and timers start with user data 0
 event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
 exit_process_thread             pass
@@ -110,7 +123,7 @@ gxm_map_thread_stack_delete     crash    # a deleted thread's mapped stack is fr
 gxm_map_uninitialized           fail     # the map calls don't check that libgxm is initialized
 gxm_map_usse_free               fail     # a USSE mapping doesn't keep its block, lookups of a freed block give 0x80024700
 gxm_render_target_memory        crash    # render target sizes and driver memory blocks, a width of 0 aborts
-gxm_shader_patcher_memory       timeout  # patcher regions are ignored, a NULL host alloc callback jumps to 0
+gxm_shader_patcher_memory       fail     # patcher create doesn't check its buffer regions or host allocation callbacks
 gxm_surface_memory              fail     # surface data alignment checks
 gxm_sync_objects                fail     # sync objects before sceGxmInitialize and their limit
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
@@ -168,6 +181,7 @@ module_start_threads            fail     # thread event handlers don't run for m
 module_start_vfp                pass
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
+msgpipe_callback_partial        pass
 msgpipe_callback_rejoin_order   pass
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
@@ -175,6 +189,7 @@ msgpipe_failed_sizes            pass
 msgpipe_modes                   pass
 msgpipe_order                   pass
 msgpipe_partial_head_order      pass
+msgpipe_partial_head_rejoin     fail     # no requeue on a priority change
 msgpipe_peek_stale              fail     # a send to a DONT_REMOVE receive leaves the pipe's bytes out of step
 msgpipe_receive_sender_stays    pass
 msgpipe_receiver_leaves         pass
