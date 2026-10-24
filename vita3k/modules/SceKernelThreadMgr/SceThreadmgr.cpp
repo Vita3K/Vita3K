@@ -707,9 +707,18 @@ EXPORT(int, _sceKernelGetTimerBase) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetTimerEventRemainingTime) {
-    TRACY_FUNC(_sceKernelGetTimerEventRemainingTime);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetTimerEventRemainingTime, SceUID timer_handle, SceKernelSysClock *time) {
+    TRACY_FUNC(_sceKernelGetTimerEventRemainingTime, timer_handle, time);
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    // The time reads 0 when the call fails
+    uint64_t left = 0;
+    const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
+    const SceInt32 result = timer ? timer->remaining_time(left) : SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    *time = left;
+    if (result < 0)
+        return RET_ERROR(result);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(SceInt32, _sceKernelGetTimerInfo, SceUID timer_handle, Ptr<SceKernelTimerInfo> pInfo) {

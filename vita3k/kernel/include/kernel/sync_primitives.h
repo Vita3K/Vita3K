@@ -226,6 +226,9 @@ public:
     // Sets time to the clock time the count runs from, 0 while the timer is stopped, or returns
     // UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 get_base(uint64_t &time) const;
+    // Sets time to how much time the armed event has left, or returns EVENT_NOT_SET with no event
+    // armed or UNKNOWN_TIMER_ID if it was deleted.
+    SceInt32 remaining_time(uint64_t &time);
     // Fills info with what the timer's info reports, with the clock time the count runs from as the
     // base of a running timer, or returns UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 timer_info(SceKernelTimerInfo &info);

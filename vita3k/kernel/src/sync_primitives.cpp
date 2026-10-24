@@ -468,6 +468,17 @@ SceInt32 Timer::get_base(uint64_t &time) const {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 Timer::remaining_time(uint64_t &time) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    catch_up();
+    if (!armed)
+        return SCE_KERNEL_ERROR_EVENT_NOT_SET;
+    time = schedule - count();
+    return SCE_KERNEL_OK;
+}
+
 SceInt32 Timer::timer_info(SceKernelTimerInfo &info) {
     const auto guard = lock();
     if (!guard)
