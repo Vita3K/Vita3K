@@ -161,7 +161,7 @@ public:
     SceInt32 info(SceKernelEventInfo &info);
 
 protected:
-    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
+    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
 
     struct WaitEntry {
         SceUInt32 pattern;
@@ -186,12 +186,12 @@ protected:
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
     SceUInt32 pattern;
-    SceUInt64 last_user_data = 0;
+    SceUInt64 last_user_data;
 };
 
 class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
 public:
-    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
+    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator);
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
@@ -212,7 +212,7 @@ using EventPtr = std::shared_ptr<Event>;
 
 class Timer final : public WithUidClass<Event, UidClass::timer> {
 public:
-    Timer(SceUInt32 attr, const char *name);
+    Timer(SceUInt32 attr, const char *name, SceUID creator);
 
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);

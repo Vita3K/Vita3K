@@ -101,7 +101,7 @@ event_flag_single_waiter        pass
 event_flag_wait_out_bits        pass
 event_flag_waits                pass
 event_flag_wake_release         fail     # a woken thread isn't READY before it runs, its out bits are written at the wake, and a notified waiter leaves the queue only once its thread runs
-event_initial_user_data         fail     # simple events and timers start with user data 0
+event_initial_user_data         pass
 event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
 exit_process_thread             pass

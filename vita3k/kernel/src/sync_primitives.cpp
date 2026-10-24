@@ -41,14 +41,16 @@ SceInt32 SyncPrimitive::check_name(const char *name, SceUInt32 attr) {
 // * Simple events *
 // *****************
 
-Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
+Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data)
     : SyncPrimitive(attr, name)
     , auto_reset(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
     , waiters(attr)
-    , pattern(init_pattern | SCE_KERNEL_EVENT_CREATE) {}
+    , pattern(init_pattern | SCE_KERNEL_EVENT_CREATE)
+    , last_user_data(init_user_data) {}
 
-SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
-    : WithUidClass(attr, name, init_pattern) {}
+// The create event comes with the creating thread's user data, like the other system events
+SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator)
+    : WithUidClass(attr, name, init_pattern, system_event_user_data(creator)) {}
 
 SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern) {
     if (const SceInt32 error = check_name(name, attr))
@@ -252,8 +254,8 @@ inline uint64_t get_current_time() {
         .count();
 }
 
-Timer::Timer(SceUInt32 attr, const char *name)
-    : WithUidClass(attr, name, 0) {}
+Timer::Timer(SceUInt32 attr, const char *name, SceUID creator)
+    : WithUidClass(attr, name, 0, system_event_user_data(creator)) {}
 
 void Timer::on_delete(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
