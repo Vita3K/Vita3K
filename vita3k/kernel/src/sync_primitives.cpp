@@ -41,11 +41,14 @@ SceInt32 SyncPrimitive::check_name(const char *name, SceUInt32 attr) {
 // * Simple events *
 // *****************
 
-SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
-    : WithUidClass(attr, name)
+Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
+    : SyncPrimitive(attr, name)
     , auto_reset(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
     , waiters(attr)
     , pattern(init_pattern | SCE_KERNEL_EVENT_CREATE) {}
+
+SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
+    : WithUidClass(attr, name, init_pattern) {}
 
 SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern) {
     if (const SceInt32 error = check_name(name, attr))
@@ -64,7 +67,7 @@ void SimpleEvent::on_delete(SceUID deleter) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
-SceInt32 SimpleEvent::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
+SceInt32 Event::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
     if (!(pattern & wait_pattern))
         return SCE_KERNEL_ERROR_EVENT_COND;
 
@@ -101,7 +104,7 @@ SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern,
     return err;
 }
 
-SceInt32 SimpleEvent::poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
+SceInt32 Event::poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -130,7 +133,7 @@ SceInt32 SimpleEvent::set_system_event(SceUInt32 event, SceUInt64 user_data) {
     return SCE_KERNEL_OK;
 }
 
-void SimpleEvent::fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
+void Event::fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
     // A set or pulse of no bits changes nothing, not even the user data
     if (set_pattern == 0)
         return;
@@ -145,7 +148,7 @@ void SimpleEvent::fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) 
         pattern &= ~set_pattern;
 }
 
-void SimpleEvent::serve() {
+void Event::serve() {
     waiters.wake_if([&](auto &waiter) {
         const WaitEntry &wait = waiter.entry;
         if (!(pattern & wait.pattern))
@@ -165,7 +168,7 @@ void SimpleEvent::serve() {
     });
 }
 
-SceInt32 SimpleEvent::clear(SceUInt32 clear_pattern) {
+SceInt32 Event::clear(SceUInt32 clear_pattern) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -177,7 +180,7 @@ SceInt32 SimpleEvent::clear(SceUInt32 clear_pattern) {
     return SCE_KERNEL_OK;
 }
 
-SceInt32 SimpleEvent::cancel(SceUInt32 *num_wait_threads) {
+SceInt32 Event::cancel(SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -189,7 +192,7 @@ SceInt32 SimpleEvent::cancel(SceUInt32 *num_wait_threads) {
     return SCE_KERNEL_OK;
 }
 
-SceInt32 SimpleEvent::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads) {
+SceInt32 Event::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -206,7 +209,7 @@ SceInt32 SimpleEvent::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt
     return SCE_KERNEL_OK;
 }
 
-SceInt32 SimpleEvent::get_pattern(SceUInt32 &result) const {
+SceInt32 Event::get_pattern(SceUInt32 &result) const {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -214,7 +217,7 @@ SceInt32 SimpleEvent::get_pattern(SceUInt32 &result) const {
     return SCE_KERNEL_OK;
 }
 
-SceInt32 SimpleEvent::info(SceKernelEventInfo &info) const {
+SceInt32 Event::info(SceKernelEventInfo &info) const {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;

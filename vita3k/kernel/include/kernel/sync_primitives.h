@@ -144,39 +144,31 @@ constexpr SceUInt64 system_event_user_data(SceUID thread_id) {
     return (static_cast<SceUInt64>(thread_id) << 32) | static_cast<SceUInt32>(PROCESS_ID);
 }
 
-class SimpleEvent final : public WithUidClass<SyncPrimitive, UidClass::simple_event> {
+// The event part of simple events: a bit pattern, the user data of the last set, and the waits for
+// bits of the pattern.
+class Event : public SyncPrimitive {
 public:
     const bool auto_reset;
 
-    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
-
-    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
-    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
-
-    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
-    SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
-    // Sets one of the system events, like the open event, with user_data for its waiters, or returns
-    // UNKNOWN_EVENT_ID if it was deleted.
-    SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
     SceInt32 clear(SceUInt32 clear_pattern);
     SceInt32 cancel(SceUInt32 *num_wait_threads);
     // Cancels the waits like cancel(), then replaces the whole pattern and the user data.
     SceInt32 cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads);
     // Sets result to the event's bit pattern, or returns UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 get_pattern(SceUInt32 &result) const;
-    // Fills info with what the simple event's info reports, or returns UNKNOWN_EVENT_ID if it was
-    // deleted.
+    // Fills info with what the event's info reports, or returns UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 info(SceKernelEventInfo &info) const;
 
-private:
+protected:
+    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
+
     struct WaitEntry {
         SceUInt32 pattern;
         SceUInt32 *result_pattern;
         SceUInt64 *user_data;
     };
 
-    void on_delete(SceUID deleter) override;
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     // Sets or pulses the bits with user_data and gives them to the waits they match. The lock must be
@@ -189,6 +181,23 @@ private:
     WaitQueue<WaitEntry> waiters;
     SceUInt32 pattern;
     SceUInt64 last_user_data = 0;
+};
+
+class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
+public:
+    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
+
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
+
+    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
+    SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
+    // Sets one of the system events, like the open event, with user_data for its waiters, or returns
+    // UNKNOWN_EVENT_ID if it was deleted.
+    SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
+
+private:
+    void on_delete(SceUID deleter) override;
 };
 
 using SimpleEventPtr = std::shared_ptr<SimpleEvent>;
