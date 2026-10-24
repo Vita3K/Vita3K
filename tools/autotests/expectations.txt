@@ -38,6 +38,7 @@ callback_owner_end              pass
 callback_priority_requeue       fail     # no requeue on a priority change
 callback_requeue_order          pass
 callback_retake                 pass
+callback_retake_more            pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_wait_requeue           pass
 cancel_calls                    pass
@@ -46,9 +47,9 @@ cb_wait_callback_writes_timeout pass
 cb_wait_check_order             pass
 cb_wait_early_notify_timeout    pass
 cb_wait_initial_callback_deadline pass
-cb_wait_take_final_check        fail     # a message pipe call that takes at once doesn't run the callbacks notified during it before it returns
+cb_wait_take_final_check        pass
 cb_wait_timeout_copy            pass
-cb_wait_zero_timeout_notify     fail     # callbacks notified during a wait don't run before it returns
+cb_wait_zero_timeout_notify     pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_unlock_order            fail     # a mutex ceiling doesn't raise its owner's priority
@@ -96,7 +97,7 @@ event_flag_hold_take            pass
 event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass
-event_flag_wait_out_bits        fail     # a refused event flag wait leaves its out bits as they were
+event_flag_wait_out_bits        pass
 event_flag_waits                pass
 event_flag_wake_release         fail     # a woken thread isn't READY before it runs, its out bits are written at the wake, and a notified waiter leaves the queue only once its thread runs
 event_initial_user_data         fail     # simple events and timers start with user data 0

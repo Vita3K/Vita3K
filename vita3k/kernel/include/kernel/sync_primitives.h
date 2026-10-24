@@ -45,13 +45,22 @@ protected:
     // queue without being woken.
     virtual void serve() {}
 
-    // Ends a queued wait of thread that its deadline ended, before the waiters behind it are served.
-    // Not called if the deadline passed before the wait was queued.
+    // Ends a queued wait of thread that its deadline ended, while it is still queued and before the
+    // waiters behind it are served. Not called if the deadline passed before the wait was queued.
     virtual void timed_out(const ThreadStatePtr &) {}
 
-    // Runs the thread's pending callbacks with the lock released, which a wait with callbacks does once
-    // its checks passed and before it takes. The lock stays held when none would run. Returns
-    // WAIT_DELETE if the object was deleted meanwhile.
+    // When wait_loop() runs the callbacks notified during the wait, before it returns
+    enum class CallbacksCheck {
+        // Unless attempt succeeded
+        after_wait,
+        // Also when attempt succeeded
+        after_take_or_wait,
+        // Only when a delete ended the sleep
+        on_delete,
+    };
+
+    // Runs the thread's pending callbacks if callbacks is set, releasing the lock while they run.
+    // Returns WAIT_DELETE if the object was deleted meanwhile.
     [[nodiscard]] WaitResult run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
         if (!callbacks || !thread->has_pending_callbacks())
             return SCE_KERNEL_OK;
@@ -66,23 +75,29 @@ protected:
     // Waits on queue. Each round runs the pending callbacks, calls attempt, then sleeps until woken,
     // and a callback notify starts a new round. attempt returns the result once the thread got what
     // it waits for, or nullopt to keep waiting. It is passed the result of the last sleep
-    // (SCE_KERNEL_OK the first time). timeout is updated after every sleep.
+    // (SCE_KERNEL_OK the first time). timeout is updated after every sleep. callbacks_check decides
+    // whether callbacks notified during the wait run before it returns.
     template <typename Entry, typename Attempt>
-    [[nodiscard]] WaitResult wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout, Attempt attempt) {
+    [[nodiscard]] WaitResult wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout, CallbacksCheck callbacks_check, Attempt attempt) {
         typename WaitQueue<Entry>::Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         const Deadline deadline = deadline_from(timeout);
-        // The result of the last sleep
+        // The result of the last sleep, then the final result
         WaitResult result = SCE_KERNEL_OK;
         while (true) {
             if (const WaitResult r = run_pending_callbacks(lock, thread, target.callbacks); !r || *r != SCE_KERNEL_OK)
                 return r;
-            if (const std::optional<SceInt32> taken = attempt(waiter.entry, *result))
-                return *taken;
+            if (const std::optional<SceInt32> taken = attempt(waiter.entry, *result)) {
+                if (callbacks_check != CallbacksCheck::after_take_or_wait)
+                    return *taken;
+                result = *taken;
+                break;
+            }
             // Timed out before being queued, so timed_out() isn't called
             if (std::chrono::steady_clock::now() >= deadline) {
                 if (timeout)
                     *timeout = 0;
-                return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+                result = SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+                break;
             }
             // A callback is already pending, so start a new round without sleeping
             if (target.callbacks && thread->has_pending_callbacks()) {
@@ -100,15 +115,23 @@ protected:
             if (timeout)
                 *timeout = time_left_until(deadline);
             // A waker's result wins, it already handed over what the waiter waits for
-            if (waiter.result)
-                return *waiter.result;
-            queue.remove(waiter);
+            if (waiter.result) {
+                result = *waiter.result;
+                break;
+            }
             if (result && *result == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
                 timed_out(thread);
+            queue.remove(waiter);
             serve();
             if (!result || *result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
-                return result;
+                break;
         }
+        if (!result || (callbacks_check == CallbacksCheck::on_delete && *result != SCE_KERNEL_ERROR_WAIT_DELETE))
+            return result;
+        // Run the callbacks notified during the wait. Only the thread exiting changes the result.
+        if (const WaitResult ran = run_pending_callbacks(lock, thread, target.callbacks); !ran)
+            return ran;
+        return result;
     }
 };
 
@@ -273,8 +296,8 @@ public:
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count, bool kernel);
 
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks);
-    // Same as acquire, but reports the wait as target, for a condition variable taking its mutex back
-    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, WaitTarget target);
+    // Relocks the mutex after a condition variable wait. No timeout, and target is the reported wait.
+    SceInt32 relock(MemState &mem, const ThreadStatePtr &thread, WaitTarget target);
     SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
     SceInt32 release(MemState &mem, const ThreadStatePtr &thread, SceInt32 unlock_count);
     SceInt32 cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
@@ -300,6 +323,9 @@ private:
     SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
+    // Takes the mutex if nobody owns it and, for a heavy mutex, no waiter is ahead of thread, or
+    // returns nothing. The lock must be held.
+    std::optional<SceInt32> take_if_free(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
     // Gives a free mutex to the first waiter, if there is one.
     void serve() override;
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
@@ -411,7 +437,7 @@ private:
     bool take(const WaitEntry &wait);
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
-    // Gives back the hold of the wait that timed out.
+    // Gives the wait that timed out the flag's bits and gives back its hold.
     void timed_out(const ThreadStatePtr &thread) override;
     // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
     void drop_hold();
