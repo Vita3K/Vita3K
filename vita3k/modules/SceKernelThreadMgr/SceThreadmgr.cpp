@@ -712,9 +712,26 @@ EXPORT(int, _sceKernelGetTimerEventRemainingTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetTimerInfo) {
-    TRACY_FUNC(_sceKernelGetTimerInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetTimerInfo, SceUID timer_handle, Ptr<SceKernelTimerInfo> pInfo) {
+    TRACY_FUNC(_sceKernelGetTimerInfo, timer_handle, pInfo);
+    SceKernelTimerInfo full;
+    const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
+    if (!timer || timer->timer_info(full) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
+    SceKernelTimerInfo *info = pInfo.get(emuenv.mem);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+
+    // A running timer's base is the process time it counts from
+    if (full.active)
+        full.baseTime = emuenv.kernel.process_time_at(full.baseTime);
+    write_info(info, full);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetTimerTime) {

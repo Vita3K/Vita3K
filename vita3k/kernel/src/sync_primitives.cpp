@@ -466,6 +466,28 @@ SceInt32 Timer::get_base(uint64_t &time) const {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 Timer::timer_info(SceKernelTimerInfo &info) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    catch_up();
+
+    info = {};
+    info.timerId = uid;
+    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = attr;
+    info.active = is_started;
+    // The base of a running timer, the count of a stopped one
+    info.baseTime = is_started ? base : stopped_count;
+    info.currentTime = count();
+    info.schedule = armed ? schedule : 0;
+    info.interval = event_interval;
+    info.type = is_pulse ? SCE_KERNEL_TIMER_TYPE_PULSE_EVENT : SCE_KERNEL_TIMER_TYPE_SET_EVENT;
+    info.repeat = is_repeat;
+    info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    return SCE_KERNEL_OK;
+}
+
 SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
@@ -473,11 +495,10 @@ SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
     catch_up();
 
     const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
-    // The event set with sceKernelSetTimerEvent is canceled too
+    // The event set with sceKernelSetTimerEvent is canceled too, but the timer keeps running with
+    // the event's interval and type
     armed = false;
     is_repeat = false;
-    is_pulse = false;
-    event_interval = 0;
     next_event = std::numeric_limits<uint64_t>::max();
     if (num_wait_threads)
         *num_wait_threads = nb_threads;

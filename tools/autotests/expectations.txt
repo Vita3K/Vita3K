@@ -366,7 +366,7 @@ timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
 timer_event_wakes_all           pass
-timer_info_cancel               fail     # timer info fields
+timer_info_cancel               pass
 timer_modes                     pass
 timer_oneshot_refire            pass
 timer_period                    skip     # timing, how evenly a repeating timer fires

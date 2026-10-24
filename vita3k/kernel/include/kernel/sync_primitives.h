@@ -226,6 +226,9 @@ public:
     // Sets time to the clock time the count runs from, 0 if the timer never started, or returns
     // UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 get_base(uint64_t &time) const;
+    // Fills info with what the timer's info reports, with the clock time the count runs from as the
+    // base of a running timer, or returns UNKNOWN_TIMER_ID if it was deleted.
+    SceInt32 timer_info(SceKernelTimerInfo &info);
 
 private:
     void on_delete(SceUID deleter) override;

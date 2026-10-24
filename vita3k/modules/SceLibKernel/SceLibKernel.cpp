@@ -1547,9 +1547,9 @@ EXPORT(int, sceKernelGetTimerEventRemainingTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetTimerInfo) {
-    TRACY_FUNC(sceKernelGetTimerInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetTimerInfo, SceUID timer_handle, Ptr<SceKernelTimerInfo> pInfo) {
+    TRACY_FUNC(sceKernelGetTimerInfo, timer_handle, pInfo);
+    return CALL_EXPORT(_sceKernelGetTimerInfo, timer_handle, pInfo);
 }
 
 EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
