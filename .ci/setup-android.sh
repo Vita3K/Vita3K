@@ -6,9 +6,7 @@ android_build_tools="${ANDROID_BUILD_TOOLS:-36.0.0}"
 android_ndk_version="${ANDROID_NDK_VERSION:-29.0.14206865}"
 
 sudo apt-get update
-sudo apt-get install -y ninja-build
-
-repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+sudo apt-get install -y ninja-build ccache
 
 if command -v sdkmanager > /dev/null; then
     set +o pipefail
@@ -27,9 +25,3 @@ if command -v sdkmanager > /dev/null; then
         fi
     fi
 fi
-
-pushd "$repo_root" > /dev/null
-for triplet in arm64-android x64-android; do
-    vcpkg install --triplet "$triplet"
-done
-popd > /dev/null
