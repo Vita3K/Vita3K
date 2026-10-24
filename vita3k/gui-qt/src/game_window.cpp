@@ -48,6 +48,10 @@
 
 #include <cstdint>
 
+#ifdef __APPLE__
+#include <vkutil/native_surface.h>
+#endif
+
 #if defined(HAVE_X11) || defined(HAVE_WAYLAND)
 #include <QGuiApplication>
 #include <qpa/qplatformnativeinterface.h>
@@ -161,6 +165,10 @@ GameWindow::GameWindow(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_set
     const auto &cc = emuenv.cfg.current_config;
     m_title_backend_renderer = cc.backend_renderer;
     sync_native_window_preferences();
+#ifdef __APPLE__
+    if (m_backend == renderer::Backend::Vulkan)
+        get_metal_layer_from_view(reinterpret_cast<void *>(winId()));
+#endif
 }
 
 GameWindow::~GameWindow() {
@@ -416,6 +424,14 @@ void GameWindow::sync_native_window_preferences() {
 }
 
 bool GameWindow::event(QEvent *e) {
+#ifdef __APPLE__
+    if (m_backend == renderer::Backend::Vulkan && QWindow::handle() && (e->type() == QEvent::Resize || e->type() == QEvent::DevicePixelRatioChange)) {
+        const bool handled = QWindow::event(e);
+        get_metal_layer_from_view(reinterpret_cast<void *>(winId()));
+        return handled;
+    }
+#endif
+
     if (e->type() == QEvent::Close) {
         const bool confirm_exit_app = m_gui_settings
             ? m_gui_settings->get_value(gui::mw_confirmExitApp).toBool()
@@ -472,6 +488,10 @@ bool GameWindow::event(QEvent *e) {
 
 void GameWindow::exposeEvent(QExposeEvent *e) {
     QWindow::exposeEvent(e);
+#ifdef __APPLE__
+    if (m_backend == renderer::Backend::Vulkan && QWindow::handle())
+        get_metal_layer_from_view(reinterpret_cast<void *>(winId()));
+#endif
 }
 
 void GameWindow::keyPressEvent(QKeyEvent *e) {
