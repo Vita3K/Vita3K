@@ -181,9 +181,12 @@ public:
         }
     }
 
-    void log_first_invalid_access(const char *access, Dynarmic::A32::VAddr addr) {
+    void log_invalid_access(const char *access, Dynarmic::A32::VAddr addr) {
+        const uint32_t pc = this->cpu->get_pc();
         if (!parent->mem->invalid_access_logged.test_and_set())
-            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x}). Set LOG_INVALID_ACCESS for full reports", access, addr, parent->thread_id, this->cpu->get_pc());
+            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x}). Set LOG_INVALID_ACCESS for full reports", access, addr, parent->thread_id, pc);
+        else
+            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x})", access, addr, parent->thread_id, pc);
     }
 
     template <typename T>
@@ -199,7 +202,7 @@ public:
                 else
                     LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
             } else {
-                log_first_invalid_access("read", addr);
+                log_invalid_access("read", addr);
             }
             return 0;
         }
@@ -240,7 +243,7 @@ public:
                 else
                     LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
             } else {
-                log_first_invalid_access("write", addr);
+                log_invalid_access("write", addr);
             }
             return;
         }
@@ -280,7 +283,7 @@ public:
                 else
                     LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
             } else {
-                log_first_invalid_access("exclusive write", addr);
+                log_invalid_access("exclusive write", addr);
             }
             return false;
         }
