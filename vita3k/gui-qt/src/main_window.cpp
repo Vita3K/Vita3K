@@ -523,9 +523,9 @@ void MainWindow::initialize() {
         m_update_available = available;
         update_update_available_button();
     });
-    m_update_manager->set_skipped_build(static_cast<std::uint64_t>(emuenv.cfg.skipped_update_build));
+    m_update_manager->set_skipped_build(emuenv.cfg.skipped_update_build);
     connect(m_update_manager, &UpdateManager::skip_build_requested, this, [this](const std::uint64_t build_number) {
-        emuenv.cfg.skipped_update_build = static_cast<int>(build_number);
+        emuenv.cfg.skipped_update_build = build_number;
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     });
 
