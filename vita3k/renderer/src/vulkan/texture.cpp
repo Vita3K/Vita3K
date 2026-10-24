@@ -27,6 +27,8 @@
 #include <util/align.h>
 #include <vkutil/vkutil.h>
 
+#include <mutex>
+
 namespace renderer::vulkan {
 
 // return if this format can be used to read a depth stencil buffer
@@ -80,6 +82,7 @@ void VKTextureCache::cleanup() {
     gxm_texture = nullptr;
     cmd_buffer = nullptr;
     is_texture_transfer_ready = false;
+    TextureCache::cleanup();
 }
 
 void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config) {
@@ -174,7 +177,9 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     // some textures must be 16-bytes aligned, and staging_buffer->buffer.size is 16-bytes aligned
     staging_buffer->used_so_far = align(staging_buffer->used_so_far, 16);
     // we can keep using the same buffer as before if we are in the same scene and there is enough memory left
-    bool use_previous_buffer = (current_scene_timestamp == staging_buffer->scene_timestamp) && (staging_buffer->buffer.size - staging_buffer->used_so_far) >= current_texture->memory_needed;
+    bool use_previous_buffer = staging_buffer->buffer.buffer
+        && (current_scene_timestamp == staging_buffer->scene_timestamp)
+        && (staging_buffer->buffer.size - staging_buffer->used_so_far) >= current_texture->memory_needed;
 
     if (!use_previous_buffer) {
         staging_idx = (staging_idx + 1) % NB_TEXTURE_STAGING_BUFFERS;
@@ -198,7 +203,10 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
 
             vk::SubmitInfo submit_info{};
             submit_info.setCommandBuffers(context->cmdbuffers_to_submit);
-            state.general_queue.submit(submit_info, current_fence);
+            {
+                std::lock_guard<std::mutex> lock(state.queue_mutex);
+                state.general_queue.submit(submit_info, current_fence);
+            }
             context->cmdbuffers_to_submit.clear();
 
             auto result = state.device.waitForFences(current_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
@@ -240,9 +248,10 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
         staging_buffer->waiting_fence = current_fence;
         staging_buffer->used_so_far = 0;
 
-        if (staging_buffer->buffer.size < current_texture->memory_needed) {
-            // we need to create a bigger buffer
-            // destroy the previous one if there is, no need to defer destroy it as we know it is no longer being used
+        if (!staging_buffer->buffer.buffer || staging_buffer->buffer.size < current_texture->memory_needed) {
+            // We need to create a buffer (or a bigger one). A destroyed staging buffer can
+            // retain its previous size, so size alone does not tell us that it is usable.
+            // There is no need to defer destruction here as it is no longer being used.
             staging_buffer->buffer.destroy();
 
             staging_buffer->buffer.size = current_texture->memory_needed;

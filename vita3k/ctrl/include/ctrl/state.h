@@ -85,10 +85,9 @@ struct CtrlState {
     OverlayMouseState overlay_mouse;
 
     void reset_runtime() {
-        controllers.clear();
-        controllers_num = 0;
-        has_motion_support = false;
-        std::fill_n(free_ports, SCE_CTRL_MAX_WIRELESS_NUM, true);
+        // These fields track host devices, not guest runtime state. Keep the
+        // connected gamepads open across app shutdown so the frontend can
+        // continue polling them without waiting for another SDL add event.
         input_mode = SCE_CTRL_MODE_DIGITAL;
         input_mode_ext = SCE_CTRL_MODE_DIGITAL;
         std::fill_n(last_vcount, 5, 0);

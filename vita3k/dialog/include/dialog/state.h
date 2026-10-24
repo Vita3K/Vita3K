@@ -21,7 +21,6 @@
 
 #include <io/vfs.h>
 
-#include <map>
 #include <mutex>
 #include <string>
 
