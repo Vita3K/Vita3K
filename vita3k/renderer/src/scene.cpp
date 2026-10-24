@@ -94,6 +94,22 @@ COMMAND(handle_set_context) {
     }
 }
 
+void signal_notifications(State &state, MemState &mem, const SceGxmNotification &vertex_notification, const SceGxmNotification &fragment_notification) {
+    if (!vertex_notification.address && !fragment_notification.address)
+        return;
+
+    std::unique_lock<std::mutex> lock(state.notification_mutex);
+
+    if (vertex_notification.address)
+        *vertex_notification.address.get(mem) = vertex_notification.value;
+    if (fragment_notification.address)
+        *fragment_notification.address.get(mem) = fragment_notification.value;
+
+    // unlocking before a notify should be faster
+    lock.unlock();
+    state.notification_ready.notify_all();
+}
+
 COMMAND(handle_sync_surface_data) {
     TRACY_FUNC_COMMANDS(handle_sync_surface_data);
 
@@ -109,17 +125,9 @@ COMMAND(handle_sync_surface_data) {
             return;
 
         were_notifications_signaled = true;
-        // signal the notification now
-        std::unique_lock<std::mutex> lock(renderer.notification_mutex);
-
-        if (vertex_notification.address)
-            *vertex_notification.address.get(mem) = vertex_notification.value;
-        if (fragment_notification.address)
-            *fragment_notification.address.get(mem) = fragment_notification.value;
-
-        // unlocking before a notify should be faster
-        lock.unlock();
-        renderer.notification_ready.notify_all();
+        // earlier notifications must not be overtaken
+        renderer.complete_readbacks(mem, true);
+        renderer::signal_notifications(renderer, mem, vertex_notification, fragment_notification);
     };
 
     if (renderer.disable_surface_sync)
@@ -162,16 +170,17 @@ COMMAND(handle_sync_surface_data) {
     const Address data = surface->data.address();
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
 
-    // We protect the data to track syncing. If this is called then the data is definitely protected somehow.
-    // We just unprotect and reprotect again :D
-    const std::size_t total_size = height * gxm::get_stride_in_bytes(surface->colorFormat, stride_in_pixels);
-
     switch (renderer.current_backend) {
     case Backend::OpenGL:
         if (helper.cmd->status) {
+            renderer.complete_readbacks(mem, true);
             gl::lookup_and_get_surface_data(static_cast<gl::GLState &>(renderer), mem, *surface);
         } else {
-            gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), pixels, *surface);
+            // the notifications are signaled once the readback lands in guest memory
+            const SceGxmNotification none{};
+            gl::queue_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, *surface,
+                were_notifications_signaled ? none : vertex_notification, were_notifications_signaled ? none : fragment_notification);
+            were_notifications_signaled = true;
         }
         break;
 
