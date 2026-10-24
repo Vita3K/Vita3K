@@ -1532,6 +1532,8 @@ EXPORT(int, sceKernelGetThreadRunStatus) {
 
 EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerBase, timer_handle, time);
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
     uint64_t base;
     if (!timer || timer->get_base(base) != SCE_KERNEL_OK)
@@ -1554,6 +1556,8 @@ EXPORT(SceInt32, sceKernelGetTimerInfo, SceUID timer_handle, Ptr<SceKernelTimerI
 
 EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerTime, timer_handle, time);
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
     uint64_t count;
     if (!timer || timer->get_time(count) != SCE_KERNEL_OK)

@@ -363,7 +363,7 @@ timer_base_remaining            fail     # sceKernelGetTimerEventRemainingTime, 
 timer_callback                  fail     # callbacks registered to timers
 timer_delete_event              fail     # a timer's delete doesn't fire its delete event
 timer_edges                     pass
-timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
+timer_errors                    crash    # close of unknown UIDs, open and create with a NULL name
 timer_event_interval_zero       pass
 timer_event_wakes_all           pass
 timer_info_cancel               pass
