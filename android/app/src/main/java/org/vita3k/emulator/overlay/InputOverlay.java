@@ -12,7 +12,9 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
@@ -29,6 +31,9 @@ import java.util.Set;
  */
 public final class InputOverlay extends SurfaceView implements OnTouchListener
 {
+  public interface ControlSelectionListener {
+    void onControlSelected(int controlId);
+  }
   // mirror what is in controller_dialog.cpp
   public final static int OVERLAY_MASK_BASIC = 1;
   public final static int OVERLAY_MASK_L2R2 = 2;
@@ -60,6 +65,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private InputOverlayDrawableButton mButtonBeingConfigured;
   private InputOverlayDrawableDpad mDpadBeingConfigured;
   private InputOverlayDrawableJoystick mJoystickBeingConfigured;
+  private int mConfigPointerId = -1;
+  private int mSelectedControlId = ButtonType.BUTTON_CROSS;
+  private ControlSelectionListener mControlSelectionListener;
+  private final Paint mEditorSelectionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private float mScale = 1.0f;
   private int mOpacity = 100;
   private OverlayLayout mLayout;
@@ -112,6 +121,9 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Request focus for the overlay so it has priority on presses.
     requestFocus();
+    mEditorSelectionPaint.setColor(0xFF6EA8FF);
+    mEditorSelectionPaint.setStyle(Paint.Style.STROKE);
+    mEditorSelectionPaint.setStrokeWidth(3f);
 
     applyResolvedState(OverlayStore.loadGlobalState(getContext()), false);
 
@@ -213,42 +225,64 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public void draw(Canvas canvas)
   {
     super.draw(canvas);
+    if ((mOverlayMask == 0 || !mShowingOverlay) && !mIsInEditMode) return;
 
-    if (mOverlayMask == 0 || !mShowingOverlay)
-      return;
-
-    for (InputOverlayDrawableButton button : overlayButtons)
-    {
+    for (InputOverlayDrawableButton button : overlayButtons) {
       int role = button.getRole();
-
-      if (mHideOverlayButtons) {
-        if ((role & OVERLAY_MASK_UTILITY) == 0 || (role & mOverlayMask) == 0)
+      if (!mIsInEditMode) {
+        if (mHideOverlayButtons) {
+          if ((role & OVERLAY_MASK_UTILITY) == 0 || (role & mOverlayMask) == 0) continue;
+        } else if ((role & mOverlayMask) == 0) {
           continue;
-      } else if ((role & mOverlayMask) == 0) {
-        continue;
+        }
       }
-
-      button.draw(canvas);
+      button.draw(canvas, mIsInEditMode);
+      if (mIsInEditMode && button.getLegacyId() == mSelectedControlId)
+        drawEditorSelection(canvas, button.getTouchBounds());
     }
 
-    if (!mHideOverlayButtons)
-    {
-      for (InputOverlayDrawableDpad dpad : overlayDpads)
-      {
-        dpad.draw(canvas);
-      }
-
-      for (InputOverlayDrawableJoystick joystick : overlayJoysticks)
-      {
-        joystick.draw(canvas);
-      }
+    for (InputOverlayDrawableDpad dpad : overlayDpads) {
+      if (!mIsInEditMode && !dpad.isVisible()) continue;
+      dpad.draw(canvas, mIsInEditMode);
+      if (mIsInEditMode && dpad.getLegacyId() == mSelectedControlId)
+        drawEditorSelection(canvas, dpad.getTouchBounds());
     }
+
+    for (InputOverlayDrawableJoystick joystick : overlayJoysticks) {
+      if (!mIsInEditMode && !joystick.isVisible()) continue;
+      joystick.draw(canvas, mIsInEditMode);
+      if (mIsInEditMode && joystick.getLegacyId() == mSelectedControlId)
+        drawEditorSelection(canvas, joystick.getTouchBounds());
+    }
+  }
+
+  private void drawEditorSelection(Canvas canvas, Rect bounds)
+  {
+    RectF highlight = new RectF(bounds);
+    highlight.inset(-5f, -5f);
+    canvas.drawRoundRect(highlight, 10f, 10f, mEditorSelectionPaint);
+  }
+
+  public int getSelectedControlId() { return mSelectedControlId; }
+
+  public void setControlSelectionListener(ControlSelectionListener listener)
+  {
+    mControlSelectionListener = listener;
+  }
+
+  public void selectControlForEditing(int controlId)
+  {
+    if (mSelectedControlId == controlId) return;
+    mSelectedControlId = controlId;
+    if (mControlSelectionListener != null)
+      mControlSelectionListener.onControlSelected(controlId);
+    invalidate();
   }
 
   @Override
   public boolean onTouch(View v, MotionEvent event)
   {
-    if (mOverlayMask == 0)
+    if (mOverlayMask == 0 && !isInEditMode())
       return false;
 
     if(!mAllowVirtualController && !isInEditMode())
@@ -270,6 +304,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     for (InputOverlayDrawableButton button : overlayButtons)
     {
+      if (!button.isVisible()) continue;
       int buttonRole = button.getRole();
       int legacyId = button.getLegacyId();
 
@@ -285,7 +320,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
         case MotionEvent.ACTION_DOWN:
         case MotionEvent.ACTION_POINTER_DOWN:
           // If a pointer enters the bounds of a button, press that button.
-          if (button.getBounds()
+          if (button.getTouchBounds()
                   .contains((int) event.getX(pointerIndex), (int) event.getY(pointerIndex)))
           {
             button.setPressedState(true);
@@ -322,13 +357,14 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     {
       for (InputOverlayDrawableDpad dpad : overlayDpads)
       {
+        if (!dpad.isVisible()) continue;
         // Determine the button state to apply based on the MotionEvent action flag.
         switch (event.getAction() & MotionEvent.ACTION_MASK)
         {
           case MotionEvent.ACTION_DOWN:
           case MotionEvent.ACTION_POINTER_DOWN:
             // If a pointer enters the bounds of a button, press that button.
-            if (dpad.getBounds()
+            if (dpad.getTouchBounds()
                     .contains((int) event.getX(pointerIndex), (int) event.getY(pointerIndex)))
             {
               dpad.setTrackId(event.getPointerId(pointerIndex));
@@ -341,13 +377,14 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
               // Up, Down, Left, Right
               boolean[] dpadPressed = {false, false, false, false};
 
-              if (dpad.getBounds().top + (dpad.getHeight() / 3) > (int) event.getY(pointerIndex))
+              Rect touchBounds = dpad.getTouchBounds();
+              if (touchBounds.top + (touchBounds.height() / 3) > (int) event.getY(pointerIndex))
                 dpadPressed[0] = true;
-              if (dpad.getBounds().bottom - (dpad.getHeight() / 3) < (int) event.getY(pointerIndex))
+              if (touchBounds.bottom - (touchBounds.height() / 3) < (int) event.getY(pointerIndex))
                 dpadPressed[1] = true;
-              if (dpad.getBounds().left + (dpad.getWidth() / 3) > (int) event.getX(pointerIndex))
+              if (touchBounds.left + (touchBounds.width() / 3) > (int) event.getX(pointerIndex))
                 dpadPressed[2] = true;
-              if (dpad.getBounds().right - (dpad.getWidth() / 3) < (int) event.getX(pointerIndex))
+              if (touchBounds.right - (touchBounds.width() / 3) < (int) event.getX(pointerIndex))
                 dpadPressed[3] = true;
 
               // Press buttons
@@ -378,6 +415,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
       for (InputOverlayDrawableJoystick joystick : overlayJoysticks)
       {
+        if (!joystick.isVisible()) continue;
         if (joystick.TrackEvent(event))
         {
           concerned = true;
@@ -400,131 +438,95 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
   public boolean onTouchWhileEditing(MotionEvent event)
   {
-    int pointerIndex = event.getActionIndex();
-    int fingerPositionX = (int) event.getX(pointerIndex);
-    int fingerPositionY = (int) event.getY(pointerIndex);
+    final int action = event.getActionMasked();
+    final int actionIndex = event.getActionIndex();
 
-    // Maybe combine Button and Joystick as subclasses of the same parent?
-    // Or maybe create an interface like IMoveableHUDControl?
-    boolean intersect = false;
-
-    for (InputOverlayDrawableButton button : overlayButtons)
-    {
-      // Determine the button state to apply based on the MotionEvent action flag.
-      switch (event.getAction() & MotionEvent.ACTION_MASK)
-      {
-        case MotionEvent.ACTION_DOWN:
-        case MotionEvent.ACTION_POINTER_DOWN:
-          // If no button is being moved now, remember the currently touched button to move.
-          if (mButtonBeingConfigured == null &&
-                  button.getBounds().contains(fingerPositionX, fingerPositionY))
-          {
-            mButtonBeingConfigured = button;
-            mButtonBeingConfigured.onConfigureTouch(event);
-            intersect = true;
-          }
-          break;
-        case MotionEvent.ACTION_MOVE:
-          if (mButtonBeingConfigured != null)
-          {
-            mButtonBeingConfigured.onConfigureTouch(event);
-            invalidate();
-            return true;
-          }
-          break;
-
-        case MotionEvent.ACTION_UP:
-        case MotionEvent.ACTION_POINTER_UP:
-          if (mButtonBeingConfigured == button)
-          {
-            // Persist button position by saving new place.
-            saveControlPosition(mButtonBeingConfigured.getLegacyId(),
-                    mButtonBeingConfigured.getBounds().left,
-                    mButtonBeingConfigured.getBounds().top);
-            mButtonBeingConfigured = null;
-            intersect = true;
-          }
-          break;
-      }
+    if (action == MotionEvent.ACTION_CANCEL) {
+      clearConfiguredControl();
+      invalidate();
+      return true;
     }
 
-    for (InputOverlayDrawableDpad dpad : overlayDpads)
-    {
-      // Determine the button state to apply based on the MotionEvent action flag.
-      switch (event.getAction() & MotionEvent.ACTION_MASK)
-      {
-        case MotionEvent.ACTION_DOWN:
-        case MotionEvent.ACTION_POINTER_DOWN:
-          // If no button is being moved now, remember the currently touched button to move.
-          if (mButtonBeingConfigured == null &&
-                  dpad.getBounds().contains(fingerPositionX, fingerPositionY))
-          {
-            mDpadBeingConfigured = dpad;
-            mDpadBeingConfigured.onConfigureTouch(event);
-            intersect = true;
-          }
-          break;
-        case MotionEvent.ACTION_MOVE:
-          if (mDpadBeingConfigured != null)
-          {
-            mDpadBeingConfigured.onConfigureTouch(event);
-            invalidate();
-            return true;
-          }
-          break;
-
-        case MotionEvent.ACTION_UP:
-        case MotionEvent.ACTION_POINTER_UP:
-          if (mDpadBeingConfigured == dpad)
-          {
-            // Persist button position by saving new place.
-            saveControlPosition(mDpadBeingConfigured.getLegacyId(),
-                    mDpadBeingConfigured.getBounds().left,
-                    mDpadBeingConfigured.getBounds().top);
-            mDpadBeingConfigured = null;
-            intersect = true;
-          }
-          break;
+    if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+      // One pointer owns an edit drag from the initial down through its matching up/cancel.
+      // Other fingers cannot steal or accidentally commit the selected control.
+      if (mConfigPointerId != -1) return true;
+      final int pointerId = event.getPointerId(actionIndex);
+      final int x = (int) event.getX(actionIndex);
+      final int y = (int) event.getY(actionIndex);
+      for (InputOverlayDrawableButton button : overlayButtons) {
+        if (button.getTouchBounds().contains(x, y)) {
+          selectControlForEditing(button.getLegacyId());
+          mButtonBeingConfigured = button;
+          mConfigPointerId = pointerId;
+          button.onConfigureTouch(event, actionIndex);
+          return true;
+        }
       }
+      for (InputOverlayDrawableDpad dpad : overlayDpads) {
+        if (dpad.getTouchBounds().contains(x, y)) {
+          selectControlForEditing(dpad.getLegacyId());
+          mDpadBeingConfigured = dpad;
+          mConfigPointerId = pointerId;
+          dpad.onConfigureTouch(event, actionIndex);
+          return true;
+        }
+      }
+      for (InputOverlayDrawableJoystick joystick : overlayJoysticks) {
+        if (joystick.getTouchBounds().contains(x, y)) {
+          selectControlForEditing(joystick.getLegacyId());
+          mJoystickBeingConfigured = joystick;
+          mConfigPointerId = pointerId;
+          joystick.onConfigureTouch(event, actionIndex);
+          return true;
+        }
+      }
+      return false;
     }
 
-    for (InputOverlayDrawableJoystick joystick : overlayJoysticks)
-    {
-      switch (event.getAction())
-      {
-        case MotionEvent.ACTION_DOWN:
-        case MotionEvent.ACTION_POINTER_DOWN:
-          if (mJoystickBeingConfigured == null &&
-                  joystick.getBounds().contains(fingerPositionX, fingerPositionY))
-          {
-            mJoystickBeingConfigured = joystick;
-            mJoystickBeingConfigured.onConfigureTouch(event);
-            intersect = true;
-          }
-          break;
-        case MotionEvent.ACTION_MOVE:
-          if (mJoystickBeingConfigured != null)
-          {
-            mJoystickBeingConfigured.onConfigureTouch(event);
-            invalidate();
-            intersect = true;
-          }
-          break;
-        case MotionEvent.ACTION_UP:
-        case MotionEvent.ACTION_POINTER_UP:
-          if (mJoystickBeingConfigured != null)
-          {
-            saveControlPosition(mJoystickBeingConfigured.getLegacyId(),
-                    mJoystickBeingConfigured.getBounds().left,
-                    mJoystickBeingConfigured.getBounds().top);
-            mJoystickBeingConfigured = null;
-            intersect = true;
-          }
-          break;
+    if (mConfigPointerId == -1) return false;
+    if (action == MotionEvent.ACTION_MOVE) {
+      int pointerIndex = event.findPointerIndex(mConfigPointerId);
+      if (pointerIndex < 0) {
+        clearConfiguredControl();
+        invalidate();
+        return true;
       }
+      if (mButtonBeingConfigured != null)
+        mButtonBeingConfigured.onConfigureTouch(event, pointerIndex);
+      else if (mDpadBeingConfigured != null)
+        mDpadBeingConfigured.onConfigureTouch(event, pointerIndex);
+      else if (mJoystickBeingConfigured != null)
+        mJoystickBeingConfigured.onConfigureTouch(event, pointerIndex);
+      invalidate();
+      return true;
     }
 
-    return intersect;
+    if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
+      if (event.getPointerId(actionIndex) != mConfigPointerId) return true;
+      if (mButtonBeingConfigured != null) {
+        saveControlPosition(mButtonBeingConfigured.getLegacyId(),
+                mButtonBeingConfigured.getBounds().left, mButtonBeingConfigured.getBounds().top);
+      } else if (mDpadBeingConfigured != null) {
+        saveControlPosition(mDpadBeingConfigured.getLegacyId(),
+                mDpadBeingConfigured.getBounds().left, mDpadBeingConfigured.getBounds().top);
+      } else if (mJoystickBeingConfigured != null) {
+        saveControlPosition(mJoystickBeingConfigured.getLegacyId(),
+                mJoystickBeingConfigured.getBounds().left, mJoystickBeingConfigured.getBounds().top);
+      }
+      clearConfiguredControl();
+      invalidate();
+      return true;
+    }
+    return true;
+  }
+
+  private void clearConfiguredControl()
+  {
+    mButtonBeingConfigured = null;
+    mDpadBeingConfigured = null;
+    mJoystickBeingConfigured = null;
+    mConfigPointerId = -1;
   }
 
   private void setDpadState(InputOverlayDrawableDpad dpad, boolean up, boolean down, boolean left,
@@ -639,6 +641,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
   public void refreshControls()
   {
+    clearConfiguredControl();
+    if (mControllerAttached) releaseAllInputs();
     // Remove all the overlay buttons from the HashSet.
     overlayButtons.clear();
     overlayDpads.clear();
@@ -739,7 +743,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Need to set the image's position
     overlayDrawable.setPosition(drawableX, drawableY);
-    overlayDrawable.setOpacity((int) (globalOpacity * 0.01 * 255));
+    OverlayCustomization customization = layout.customizationFor(legacyId);
+    overlayDrawable.setVisible(customization.getVisible());
+    overlayDrawable.setScaleFactor(customization.getScalePercent() / 100f);
+    overlayDrawable.setOpacity(Math.round(255f * globalOpacity * customization.getOpacityPercent() / 10000f));
 
     return overlayDrawable;
   }
@@ -777,7 +784,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Decide scale based on button ID and user preference
     float scale = 0.35f;
-
     scale *= globalScale;
 
     // Initialize the InputOverlayDrawableDpad.
@@ -809,7 +815,10 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Need to set the image's position
     overlayDrawable.setPosition(drawableX, drawableY);
-    overlayDrawable.setOpacity((int) (globalOpacity * 0.01 * 255));
+    OverlayCustomization customization = layout.customizationFor(legacyId);
+    overlayDrawable.setVisible(customization.getVisible());
+    overlayDrawable.setScaleFactor(customization.getScalePercent() / 100f);
+    overlayDrawable.setOpacity(Math.round(255f * globalOpacity * customization.getOpacityPercent() / 10000f));
 
     return overlayDrawable;
   }
@@ -866,7 +875,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Need to set the image's position
     overlayDrawable.setPosition(drawableX, drawableY);
-    overlayDrawable.setOpacity((int) (globalOpacity * 0.01 * 255));
+    OverlayCustomization customization = layout.customizationFor(legacyId);
+    overlayDrawable.setVisible(customization.getVisible());
+    overlayDrawable.setScaleFactor(customization.getScalePercent() / 100f);
+    overlayDrawable.setSensitivityPercent(customization.getSensitivityPercent());
+    overlayDrawable.setOpacity(Math.round(255f * globalOpacity * customization.getOpacityPercent() / 10000f));
 
     return overlayDrawable;
   }
@@ -875,9 +888,14 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   {
     mIsInEditMode = isInEditMode;
     if (mIsInEditMode) {
+      clearConfiguredControl();
+      if (mControllerAttached) releaseAllInputs();
       mHideOverlayButtons = false;
       mShowingOverlay = true;
+    } else {
+      clearConfiguredControl();
     }
+    invalidate();
   }
 
   public boolean isInEditMode()
@@ -913,6 +931,45 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public OverlayLayout captureLayout()
   {
     return mLayout.normalized();
+  }
+  public void setControlCustomization(int controlId, boolean visible, int scalePercent, int opacityPercent) {
+    OverlayCustomization current = mLayout.customizationFor(controlId);
+    setControlCustomization(controlId, visible, scalePercent, opacityPercent, current.getSensitivityPercent());
+  }
+
+  public void setControlCustomization(int controlId, boolean visible, int scalePercent, int opacityPercent,
+          int sensitivityPercent) {
+    OverlayCustomization customization = new OverlayCustomization(
+            visible, scalePercent, opacityPercent, sensitivityPercent).normalized();
+    if (customization.equals(mLayout.customizationFor(controlId))) return;
+    mLayout = mLayout.withCustomization(controlId, customization);
+    int alpha = Math.round(255f * mOpacity * customization.getOpacityPercent() / 10000f);
+    for (InputOverlayDrawableButton button : overlayButtons) {
+      if (button.getLegacyId() == controlId) {
+        button.setVisible(visible);
+        button.setScaleFactor(customization.getScalePercent() / 100f);
+        button.setOpacity(alpha);
+      }
+    }
+    for (InputOverlayDrawableDpad dpad : overlayDpads) {
+      if (dpad.getLegacyId() == controlId) {
+        dpad.setVisible(visible);
+        dpad.setScaleFactor(customization.getScalePercent() / 100f);
+        dpad.setOpacity(alpha);
+      }
+    }
+    for (InputOverlayDrawableJoystick joystick : overlayJoysticks) {
+      if (joystick.getLegacyId() == controlId) {
+        joystick.setVisible(visible);
+        joystick.setScaleFactor(customization.getScalePercent() / 100f);
+        joystick.setOpacity(alpha);
+        joystick.setSensitivityPercent(customization.getSensitivityPercent());
+      }
+    }
+    invalidate();
+  }
+  public OverlayCustomization getControlCustomization(int controlId) {
+    return mLayout.customizationFor(controlId);
   }
 
   public void refreshOverlayScope(String scopeId)
