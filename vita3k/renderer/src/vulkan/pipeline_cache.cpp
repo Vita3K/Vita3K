@@ -31,12 +31,37 @@
 
 #include <SDL3/SDL_cpuinfo.h>
 
+#include <bit>
+#include <cstdint>
+
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
 #define XXH_INLINE_ALL
 #include <xxhash.h>
 
 namespace renderer::vulkan {
+
+namespace {
+
+const vk::Pipeline pipeline_compiling = std::bit_cast<vk::Pipeline>(~uint64_t{ 0 });
+const vk::Pipeline pipeline_failed = std::bit_cast<vk::Pipeline>(~uint64_t{ 1 });
+
+bool is_usable_pipeline(vk::Pipeline pipeline) {
+    return pipeline && pipeline != pipeline_compiling && pipeline != pipeline_failed;
+}
+
+vk::Pipeline completed_pipeline(vk::Pipeline pipeline) {
+    return pipeline ? pipeline : pipeline_failed;
+}
+
+template <typename Dispatch>
+vk::Result create_graphics_pipeline(vk::Device device, vk::PipelineCache cache,
+    const vk::GraphicsPipelineCreateInfo &info, vk::Pipeline &pipeline, const Dispatch &dispatch) {
+    pipeline = nullptr;
+    return device.createGraphicsPipelines(cache, 1, &info, nullptr, &pipeline, dispatch);
+}
+
+} // namespace
 
 // Size of the record containing what is needed for the pipeline construction (what is after is dynamic state)
 constexpr size_t record_pipeline_len = offsetof(GxmRecordState, vertex_streams);
@@ -384,8 +409,10 @@ void PipelineCache::cleanup() {
     if (use_async_compilation)
         set_async_compilation(false);
 
-    for (auto &[hash, pipeline] : pipelines)
-        state.device.destroy(pipeline);
+    for (auto &[hash, pipeline] : pipelines) {
+        if (is_usable_pipeline(pipeline))
+            state.device.destroy(pipeline);
+    }
     pipelines.clear();
 
     {
@@ -862,7 +889,7 @@ void PipelineCache::compiler_thread(MemState &mem) {
             break;
 
         vk::Pipeline pipeline = compile_pipeline(request->type, request->render_pass, *request->vertex_program_gxm, *request->fragment_program_gxm, *request->get_record(), request->hints, mem);
-        *request->pipeline = pipeline;
+        *request->pipeline = completed_pipeline(pipeline);
 
         request->vertex_program_gxm->compile_threads_on.fetch_sub(1, std::memory_order_release);
         request->fragment_program_gxm->compile_threads_on.fetch_sub(1, std::memory_order_release);
@@ -1014,13 +1041,15 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         .subpass = 0
     };
 
-    const auto result = state.device.createGraphicsPipeline(pipeline_cache, pipeline_info);
-    if (result.result != vk::Result::eSuccess) {
-        LOG_CRITICAL("Failed to create pipeline.");
+    vk::Pipeline pipeline;
+    const vk::Result result = create_graphics_pipeline(
+        state.device, pipeline_cache, pipeline_info, pipeline, VULKAN_HPP_DEFAULT_DISPATCHER);
+    if (result != vk::Result::eSuccess) {
+        LOG_ERROR("Failed to create Vulkan pipeline: {}", vk::to_string(result));
         return nullptr;
     }
 
-    return result.value;
+    return pipeline;
 }
 
 vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem) {
@@ -1043,20 +1072,13 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     // and also add the primitive type
     key ^= static_cast<uint64_t>(type);
 
-    // can't use constexpr because of apple clang...
-    const vk::Pipeline pipeline_compiling = std::bit_cast<vk::Pipeline, uint64_t>(~0ULL);
     // if the pipeline is in the pipeline cache, we can expect its creation time to be almost instantaneous
     bool already_in_cache = false;
 
     auto it = pipelines.find(key);
     if (it != pipelines.end()) {
-        if (it->second != nullptr) {
-            if (it->second == pipeline_compiling)
-                // pipeline is still compiling
-                return nullptr;
-            else
-                return it->second;
-        }
+        if (it->second != nullptr)
+            return is_usable_pipeline(it->second) ? it->second : vk::Pipeline{};
         already_in_cache = true;
     } else {
         // the pipeline hash was not in the cache;
@@ -1107,7 +1129,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
         if (!already_in_cache)
             state.shaders_count_compiled++;
 
-        it->second = result;
+        it->second = completed_pipeline(result);
 
         return result;
     }
