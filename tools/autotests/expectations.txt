@@ -18,7 +18,7 @@ callback_changes                pass
 callback_deleted_object         pass
 callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
-callback_event_results          fail     # a timer event during a callback ends the wait with 0, event calls don't take message pipe UIDs
+callback_event_results          fail     # event calls don't take message pipe UIDs
 callback_event_waits            pass
 callback_info                   pass
 callback_inner_same_object      pass
@@ -371,7 +371,7 @@ timer_modes                     fail     # sceKernelSetTimerTime
 timer_oneshot_refire            fail     # a one shot timer that fired never fires again
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
-timer_wait_pattern              fail     # timer waits and polls get the timer bit whatever bits they ask for
+timer_wait_pattern              pass
 timer_waiters                   pass
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority
