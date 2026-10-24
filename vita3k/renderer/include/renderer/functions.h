@@ -268,6 +268,8 @@ void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint1
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 
 uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height);
+// get the size of the guest memory read when uploading every mip of every face
+uint32_t texture_source_size(const SceGxmTexture &texture);
 
 uint32_t decode_morton2_x(uint32_t code);
 uint32_t decode_morton2_y(uint32_t code);

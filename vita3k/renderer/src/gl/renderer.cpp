@@ -40,7 +40,6 @@
 #include <Windows.h>
 #endif
 
-#include <algorithm>
 #include <array>
 #include <cstring>
 #include <mutex>
@@ -623,7 +622,12 @@ void queue_surface_data(GLState &renderer, GLContext &context, MemState &mem, Sc
     const size_t size = use_temp ? storage_v.size() : guest_size;
 
     ReadbackBuffer buffer{};
-    auto reusable = std::find_if(renderer.free_readback_buffers.begin(), renderer.free_readback_buffers.end(), [&](const ReadbackBuffer &b) { return b.capacity >= size; });
+    // take the smallest buffer that fits
+    auto reusable = renderer.free_readback_buffers.end();
+    for (auto it = renderer.free_readback_buffers.begin(); it != renderer.free_readback_buffers.end(); ++it) {
+        if (it->capacity >= size && (reusable == renderer.free_readback_buffers.end() || it->capacity < reusable->capacity))
+            reusable = it;
+    }
     if (reusable != renderer.free_readback_buffers.end()) {
         buffer = *reusable;
         renderer.free_readback_buffers.erase(reusable);
@@ -654,6 +658,9 @@ void queue_surface_data(GLState &renderer, GLContext &context, MemState &mem, Sc
     renderer.pending_readbacks.push_back({ buffer.pbo, buffer.capacity, size, glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0), surface, width, height, use_temp,
         surface.data.address(), static_cast<Address>(surface.data.address() + guest_size), vertex_notification, fragment_notification });
 }
+
+// enough for a few full-screen surfaces at a high resolution multiplier
+static constexpr size_t MAX_FREE_READBACK_BYTES = 128 * 1024 * 1024;
 
 void GLState::complete_readbacks(MemState &mem, bool wait) {
     while (!pending_readbacks.empty()) {
@@ -696,7 +703,13 @@ void GLState::complete_readbacks(MemState &mem, bool wait) {
         if (mapped)
             glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        free_readback_buffers.push_back({ readback.pbo, readback.capacity });
+        size_t free_bytes = 0;
+        for (const ReadbackBuffer &buffer : free_readback_buffers)
+            free_bytes += buffer.capacity;
+        if (free_bytes + readback.capacity <= MAX_FREE_READBACK_BYTES)
+            free_readback_buffers.push_back({ readback.pbo, readback.capacity });
+        else
+            glDeleteBuffers(1, &readback.pbo);
         const SceGxmNotification vertex_notification = readback.vertex_notification;
         const SceGxmNotification fragment_notification = readback.fragment_notification;
         pending_readbacks.pop_front();
