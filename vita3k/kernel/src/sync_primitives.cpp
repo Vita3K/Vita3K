@@ -63,7 +63,7 @@ SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 i
     return SCE_KERNEL_OK;
 }
 
-void SimpleEvent::on_delete(SceUID deleter) {
+void Event::on_delete(SceUID deleter) {
     // The waits for the delete event get it with the deleting thread's user data, then the others end
     fire(SCE_KERNEL_EVENT_DELETE, system_event_user_data(deleter), true);
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
@@ -256,10 +256,6 @@ inline uint64_t get_current_time() {
 
 Timer::Timer(SceUInt32 attr, const char *name, SceUID creator)
     : WithUidClass(attr, name, 0, system_event_user_data(creator)) {}
-
-void Timer::on_delete(SceUID) {
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
-}
 
 // A timer event is due at least this long after it was queued or after the event before it
 constexpr uint64_t TIMER_EVENT_FLOOR = 200;

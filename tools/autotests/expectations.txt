@@ -361,7 +361,7 @@ timeouts                        pass
 timer                           pass
 timer_base_remaining            pass
 timer_callback                  fail     # callbacks registered to timers
-timer_delete_event              fail     # a timer's delete doesn't fire its delete event
+timer_delete_event              pass
 timer_edges                     pass
 timer_errors                    crash    # close of unknown UIDs, open and create with a NULL name
 timer_event_interval_zero       pass

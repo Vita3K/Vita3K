@@ -169,6 +169,7 @@ protected:
         SceUInt64 *user_data;
     };
 
+    void on_delete(SceUID deleter) override;
     // Brings the event up to date before an event operation looks at it. Called with the lock held.
     // Only a timer has anything to do.
     virtual void catch_up() {}
@@ -201,9 +202,6 @@ public:
     // Sets one of the system events, like the open event, with user_data for its waiters, or returns
     // UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
-
-private:
-    void on_delete(SceUID deleter) override;
 };
 
 using SimpleEventPtr = std::shared_ptr<SimpleEvent>;
@@ -234,7 +232,6 @@ public:
     SceInt32 timer_info(SceKernelTimerInfo &info);
 
 private:
-    void on_delete(SceUID deleter) override;
     // Fires the event if it is due: sets or pulses SCE_KERNEL_EVENT_TIMER, and queues a repeating
     // event again an interval after it was due.
     void catch_up() override;
