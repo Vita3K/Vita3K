@@ -36,6 +36,7 @@ enum class RestartRequiredSetting : uint8_t {
     MemoryMapping = 6,
     AudioBackend = 7,
     ValidationLayer = 8,
+    DisableMaskBit = 9,
 };
 
 std::vector<RestartRequiredSetting> get_restart_required_settings(

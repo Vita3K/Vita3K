@@ -136,6 +136,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
     code(bool, "log-compat-warn", false, log_compat_warn)                                               \
     code(bool, "validation-layer", true, validation_layer)                                              \
+    code(bool, "disable-mask-bit", false, disable_mask_bit)                                             \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
     code(bool, "show-mode", false, show_mode)                                                           \
     code(bool, "demo-mode", false, demo_mode)                                                           \

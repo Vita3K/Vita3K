@@ -42,7 +42,6 @@
     <property name="title">
      <string>Settings</string>
     </property>
-    <addaction name="settings_core_action"/>
     <addaction name="settings_cpu_action"/>
     <addaction name="settings_gpu_action"/>
     <addaction name="settings_audio_action"/>
@@ -51,6 +50,7 @@
     <addaction name="settings_emulator_action"/>
     <addaction name="settings_gui_action"/>
     <addaction name="settings_network_action"/>
+    <addaction name="settings_advanced_action"/>
     <addaction name="settings_debug_action"/>
     <addaction name="separator"/>
     <addaction name="controls_action"/>
@@ -267,9 +267,9 @@
     <string>User Management</string>
    </property>
   </action>
-  <action name="settings_core_action">
+  <action name="settings_advanced_action">
    <property name="text">
-    <string>Core</string>
+    <string>Advanced</string>
    </property>
   </action>
   <action name="settings_cpu_action">

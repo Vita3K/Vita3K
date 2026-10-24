@@ -575,6 +575,7 @@ void SettingsDialog::load_config() {
     m_ui->log_uniforms->setChecked(m_config.log_uniforms);
     m_ui->color_surface_debug->setChecked(m_config.color_surface_debug);
     m_ui->validation_layer->setChecked(m_config.validation_layer);
+    m_ui->disable_mask_bit->setChecked(m_config.disable_mask_bit);
     m_ui->dump_elfs->setChecked(emuenv.kernel.debugger.dump_elfs);
 
 #ifdef TRACY_ENABLE
@@ -701,6 +702,7 @@ void SettingsDialog::build_desired_config(Config &desired) const {
     current.log_uniforms = m_ui->log_uniforms->isChecked();
     current.color_surface_debug = m_ui->color_surface_debug->isChecked();
     current.validation_layer = m_ui->validation_layer->isChecked();
+    current.disable_mask_bit = m_ui->disable_mask_bit->isChecked();
 
 #ifdef TRACY_ENABLE
     current.tracy_primitive_impl = m_ui->tracy_primitive_impl->isChecked();
@@ -1287,6 +1289,7 @@ void SettingsDialog::setup_connections() {
         { m_ui->log_uniforms, tr("Log Shader Uniforms"), m_tooltips->log_uniforms },
         { m_ui->color_surface_debug, tr("Save color surfaces"), m_tooltips->color_surface_debug },
         { m_ui->validation_layer, tr("Vulkan Validation Layer"), m_tooltips->validation_layer },
+        { m_ui->disable_mask_bit, tr("Disable Mask Bit Emulation"), m_tooltips->disable_mask_bit },
         { m_ui->dump_elfs, tr("ELF Dumping"), m_tooltips->dump_elfs },
         { m_ui->gb_debug_tracy_section, tr("Tracy Profiler"), m_tooltips->gb_debug_tracy_section },
         { m_ui->tracy_primitive_impl, tr("Primitive Implementation"), m_tooltips->tracy_primitive_impl },

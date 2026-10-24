@@ -112,6 +112,7 @@ struct Config {
         bool log_uniforms = false;
         bool color_surface_debug = false;
         bool validation_layer = true;
+        bool disable_mask_bit = false;
         bool tracy_primitive_impl = false;
         std::vector<std::string> tracy_advanced_profiling_modules;
     };
