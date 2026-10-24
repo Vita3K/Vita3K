@@ -89,6 +89,7 @@ event_bit_mask                  pass
 event_bits                      pass
 event_edges                     pass
 event_flag                      pass
+event_flag_delete_bits          pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
 event_flag_hold_callback_events pass
 event_flag_hold_callbacks       pass
@@ -358,7 +359,9 @@ timeout_serves_before_run       fail     # a timed out thread isn't READY before
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass
+timer_base_remaining            fail     # sceKernelGetTimerEventRemainingTime, a stopped timer's base
 timer_callback                  fail     # callbacks registered to timers
+timer_delete_event              fail     # a timer's delete doesn't fire its delete event
 timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
@@ -368,6 +371,7 @@ timer_modes                     fail     # sceKernelSetTimerTime
 timer_oneshot_refire            fail     # a one shot timer that fired never fires again
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
+timer_wait_pattern              fail     # timer waits and polls get the timer bit whatever bits they ask for
 timer_waiters                   pass
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority
