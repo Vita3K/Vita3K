@@ -289,7 +289,7 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     support_e5rgb9 = static_cast<bool>(e5rgb9_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
     support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
-    // PVRTC maps to RGBA8 here, so upload requires decoded pixels even on PVRTC-capable GPUs.
+    // TODO: PVRTC is mapped to RGBA8, so keep software decoding until native PVRTC formats are mapped.
     support_pvrt = false;
 
     // check for dxt support
