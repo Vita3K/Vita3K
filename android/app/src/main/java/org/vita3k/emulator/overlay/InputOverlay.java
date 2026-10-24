@@ -242,14 +242,14 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     }
 
     for (InputOverlayDrawableDpad dpad : overlayDpads) {
-      if (!mIsInEditMode && !dpad.isVisible()) continue;
+      if (!mIsInEditMode && (mHideOverlayButtons || !dpad.isVisible())) continue;
       dpad.draw(canvas, mIsInEditMode);
       if (mIsInEditMode && dpad.getLegacyId() == mSelectedControlId)
         drawEditorSelection(canvas, dpad.getTouchBounds());
     }
 
     for (InputOverlayDrawableJoystick joystick : overlayJoysticks) {
-      if (!mIsInEditMode && !joystick.isVisible()) continue;
+      if (!mIsInEditMode && (mHideOverlayButtons || !joystick.isVisible())) continue;
       joystick.draw(canvas, mIsInEditMode);
       if (mIsInEditMode && joystick.getLegacyId() == mSelectedControlId)
         drawEditorSelection(canvas, joystick.getTouchBounds());

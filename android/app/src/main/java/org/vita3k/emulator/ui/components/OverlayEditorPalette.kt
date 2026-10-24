@@ -192,7 +192,7 @@ internal fun OverlayEditorPalette(overlayView: InputOverlay?, onDone: () -> Unit
                     }
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(onClick = onReset, modifier = Modifier.weight(1f)) {
+                    OutlinedButton(onClick = { onReset(); revision++ }, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.Restore, contentDescription = null)
                         Text(text = stringResource(R.string.action_reset), modifier = Modifier.padding(start = 6.dp))
                     }
