@@ -52,6 +52,13 @@ static void write_info(T *info, T full, SceSize size) {
     memcpy(info, &full, size);
 }
 
+// Finds a simple event or a timer, which are both events.
+static EventPtr find_event(EmuEnvState &emuenv, SceUID event_id) {
+    if (SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
+        return event;
+    return emuenv.kernel.objects.find<Timer>(event_id);
+}
+
 // Waits on a simple event or a timer, which are both events.
 static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
     // The wait writes to local copies that go to the guest when it returns, so callbacks that run
@@ -67,7 +74,7 @@ static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID 
     if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
         result = event->wait(thread, bit_pattern, pattern_copy, data_copy, timeout_copy, callbacks);
     else if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(event_id))
-        result = timer->wait(thread, pattern_copy, data_copy, timeout_copy, callbacks);
+        result = timer->wait(thread, bit_pattern, pattern_copy, data_copy, timeout_copy, callbacks);
     else
         result = RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     if (result_pattern)
@@ -120,15 +127,12 @@ EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const 
 
 EXPORT(SceInt32, _sceKernelCancelEvent, SceUID eventId, SceUInt32 *pNumWaitThreads) {
     TRACY_FUNC(_sceKernelCancelEvent, eventId, pNumWaitThreads);
-    if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(eventId))
-        return event->cancel(pNumWaitThreads);
-    // this may also be a timer event
-    if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(eventId)) {
-        const SceInt32 result = timer->cancel(pNumWaitThreads);
-        // Deleted since the lookup, reported like the other event functions do
-        return result == SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID ? SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID : result;
-    }
-    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    const EventPtr event = find_event(emuenv, eventId);
+    if (!event)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    const SceInt32 result = event->cancel(pNumWaitThreads);
+    // A timer deleted since the lookup is reported like the other event functions do
+    return result == SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID ? SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID : result;
 }
 
 EXPORT(SceInt32, _sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, SceUInt32 *num_wait_thread) {
@@ -293,7 +297,7 @@ EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, Sc
     if (const SceInt32 error = SimpleEvent::check_create(name, attr, init_pattern))
         return RET_ERROR(error);
 
-    const auto event = std::make_shared<SimpleEvent>(attr, name, init_pattern);
+    const auto event = std::make_shared<SimpleEvent>(attr, name, init_pattern, thread_id);
     return emuenv.kernel.objects.add(event, emuenv.kernel.get_next_uid());
 }
 
@@ -302,7 +306,7 @@ EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint3
     if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
         return RET_ERROR(error);
 
-    const auto timer = std::make_shared<Timer>(attr, name);
+    const auto timer = std::make_shared<Timer>(attr, name, thread_id);
     return emuenv.kernel.objects.add(timer, emuenv.kernel.get_next_uid());
 }
 
@@ -404,14 +408,9 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
 
 EXPORT(SceInt32, _sceKernelGetEventInfo, SceUID eventId, Ptr<SceKernelEventInfo> pInfo) {
     TRACY_FUNC(_sceKernelGetEventInfo, eventId, pInfo);
-    // A timer is an event too
     SceKernelEventInfo full;
-    SceInt32 found = SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(eventId))
-        found = event->info(full);
-    else if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(eventId))
-        found = timer->event_info(full);
-    if (found != SCE_KERNEL_OK)
+    const EventPtr event = find_event(emuenv, eventId);
+    if (!event || event->info(full) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 
     SceKernelEventInfo *info = pInfo.get(emuenv.mem);
@@ -708,14 +707,40 @@ EXPORT(int, _sceKernelGetTimerBase) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetTimerEventRemainingTime) {
-    TRACY_FUNC(_sceKernelGetTimerEventRemainingTime);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetTimerEventRemainingTime, SceUID timer_handle, SceKernelSysClock *time) {
+    TRACY_FUNC(_sceKernelGetTimerEventRemainingTime, timer_handle, time);
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    // The time reads 0 when the call fails
+    uint64_t left = 0;
+    const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
+    const SceInt32 result = timer ? timer->remaining_time(left) : SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    *time = left;
+    if (result < 0)
+        return RET_ERROR(result);
+    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetTimerInfo) {
-    TRACY_FUNC(_sceKernelGetTimerInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetTimerInfo, SceUID timer_handle, Ptr<SceKernelTimerInfo> pInfo) {
+    TRACY_FUNC(_sceKernelGetTimerInfo, timer_handle, pInfo);
+    SceKernelTimerInfo full;
+    const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
+    if (!timer || timer->timer_info(full) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
+    SceKernelTimerInfo *info = pInfo.get(emuenv.mem);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+
+    // A running timer's base is the process time it counts from
+    if (full.active)
+        full.baseTime = emuenv.kernel.process_time_at(full.baseTime);
+    write_info(info, full);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetTimerTime) {
@@ -823,11 +848,8 @@ EXPORT(int, _sceKernelPollEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt
         *result_pattern = 0;
     if (user_data)
         *user_data = 0;
-    if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
+    if (const EventPtr event = find_event(emuenv, event_id))
         return event->poll(bit_pattern, result_pattern, user_data);
-    // this may also be a timer event
-    if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(event_id))
-        return timer->poll(result_pattern, user_data);
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 }
 
@@ -926,9 +948,19 @@ EXPORT(int, _sceKernelSetTimerEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelSetTimerTime) {
-    TRACY_FUNC(_sceKernelSetTimerTime);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelSetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
+    TRACY_FUNC(_sceKernelSetTimerTime, timer_handle, time);
+    // The new time is read before the timer is looked up, and the old one goes back in its place
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
+    if (!timer)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+    const auto old_time = timer->set_time(*time);
+    if (!old_time)
+        return RET_ERROR(old_time.error());
+    *time = *old_time;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelSignalLwCond, Ptr<SceKernelLwCondWork> workarea) {
@@ -1227,11 +1259,8 @@ EXPORT(int, sceKernelCheckWaitableStatus) {
 
 EXPORT(SceInt32, sceKernelClearEvent, SceUID event_id, SceUInt32 clear_pattern) {
     TRACY_FUNC(sceKernelClearEvent, event_id, clear_pattern);
-    if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
+    if (const EventPtr event = find_event(emuenv, event_id))
         return event->clear(clear_pattern);
-    // this may also be a timer event
-    if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(event_id))
-        return timer->clear();
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 }
 

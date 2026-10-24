@@ -144,32 +144,25 @@ constexpr SceUInt64 system_event_user_data(SceUID thread_id) {
     return (static_cast<SceUInt64>(thread_id) << 32) | static_cast<SceUInt32>(PROCESS_ID);
 }
 
-class SimpleEvent final : public WithUidClass<SyncPrimitive, UidClass::simple_event> {
+// The event part of simple events and timers: a bit pattern, the user data of the last set, and the
+// waits for bits of the pattern.
+class Event : public SyncPrimitive {
 public:
     const bool auto_reset;
 
-    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
-
-    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
-    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
-
-    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
-    SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
-    // Sets one of the system events, like the open event, with user_data for its waiters, or returns
-    // UNKNOWN_EVENT_ID if it was deleted.
-    SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
     SceInt32 clear(SceUInt32 clear_pattern);
-    SceInt32 cancel(SceUInt32 *num_wait_threads);
+    virtual SceInt32 cancel(SceUInt32 *num_wait_threads);
     // Cancels the waits like cancel(), then replaces the whole pattern and the user data.
     SceInt32 cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads);
     // Sets result to the event's bit pattern, or returns UNKNOWN_EVENT_ID if it was deleted.
-    SceInt32 get_pattern(SceUInt32 &result) const;
-    // Fills info with what the simple event's info reports, or returns UNKNOWN_EVENT_ID if it was
-    // deleted.
-    SceInt32 info(SceKernelEventInfo &info) const;
+    SceInt32 get_pattern(SceUInt32 &result);
+    // Fills info with what the event's info reports, or returns UNKNOWN_EVENT_ID if it was deleted.
+    SceInt32 info(SceKernelEventInfo &info);
 
-private:
+protected:
+    Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
+
     struct WaitEntry {
         SceUInt32 pattern;
         SceUInt32 *result_pattern;
@@ -177,8 +170,14 @@ private:
     };
 
     void on_delete(SceUID deleter) override;
+    // Brings the event up to date before an event operation looks at it. Called with the lock held.
+    // Only a timer has anything to do.
+    virtual void catch_up() {}
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
+    // Returns the guest's result of a wait, and gives a wait that a delete or a cancel ended the error
+    // event.
+    SceInt32 wait_result(const WaitResult &r, SceUInt32 *result_pattern);
     // Sets or pulses the bits with user_data and gives them to the waits they match. The lock must be
     // held.
     void fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
@@ -188,61 +187,77 @@ private:
     // Guarded by the lock
     WaitQueue<WaitEntry> waiters;
     SceUInt32 pattern;
-    SceUInt64 last_user_data = 0;
+    SceUInt64 last_user_data;
+};
+
+class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
+public:
+    SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator);
+
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
+
+    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
+    SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
+    // Sets one of the system events, like the open event, with user_data for its waiters, or returns
+    // UNKNOWN_EVENT_ID if it was deleted.
+    SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
 };
 
 using SimpleEventPtr = std::shared_ptr<SimpleEvent>;
 
-class Timer final : public WithUidClass<SyncPrimitive, UidClass::timer> {
+using EventPtr = std::shared_ptr<Event>;
+
+class Timer final : public WithUidClass<Event, UidClass::timer> {
 public:
-    Timer(SceUInt32 attr, const char *name);
+    Timer(SceUInt32 attr, const char *name, SceUID creator);
 
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
-    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
-    SceInt32 poll(SceUInt32 *result_pattern, SceUInt64 *user_data);
-    SceInt32 clear();
+    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 start();
     SceInt32 stop();
-    SceInt32 cancel(SceUInt32 *num_wait_threads);
+    SceInt32 cancel(SceUInt32 *num_wait_threads) override;
     // Replaces the count and returns its old value, or the error.
     std::expected<uint64_t, SceInt32> set_time(uint64_t new_time);
     // Sets time to how much time the timer counted, or returns UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 get_time(uint64_t &time) const;
-    // Sets time to the clock time the count runs from, 0 if the timer never started, or returns
+    // Sets time to the clock time the count runs from, 0 while the timer is stopped, or returns
     // UNKNOWN_TIMER_ID if it was deleted.
     SceInt32 get_base(uint64_t &time) const;
-    // Fills info with what the event info of the timer reports, or returns UNKNOWN_EVENT_ID if it was
-    // deleted.
-    SceInt32 event_info(SceKernelEventInfo &info) const;
+    // Sets time to how much time the armed event has left, or returns EVENT_NOT_SET with no event
+    // armed or UNKNOWN_TIMER_ID if it was deleted.
+    SceInt32 remaining_time(uint64_t &time);
+    // Fills info with what the timer's info reports, with the clock time the count runs from as the
+    // base of a running timer, or returns UNKNOWN_TIMER_ID if it was deleted.
+    SceInt32 timer_info(SceKernelTimerInfo &info);
 
 private:
-    struct WaitEntry {
-        SceUInt32 *result_pattern;
-    };
-
-    void on_delete(SceUID deleter) override;
-    void schedule_event();
-    // Wakes the first waiter so it checks the event again
-    void wake_first();
-    // Moves next_event to the first event after current_time, or to never if the event doesn't repeat.
-    void advance_next_event(uint64_t current_time);
-    // Takes the event if it is set by current_time, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
-    SceInt32 try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64_t current_time);
+    // Fires the event if it is due: sets or pulses SCE_KERNEL_EVENT_TIMER, and queues a repeating
+    // event again an interval after it was due.
+    void catch_up() override;
+    // Queues the event to be due at the clock time deadline, and wakes the first waiter so it sees
+    // the new time. The lock must be held.
+    void queue_event(uint64_t deadline);
+    // Gives the event's bits to the waits they match, and wakes the first waiter left.
+    void serve() override;
+    // Returns when the next event is due, on the clock of wait deadlines. The lock must be held.
+    Deadline event_deadline() const;
     // Returns how much time the timer counted. The lock must be held.
     uint64_t count() const;
 
     // Guarded by the lock
-    // Only the first waiter waits for the next event, the others wait for their turn
-    WaitQueue<WaitEntry> waiters;
-
     bool is_started = false;
+    // An event is set, and a fired one shot event stays armed
+    bool armed = false;
     bool is_repeat = false;
     bool is_pulse = false;
-    bool event_set = false;
     // The clock time the count runs from while the timer is started, 0 if it never started
     uint64_t base = 0;
     // The count while the timer is stopped
     uint64_t stopped_count = 0;
+    // The count the armed event is due at
+    uint64_t schedule = 0;
+    // The clock time the next event is due, the maximum while none is queued
     uint64_t next_event = std::numeric_limits<uint64_t>::max();
     uint64_t event_interval = 0;
 };

@@ -18,7 +18,7 @@ callback_changes                pass
 callback_deleted_object         pass
 callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
-callback_event_results          fail     # a timer event during a callback ends the wait with 0, event calls don't take message pipe UIDs
+callback_event_results          fail     # event calls don't take message pipe UIDs
 callback_event_waits            pass
 callback_info                   pass
 callback_inner_same_object      pass
@@ -89,6 +89,7 @@ event_bit_mask                  pass
 event_bits                      pass
 event_edges                     pass
 event_flag                      pass
+event_flag_delete_bits          pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
 event_flag_hold_callback_events pass
 event_flag_hold_callbacks       pass
@@ -100,7 +101,7 @@ event_flag_single_waiter        pass
 event_flag_wait_out_bits        pass
 event_flag_waits                pass
 event_flag_wake_release         fail     # a woken thread isn't READY before it runs, its out bits are written at the wake, and a notified waiter leaves the queue only once its thread runs
-event_initial_user_data         fail     # simple events and timers start with user data 0
+event_initial_user_data         pass
 event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
 exit_process_thread             pass
@@ -358,16 +359,19 @@ timeout_serves_before_run       fail     # a timed out thread isn't READY before
 timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass
+timer_base_remaining            pass
 timer_callback                  fail     # callbacks registered to timers
+timer_delete_event              pass
 timer_edges                     pass
-timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
+timer_errors                    crash    # close of unknown UIDs, open and create with a NULL name
 timer_event_interval_zero       pass
 timer_event_wakes_all           pass
-timer_info_cancel               fail     # timer info fields
-timer_modes                     fail     # sceKernelSetTimerTime
-timer_oneshot_refire            fail     # a one shot timer that fired never fires again
+timer_info_cancel               pass
+timer_modes                     pass
+timer_oneshot_refire            pass
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
+timer_wait_pattern              pass
 timer_waiters                   pass
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority

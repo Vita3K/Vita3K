@@ -889,6 +889,24 @@ struct SceKernelEventInfo {
 };
 static_assert(sizeof(SceKernelEventInfo) == 0x40, "Incorrect size");
 
+// What sceKernelGetTimerInfo reports
+struct SceKernelTimerInfo {
+    SceSize size;
+    SceUID timerId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceInt32 active;
+    SceKernelSysClock baseTime;
+    SceKernelSysClock currentTime;
+    SceKernelSysClock schedule;
+    SceKernelSysClock interval;
+    SceInt32 type;
+    SceInt32 repeat;
+    SceUInt32 numWaitThreads;
+    SceInt32 reserved;
+};
+static_assert(sizeof(SceKernelTimerInfo) == 0x60, "Incorrect size");
+
 struct SceKernelMutexInfo {
     SceSize size;
     SceUID mutexId;

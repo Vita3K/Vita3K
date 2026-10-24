@@ -1532,6 +1532,8 @@ EXPORT(int, sceKernelGetThreadRunStatus) {
 
 EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerBase, timer_handle, time);
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
     uint64_t base;
     if (!timer || timer->get_base(base) != SCE_KERNEL_OK)
@@ -1542,18 +1544,20 @@ EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time)
     return 0;
 }
 
-EXPORT(int, sceKernelGetTimerEventRemainingTime) {
-    TRACY_FUNC(sceKernelGetTimerEventRemainingTime);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetTimerEventRemainingTime, SceUID timer_handle, SceKernelSysClock *time) {
+    TRACY_FUNC(sceKernelGetTimerEventRemainingTime, timer_handle, time);
+    return CALL_EXPORT(_sceKernelGetTimerEventRemainingTime, timer_handle, time);
 }
 
-EXPORT(int, sceKernelGetTimerInfo) {
-    TRACY_FUNC(sceKernelGetTimerInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetTimerInfo, SceUID timer_handle, Ptr<SceKernelTimerInfo> pInfo) {
+    TRACY_FUNC(sceKernelGetTimerInfo, timer_handle, pInfo);
+    return CALL_EXPORT(_sceKernelGetTimerInfo, timer_handle, pInfo);
 }
 
 EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerTime, timer_handle, time);
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
     uint64_t count;
     if (!timer || timer->get_time(count) != SCE_KERNEL_OK)
@@ -1781,9 +1785,9 @@ EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, SceInt32 type, SceKerne
     return timer->set_event(type, *interval, repeats);
 }
 
-EXPORT(int, sceKernelSetTimerTime) {
-    TRACY_FUNC(sceKernelSetTimerTime);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelSetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
+    TRACY_FUNC(sceKernelSetTimerTime, timer_handle, time);
+    return CALL_EXPORT(_sceKernelSetTimerTime, timer_handle, time);
 }
 
 EXPORT(int, sceKernelSignalLwCond, Ptr<SceKernelLwCondWork> workarea) {
