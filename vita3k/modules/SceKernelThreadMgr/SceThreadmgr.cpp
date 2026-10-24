@@ -79,6 +79,25 @@ static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID 
     return result;
 }
 
+// Waits on an event flag.
+static SceInt32 wait_event_flag(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID evf_id, SceUInt32 bit_pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks) {
+    // The wait writes to local copies that go to the guest when it returns, also when it fails, so
+    // callbacks that run during the wait still see the old values. Out bits the wait doesn't write
+    // read 0.
+    SceUInt32 bits = 0;
+    SceUInt32 time_left = timeout ? *timeout : 0;
+    SceInt32 result;
+    if (const EventFlagPtr event = emuenv.kernel.objects.find<EventFlag>(evf_id))
+        result = event->wait(emuenv.kernel.get_thread(thread_id), bit_pattern, wait_mode, out_bits ? &bits : nullptr, timeout ? &time_left : nullptr, callbacks);
+    else
+        result = RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    if (out_bits)
+        *out_bits = bits;
+    if (timeout)
+        *timeout = time_left;
+    return result;
+}
+
 EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, Ptr<SceKernelCreateLwMutex_opt> opt) {
     TRACY_FUNC(__sceKernelCreateLwMutex, workarea, name, attr, opt);
     if (!workarea)
@@ -1001,26 +1020,12 @@ EXPORT(SceInt32, _sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, 
 
 EXPORT(SceInt32, _sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
     TRACY_FUNC(_sceKernelWaitEventFlag, evfId, bitPattern, waitMode, pResultPat, pTimeout);
-    const EventFlagPtr event = emuenv.kernel.objects.find<EventFlag>(evfId);
-    if (!event)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
-    SceUInt32 time_left = pTimeout ? *pTimeout : 0;
-    const SceInt32 result = event->wait(emuenv.kernel.get_thread(thread_id), bitPattern, waitMode, pResultPat, pTimeout ? &time_left : nullptr, false);
-    if (pTimeout)
-        *pTimeout = time_left;
-    return result;
+    return wait_event_flag(emuenv, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout, false);
 }
 
 EXPORT(SceInt32, _sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
     TRACY_FUNC(_sceKernelWaitEventFlagCB, evfId, bitPattern, waitMode, pResultPat, pTimeout);
-    const EventFlagPtr event = emuenv.kernel.objects.find<EventFlag>(evfId);
-    if (!event)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
-    SceUInt32 time_left = pTimeout ? *pTimeout : 0;
-    const SceInt32 result = event->wait(emuenv.kernel.get_thread(thread_id), bitPattern, waitMode, pResultPat, pTimeout ? &time_left : nullptr, true);
-    if (pTimeout)
-        *pTimeout = time_left;
-    return result;
+    return wait_event_flag(emuenv, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout, true);
 }
 
 EXPORT(int, _sceKernelWaitException) {

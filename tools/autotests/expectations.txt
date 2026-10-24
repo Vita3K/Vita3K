@@ -97,7 +97,7 @@ event_flag_hold_take            pass
 event_flag_multi_waiters        pass
 event_flag_requeue_clear        fail     # no requeue on a priority change
 event_flag_single_waiter        pass
-event_flag_wait_out_bits        fail     # a refused event flag wait leaves its out bits as they were
+event_flag_wait_out_bits        pass
 event_flag_waits                pass
 event_flag_wake_release         fail     # a woken thread isn't READY before it runs, its out bits are written at the wake, and a notified waiter leaves the queue only once its thread runs
 event_initial_user_data         fail     # simple events and timers start with user data 0

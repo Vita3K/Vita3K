@@ -1174,7 +1174,9 @@ void EventFlag::on_delete(SceUID) {
     holds = 0;
 }
 
-void EventFlag::timed_out(const ThreadStatePtr &) {
+void EventFlag::timed_out(const ThreadStatePtr &thread) {
+    if (auto *const waiter = waiters.find_if([&](auto &w) { return w.thread == thread; }); waiter && waiter->entry.out_bits)
+        *waiter->entry.out_bits = flags;
     drop_hold();
 }
 
@@ -1233,16 +1235,16 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
     const WaitResult r = wait_loop(waiters, guard, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, uid, callbacks }, { wait_mode, pattern, out_bits }, timeout, [&](WaitEntry &entry, SceInt32) -> std::optional<SceInt32> {
         if (take(entry))
             return SCE_KERNEL_OK;
+        // A wait whose deadline is already gone returns these bits
+        if (entry.out_bits)
+            *entry.out_bits = flags;
         return std::nullopt;
     });
-    const SceInt32 err = guest_result(r);
-    if ((err == SCE_KERNEL_ERROR_WAIT_TIMEOUT || err == SCE_KERNEL_ERROR_WAIT_DELETE) && out_bits) {
-        // set it only on a timeout or a delete
-        // otherwise set in set or cancel
+    // A deleted flag's bits can't change any more, so a wait that a delete ended gets them when it
+    // returns, also one deleted while its callbacks ran out of the queue
+    if (r && *r == SCE_KERNEL_ERROR_WAIT_DELETE && out_bits)
         *out_bits = flags;
-    }
-
-    return err;
+    return guest_result(r);
 }
 
 SceInt32 EventFlag::poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {

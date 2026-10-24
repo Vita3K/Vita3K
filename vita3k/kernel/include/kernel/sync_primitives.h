@@ -45,8 +45,8 @@ protected:
     // queue without being woken.
     virtual void serve() {}
 
-    // Ends a queued wait of thread that its deadline ended, before the waiters behind it are served.
-    // Not called if the deadline passed before the wait was queued.
+    // Ends a queued wait of thread that its deadline ended, while it is still queued and before the
+    // waiters behind it are served. Not called if the deadline passed before the wait was queued.
     virtual void timed_out(const ThreadStatePtr &) {}
 
     // Runs the thread's pending callbacks with the lock released, which a wait with callbacks does once
@@ -102,9 +102,9 @@ protected:
             // A waker's result wins, it already handed over what the waiter waits for
             if (waiter.result)
                 return *waiter.result;
-            queue.remove(waiter);
             if (result && *result == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
                 timed_out(thread);
+            queue.remove(waiter);
             serve();
             if (!result || *result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
                 return result;
@@ -411,7 +411,7 @@ private:
     bool take(const WaitEntry &wait);
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
-    // Gives back the hold of the wait that timed out.
+    // Gives the wait that timed out the flag's bits and gives back its hold.
     void timed_out(const ThreadStatePtr &thread) override;
     // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
     void drop_hold();
