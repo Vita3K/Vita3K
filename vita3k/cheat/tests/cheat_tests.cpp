@@ -44,8 +44,7 @@ protected:
         memset(Ptr<uint8_t>(scratch).get(mem), 0, scratch_size);
 
         // A fixed name would let concurrent test processes delete each other's files.
-        directory = fs::temp_directory_path() / fmt::format("vita3k-cheat-tests-{}-{}",
-            std::chrono::steady_clock::now().time_since_epoch().count(), std::random_device{}());
+        directory = fs::temp_directory_path() / fmt::format("vita3k-cheat-tests-{}-{}", std::chrono::steady_clock::now().time_since_epoch().count(), std::random_device{}());
         fs::create_directories(directory);
     }
 
