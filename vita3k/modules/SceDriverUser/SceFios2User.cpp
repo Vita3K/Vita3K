@@ -108,8 +108,12 @@ EXPORT(int, sceFiosOverlayResolveSync02) {
 
 EXPORT(int, sceFiosOverlayResolveWithRangeSync02, SceUID processId, SceFiosOverlayResolveMode resolveFlag, const char *pInPath, char *pOutPath, SceUInt32 maxPath, SceUInt32 min_order, SceUInt32 max_order) {
     TRACY_FUNC(sceFiosOverlayResolveWithRangeSync02, processId, resolveFlag, pInPath, pOutPath, maxPath, min_order, max_order);
+    if (maxPath == 0)
+        return SCE_FIOS_OK;
+
     const std::string resolved = resolve_path(emuenv.io, pInPath, min_order, max_order);
-    strncpy(pOutPath, resolved.c_str(), maxPath);
+    size_t copied = resolved.copy(pOutPath, maxPath - 1);
+    pOutPath[copied] = '\0';
 
     return SCE_FIOS_OK;
 }

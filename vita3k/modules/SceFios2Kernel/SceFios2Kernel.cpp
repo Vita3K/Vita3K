@@ -17,28 +17,46 @@
 
 #include <module/module.h>
 
+#include <io/functions.h>
+
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceFios2Kernel);
 
 struct sceFiosKernelOverlayResolveWithRangeSync_opt {
     Ptr<char> pOutPath;
     SceSize maxPath;
-    char loOrderFilter;
-    char hiOrderFilter;
-    char reserved1;
-    char reserved2;
-    int reserved3;
-    int reserved4;
-    int reserved5;
-    int reserved6;
+    uint8_t loOrderFilter;
+    uint8_t hiOrderFilter;
+    uint8_t reserved1[2];
+    SceSize inPathSize;
+    SceSize outPathSize;
+    SceUInt32 reserved2;
 };
+
+enum SceFiosKernelErrorCode : uint32_t {
+    SCE_FIOS_ERROR_INVALID_PATH = 0x80820005,
+    SCE_FIOS_ERROR_BAD_MAX_PATH = 0x80820008,
+    SCE_FIOS_ERROR_IN_PATH_TOO_LONG = 0x80820018,
+    SCE_FIOS_ERROR_OUT_PATH_TOO_BIG = 0x8002710B
+};
+
+static constexpr SceSize FIOS_MAX_RESOLVE_PATH = 0x400;
 
 EXPORT(int, _sceFiosKernelOverlayAdd) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceFiosKernelOverlayAddForProcess) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceFiosKernelOverlayAddForProcess, SceUID pid, SceFiosProcessOverlay *pOverlay, SceUID *pOutID) {
+    TRACY_FUNC(_sceFiosKernelOverlayAddForProcess, pid, pOverlay, pOutID);
+    if (pOverlay->type != SCE_FIOS_OVERLAY_TYPE_OPAQUE)
+        LOG_WARN("Using unimplemented overlay type {}.", fmt::underlying(pOverlay->type));
+
+    if (strnlen(pOverlay->dst, sizeof(pOverlay->dst)) == sizeof(pOverlay->dst) || strnlen(pOverlay->src, sizeof(pOverlay->src)) == sizeof(pOverlay->src))
+        return SCE_FIOS_ERROR_INVALID_PATH;
+
+    *pOutID = create_overlay(emuenv.io, pOverlay);
+
+    return 0;
 }
 
 EXPORT(int, _sceFiosKernelOverlayDHChstatSync) {
@@ -103,10 +121,27 @@ EXPORT(int, _sceFiosKernelOverlayResolveSync) {
 
 EXPORT(int, _sceFiosKernelOverlayResolveWithRangeSync, SceUID pid, int resolveFlag, const char *pInPath, sceFiosKernelOverlayResolveWithRangeSync_opt *opt) {
     TRACY_FUNC(_sceFiosKernelOverlayResolveWithRangeSync, pid, resolveFlag, pInPath, opt);
-    STUBBED("Using strncpy");
-    strncpy(opt->pOutPath.get(emuenv.mem), pInPath, opt->maxPath);
+    if (opt->outPathSize > FIOS_MAX_RESOLVE_PATH)
+        return SCE_FIOS_ERROR_OUT_PATH_TOO_BIG;
 
-    return 0;
+    std::string resolved;
+    int ret = 0;
+    if (opt->maxPath > FIOS_MAX_RESOLVE_PATH) {
+        ret = SCE_FIOS_ERROR_BAD_MAX_PATH;
+    } else if (strnlen(pInPath, opt->maxPath) >= opt->maxPath) {
+        ret = SCE_FIOS_ERROR_IN_PATH_TOO_LONG;
+    } else {
+        resolved = resolve_path(emuenv.io, pInPath, opt->loOrderFilter, opt->hiOrderFilter);
+        if (resolved.size() >= opt->maxPath)
+            ret = SCE_FIOS_ERROR_INVALID_PATH;
+    }
+
+    char *out = opt->pOutPath.get(emuenv.mem);
+    if (opt->outPathSize > 0) {
+        out[(ret == 0) ? resolved.copy(out, opt->outPathSize - 1) : 0] = '\0';
+    }
+
+    return ret;
 }
 
 EXPORT(int, _sceFiosKernelOverlayThreadIsDisabled) {

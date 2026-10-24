@@ -894,7 +894,7 @@ SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay) {
     // find location where to put it
     size_t overlay_index = 0;
     // lower order first and in case of equality, last one inserted first
-    while (overlay_index < io.overlays.size() && overlay.order < io.overlays[overlay_index].order)
+    while (overlay_index < io.overlays.size() && overlay.order > io.overlays[overlay_index].order)
         overlay_index++;
     auto res = overlay.id;
     io.overlays.insert(io.overlays.begin() + overlay_index, std::move(overlay));
