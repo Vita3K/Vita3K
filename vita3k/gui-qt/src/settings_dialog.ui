@@ -137,193 +137,6 @@ QGroupBox[flat=&quot;true&quot;]::title {
        <property name="tabBarAutoHide">
         <bool>false</bool>
        </property>
-       <widget class="QWidget" name="core_tab">
-        <attribute name="title">
-         <string>Core</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="core_tab_layout">
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QScrollArea" name="core_scroll_area">
-           <property name="frameShape">
-            <enum>QFrame::Shape::NoFrame</enum>
-           </property>
-           <property name="widgetResizable">
-            <bool>true</bool>
-           </property>
-           <widget class="QWidget" name="core_scroll_contents">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>0</y>
-              <width>586</width>
-              <height>490</height>
-             </rect>
-            </property>
-            <layout class="QVBoxLayout" name="core_tab_content_layout">
-             <property name="spacing">
-              <number>9</number>
-             </property>
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QGroupBox" name="gb_core_modules_section">
-               <property name="title">
-                <string>Module Management</string>
-               </property>
-               <layout class="QHBoxLayout" name="gb_core_modules_section_layout">
-                <property name="spacing">
-                 <number>12</number>
-                </property>
-                <item alignment="Qt::AlignmentFlag::AlignTop">
-                 <widget class="QGroupBox" name="gb_modules_mode">
-                  <property name="title">
-                   <string>Module Loading Mode</string>
-                  </property>
-                  <property name="flat">
-                   <bool>true</bool>
-                  </property>
-                  <layout class="QVBoxLayout" name="gb_modules_mode_layout">
-                   <property name="spacing">
-                    <number>8</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>6</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QRadioButton" name="rb_modules_automatic">
-                     <property name="text">
-                      <string>Automatic</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="rb_modules_auto_manual">
-                     <property name="text">
-                      <string>Auto &amp;&amp; Manual</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QRadioButton" name="rb_modules_manual">
-                     <property name="text">
-                      <string>Manual</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item alignment="Qt::AlignmentFlag::AlignTop">
-                 <widget class="QGroupBox" name="gb_modules_list">
-                  <property name="title">
-                   <string>LLE Modules List</string>
-                  </property>
-                  <property name="flat">
-                   <bool>true</bool>
-                  </property>
-                  <layout class="QVBoxLayout" name="gb_modules_list_layout">
-                   <property name="spacing">
-                    <number>12</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>6</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <layout class="QHBoxLayout" name="modules_search_layout">
-                     <property name="spacing">
-                      <number>8</number>
-                     </property>
-                     <item>
-                      <widget class="QLineEdit" name="modules_search_bar">
-                       <property name="placeholderText">
-                        <string>Search modules...</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="clear_modules_list">
-                       <property name="text">
-                        <string>Clear List</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="refresh_modules_list">
-                       <property name="text">
-                        <string>Refresh List</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <widget class="QListWidget" name="modules_list"/>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <spacer name="core_tab_content_spacer">
-               <property name="orientation">
-                <enum>Qt::Orientation::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </widget>
-          </widget>
-         </item>
-        </layout>
-       </widget>
        <widget class="QWidget" name="cpu_tab">
         <attribute name="title">
          <string>CPU</string>
@@ -1005,13 +818,6 @@ QGroupBox[flat=&quot;true&quot;]::title {
                     <widget class="QCheckBox" name="shader_cache">
                      <property name="text">
                       <string>Enable Shader Cache</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="spirv_shader">
-                     <property name="text">
-                      <string>Use SPIR-V Shader (deprecated)</string>
                      </property>
                     </widget>
                    </item>
@@ -2943,6 +2749,231 @@ QGroupBox[flat=&quot;true&quot;]::title {
              </item>
              <item>
               <spacer name="network_tab_content_spacer">
+               <property name="orientation">
+                <enum>Qt::Orientation::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </widget>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="advanced_tab">
+        <attribute name="title">
+         <string>Advanced</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="advanced_tab_layout">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QScrollArea" name="advanced_scroll_area">
+           <property name="frameShape">
+            <enum>QFrame::Shape::NoFrame</enum>
+           </property>
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="advanced_scroll_contents">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>586</width>
+              <height>490</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="advanced_tab_content_layout">
+             <property name="spacing">
+              <number>9</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QGroupBox" name="gb_advanced_modules_section">
+               <property name="title">
+                <string>Module Management</string>
+               </property>
+               <layout class="QHBoxLayout" name="gb_advanced_modules_section_layout">
+                <property name="spacing">
+                 <number>12</number>
+                </property>
+                <item alignment="Qt::AlignmentFlag::AlignTop">
+                 <widget class="QGroupBox" name="gb_modules_mode">
+                  <property name="title">
+                   <string>Module Loading Mode</string>
+                  </property>
+                  <property name="flat">
+                   <bool>true</bool>
+                  </property>
+                  <layout class="QVBoxLayout" name="gb_modules_mode_layout">
+                   <property name="spacing">
+                    <number>8</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>6</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QRadioButton" name="rb_modules_automatic">
+                     <property name="text">
+                      <string>Automatic</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="rb_modules_auto_manual">
+                     <property name="text">
+                      <string>Auto &amp;&amp; Manual</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="rb_modules_manual">
+                     <property name="text">
+                      <string>Manual</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item alignment="Qt::AlignmentFlag::AlignTop">
+                 <widget class="QGroupBox" name="gb_modules_list">
+                  <property name="title">
+                   <string>LLE Modules List</string>
+                  </property>
+                  <property name="flat">
+                   <bool>true</bool>
+                  </property>
+                  <layout class="QVBoxLayout" name="gb_modules_list_layout">
+                   <property name="spacing">
+                    <number>12</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>6</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <layout class="QHBoxLayout" name="modules_search_layout">
+                     <property name="spacing">
+                      <number>8</number>
+                     </property>
+                     <item>
+                      <widget class="QLineEdit" name="modules_search_bar">
+                       <property name="placeholderText">
+                        <string>Search modules...</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="clear_modules_list">
+                       <property name="text">
+                        <string>Clear List</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="refresh_modules_list">
+                       <property name="text">
+                        <string>Refresh List</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="QListWidget" name="modules_list"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="gb_advanced_shader_section">
+               <property name="title">
+                <string>Shader</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_advanced_shader_section_layout">
+                <property name="spacing">
+                 <number>8</number>
+                </property>
+                <item>
+                 <widget class="QCheckBox" name="spirv_shader">
+                  <property name="text">
+                   <string>Use SPIR-V Shader (deprecated)</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="gb_advanced_gl_section">
+               <property name="title">
+                <string>OpenGL</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_advanced_gl_section_layout">
+                <property name="spacing">
+                 <number>8</number>
+                </property>
+                <item>
+                 <widget class="QCheckBox" name="disable_mask_bit">
+                  <property name="text">
+                   <string>Disable Mask Bit Emulation</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <spacer name="advanced_tab_content_spacer">
                <property name="orientation">
                 <enum>Qt::Orientation::Vertical</enum>
                </property>

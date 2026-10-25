@@ -33,8 +33,7 @@ class SettingsDialogTooltips;
 class ThemeManager;
 
 enum class SettingsTab : int {
-    Core = 0,
-    CPU,
+    CPU = 0,
     Graphics,
     Audio,
     Camera,
@@ -42,6 +41,7 @@ enum class SettingsTab : int {
     Emulator,
     Interface,
     Network,
+    Advanced,
     Debug,
 };
 
