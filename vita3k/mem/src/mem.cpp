@@ -233,16 +233,17 @@ static void note_protected_pages(MemState &state, Address addr, uint32_t size, b
     const Address first = align_down(addr, state.host_page_size);
     const Address last = align_down(addr + size - 1, state.host_page_size);
     const std::lock_guard<std::mutex> lock(state.protected_pages_mutex);
-    for (Address page = first; page <= last; page += state.host_page_size) {
+    for (Address page = first;; page += state.host_page_size) {
         if (is_protected)
             state.protected_pages.insert(page);
         else
             state.protected_pages.erase(page);
+        if (page == last)
+            break;
     }
 }
 
 void unprotect_inner(MemState &state, Address addr, uint32_t size) {
-    note_protected_pages(state, addr, size, false);
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
     }
@@ -258,9 +259,13 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(aligned_start, aligned_size, PAGE_READWRITE, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+    if (ret)
+        note_protected_pages(state, addr, size, false);
 #else
     const int ret = mprotect(aligned_start, aligned_size, PROT_READ | PROT_WRITE);
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    if (ret != -1)
+        note_protected_pages(state, addr, size, false);
 #endif
 }
 
