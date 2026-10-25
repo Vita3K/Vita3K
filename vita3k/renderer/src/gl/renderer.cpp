@@ -686,11 +686,17 @@ void GLState::complete_readbacks(MemState &mem, bool wait) {
         const uint8_t *source = mapped;
         if (!mapped) {
             LOG_ERROR_ONCE("Mapping a surface readback buffer failed, copying it instead");
-            fallback.resize(readback.size);
-            glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, static_cast<GLsizeiptr>(readback.size), fallback.data());
-            if (glGetError() == GL_NO_ERROR)
-                source = fallback.data();
-            else
+            // drop the error of the mapping so that only the copy is checked
+            while (glGetError() != GL_NO_ERROR) {
+            }
+            // OpenGL ES does not have it
+            if (glGetBufferSubData) {
+                fallback.resize(readback.size);
+                glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, static_cast<GLsizeiptr>(readback.size), fallback.data());
+                if (glGetError() == GL_NO_ERROR)
+                    source = fallback.data();
+            }
+            if (!source)
                 LOG_ERROR("Could not read back a surface, the guest surface at {} is left unchanged", fmt::ptr(pixels));
         }
         if (source && pixels) {
