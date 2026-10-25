@@ -720,6 +720,11 @@ void SMAAScreenFilter::ensure_targets(uint32_t width, uint32_t height) {
     if (width == cached_src_width && height == cached_src_height && !edges_images.empty())
         return;
 
+    // frames in flight still use the old targets and descriptor sets,
+    // the source size only changes when the game switches resolution so we can afford to wait
+    if (!edges_images.empty())
+        screen.state.device.waitIdle();
+
     destroy_targets();
 
     const uint32_t n = screen.swapchain_size;
