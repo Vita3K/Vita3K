@@ -51,6 +51,15 @@ std::time_t to_time_t(const fs::file_time_type time) {
     return std::chrono::system_clock::to_time_t(std::chrono::time_point_cast<std::chrono::system_clock::duration>(sys_time));
 }
 
+fs::file_time_type to_file_time(const std::time_t time) {
+    const auto sys_time = std::chrono::system_clock::from_time_t(time);
+#ifdef _MSVC_STL_VERSION
+    return std::chrono::clock_cast<fs::file_time_type::clock>(sys_time);
+#else
+    return fs::file_time_type::clock::from_sys(sys_time);
+#endif
+}
+
 std::string path_to_utf8(const fs::path &path) {
     if constexpr (sizeof(fs::path::value_type) == sizeof(wchar_t)) {
         return string_utils::wide_to_utf(path.wstring());
