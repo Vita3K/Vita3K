@@ -41,17 +41,20 @@ void init_info_message(InfoMessage message) {
 
 void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.io.title_id.empty() && emuenv.cfg.display_info_message) {
-        const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-        const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-        const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+        const auto &viewport = sdl::get_viewport();
+        const ImVec2 display_size(viewport.logical_width, viewport.logical_height);
+        const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+        const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
         const ImVec2 WINDOW_SIZE(680.0f * SCALE.x, 320.0f * SCALE.y);
         const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 46.f * SCALE.y);
 
-        ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(viewport.logical_x, viewport.logical_y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), gui.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(viewport.logical_x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f),
+                                    viewport.logical_y + (display_size.y / 2) - (WINDOW_SIZE.y / 2.f)),
+            ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##info", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
         const auto &title = gui.info_message.title;
@@ -82,17 +85,20 @@ static void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     const auto button = std::exchange(gui.vita_area.app_close_button, 0U);
     const auto confirm_button = emuenv.cfg.sys_button == 1 ? SCE_CTRL_CROSS : SCE_CTRL_CIRCLE;
     const auto cancel_button = emuenv.cfg.sys_button == 1 ? SCE_CTRL_CIRCLE : SCE_CTRL_CROSS;
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 display_size(viewport.logical_width, viewport.logical_height);
+    const auto RES_SCALE = ImVec2(viewport.scale_x, viewport.scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
     const auto WINDOW_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
     const auto BUTTON_SIZE = ImVec2(320.f * SCALE.x, 46.f * SCALE.y);
 
-    ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(viewport.logical_x, viewport.logical_y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::Begin("##app_close", &gui.vita_area.app_close, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), gui.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(viewport.logical_x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f),
+                                viewport.logical_y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)),
+        ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
     ImGui::BeginChild("##app_close_child", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
@@ -127,10 +133,11 @@ static void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static void draw_connecting_please_wait(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const auto RES_SCALE = ImVec2(viewport.scale_x, viewport.scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::SetNextWindowPos(VIEWPORT_POS);
@@ -151,10 +158,11 @@ static void draw_connecting_please_wait(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static void draw_please_wait(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const auto RES_SCALE = ImVec2(viewport.scale_x, viewport.scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::SetNextWindowPos(VIEWPORT_POS);

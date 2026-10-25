@@ -52,10 +52,11 @@ struct OnlineStorageApp {
 static OnlineStorageApp storage_app;
 
 void draw_online_storage(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *session) {
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const ImVec2 VIEWPORT_SIZE(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const ImVec2 VIEWPORT_POS(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y);
+    const auto RES_SCALE = ImVec2(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
     const auto INDICATOR_SIZE = ImVec2(VIEWPORT_SIZE.x, 32.f * SCALE.y);
     const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y - INDICATOR_SIZE.y);
     const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + INDICATOR_SIZE.y);

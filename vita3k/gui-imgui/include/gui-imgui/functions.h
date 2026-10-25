@@ -48,10 +48,6 @@ namespace gui {
 std::string get_v3kn_error_message(const LangState &lang, const net_utils::WebResponse &response);
 std::string get_v3kn_error_message(const LangState &lang, const v3kn::Error &error);
 
-#if defined(_WIN32) && !defined(__ANDROID__)
-void init_console();
-#endif
-
 std::vector<config::RestartRequiredSetting> get_emulator_restart_required_settings(
     const Config::CurrentConfig &before,
     const Config::CurrentConfig &after);

@@ -19,12 +19,10 @@
 #include "interface.h"
 
 #include <app/functions.h>
-#include <app/session_controller.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <config/version.h>
 #include <display/state.h>
-#include <emuenv/app_launch_request.h>
 #include <emuenv/state.h>
 #ifdef HAS_QT
 #include <gui-qt/gui_language.h>
@@ -45,7 +43,10 @@
 #include <packages/sfo.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
-#include <sdl-frontend/session.h>
+#include <sdl-frontend/functions.h>
+#include <sdl-frontend/main_window.h>
+#include <sdl/functions.h>
+#include <sdl/sdl_console.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -61,12 +62,14 @@
 #include <app/discord.h>
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(HAS_QT)
 #include <combaseapi.h>
 #endif
 
 #if defined(_WIN32) && defined(HAS_QT)
 #define SDL_MAIN_HANDLED
+#elif defined(_WIN32)
+#include <combaseapi.h>
 #endif
 
 #ifdef TRACY_ENABLE
@@ -78,6 +81,7 @@
 #endif
 
 #include <SDL3/SDL_cpuinfo.h>
+#include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_main.h>
@@ -96,9 +100,6 @@ int main(int argc, char *argv[]) {
 #endif
     QCoreApplication::setOrganizationName(QStringLiteral("Vita3K"));
     QCoreApplication::setApplicationName(QStringLiteral("Vita3K"));
-#else
-    (void)argc;
-    (void)argv;
 #endif
 
 #ifdef TRACY_ENABLE
@@ -159,8 +160,8 @@ int main(int argc, char *argv[]) {
 #endif
 
 #if defined(_WIN32) && !defined(__ANDROID__)
-    if (is_imgui_frontend)
-        gui::init_console();
+    if (is_imgui_frontend || is_sdl_frontend)
+        sdl::init_console();
 #endif
 
     if (logging::init(root_paths, true) != Success) {
@@ -207,7 +208,6 @@ int main(int argc, char *argv[]) {
     if (qt_app && !is_imgui_frontend)
         gui::i18n::apply_ui_language(*qt_app, cfg.user_lang, emuenv.static_assets_path);
 #endif
-
 #ifdef _WIN32
     {
         auto res = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -219,33 +219,15 @@ int main(int argc, char *argv[]) {
         if (logging::init(root_paths, false) != Success)
             return InitConfigFailed;
     } else {
-        // Joystick events on background thread
-        SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");
-        // Enable HIDAPI rumble for DS4/DS
-        SDL_SetHint(SDL_HINT_JOYSTICK_ENHANCED_REPORTS, "1");
-        // Enable Switch controller
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
-
-        if (!is_sdl_frontend) {
-            static constexpr std::array LIST_LOG_LEVEL = SPDLOG_LEVEL_NAMES;
-            LOG_INFO("log-level: {}", LIST_LOG_LEVEL[cfg.log_level]);
-
-            auto sdl_init_flags = SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR;
-            if (is_imgui_frontend)
-                sdl_init_flags |= SDL_INIT_VIDEO;
-
-            if (!SDL_Init(sdl_init_flags)) {
-                LOG_ERROR("SDL initialisation failed: {}", SDL_GetError());
+        if (!sdl::initialize(is_sdl_frontend || is_imgui_frontend)) {
+            LOG_ERROR("SDL initialisation failed: {}", SDL_GetError());
 #ifdef HAS_QT
-                if (qt_app && !is_imgui_frontend)
-                    QMessageBox::critical(nullptr, "Error", "SDL initialisation failed.");
+            if (qt_app)
+                QMessageBox::critical(nullptr, "Error", "SDL initialisation failed.");
 #endif
-                return SDLInitFailed;
-            }
-            if (!SDL_InitSubSystem(SDL_INIT_CAMERA))
-                LOG_WARN("SDL camera initialisation failed, continuing without it: {}", SDL_GetError());
+            return SDLInitFailed;
         }
+        std::atexit(SDL_Quit);
     }
 
     LOG_INFO("{}", window_title);
@@ -320,12 +302,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (emuenv.cfg.frontend == Frontend::sdl) {
-        if (!emuenv.cfg.run_app_path) {
-            LOG_ERROR("The SDL frontend needs an installed app to run, given with -r");
-            return 1;
-        }
-        app::AppSessionController session(emuenv);
-        const int exit_code = sdl_frontend::run(emuenv, session, AppLaunchRequest{ .app_path = *emuenv.cfg.run_app_path });
+        const int exit_code = sdl_frontend::run_frontend(emuenv);
 #ifdef _WIN32
         CoUninitialize();
 #endif

@@ -26,10 +26,11 @@
 namespace gui {
 
 void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const ImVec2 VIEWPORT_SIZE(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const ImVec2 VIEWPORT_POS(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y);
+    const ImVec2 RES_SCALE(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
 
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
 

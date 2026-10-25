@@ -122,7 +122,9 @@ void update_presence(const std::string &state, const std::string &details, bool 
             activity.GetTimestamps().SetStart(time(nullptr));
         }
         discord_state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
-            if (result != discord::Result::Ok) {
+            if (result == discord::Result::TransactionAborted) {
+                LOG_DEBUG("Discord Rich Presence update was cancelled before completion.");
+            } else if (result != discord::Result::Ok) {
                 LOG_ERROR("Error updating Discord Rich Presence, err_code: {}", static_cast<int>(result));
             }
         });

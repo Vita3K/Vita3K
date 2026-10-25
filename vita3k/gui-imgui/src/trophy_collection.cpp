@@ -413,10 +413,11 @@ void open_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, const std::string 
 }
 
 void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const ImVec2 VIEWPORT_POS(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y);
+    const ImVec2 VIEWPORT_SIZE(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const ImVec2 RES_SCALE(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
 
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 

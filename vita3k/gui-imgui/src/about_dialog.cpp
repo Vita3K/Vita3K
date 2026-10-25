@@ -55,10 +55,11 @@ static constexpr std::array supporters_list = {
 };
 
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 WINDOW_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 display_size(viewport.logical_width, viewport.logical_height);
+    const ImVec2 WINDOW_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
 
     auto &lang = gui.lang.about;

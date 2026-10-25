@@ -189,10 +189,11 @@ static void swap_controller_ports(CtrlState &state, int source_port, int dest_po
 }
 
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    static const auto BUTTON_SIZE = ImVec2(120.f * gui.manual_dpi_scale, 0.f);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    static const auto BUTTON_SIZE = ImVec2(120.f * viewport.manual_dpi_scale, 0.f);
 
     auto &ctrl = emuenv.ctrl;
     auto &lang = gui.lang.controllers;
@@ -240,7 +241,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::TableSetColumnIndex(0);
                 int selected_port = gamepad_index;
                 ImGui::PushID(gamepad_index);
-                ImGui::SetNextItemWidth(50.f * gui.manual_dpi_scale);
+                ImGui::SetNextItemWidth(50.f * viewport.manual_dpi_scale);
                 if (ImGui::Combo("##swap_port", &selected_port, port_names, SCE_CTRL_MAX_WIRELESS_NUM))
                     swap_controller_ports(ctrl, gamepad_index, selected_port);
                 ImGui::PopID();

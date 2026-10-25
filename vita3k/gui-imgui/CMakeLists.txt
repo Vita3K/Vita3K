@@ -34,7 +34,6 @@ set(GUI_SOURCES
 	src/popups.cpp
 	src/private.h
 	src/semaphores_dialog.cpp
-	src/sdl_window.cpp
 	src/settings.cpp
 	src/settings_dialog.cpp
 	src/themes.cpp
@@ -64,8 +63,8 @@ endif()
 add_library(gui-imgui STATIC ${GUI_SOURCES})
 
 target_include_directories(gui-imgui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
-target_link_libraries(gui-imgui PUBLIC app bgm_player compat config dialog emuenv host::dialog ime imgui lang regmgr np v3kn)
-target_link_libraries(gui-imgui PRIVATE audio camera ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil concurrentqueue)
+target_link_libraries(gui-imgui PUBLIC app bgm_player compat config dialog emuenv host::dialog ime imgui lang regmgr np v3kn vita_shell)
+target_link_libraries(gui-imgui PRIVATE audio camera ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil concurrentqueue sdl)
 # Link macOS frameworks for Objective-C++ code
 if(APPLE)
 	target_link_libraries(gui-imgui PRIVATE

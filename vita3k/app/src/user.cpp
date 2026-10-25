@@ -78,7 +78,6 @@ void load_users(EmuEnvState &emuenv) {
         user.id = user_id;
         if (!user_child.attribute("name").empty())
             user.name = user_child.attribute("name").as_string();
-
         if (!user_child.child("avatar").text().empty())
             user.avatar = user_child.child("avatar").text().as_string();
 

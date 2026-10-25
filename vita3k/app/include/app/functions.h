@@ -64,7 +64,7 @@ struct SettingsCommitResult {
 bool init_paths(Root &root_paths);
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
 void shutdown_app_runtime(EmuEnvState &state, bool preserve_renderer = false);
-void reset_app_state(EmuEnvState &state);
+void reset_app_state(EmuEnvState &state, bool update_discord_presence = true);
 bool late_init(EmuEnvState &state);
 void apply_renderer_config(EmuEnvState &emuenv);
 void apply_runtime_settings(EmuEnvState &emuenv);

@@ -20,10 +20,10 @@
 #include <bgm_player/functions.h>
 #include <config/state.h>
 #include <gui-imgui/functions.h>
-#include <io/VitaIoDevice.h>
 #include <io/state.h>
 #include <util/safe_time.h>
 #include <util/string_utils.h>
+#include <vita_shell/functions.h>
 
 #include <pugixml.hpp>
 #include <stb_image.h>
@@ -106,48 +106,29 @@ struct StartParam {
     ImVec2 clock_pos = ImVec2(880.f, 146.f);
 };
 
-static ImU32 convert_hex_color(const std::string &src_color) {
-    if (src_color.length() < 6) {
-        LOG_WARN("Invalid theme color '{}': expected at least six hexadecimal digits; using white.", src_color);
-        return 0xFFFFFFFF;
-    }
-    std::string result = src_color.substr(src_color.length() - 6, 6);
-    if (result.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos) {
-        LOG_WARN("Invalid theme color '{}': expected six hexadecimal digits; using white.", src_color);
-        return 0xFFFFFFFF;
-    }
-    result.insert(0, "ff");
+static ImU32 to_imgui_color(const vita_shell::Color &color) {
+    return IM_COL32(color.r, color.g, color.b, color.a);
+}
 
-    uint32_t color = std::strtoul(result.c_str(), nullptr, 16);
-    return (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
+static ImVec4 to_imgui_color_float(const vita_shell::Color &color) {
+    return ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f);
+}
+
+static const vita_shell::ThemeState &get_theme_state(EmuEnvState &emuenv,
+    const std::string &content_id, bool reload = false) {
+    const auto &theme = vita_shell::get_theme_state();
+    if (reload || !theme.loaded || theme.content_id != content_id)
+        vita_shell::load_theme(emuenv.vita_fs_path, emuenv.static_assets_path, content_id);
+    return vita_shell::get_theme_state();
 }
 
 static StartParam start_param;
 void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
-    std::string theme_start_name;
-
+    const auto &theme = get_theme_state(emuenv, content_id);
     start_param = {};
     gui.start_background = {};
-
-    const auto content_id_path{ fs_utils::utf8_to_path(content_id) };
-    if (!content_id.empty() && (content_id != "default")) {
-        const auto THEME_PATH_XML{ emuenv.vita_fs_path / "ux0/theme" / content_id_path / "theme.xml" };
-        pugi::xml_document doc;
-        if (doc.load_file(THEME_PATH_XML.c_str())) {
-            const auto theme = doc.child("theme");
-
-            // Start Layout
-            if (!theme.child("StartScreenProperty").child("m_dateColor").empty())
-                start_param.date_color = convert_hex_color(theme.child("StartScreenProperty").child("m_dateColor").text().as_string());
-            if (!theme.child("StartScreenProperty").child("m_dateLayout").empty())
-                start_param.date_layout = static_cast<DateLayout>(theme.child("StartScreenProperty").child("m_dateLayout").text().as_int());
-
-            // Theme Start
-            if (!theme.child("StartScreenProperty").child("m_filePath").empty()) {
-                theme_start_name = theme.child("StartScreenProperty").child("m_filePath").text().as_string();
-            }
-        }
-    }
+    start_param.date_color = to_imgui_color(theme.start_date_color.value_or(vita_shell::Color{}));
+    start_param.date_layout = static_cast<DateLayout>(theme.start_date_layout);
 
     switch (start_param.date_layout) {
     case DateLayout::LEFT_DOWN:
@@ -165,28 +146,21 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
         break;
     }
 
-    int32_t width = 0;
-    int32_t height = 0;
-    vfs::FileBuffer buffer;
-
-    if (theme_start_name.empty()) {
-        const auto DEFAULT_START_PATH{ fs::path("data/internal/keylock/keylock.png") };
-        if (fs::exists(emuenv.vita_fs_path / "vs0" / DEFAULT_START_PATH))
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.vita_fs_path, DEFAULT_START_PATH);
-        else {
-            LOG_WARN("Default start background not found, install firmware for fix this.");
-            return;
-        }
-    } else
-        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.vita_fs_path, fs::path("theme") / content_id_path / theme_start_name);
-
-    if (buffer.empty()) {
-        LOG_WARN("Background not found: '{}', for content id: {}.", theme_start_name, content_id);
+    if (theme.start_screen_background.empty()) {
+        LOG_WARN("Start background not found for theme '{}'.", content_id);
         return;
     }
-    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+
+    std::vector<uint8_t> buffer;
+    if (!fs_utils::read_data(theme.start_screen_background, buffer)) {
+        LOG_WARN("Could not read start background '{}'.", theme.start_screen_background);
+        return;
+    }
+    int32_t width = 0;
+    int32_t height = 0;
+    stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid Background: '{}' for content id: {}.", theme_start_name, content_id);
+        LOG_ERROR("Invalid start background '{}' for content id: {}.", theme.start_screen_background, content_id);
         return;
     }
 
@@ -227,178 +201,35 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 }
 
 bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
-    std::vector<std::string> theme_bg_name;
+    const auto &theme = get_theme_state(emuenv, content_id, true);
 
-    // Set default values of bgm theme
-    std::pair<std::string, std::string> path_bgm = { "pd0", "data/systembgm/home.at9" };
-
-    // Create a map to associate specific system app title IDs with their corresponding theme icon names.
-    std::map<std::string, std::string> theme_icon_name = {
-        { "NPXS10003", {} },
-        { "NPXS10008", {} },
-        { "NPXS10015", {} },
-        { "NPXS10026", {} }
-    };
-
-    // Clear the current theme
     gui.app_selector.sys_apps_icon.clear();
     gui.current_theme_bg = 0;
-    gui.information_bar_color = {};
+    gui.information_bar_color.bar = to_imgui_color(theme.information_bar.bar_color.value_or(vita_shell::Color{ 0, 0, 0, 255 }));
+    gui.information_bar_color.indicator = to_imgui_color(theme.information_bar.indicator_color.value_or(vita_shell::Color{}));
+    gui.information_bar_color.notice_font = to_imgui_color(theme.information_bar.notice_font_color.value_or(vita_shell::Color{}));
     gui.theme_backgrounds.clear();
     gui.theme_backgrounds_font_color.clear();
     gui.theme_information_bar_notice.clear();
 
-    const auto content_id_path = fs_utils::utf8_to_path(content_id);
-
-    if (content_id != "default") {
-        const auto THEME_XML_PATH{ emuenv.vita_fs_path / "ux0/theme" / content_id_path / "theme.xml" };
-        pugi::xml_document doc;
-
-        if (doc.load_file(THEME_XML_PATH.c_str())) {
-            const auto theme = doc.child("theme");
-
-            // Home Property
-            const auto home_property = theme.child("HomeProperty");
-            if (!home_property.empty()) {
-                // Theme Apps Icon
-                if (!home_property.child("m_browser").child("m_iconFilePath").text().empty())
-                    theme_icon_name["NPXS10003"] = home_property.child("m_browser").child("m_iconFilePath").text().as_string();
-                if (!home_property.child("m_trophy").child("m_iconFilePath").text().empty())
-                    theme_icon_name["NPXS10008"] = home_property.child("m_trophy").child("m_iconFilePath").text().as_string();
-                if (!home_property.child("m_settings").child("m_iconFilePath").text().empty())
-                    theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
-                if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
-                    theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
-
-                // Bgm theme
-                if (!home_property.child("m_bgmFilePath").text().empty())
-                    path_bgm = { "ux0", fmt::format("theme/{}/{}", content_id, home_property.child("m_bgmFilePath").text().as_string()) };
-
-                // Home
-                for (const auto &param : home_property.child("m_bgParam")) {
-                    // Theme Background
-                    if (!param.child("m_imageFilePath").text().empty())
-                        theme_bg_name.emplace_back(param.child("m_imageFilePath").text().as_string());
-
-                    // Font Color
-                    if (!param.child("m_fontColor").text().empty()) {
-                        uint32_t color = std::strtoul(param.child("m_fontColor").text().as_string(), nullptr, 16);
-                        gui.theme_backgrounds_font_color.emplace_back((float((color >> 16) & 0xFF)) / 255.f, (float((color >> 8) & 0xFF)) / 255.f, (float((color >> 0) & 0xFF)) / 255.f, 1.f);
-                    }
-                }
-            }
-
-            // Information Bar Property
-            const auto info_bar_prop = theme.child("InfomationBarProperty");
-            if (!info_bar_prop.empty()) {
-                // Get Bar Color
-                if (!info_bar_prop.child("m_barColor").empty())
-                    gui.information_bar_color.bar = convert_hex_color(info_bar_prop.child("m_barColor").text().as_string());
-                if (!info_bar_prop.child("m_indicatorColor").empty())
-                    gui.information_bar_color.indicator = convert_hex_color(info_bar_prop.child("m_indicatorColor").text().as_string());
-                if (!info_bar_prop.child("m_noticeFontColor").empty())
-                    gui.information_bar_color.notice_font = convert_hex_color(info_bar_prop.child("m_noticeFontColor").text().as_string());
-
-                // Notice Icon
-                std::map<NoticeIcon, std::string> notice_name;
-                if (!info_bar_prop.child("m_noNoticeFilePath").text().empty())
-                    notice_name[NoticeIcon::NO] = info_bar_prop.child("m_noNoticeFilePath").text().as_string();
-                if (!info_bar_prop.child("m_newNoticeFilePath").text().empty())
-                    notice_name[NoticeIcon::NEW] = info_bar_prop.child("m_newNoticeFilePath").text().as_string();
-
-                // Set constants for circle mask
-                constexpr int cx = 90;
-                constexpr int cy = 20;
-                constexpr float radius = 64.f;
-                constexpr float feather = 1.5f;
-
-                for (const auto &notice : notice_name) {
-                    int32_t width = 0;
-                    int32_t height = 0;
-                    vfs::FileBuffer buffer;
-
-                    const auto type = notice.first;
-                    const auto &name = notice.second;
-
-                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.vita_fs_path, fs::path("theme") / content_id_path / name);
-
-                    if (buffer.empty()) {
-                        LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
-                        continue;
-                    }
-                    stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-                    if (!data) {
-                        LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
-                        continue;
-                    }
-
-                    // Make circle alpha mask
-                    for (int y = 0; y < height; ++y) {
-                        for (int x = 0; x < width; ++x) {
-                            const int dx = x - cx;
-                            const int dy = y - cy;
-                            const float dist = sqrtf(dx * dx + dy * dy);
-
-                            int idx = (y * width + x) * 4;
-                            if (dist >= radius) {
-                                data[idx + 3] = 0; // Outside -> transparent
-                            } else if (dist >= (radius - feather)) {
-                                // Border → smooth anti-aliased fade
-                                float t = (radius - dist) / feather; // 0 → 1
-                                t = std::clamp(t, 0.0f, 1.0f);
-                                data[idx + 3] = (unsigned char)(t * 255.0f);
-                            }
-                        }
-                    }
-
-                    gui.theme_information_bar_notice[type] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
-                    stbi_image_free(data);
-                }
-            }
-        } else
-            LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH);
-    } else {
-        // Default theme background
-        constexpr std::array<const char *, 5> app_id_bg_list = {
-            "NPXS10002",
-            "NPXS10006",
-            "NPXS10013",
-            "NPXS10018",
-            "NPXS10098",
-        };
-        for (const auto &bg : app_id_bg_list) {
-            if (fs::exists(emuenv.vita_fs_path / "vs0/app" / bg / "sce_sys/pic0.png"))
-                theme_bg_name.push_back(bg);
-        }
-    }
-
-    // Initialize the theme BGM with the path
-    bgm_player::set_current_bgm_path(path_bgm);
+    bgm_player::set_current_bgm_path({ theme.bgm.device, theme.bgm.device_path.generic_string() });
     bgm_player::init_bgm(emuenv.vita_fs_path, emuenv.app.user_list.users[emuenv.io.user_id].system_music);
 
-    for (const auto &icon : theme_icon_name) {
+    for (const auto &[title_id, icon_path] : theme.system_app_icons) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
-
-        const auto &title_id = icon.first;
-        const auto &name = icon.second;
-        if (name.empty())
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.vita_fs_path, "app/" + title_id + "/sce_sys/icon0.png");
-        else
-            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.vita_fs_path, fs::path("theme") / content_id_path / name);
-
-        if (buffer.empty()) {
+        if (!fs_utils::read_data(icon_path, buffer)) {
             buffer = init_default_icon(gui, emuenv);
             if (buffer.empty()) {
-                LOG_WARN("Name: '{}', Not found icon for system App: {}.", name, content_id);
+                LOG_WARN("No icon found for system app '{}' in theme '{}'.", title_id, content_id);
                 continue;
-            } else
-                LOG_INFO("Default icon found for system App {}.", title_id);
+            }
         }
+
         stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data) {
-            LOG_ERROR("Name: '{}', Invalid icon for content id: {}.", name, content_id);
+            LOG_ERROR("Invalid system icon '{}' for theme '{}'.", icon_path, content_id);
             continue;
         }
 
@@ -406,27 +237,64 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         stbi_image_free(data);
     }
 
-    for (const auto &bg : theme_bg_name) {
+    for (const auto &background : theme.backgrounds) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
-
-        if (content_id == "default")
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.vita_fs_path, "app/" + bg + "/sce_sys/pic0.png");
-        else
-            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.vita_fs_path, fs::path("theme") / content_id_path / bg);
-
-        if (buffer.empty()) {
-            LOG_WARN("Background not found: '{}', for content id: {}.", bg, content_id);
+        if (!fs_utils::read_data(background.path, buffer)) {
+            LOG_WARN("Background '{}' could not be read for theme '{}'.", background.path, content_id);
             continue;
         }
-        stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+
+        stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data) {
-            LOG_ERROR("Invalid Background: '{}', for content id: {}.", bg, content_id);
+            LOG_ERROR("Invalid background '{}' for theme '{}'.", background.path, content_id);
             continue;
         }
 
         gui.theme_backgrounds.emplace_back(gui.imgui_state.get(), data, width, height);
+        gui.theme_backgrounds_font_color.push_back(to_imgui_color_float(background.text_color.value_or(theme.text_color)));
+        stbi_image_free(data);
+    }
+
+    constexpr int cx = 90;
+    constexpr int cy = 20;
+    constexpr float radius = 64.f;
+    constexpr float feather = 1.5f;
+    for (const auto &[notice_type, icon_path] : theme.information_bar.notice_icons) {
+        int32_t width = 0;
+        int32_t height = 0;
+        vfs::FileBuffer buffer;
+        if (!fs_utils::read_data(icon_path, buffer)) {
+            LOG_WARN("Notice icon '{}' could not be read for theme '{}'.", icon_path, content_id);
+            continue;
+        }
+
+        stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+        if (!data) {
+            LOG_ERROR("Invalid notice icon '{}' for theme '{}'.", icon_path, content_id);
+            continue;
+        }
+
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                const int dx = x - cx;
+                const int dy = y - cy;
+                const float dist = sqrtf(dx * dx + dy * dy);
+
+                const int idx = (y * width + x) * 4;
+                if (dist >= radius)
+                    data[idx + 3] = 0;
+                else if (dist >= (radius - feather)) {
+                    float t = (radius - dist) / feather;
+                    t = std::clamp(t, 0.0f, 1.0f);
+                    data[idx + 3] = static_cast<unsigned char>(t * 255.0f);
+                }
+            }
+        }
+
+        const auto gui_notice_type = notice_type == vita_shell::NoticeIcon::NoNotice ? NoticeIcon::NO : NoticeIcon::NEW;
+        gui.theme_information_bar_notice[gui_notice_type] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 
@@ -435,11 +303,12 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
 void draw_background(GuiState &gui, EmuEnvState &emuenv) {
     const auto &user = emuenv.app.user_list.users[emuenv.io.user_id];
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_POS_MAX(gui.logical_viewport_pos.x + gui.logical_viewport_size.x, gui.logical_viewport_pos.y + gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 VIEWPORT_POS_MAX(viewport.logical_x + viewport.logical_width, viewport.logical_y + viewport.logical_height);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
     const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
     const auto HALF_INFO_BAR_HEIGHT = INFO_BAR_HEIGHT / 2.f;
@@ -486,10 +355,11 @@ void close_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
     const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
 

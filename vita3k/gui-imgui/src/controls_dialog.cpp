@@ -128,14 +128,15 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, PhysicalKeyCode 
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    static const auto BUTTON_SIZE = ImVec2(120.f * gui.manual_dpi_scale, 0.f);
+    const auto &viewport = sdl::get_viewport();
+    const auto RES_SCALE = ImVec2(viewport.scale_x, viewport.scale_y);
+    static const auto BUTTON_SIZE = ImVec2(120.f * viewport.manual_dpi_scale, 0.f);
 
     auto &lang = gui.lang.controls;
     auto &common = gui.lang.common.main;
 
 #ifndef __ANDROID__
-    float height = gui.logical_viewport_size.y / gui.manual_dpi_scale;
+    float height = viewport.logical_height / viewport.manual_dpi_scale;
     if (ImGui::BeginMainMenuBar()) {
         height = height - ImGui::GetWindowHeight() * 2;
         ImGui::EndMainMenuBar();

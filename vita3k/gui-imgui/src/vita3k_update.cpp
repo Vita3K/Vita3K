@@ -389,10 +389,11 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         const bool use_cross = confirm == (emuenv.cfg.sys_button == 1);
         return ImGui_ImplSdl_IsPhysicalKeyPressed(use_cross ? emuenv.cfg.keyboard_button_cross : emuenv.cfg.keyboard_button_circle);
     };
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
-    const ImVec2 WINDOW_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
+    const ImVec2 display_size(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const auto RES_SCALE = ImVec2(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
+    const ImVec2 WINDOW_POS(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y);
 
     const auto BUTTON_SIZE = ImVec2(150.f * SCALE.x, 46.f * SCALE.y);
     const auto is_background = gui.apps_background.contains("NPXS10015");
@@ -503,7 +504,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), display_size.y - (186.f * SCALE.y)));
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
         ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * gui.manual_dpi_scale);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * sdl::get_viewport().manual_dpi_scale);
         TextColoredCentered(GUI_COLOR_TEXT, std::to_string(static_cast<uint32_t>(progress)).append("%").c_str());
         ImGui::PopStyleColor();
 

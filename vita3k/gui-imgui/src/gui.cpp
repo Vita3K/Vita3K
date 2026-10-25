@@ -74,7 +74,7 @@ static void init_style(const GuiState &gui) {
     style->GrabMinSize = 4.0f;
     style->GrabRounding = 2.5f;
 
-    style->ScaleAllSizes(gui.manual_dpi_scale);
+    style->ScaleAllSizes(sdl::get_viewport().manual_dpi_scale);
 
     style->Colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
     style->Colors[ImGuiCol_TextDisabled] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
@@ -122,7 +122,7 @@ static void init_style(const GuiState &gui) {
 
 static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
-    io.FontGlobalScale = gui.manual_dpi_scale;
+    io.FontGlobalScale = sdl::get_viewport().manual_dpi_scale;
     gui.fw_font = false;
 
     // Set Large Font
@@ -731,13 +731,14 @@ void draw_touchpad_cursor(GuiState &gui, EmuEnvState &emuenv) {
     if (touchpad_fingers_pos.empty())
         return;
 
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
     const auto color = (port == SCE_TOUCH_PORT_FRONT) ? IM_COL32(0.f, 102.f, 204.f, 255.f) : IM_COL32(255.f, 0.f, 0.f, 255.f);
     for (const auto &pos : touchpad_fingers_pos) {
-        auto x = gui.logical_viewport_pos.x + (pos.x * gui.logical_viewport_size.x);
-        auto y = gui.logical_viewport_pos.y + (pos.y * gui.logical_viewport_size.y);
+        auto x = viewport.logical_x + (pos.x * viewport.logical_width);
+        auto y = viewport.logical_y + (pos.y * viewport.logical_height);
         ImGui::GetForegroundDrawList()->AddCircle(ImVec2(x, y), 20.f * SCALE.x, color, 0, 4.f * SCALE.x);
     }
 }

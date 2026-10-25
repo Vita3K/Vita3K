@@ -250,10 +250,11 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     static SettingsMenu settings_menu = SettingsMenu::SELECT;
 
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
@@ -969,7 +970,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 title = language.input_language["title"];
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::Columns(2, nullptr, false);
-                ImGui::SetColumnWidth(0, 600.f * gui.manual_dpi_scale);
+                ImGui::SetColumnWidth(0, 600.f * sdl::get_viewport().manual_dpi_scale);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                 if (ImGui::Selectable(keyboards_str, false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
                     sub_menu = SubMenu::SELECT_KEYBOARDS;
@@ -986,8 +987,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 if (selected.empty()) {
                     title = keyboards_str;
                     ImGui::Columns(3, nullptr, false);
-                    ImGui::SetColumnWidth(0, 40.f * gui.manual_dpi_scale);
-                    ImGui::SetColumnWidth(1, 560.f * gui.manual_dpi_scale);
+                    ImGui::SetColumnWidth(0, 40.f * sdl::get_viewport().manual_dpi_scale);
+                    ImGui::SetColumnWidth(1, 560.f * sdl::get_viewport().manual_dpi_scale);
                     for (const auto &lang : emuenv.ime.lang.ime_keyboards) {
                         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                         ImGui::PushID(lang.first);

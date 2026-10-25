@@ -28,10 +28,11 @@
 namespace gui {
 
 void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
     const ImVec2 INFO_BAR_SIZE(VIEWPORT_SIZE.x, 32.f * SCALE.y);
 
@@ -101,9 +102,9 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     constexpr auto PIX_FONT_SCALE = 19.2f / 24.f;
-    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * gui.manual_dpi_scale);
-    const auto CLOCK_DEFAULT_FONT_SCALE = (24.f * gui.manual_dpi_scale) * DEFAULT_FONT_SCALE;
-    const auto DAY_MOMENT_DEFAULT_FONT_SCALE = (18.f * gui.manual_dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * viewport.manual_dpi_scale);
+    const auto CLOCK_DEFAULT_FONT_SCALE = (24.f * viewport.manual_dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto DAY_MOMENT_DEFAULT_FONT_SCALE = (18.f * viewport.manual_dpi_scale) * DEFAULT_FONT_SCALE;
     const auto CLOCK_FONT_SIZE_SCALE = CLOCK_DEFAULT_FONT_SCALE / ImGui::GetFontSize();
     const auto DAY_MOMENT_FONT_SIZE_SCALE = DAY_MOMENT_DEFAULT_FONT_SCALE / ImGui::GetFontSize();
 

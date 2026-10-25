@@ -47,6 +47,12 @@ struct AppCacheSource {
 
 static std::string get_icon_path(const EmuEnvState &emuenv, const std::string &title_id);
 
+static std::string normalize_app_version(std::string version) {
+    if (version.empty() || version == ".00" || version == "0.00" || version == "N/A")
+        return "1.00";
+    return version;
+}
+
 static fs::path get_apps_cache_path(const EmuEnvState &emuenv) {
     return emuenv.config_path / "gui-configs" / "apps-cache.xml";
 }
@@ -92,7 +98,7 @@ static std::vector<AppCacheSource> collect_app_cache_sources(const EmuEnvState &
 
 static AppEntry read_app_cache_entry(const pugi::xml_node &node, const EmuEnvState &emuenv) {
     AppEntry app;
-    app.app_ver = node.attribute("app_ver").as_string();
+    app.app_ver = normalize_app_version(node.attribute("app_ver").as_string());
     app.category = node.attribute("category").as_string();
     app.content_id = node.attribute("content_id").as_string();
     app.addcont = node.attribute("addcont").as_string();
@@ -331,13 +337,13 @@ AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id) {
         info.app_savedata = title_id;
         info.app_short_title = title_id;
         info.app_title = title_id;
-        info.app_version = "N/A";
+        info.app_version = "1.00";
         info.app_category = "N/A";
         info.app_parental_level = "N/A";
     }
 
     AppEntry app;
-    app.app_ver = info.app_version;
+    app.app_ver = normalize_app_version(info.app_version);
     app.category = info.app_category;
     app.content_id = info.app_content_id;
     app.addcont = info.app_addcont;

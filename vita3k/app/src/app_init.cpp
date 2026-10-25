@@ -544,7 +544,7 @@ void shutdown_app_runtime(EmuEnvState &state, const bool preserve_renderer) {
     deinit_mem(state.mem);
 }
 
-void reset_app_state(EmuEnvState &state) {
+void reset_app_state(EmuEnvState &state, const bool update_discord_presence) {
     app::reset_perf_metrics(state);
 
     state.app_path.clear();
@@ -561,7 +561,7 @@ void reset_app_state(EmuEnvState &state) {
     set_current_config(state, "");
 
 #if USE_DISCORD
-    if (state.cfg.discord_rich_presence)
+    if (update_discord_presence && state.cfg.discord_rich_presence)
         discordrpc::update_presence();
 #endif
 

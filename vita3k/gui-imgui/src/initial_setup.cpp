@@ -74,10 +74,11 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     static InitialSetup setup = SELECT_LANGUAGE;
     static std::string title_str;
 
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
     const ImVec2 WINDOW_SIZE(756.f * SCALE.x, 418.f * SCALE.y);
     const auto SELECT_SIZE(72.f * SCALE.y);
     const ImVec2 BUTTON_SIZE(186.f * SCALE.x, 52.f * SCALE.y);

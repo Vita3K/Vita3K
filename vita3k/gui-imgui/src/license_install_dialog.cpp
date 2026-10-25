@@ -43,16 +43,19 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &license = gui.lang.install_dialog.pkg_install;
     auto &indicator = gui.lang.indicator;
 
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const ImVec2 display_size(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const auto RES_SCALE = ImVec2(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
     const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
     const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 264.f * SCALE.y);
 
-    ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size);
     ImGui::Begin("##license_install", &gui.file_menu.license_install_dialog, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), gui.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(sdl::get_viewport().logical_x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f),
+                                sdl::get_viewport().logical_y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)),
+        ImGuiCond_Always);
     ImGui::SetWindowFontScale(RES_SCALE.x);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
     ImGui::BeginChild("##license_install_child", WINDOW_SIZE, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
@@ -104,7 +107,9 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f * gui.manual_dpi_scale, ImGui::GetWindowSize().y / 2));
+        ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2)
+                - 10.f * sdl::get_viewport().manual_dpi_scale,
+            ImGui::GetWindowSize().y / 2));
         if (ImGui::Button(::lang::get(::lang::str::cancel).c_str(), BUTTON_SIZE)) {
             state = State::UNDEFINED;
             zRIF.clear();

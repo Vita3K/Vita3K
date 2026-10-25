@@ -116,10 +116,12 @@ void set_controller_overlay_opacity(int opacity) {
 }
 
 void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    static const auto BUTTON_SIZE = ImVec2(120.f * gui.manual_dpi_scale, 0.f);
-    ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x + (display_size.x / 2.f), gui.logical_viewport_pos.y + (display_size.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    const ImVec2 display_size(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const ImVec2 RES_SCALE(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    static const auto BUTTON_SIZE = ImVec2(120.f * sdl::get_viewport().manual_dpi_scale, 0.f);
+    ImGui::SetNextWindowPos(ImVec2(sdl::get_viewport().logical_x + (display_size.x / 2.f),
+                                sdl::get_viewport().logical_y + (display_size.y / 2.f)),
+        ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##overlay", &gui.controls_menu.overlay_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
 

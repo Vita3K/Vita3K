@@ -700,10 +700,11 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
 }
 
 void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *session) {
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const auto RES_SCALE = ImVec2(viewport.scale_x, viewport.scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
 
     const auto &app_path = gui.live_area_current_open_apps_list[gui.live_area_app_current_open];
     const VitaIoDevice app_device = app_path.starts_with("NPXS") ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
@@ -1223,7 +1224,8 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv, app::AppSessionCo
 
     ImGui::SetWindowFontScale(RES_SCALE.x);
     const std::string BUTTON_STR = is_current_app ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
-    const auto default_font_scale = (25.f * gui.manual_dpi_scale) * (ImGui::GetFontSize() / (19.2f * gui.manual_dpi_scale));
+    const auto default_font_scale = (25.f * sdl::get_viewport().manual_dpi_scale)
+        * (ImGui::GetFontSize() / (19.2f * sdl::get_viewport().manual_dpi_scale));
     const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
     // Interaction (button)

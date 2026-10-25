@@ -25,6 +25,7 @@
 #include <gui-imgui/popups.h>
 #include <lang/state.h>
 #include <np/state.h>
+#include <sdl/sdl_window.h>
 #include <util/log.h>
 
 #include <array>
@@ -66,9 +67,7 @@ struct WindowState {
     WindowPtr window{ nullptr, nullptr };
     std::unique_ptr<renderer::FrameHost> frame_host;
     bool renderer_initialized = false;
-#ifdef __ANDROID__
     SDL_GLContext gl_context = nullptr;
-#endif
 };
 
 using SortState = app::UserSortState;
@@ -266,15 +265,6 @@ struct GateAnimation {
 struct GuiState {
     // Destroy the window and renderer only after the GUI resources that use them.
     std::unique_ptr<gui::WindowState> window_state;
-    FVector2 window_size = { 0.f, 0.f };
-    FVector2 drawable_size = { 0.f, 0.f };
-    FVector2 logical_viewport_pos = { 0.f, 0.f };
-    FVector2 logical_viewport_size = { 0.f, 0.f };
-    FVector2 drawable_viewport_pos = { 0.f, 0.f };
-    FVector2 drawable_viewport_size = { 0.f, 0.f };
-    float system_dpi_scale = 1.f;
-    float manual_dpi_scale = 1.f;
-    FVector2 gui_scale = { 1.f, 1.f };
     int max_font_level = 0;
     int current_font_level = 0;
 

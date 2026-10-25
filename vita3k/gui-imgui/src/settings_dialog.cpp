@@ -412,10 +412,11 @@ static int get_camera_combobox_index(int camera_type, const std::string &camera_
 
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &user = emuenv.app.user_list.users[emuenv.io.user_id];
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const ImVec2 VIEWPORT_POS(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y);
+    const ImVec2 VIEWPORT_SIZE(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const auto RES_SCALE = ImVec2(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
 
     auto &lang = gui.lang.settings_dialog;
     auto &common = gui.lang.common.main;

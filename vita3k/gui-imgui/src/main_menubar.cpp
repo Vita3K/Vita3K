@@ -66,8 +66,9 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
 
 static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *session) {
     auto &lang = gui.lang.main_menubar.emulation;
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
     const ImVec2 ICON_SIZE(56.f * SCALE.x, 56.f * SCALE.y);
     const auto PADDING = 10.f * SCALE.x;
 
@@ -176,7 +177,7 @@ static void draw_help_menu(GuiState &gui) {
 
 void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv, app::AppSessionController *session) {
     if (ImGui::BeginMainMenuBar()) {
-        const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
+        const ImVec2 RES_SCALE(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
 
         ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);

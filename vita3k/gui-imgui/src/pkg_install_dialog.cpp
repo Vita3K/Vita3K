@@ -104,13 +104,16 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.install_dialog.pkg_install;
     auto &indicator = gui.lang.indicator;
 
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const ImVec2 display_size(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const ImVec2 RES_SCALE(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
     const ImVec2 WINDOW_SIZE(616.f * SCALE.x, 264.f * SCALE.y);
     const ImVec2 BUTTON_SIZE(180.f * SCALE.x, 45.f * SCALE.y);
 
-    ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2), gui.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(sdl::get_viewport().logical_x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2),
+                                sdl::get_viewport().logical_y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)),
+        ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE);
     if (ImGui::BeginPopupModal("install", &gui.file_menu.pkg_install_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
         ImGui::SetWindowFontScale(RES_SCALE.x);

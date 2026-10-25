@@ -493,10 +493,12 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv, app::AppSessionControl
     constexpr ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
     static int scroll_type;
 
-    const ImVec2 VIEWPORT_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 VIEWPORT_RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 VIEWPORT_SCALE(VIEWPORT_RES_SCALE.x * gui.manual_dpi_scale, VIEWPORT_RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 VIEWPORT_POS(viewport.logical_x, viewport.logical_y);
+    const ImVec2 VIEWPORT_SIZE(viewport.logical_width, viewport.logical_height);
+    const ImVec2 VIEWPORT_RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 VIEWPORT_SCALE(VIEWPORT_RES_SCALE.x * viewport.manual_dpi_scale,
+        VIEWPORT_RES_SCALE.y * viewport.manual_dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * VIEWPORT_SCALE.y;
 
     // Clear apps list filtered
@@ -704,7 +706,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv, app::AppSessionControl
     auto child_flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
     if (gui.is_nav_button)
         child_flags |= ImGuiWindowFlags_NoMouseInputs;
-    ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(gui.logical_viewport_pos.x, VIEWPORT_POS.y + MARGIN_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(sdl::get_viewport().logical_x, VIEWPORT_POS.y + MARGIN_HEIGHT), ImGuiCond_Always);
     ImGui::BeginChild("##apps_list", SIZE_APP_LIST, ImGuiChildFlags_None, child_flags);
 
     // Get Scroll Pos
@@ -842,7 +844,8 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv, app::AppSessionControl
                 if (custom_config) {
                     if (emuenv.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_ICON_POS);
-                    ImGui::SetCursorPosY(POS_ICON.y + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * gui.manual_dpi_scale));
+                    ImGui::SetCursorPosY(POS_ICON.y + ICON_SIZE.y - ImGui::GetFontSize()
+                        - (7.8f * sdl::get_viewport().manual_dpi_scale));
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     ImGui::Button("CC", ImVec2(40.f * VIEWPORT_SCALE.x, 0.f));
                     ImGui::PopStyleColor();

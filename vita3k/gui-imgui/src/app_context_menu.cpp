@@ -566,8 +566,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto IMPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/import" / title_id };
     const auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
+    const ImVec2 display_size(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const auto RES_SCALE = ImVec2(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
 
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
@@ -816,7 +816,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::EndPopup();
     }
 
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
     const auto WINDOW_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
     const auto BUTTON_SIZE = ImVec2(320.f * SCALE.x, 46.f * SCALE.y);
@@ -825,11 +826,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     // Context Dialog
     if (!context_dialog.empty()) {
-        ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetNextWindowBgAlpha(0.999f);
-        ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), gui.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(sdl::get_viewport().logical_x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f),
+                                    sdl::get_viewport().logical_y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)),
+            ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
@@ -898,7 +901,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     // Information
     if (gui.vita_area.app_information) {
-        ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", &gui.vita_area.app_information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);

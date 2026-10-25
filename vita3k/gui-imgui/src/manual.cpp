@@ -53,13 +53,13 @@ static bool is_book_mode = false;
 static void change_page(const GuiState &gui, int32_t target_page) {
     scroll = 0.f;
     current_page = target_page;
-    target_scroll_page = current_page * (is_book_mode ? gui.logical_viewport_size.x / 2 : gui.logical_viewport_size.x);
+    target_scroll_page = current_page * (is_book_mode ? sdl::get_viewport().logical_width / 2 : sdl::get_viewport().logical_width);
     is_page_animating = true;
 }
 
 void browse_pages_manual(GuiState &gui, EmuEnvState &emuenv, const uint32_t button) {
-    const auto RES_HEIGHT_SCALE = gui.gui_scale.y;
-    const auto SCALE = RES_HEIGHT_SCALE * gui.manual_dpi_scale;
+    const auto RES_HEIGHT_SCALE = sdl::get_viewport().scale_y;
+    const auto SCALE = RES_HEIGHT_SCALE * sdl::get_viewport().manual_dpi_scale;
 
     const auto manual_size = static_cast<int32_t>(gui.manuals.size() - 1);
 
@@ -141,10 +141,11 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     // Set settings and begin window for manual
     ImGui::SetNextWindowBgAlpha(0.999f);
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const auto RES_SCALE = ImVec2(gui.gui_scale.x, gui.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
-    const ImVec2 WINDOW_POS(gui.logical_viewport_pos.x, gui.logical_viewport_pos.y);
+    const ImVec2 display_size(sdl::get_viewport().logical_width, sdl::get_viewport().logical_height);
+    const auto RES_SCALE = ImVec2(sdl::get_viewport().scale_x, sdl::get_viewport().scale_y);
+    const auto SCALE = ImVec2(RES_SCALE.x * sdl::get_viewport().manual_dpi_scale,
+        RES_SCALE.y * sdl::get_viewport().manual_dpi_scale);
+    const ImVec2 WINDOW_POS(sdl::get_viewport().logical_x, sdl::get_viewport().logical_y);
     const ImVec2 WINDOW_SIZE(display_size.x * gui.manuals.size(), display_size.y);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.f, 0.f));

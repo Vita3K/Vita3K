@@ -45,13 +45,14 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     auto &lang = gui.lang.install_dialog.firmware_install;
 
-    const ImVec2 display_size(gui.logical_viewport_size.x, gui.logical_viewport_size.y);
-    const ImVec2 RES_SCALE(gui.gui_scale.x, gui.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * gui.manual_dpi_scale, RES_SCALE.y * gui.manual_dpi_scale);
+    const auto &viewport = sdl::get_viewport();
+    const ImVec2 display_size(viewport.logical_width, viewport.logical_height);
+    const ImVec2 RES_SCALE(viewport.scale_x, viewport.scale_y);
+    const ImVec2 SCALE(RES_SCALE.x * viewport.manual_dpi_scale, RES_SCALE.y * viewport.manual_dpi_scale);
     const ImVec2 WINDOW_SIZE(616.f * SCALE.x, 264.f * SCALE.y);
     const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 45.f * SCALE.y);
 
-    ImGui::SetNextWindowPos(ImVec2(gui.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2), gui.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(viewport.logical_x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2), viewport.logical_y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE);
     if (draw_file_dialog) {
         auto result = host::dialog::filesystem::open_file(pup_path, { { "PlayStation Vita Firmware Package", { "PUP" } } });
