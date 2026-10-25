@@ -472,7 +472,7 @@ static const vk::SpecializationInfo srgb_info_false = {
 
 static bool manifest_lists(VKState &state, std::mutex &shaders_mutex, const Sha256Hash &hash) {
     std::lock_guard<std::mutex> guard(shaders_mutex);
-    return std::any_of(state.shaders_cache_hashs.begin(), state.shaders_cache_hashs.end(), [&hash](const ShadersHash &entry) {
+    return std::ranges::any_of(state.shaders_cache_hashs, [&hash](const ShadersHash &entry) {
         return entry.vert == hash || entry.frag == hash;
     });
 }
