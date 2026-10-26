@@ -436,6 +436,21 @@ AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id) {
     return app;
 }
 
+void update_app(EmuEnvState &emuenv, const AppEntry &app) {
+    auto &state = emuenv.app.apps_list;
+    {
+        std::lock_guard<std::mutex> lock(state.mutex);
+        const auto it = std::ranges::find_if(state.apps, [&](const AppEntry &entry) {
+            return entry.path == app.path;
+        });
+        if (it == state.apps.end())
+            state.apps.push_back(app);
+        else
+            *it = app;
+    }
+    save_apps_cache(emuenv);
+}
+
 void load_app_times(EmuEnvState &emuenv) {
     auto &state = emuenv.app.apps_list;
     std::lock_guard<std::mutex> lock(state.mutex);

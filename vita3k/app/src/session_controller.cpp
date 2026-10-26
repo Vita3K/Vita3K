@@ -85,6 +85,7 @@ bool AppSessionController::initialize_renderer(renderer::FrameHost &frame) {
     }
 
     emuenv.renderer->app_session_controller = *this;
+    emuenv.renderer->screenshot_callback = [this] { take_screenshot(emuenv); };
 
     apply_renderer_config(emuenv);
     renderer_initialized = true;
@@ -220,7 +221,7 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
             update_app_time_used(emuenv, emuenv.io.app_path);
 
         shutdown_app_runtime(emuenv);
-        reset_app_state(emuenv);
+        reset_app_state(emuenv, reason != AppSessionStopReason::FrontendShutdown);
         destroy(emuenv);
     } else if (renderer_was_initialized) {
         if (emuenv.renderer) {
