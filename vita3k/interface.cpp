@@ -20,6 +20,7 @@
 
 #include "module/load_module.h"
 
+#include <app/session_controller.h>
 #include <cheat/functions.h>
 #include <config/state.h>
 #include <ctime>
@@ -164,6 +165,7 @@ static void set_theme_name(EmuEnvState &emuenv, const vfs::FileBuffer &buffer, c
         buffer.size());
     emuenv.app_info.app_content_id = resolved_id;
     emuenv.app_info.app_title_id = resolved_id;
+    emuenv.app_info.app_category = "theme";
 
     if (!title.empty()) {
         emuenv.app_info.app_title = title;
@@ -408,15 +410,18 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     return true;
 }
 
-uint32_t install_contents(EmuEnvState &emuenv, const fs::path &path) {
+uint32_t install_contents(EmuEnvState &emuenv, const fs::path &path, const std::function<void(const std::string &, const std::string &)> &installed_callback) {
     const auto src_path = get_contents_path(path);
 
     LOG_WARN_IF(src_path.empty(), "No found any content compatible on this path: {}", path);
 
     uint32_t installed = 0;
     for (const auto &src : src_path) {
-        if (install_content(emuenv, src))
+        if (install_content(emuenv, src)) {
             ++installed;
+            if (installed_callback)
+                installed_callback(emuenv.app_info.app_title_id, emuenv.app_info.app_category);
+        }
     }
 
     if (installed) {
@@ -631,6 +636,22 @@ static std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t
     return frame;
 }
 
+void request_screenshot(EmuEnvState &emuenv) {
+    if (emuenv.cfg.screenshot_format == None)
+        return;
+    if (!emuenv.renderer || !emuenv.renderer->app_session_controller
+        || !emuenv.renderer->app_session_controller->get().is_running()) {
+        LOG_ERROR("Trying to take a screenshot while not ingame");
+        return;
+    }
+    if (!emuenv.renderer->screenshot_callback) {
+        LOG_ERROR("Cannot take a screenshot: the renderer is not ready.");
+        return;
+    }
+    if (emuenv.renderer->screenshot_requested.exchange(true))
+        LOG_WARN("A screenshot request is already pending.");
+}
+
 void take_screenshot(EmuEnvState &emuenv) {
     if (emuenv.cfg.screenshot_format == None)
         return;
@@ -648,7 +669,12 @@ void take_screenshot(EmuEnvState &emuenv) {
     }
 
     const fs::path save_folder = emuenv.shared_path / "screenshots" / fmt::format("{}", string_utils::remove_special_chars(emuenv.current_app_title));
-    fs::create_directories(save_folder);
+    std::error_code error;
+    fs::create_directories(save_folder, error);
+    if (error) {
+        LOG_ERROR("Failed to create screenshot directory {}: {}", save_folder, error.message());
+        return;
+    }
 
     auto t = std::time(nullptr);
     struct tm localtime;
@@ -665,12 +691,12 @@ void take_screenshot(EmuEnvState &emuenv) {
         if (stbi_write_jpg(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), quality) == 1)
             LOG_INFO("Successfully saved screenshot to {}", save_file);
         else
-            LOG_INFO("Failed to save screenshot");
+            LOG_ERROR("Failed to save screenshot to {}", save_file);
     } else {
         if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
             LOG_INFO("Successfully saved screenshot to {}", save_file);
         else
-            LOG_INFO("Failed to save screenshot");
+            LOG_ERROR("Failed to save screenshot to {}", save_file);
     }
 }
 
