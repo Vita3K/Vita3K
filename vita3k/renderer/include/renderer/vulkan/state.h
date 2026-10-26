@@ -81,6 +81,10 @@ struct VKState : public renderer::State {
     vk::Queue general_queue;
     vk::Queue transfer_queue;
 
+    // general_queue and transfer_queue currently resolve to the same VkQueue.
+    // Vulkan requires external synchronization for host access to that queue.
+    std::mutex queue_mutex;
+
     // These might be merged into one queue, but for now they are different.
     vk::CommandPool general_command_pool;
     // Transfer pool has transient bit set.

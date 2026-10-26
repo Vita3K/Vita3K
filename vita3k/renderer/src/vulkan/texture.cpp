@@ -198,7 +198,10 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
 
             vk::SubmitInfo submit_info{};
             submit_info.setCommandBuffers(context->cmdbuffers_to_submit);
-            state.general_queue.submit(submit_info, current_fence);
+            {
+                std::lock_guard<std::mutex> lock(state.queue_mutex);
+                state.general_queue.submit(submit_info, current_fence);
+            }
             context->cmdbuffers_to_submit.clear();
 
             auto result = state.device.waitForFences(current_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
