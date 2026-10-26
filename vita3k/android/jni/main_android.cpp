@@ -19,7 +19,9 @@
 
 #include <ime/keyboard.h>
 #include <motion/functions.h>
-#include <sdl-frontend/session.h>
+#include <sdl-frontend/functions.h>
+#include <sdl-frontend/main_window.h>
+#include <sdl/functions.h>
 #include <util/log.h>
 
 #include <SDL3/SDL.h>
@@ -88,6 +90,20 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
         return -1;
     }
 
+    if (!sdl::initialize(true)) {
+        LOG_ERROR("SDL initialization failed: {}", SDL_GetError());
+        return -1;
+    }
+    struct SDLQuitGuard {
+        ~SDLQuitGuard() {
+            SDL_Quit();
+        }
+    } sdl_quit_guard;
+
+    sdl_frontend::MainWindow main_window;
+    if (!main_window.initialize(*emuenv) || !main_window.window())
+        return -1;
+
     const sdl_frontend::Hooks hooks{
         .on_init = [emuenv] { set_display_rotation(emuenv->motion, get_display_rotation()); },
         .on_window = [](SDL_Window *window) { ime::set_sdl_window(window); },
@@ -103,7 +119,7 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
         .on_stop = [] { detach_overlay_virtual_controller(); },
     };
 
-    return sdl_frontend::run(*emuenv, *session_controller, AppLaunchRequest{ .app_path = title_id }, hooks);
+    return sdl_frontend::run(*emuenv, *session_controller, *main_window.window(), AppLaunchRequest{ .app_path = title_id }, hooks).exit_code;
 }
 
 } // extern "C"

@@ -79,6 +79,12 @@ void load_users(EmuEnvState &emuenv) {
         if (!user_child.attribute("name").empty())
             user.name = user_child.attribute("name").as_string();
 
+        const auto sort_apps_list = user_child.child("sort-apps-list");
+        if (!sort_apps_list.empty()) {
+            user.sort_apps_type = static_cast<UserSortType>(sort_apps_list.attribute("type").as_uint());
+            user.sort_apps_state = static_cast<UserSortState>(sort_apps_list.attribute("state").as_uint());
+        }
+
         auto theme = user_child.child("theme");
         if (!theme.attribute("use-background").empty())
             user.use_theme_bg = theme.attribute("use-background").as_bool();
@@ -119,6 +125,10 @@ void save_user(EmuEnvState &emuenv, const std::string &user_id) {
     auto user_child = user_xml.append_child("user");
     user_child.append_attribute("id") = user.id.c_str();
     user_child.append_attribute("name") = user.name.c_str();
+
+    auto sort_apps_list = user_child.append_child("sort-apps-list");
+    sort_apps_list.append_attribute("type") = static_cast<uint32_t>(user.sort_apps_type);
+    sort_apps_list.append_attribute("state") = static_cast<uint32_t>(user.sort_apps_state);
 
     auto theme = user_child.append_child("theme");
     theme.append_attribute("use-background") = user.use_theme_bg;
