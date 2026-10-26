@@ -78,6 +78,17 @@ void load_users(EmuEnvState &emuenv) {
         user.id = user_id;
         if (!user_child.attribute("name").empty())
             user.name = user_child.attribute("name").as_string();
+        if (!user_child.child("avatar").text().empty())
+            user.avatar = user_child.child("avatar").text().as_string();
+
+        const auto sort_apps_list = user_child.child("sort-apps-list");
+        if (!sort_apps_list.empty()) {
+            user.sort_apps_type = static_cast<UserSortType>(sort_apps_list.attribute("type").as_uint());
+            user.sort_apps_state = static_cast<UserSortState>(sort_apps_list.attribute("state").as_uint());
+        }
+
+        const auto sound_display = user_child.child("sound-display");
+        user.system_music = sound_display.attribute("system-music").as_bool(user.system_music);
 
         auto theme = user_child.child("theme");
         if (!theme.attribute("use-background").empty())
@@ -119,6 +130,14 @@ void save_user(EmuEnvState &emuenv, const std::string &user_id) {
     auto user_child = user_xml.append_child("user");
     user_child.append_attribute("id") = user.id.c_str();
     user_child.append_attribute("name") = user.name.c_str();
+    user_child.append_child("avatar").append_child(pugi::node_pcdata).set_value(user.avatar.c_str());
+
+    auto sort_apps_list = user_child.append_child("sort-apps-list");
+    sort_apps_list.append_attribute("type") = static_cast<uint32_t>(user.sort_apps_type);
+    sort_apps_list.append_attribute("state") = static_cast<uint32_t>(user.sort_apps_state);
+
+    auto sound_display = user_child.append_child("sound-display");
+    sound_display.append_attribute("system-music") = user.system_music;
 
     auto theme = user_child.append_child("theme");
     theme.append_attribute("use-background") = user.use_theme_bg;

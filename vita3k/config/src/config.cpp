@@ -362,12 +362,16 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         ->transform(CLI::CheckedTransformer(frontends, CLI::ignore_case))->default_str("qt")->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
+    std::map<std::string, std::string> installed_apps;
+    for (const auto &app_path : get_file_set(cfg.get_vita_fs_path() / "ux0/app"))
+        installed_apps.emplace(app_path, app_path);
+    const auto installed_app_transformer = CLI::CheckedTransformer(installed_apps, CLI::ignore_case);
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
+        ->default_str({})->transform(installed_app_transformer)->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
+        ->default_str({})->transform(installed_app_transformer)->group("Input");
     input->add_option("--firmware", command_line.pup_path, "Path to the firmware file (.pup extension) to install");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");

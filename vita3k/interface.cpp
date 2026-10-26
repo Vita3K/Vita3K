@@ -163,6 +163,7 @@ static void set_theme_name(EmuEnvState &emuenv, const vfs::FileBuffer &buffer, c
         buffer.size());
     emuenv.app_info.app_content_id = resolved_id;
     emuenv.app_info.app_title_id = resolved_id;
+    emuenv.app_info.app_category = "theme";
 
     if (!title.empty()) {
         emuenv.app_info.app_title = title;
@@ -401,15 +402,18 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     return true;
 }
 
-uint32_t install_contents(EmuEnvState &emuenv, const fs::path &path) {
+uint32_t install_contents(EmuEnvState &emuenv, const fs::path &path, const std::function<void(const std::string &, const std::string &)> &installed_callback) {
     const auto src_path = get_contents_path(path);
 
     LOG_WARN_IF(src_path.empty(), "No found any content compatible on this path: {}", path);
 
     uint32_t installed = 0;
     for (const auto &src : src_path) {
-        if (install_content(emuenv, src))
+        if (install_content(emuenv, src)) {
             ++installed;
+            if (installed_callback)
+                installed_callback(emuenv.app_info.app_title_id, emuenv.app_info.app_category);
+        }
     }
 
     if (installed) {
