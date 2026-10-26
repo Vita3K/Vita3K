@@ -5,15 +5,6 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License along
-// with this program; if not, write to the Free Software Foundation, Inc.,
-// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
 
@@ -23,10 +14,9 @@
 
 #include <utility>
 
-namespace sdl_frontend {
+namespace sdl {
 
-// Lets the renderer draw in an SDL window: Vulkan surfaces from SDL, or its OpenGL context
-class FrameHost final : public renderer::FrameHost, public renderer::VulkanSurfaceProvider {
+class FrameHost : public renderer::FrameHost, public renderer::VulkanSurfaceProvider {
 public:
     FrameHost(SDL_Window *window, SDL_GLContext *gl_context);
 
@@ -46,12 +36,12 @@ public:
     void prepare_for_render_thread() override;
     void destroy_render_context() override;
 
-private:
-    // The window size in pixels, or 0x0 while Android has no surface to draw on
-    std::pair<int, int> drawable_size() const;
+protected:
+    SDL_Window *window;
+    SDL_GLContext *gl_context;
 
-    SDL_Window *window = nullptr;
-    SDL_GLContext *gl_context = nullptr;
+private:
+    std::pair<int, int> drawable_size() const;
 };
 
-} // namespace sdl_frontend
+} // namespace sdl

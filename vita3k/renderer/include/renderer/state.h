@@ -128,6 +128,8 @@ struct State {
 
     std::atomic<bool> async_flip_requested{ false };
     std::atomic<int> pending_vsync{ -1 };
+    std::atomic<bool> screenshot_requested{ false };
+    std::function<void()> screenshot_callback;
 
     std::unique_ptr<std::thread> render_thread;
     std::atomic<bool> render_abort{ false };
