@@ -540,20 +540,27 @@ void ScreenRenderer::swap_window() {
         = { vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer };
     submit_info.setWaitSemaphores(wait_semaphores);
     submit_info.setWaitDstStageMask(dst_masks);
-    submit_info.setSignalSemaphores(image_ready_semaphores[current_frame]);
+
+    // Presentation may still be waiting on this semaphore after the submit fence signals.
+    // Reuse it only when the same swapchain image is acquired again.
+    submit_info.setSignalSemaphores(image_ready_semaphores[swapchain_image_idx]);
     submit_info.setCommandBuffers(current_cmd_buffer);
-    state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
 
     // then present the surface
     vk::PresentInfoKHR present_info{
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &image_ready_semaphores[current_frame],
+        .pWaitSemaphores = &image_ready_semaphores[swapchain_image_idx],
         .swapchainCount = 1,
         .pSwapchains = &swapchain,
         .pImageIndices = &swapchain_image_idx,
     };
 
-    auto result = state.general_queue.presentKHR(&present_info);
+    vk::Result result;
+    {
+        std::lock_guard<std::mutex> lock(state.queue_mutex);
+        state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
+        result = state.general_queue.presentKHR(&present_info);
+    }
     if (result == vk::Result::eSuboptimalKHR) {
         need_rebuild = !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
