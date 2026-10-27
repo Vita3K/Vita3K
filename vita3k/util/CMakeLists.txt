@@ -25,3 +25,14 @@ if(ANDROID)
 	target_link_libraries(util PRIVATE adrenotools)
 endif()
 target_compile_definitions(util PRIVATE $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ENABLE>)
+
+if(NOT ANDROID)
+	add_executable(
+		util-tests
+		tests/intrusive_list_tests.cpp
+	)
+
+	target_include_directories(util-tests PRIVATE include)
+	target_link_libraries(util-tests PRIVATE googletest)
+	add_test(NAME util COMMAND util-tests)
+endif()
