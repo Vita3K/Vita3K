@@ -87,8 +87,10 @@ def guest_output(name: str, log: Path) -> bytes:
     path = output_file(name)
     if path.exists():
         return path.read_bytes()
-    lines = (OUTPUT_RE.search(line) for line in log.read_bytes().splitlines())
-    return b"".join(match.group(1) + b"\n" for match in lines if match)
+    # Line by line, since a test that runs away can log gigabytes
+    with log.open("rb") as lines:
+        matches = (OUTPUT_RE.search(line) for line in lines)
+        return b"".join(match.group(1) + b"\n" for match in matches if match)
 
 
 def main() -> int:
