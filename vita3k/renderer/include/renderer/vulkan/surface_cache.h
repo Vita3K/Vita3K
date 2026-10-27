@@ -60,6 +60,8 @@ struct Framebuffer {
     vk::Framebuffer shader_interlock;
     // base color image used by the framebuffer
     vkutil::Image *base_image;
+    uint32_t width;
+    uint32_t height;
 };
 
 struct CastedTexture {
