@@ -238,6 +238,10 @@ jobs:
       - name: Set up the Linux environment
         run: bash ./.ci/setup-linux.sh
 
+      # lavapipe, Mesa's CPU Vulkan driver, and pytest with pytest-xdist for run.py
+      - name: Install the autotests' dependencies
+        run: sudo apt-get -y install mesa-vulkan-drivers python3-pytest python3-pytest-xdist
+
       - name: Install Qt 6.11.0
         uses: jurplel/install-qt-action@v4
         with:
@@ -260,6 +264,9 @@ jobs:
           repository: Vita3K/VitaAutotests
           ref: ${{ env.AUTOTESTS_REF }}
           path: autotests
+
+      - name: Build the autotests
+        run: bash ./.ci/build-autotests.sh autotests
 
       # An artifact doesn't keep the executable bit
       - name: Run the autotests

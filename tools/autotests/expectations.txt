@@ -232,7 +232,7 @@ info_sizes                      pass
 local_ready_requeue             fail     # threads are never READY or STANDBY
 local_standby_raise_preempt     fail     # T reads DORMANT where the Vita has STANDBY, and the steps run in another order
 lock_calls_callback_runs        pass
-lock_failed_at_once_state       pass
+lock_failed_at_once_state       skip     # the woken waiter runs at once on its host thread and can finish before the main thread reads
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
 lw_cond_errors                  fail     # create checks of the attribute, a NULL mutex and a NULL work area, a signal to thread 0

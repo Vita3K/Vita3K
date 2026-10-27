@@ -95,3 +95,6 @@ fastlane/readme.md
 # Translations
 /template/
 /android/app/src/main/res/values-*/strings.xml
+
+# Python caches, from running tools/autotests with pytest directly
+__pycache__/
