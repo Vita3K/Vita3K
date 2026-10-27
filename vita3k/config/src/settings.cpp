@@ -71,6 +71,7 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
     current.log_uniforms = cfg.log_uniforms;
     current.color_surface_debug = cfg.color_surface_debug;
     current.validation_layer = cfg.validation_layer;
+    current.disable_mask_bit = cfg.disable_mask_bit;
     current.tracy_primitive_impl = cfg.tracy_primitive_impl;
     current.tracy_advanced_profiling_modules = cfg.tracy_advanced_profiling_modules;
 }
@@ -116,6 +117,7 @@ void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.log_uniforms = current.log_uniforms;
     cfg.color_surface_debug = current.color_surface_debug;
     cfg.validation_layer = current.validation_layer;
+    cfg.disable_mask_bit = current.disable_mask_bit;
     cfg.tracy_primitive_impl = current.tracy_primitive_impl;
     cfg.tracy_advanced_profiling_modules = current.tracy_advanced_profiling_modules;
 }
@@ -143,6 +145,7 @@ std::vector<RestartRequiredSetting> get_restart_required_settings(
     append_if_changed(before.memory_mapping != after.memory_mapping, RestartRequiredSetting::MemoryMapping);
     append_if_changed(before.audio_backend != after.audio_backend, RestartRequiredSetting::AudioBackend);
     append_if_changed(before.validation_layer != after.validation_layer, RestartRequiredSetting::ValidationLayer);
+    append_if_changed(before.disable_mask_bit != after.disable_mask_bit, RestartRequiredSetting::DisableMaskBit);
 
     return changed;
 }
@@ -237,6 +240,7 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
         out.log_uniforms = dbg.attribute("log-uniforms").as_bool();
         out.color_surface_debug = dbg.attribute("color-surface-debug").as_bool();
         out.validation_layer = dbg.attribute("validation-layer").as_bool(true);
+        out.disable_mask_bit = dbg.attribute("disable-mask-bit").as_bool();
     }
 
     if (!config_child.child("network").empty())
@@ -315,6 +319,7 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
     debug_child.append_attribute("log-uniforms") = cc.log_uniforms;
     debug_child.append_attribute("color-surface-debug") = cc.color_surface_debug;
     debug_child.append_attribute("validation-layer") = cc.validation_layer;
+    debug_child.append_attribute("disable-mask-bit") = cc.disable_mask_bit;
 
     auto network_child = config_child.append_child("network");
     network_child.append_attribute("psn-signed-in") = cc.psn_signed_in;

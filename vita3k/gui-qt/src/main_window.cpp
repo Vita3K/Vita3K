@@ -455,7 +455,6 @@ void MainWindow::initialize() {
     connect(m_ui->user_management_action, &QAction::triggered,
         this, &MainWindow::open_user_management);
 
-    connect(m_ui->settings_core_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Core)); });
     connect(m_ui->settings_cpu_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::CPU)); });
     connect(m_ui->settings_gpu_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Graphics)); });
     connect(m_ui->settings_audio_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Audio)); });
@@ -464,6 +463,7 @@ void MainWindow::initialize() {
     connect(m_ui->settings_emulator_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Emulator)); });
     connect(m_ui->settings_gui_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Interface)); });
     connect(m_ui->settings_network_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Network)); });
+    connect(m_ui->settings_advanced_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Advanced)); });
     connect(m_ui->settings_debug_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Debug)); });
 
     connect(m_ui->install_firmware_action, &QAction::triggered,

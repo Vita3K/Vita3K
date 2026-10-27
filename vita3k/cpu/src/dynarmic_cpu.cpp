@@ -142,6 +142,8 @@ public:
     }
 };
 
+static constexpr bool LOG_INVALID_ACCESS = false;
+
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
     friend class DynarmicCPU;
 
@@ -181,17 +183,29 @@ public:
         }
     }
 
+    void log_invalid_access(const char *access, Dynarmic::A32::VAddr addr) {
+        const uint32_t pc = this->cpu->get_pc();
+        if (!parent->mem->invalid_access_logged.test_and_set())
+            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x}). Set LOG_INVALID_ACCESS for full reports", access, addr, parent->thread_id, pc);
+        else
+            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x})", access, addr, parent->thread_id, pc);
+    }
+
     template <typename T>
     T MemoryRead(Dynarmic::A32::VAddr addr) {
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
-            LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
+            if (LOG_INVALID_ACCESS) {
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
 
-            auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
-                LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+                auto pc = this->cpu->get_pc();
+                if (pc < parent->mem->host_page_size)
+                    LOG_CRITICAL("PC is 0x{:x}", pc);
+                else
+                    LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            } else {
+                log_invalid_access("read", addr);
+            }
             return 0;
         }
 
@@ -222,13 +236,17 @@ public:
     void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
-            LOG_ERROR("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}\n{}", sizeof(T) * 8, addr, value, this->cpu->save_context().description());
+            if (LOG_INVALID_ACCESS) {
+                LOG_ERROR("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}\n{}", sizeof(T) * 8, addr, value, this->cpu->save_context().description());
 
-            auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
-                LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+                auto pc = this->cpu->get_pc();
+                if (pc < parent->mem->host_page_size)
+                    LOG_CRITICAL("PC is 0x{:x}", pc);
+                else
+                    LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            } else {
+                log_invalid_access("write", addr);
+            }
             return;
         }
 
@@ -258,13 +276,17 @@ public:
     bool MemoryWriteExclusive(Dynarmic::A32::VAddr addr, T value, T expected) {
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
-            LOG_ERROR("Invalid exclusive write of uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}\n{}", sizeof(T) * 8, addr, value, expected, this->cpu->save_context().description());
+            if (LOG_INVALID_ACCESS) {
+                LOG_ERROR("Invalid exclusive write of uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}\n{}", sizeof(T) * 8, addr, value, expected, this->cpu->save_context().description());
 
-            auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
-                LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+                auto pc = this->cpu->get_pc();
+                if (pc < parent->mem->host_page_size)
+                    LOG_CRITICAL("PC is 0x{:x}", pc);
+                else
+                    LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            } else {
+                log_invalid_access("exclusive write", addr);
+            }
             return false;
         }
 

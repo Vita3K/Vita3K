@@ -43,6 +43,26 @@ enum class PhysicalKeyCode : uint32_t {
 #undef PHYSICAL_KEY_ENTRY
 };
 
+// SDL uses USB usage IDs for keyboard-page scancodes from A (0x04) through Right GUI (0xe7).
+constexpr uint32_t physical_key_to_sdl_scancode(const PhysicalKeyCode key) {
+    const uint32_t usage = static_cast<uint32_t>(key);
+    const uint32_t scancode = usage & 0xffff;
+    if ((usage >> 16) == 0x07 && scancode >= 0x04 && scancode <= 0xe7)
+        return scancode;
+
+    // Consumer-page volume keys use SDL's mute/volume scancodes.
+    switch (key) {
+    case PhysicalKeyCode::AudioVolumeMute:
+        return 127; // SDL_SCANCODE_MUTE
+    case PhysicalKeyCode::AudioVolumeUp:
+        return 128; // SDL_SCANCODE_VOLUMEUP
+    case PhysicalKeyCode::AudioVolumeDown:
+        return 129; // SDL_SCANCODE_VOLUMEDOWN
+    default:
+        return 0;
+    }
+}
+
 PhysicalKeyCode physical_key_from_native_scan_code(NativeScanCodeSet scan_code_set, uint32_t native_scan_code);
 std::string_view physical_key_code_name(PhysicalKeyCode code);
 PhysicalKeyCode physical_key_from_code_name(std::string_view name);

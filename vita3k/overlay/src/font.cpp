@@ -196,8 +196,8 @@ glyph_load_setup font::get_glyph_files(language_class class_) const {
 
         // Vita firmware fonts first
         if (bold) {
-            result.font_names.emplace_back("jpn4.pvf");
-            result.font_names.emplace_back("cn4.pvf");
+            result.font_names.emplace_back("jpn2.pvf");
+            result.font_names.emplace_back("cn1.pvf");
         }
         result.font_names.emplace_back("jpn0.pvf");
         result.font_names.emplace_back("cn0.pvf");
@@ -229,7 +229,7 @@ glyph_load_setup font::get_glyph_files(language_class class_) const {
 
         // Vita firmware font first
         if (bold) {
-            result.font_names.emplace_back("kr4.pvf");
+            result.font_names.emplace_back("kr2.pvf");
         }
         result.font_names.emplace_back("kr0.pvf");
 
