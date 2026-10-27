@@ -16,7 +16,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS an
 
 ### Base version
 
-This update is based on Vita3K upstream `master` at commit `99ec7cad` (`kernel: share one wait loop between sync objects`). Six upstream commits were added to the checkout that was originally used for the Android overlay work.
+This update started from Vita3K upstream `master` at commit `99ec7cad` (`kernel: share one wait loop between sync objects`). The checkout is now synchronized with upstream `master` through commit `6ec8e6ce` (`overlay: use existing bold CJK firmware fonts`), while retaining the Android overlay work described below.
 
 ### Upstream Vita3K changes included
 
@@ -26,6 +26,16 @@ This update is based on Vita3K upstream `master` at commit `99ec7cad` (`kernel: 
 * **Shader output:** Clamps vertex `COLOR0` and `COLOR1` outputs to the `[0, 1]` range.
 * **Build requirements:** Raises the minimum Boost version to 1.82.
 * **C++ cleanup:** Modernizes C++ patterns for readability across core, Android JNI, and other platform code.
+* **Synchronization callbacks:** Runs callbacks notified during a wait before the wait returns.
+* **CPU diagnostics:** Logs invalid guest accesses in full only when `LOG_INVALID_ACCESS` is enabled.
+* **Logging:** Installs the termination handler only once.
+* **OpenGL compatibility:** Adds a workaround for AMD integrated GPUs.
+* **PVRTC textures:** Decodes PVRTC textures before Vulkan RGBA8 uploads.
+* **Vulkan portability:** Negotiates Vulkan portability enumeration when available.
+* **NGS player buffers:** Advances to the next populated player buffer when the current slot is unavailable or empty.
+* **SDL input:** Forwards mouse and keyboard input correctly through the SDL frontend.
+* **Kernel timers:** Adds kernel timer event support.
+* **CJK firmware fonts:** Uses available bold firmware fonts when the preferred Japanese, Chinese, or Korean font files are unavailable.
 
 ### Android overlay and editor changes
 
@@ -39,7 +49,7 @@ This update is based on Vita3K upstream `master` at commit `99ec7cad` (`kernel: 
 
 ### Build validation
 
-The Android `assembleReldebug` build completed successfully after the upstream updates and local Android changes were combined. The resulting APK was verified as a readable APK archive with one signer. The build was performed in a sandbox; gameplay behavior was not tested on a physical device.
+The Android `assembleReldebug` build completed successfully after the original upstream updates and local Android changes were combined. The resulting APK was verified as a readable APK archive with one signer. A post-sync rebuild was not run in the current sandbox because no Android SDK is configured. Gameplay behavior was not tested on a physical device.
 
 ### Source package note
 
