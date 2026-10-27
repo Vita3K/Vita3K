@@ -13,7 +13,7 @@ env:
   QT_VERSION: '6.11.0'
   SCCACHE_GHA_ENABLED: "true"
   # The VitaAutotests commit to test with. Bump it to pick up new tests.
-  AUTOTESTS_REF: 480fbe019facfa7226649a1e1ff8f6981cfa9af5
+  AUTOTESTS_REF: 5f702ba10ea42de9d336b7d88e2da5d17c6e49fb
 
 jobs:
   desktop-build:
@@ -24,13 +24,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: linux-x64
-            runs_on: ubuntu-26.04
-            arch: x86_64
-            cmake_preset: ci-linux-clang-appimage
-            cache_path: ''
-            qt_install_deps: 'true'
-
           - platform: linux-arm64
             runs_on: ubuntu-26.04-arm
             arch: aarch64
@@ -66,7 +59,7 @@ jobs:
             cache_path: ~/Library/Caches/ccache
             qt_install_deps: 'false'
 
-    steps:
+    steps: &desktop-build-steps
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -215,17 +208,71 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_DIR }}
 
+  # The desktop build of Linux x64 on its own, so the autotests start as soon as it is done
+  linux-x64-build:
+    name: Desktop (${{ matrix.platform }})
+    runs-on: ${{ matrix.runs_on }}
+
+    strategy:
+      matrix:
+        include:
+          - platform: linux-x64
+            runs_on: ubuntu-26.04
+            arch: x86_64
+            cmake_preset: ci-linux-clang-appimage
+            cache_path: ''
+            qt_install_deps: 'true'
+
+    steps: *desktop-build-steps
+
+  autotests:
+    name: VitaAutotests (linux-x64)
+    # Its own job, so a runner lost during the tests doesn't fail the build, and a rerun of the tests
+    # doesn't build again
+    needs: linux-x64-build
+    runs-on: ubuntu-26.04
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up the Linux environment
+        run: bash ./.ci/setup-linux.sh
+
+      # lavapipe, Mesa's CPU Vulkan driver, and pytest with pytest-xdist for run.py
+      - name: Install the autotests' dependencies
+        run: sudo apt-get -y install mesa-vulkan-drivers python3-pytest python3-pytest-xdist
+
+      - name: Install Qt 6.11.0
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          cache: true
+          install-deps: 'true'
+
+      # By pattern, since the build names it with the short commit hash of a full clone
+      - name: Download the Linux x64 build
+        uses: actions/download-artifact@v8
+        with:
+          pattern: vita3k-*-linux-x64
+          merge-multiple: true
+          path: vita3k
+
       - name: Check out the autotests
         uses: actions/checkout@v7
         with:
           repository: Vita3K/VitaAutotests
           ref: ${{ env.AUTOTESTS_REF }}
           path: autotests
-        if: matrix.platform == 'linux-x64'
 
+      - name: Build the autotests
+        run: bash ./.ci/build-autotests.sh autotests
+
+      # An artifact doesn't keep the executable bit
       - name: Run the autotests
-        run: bash ./.ci/run-autotests.sh "build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}/Vita3K" autotests
-        if: matrix.platform == 'linux-x64'
+        run: |
+          chmod +x vita3k/bin/Vita3K
+          bash ./.ci/run-autotests.sh vita3k/bin/Vita3K autotests
 
   android-build:
     name: Android
@@ -309,7 +356,7 @@ jobs:
           path: ${{ env.ARTIFACT_DIR }}
 
   create-release:
-    needs: [desktop-build, android-build]
+    needs: [desktop-build, linux-x64-build, autotests, android-build]
     runs-on: ubuntu-latest
     concurrency:
       group: create-release
