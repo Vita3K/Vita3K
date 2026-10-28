@@ -28,6 +28,16 @@ struct sceKernelRegisterThreadEventHandlerOpt {
     int reserved1;
 };
 
+// The result list and the timeout, packed in a struct by the user wrappers of
+// sceKernelWaitMultipleEvents
+struct SceKernelWaitMultipleEventsOpt {
+    Ptr<SceKernelResultEvent> results;
+    Ptr<SceUInt32> timeout;
+};
+
+DECL_EXPORT(SceInt32, _sceKernelWaitMultipleEvents, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt);
+DECL_EXPORT(SceInt32, _sceKernelWaitMultipleEventsCB, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt);
+
 DECL_EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam);
 DECL_EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pInfo);
 DECL_EXPORT(int, _sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus);

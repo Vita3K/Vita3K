@@ -67,6 +67,10 @@
 #define SCE_KERNEL_EVENT_CLOSE 0x00000200U
 // The bits of a simple event a game may set and clear, the others are system events
 #define SCE_KERNEL_EVENT_USER_DEFINED_MASK 0xFF000000U
+// Message pipe events: bytes were sent, bytes were received, the pipe holds data
+#define SCE_KERNEL_EVENT_IN 0x00000001U
+#define SCE_KERNEL_EVENT_OUT 0x00000002U
+#define SCE_KERNEL_EVENT_DATA_EXIST 0x00010000U
 
 #define SCE_KERNEL_ATTR_NOTIFY_CB_ALL 0x00000000U
 #define SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY 0x00000800U
@@ -888,6 +892,29 @@ struct SceKernelEventInfo {
     SceInt32 reserved;
 };
 static_assert(sizeof(SceKernelEventInfo) == 0x40, "Incorrect size");
+
+// sceKernelWaitMultipleEvents modes: wait for any of the events, or for all of them
+#define SCE_KERNEL_EVENT_WAIT_MODE_OR 0x00000001U
+#define SCE_KERNEL_EVENT_WAIT_MODE_AND 0x00000002U
+// Maximum number of events in one sceKernelWaitMultipleEvents call
+#define SCE_KERNEL_MULTIPLE_EVENTS_MAX 64
+
+// One event passed to sceKernelWaitMultipleEvents and the bits to wait for
+struct SceKernelWaitEvent {
+    SceUID eventId;
+    SceUInt32 eventPattern;
+};
+static_assert(sizeof(SceKernelWaitEvent) == 0x8, "Incorrect size");
+
+// The result of one event in a sceKernelWaitMultipleEvents call
+struct SceKernelResultEvent {
+    SceUID eventId;
+    SceInt32 result;
+    SceUInt32 resultPattern;
+    SceInt32 reserved;
+    SceUInt64 userData;
+};
+static_assert(sizeof(SceKernelResultEvent) == 0x18, "Incorrect size");
 
 // What sceKernelGetTimerInfo reports
 struct SceKernelTimerInfo {
