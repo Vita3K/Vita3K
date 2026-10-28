@@ -19,6 +19,12 @@ constexpr bool triangle_fan_fits(size_t count, size_t capacity_bytes) {
     return count >= 3 && count - 2 <= capacity_bytes / (3 * sizeof(T));
 }
 
+template <typename T>
+constexpr bool triangle_fan_fits_without_wrap(size_t count, size_t capacity_bytes, size_t cursor_bytes, uint64_t wrap_generation, uint64_t retired_wrap_generation) {
+    // A wrap remains unsafe until the submission containing it has completed.
+    return wrap_generation <= retired_wrap_generation && cursor_bytes <= capacity_bytes && triangle_fan_fits<T>(count, capacity_bytes - cursor_bytes);
+}
+
 // For Vulkan's default first provoking vertex, with primitive restart disabled.
 // Keep the same cyclic winding and flat-shaded vertex as MoltenVK's conversion.
 template <typename T>

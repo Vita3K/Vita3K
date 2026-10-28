@@ -439,9 +439,12 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     std::vector<uint16_t> fan_indices_u16;
     std::vector<uint32_t> fan_indices_u32;
     const size_t index_capacity = context.index_stream_ring_buffer.capacity_bytes();
+    const size_t index_cursor = context.index_stream_ring_buffer.cursor_bytes();
+    const uint64_t index_wrap_generation = context.index_stream_ring_buffer.current_wrap_generation();
+    const uint64_t retired_index_wrap_generation = context.index_stream_ring_buffer.last_retired_wrap_generation();
     if (type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN && !context.state.features.enable_memory_mapping
-        && (format == SCE_GXM_INDEX_FORMAT_U16 ? triangle_fan_fits<uint16_t>(count, index_capacity)
-                                              : triangle_fan_fits<uint32_t>(count, index_capacity))) {
+        && (format == SCE_GXM_INDEX_FORMAT_U16 ? triangle_fan_fits_without_wrap<uint16_t>(count, index_capacity, index_cursor, index_wrap_generation, retired_index_wrap_generation)
+                                              : triangle_fan_fits_without_wrap<uint32_t>(count, index_capacity, index_cursor, index_wrap_generation, retired_index_wrap_generation))) {
         if (format == SCE_GXM_INDEX_FORMAT_U16) {
             fan_indices_u16 = triangle_fan_to_list(static_cast<const uint16_t *>(indices_ptr), count);
             indices_ptr = fan_indices_u16.data();
