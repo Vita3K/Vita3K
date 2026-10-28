@@ -19,6 +19,9 @@
 
 #include <gxm/functions.h>
 #include <renderer/vulkan/gxm_to_vulkan.h>
+#ifdef __APPLE__
+#include <renderer/vulkan/triangle_fan.h>
+#endif
 
 #include <config/state.h>
 #include <spdlog/fmt/bin_to_hex.h>
@@ -408,6 +411,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
 
     void *indices_ptr = indices.get(mem);
+    const size_t guest_count = count;
 
     context.check_for_macroblock_change(true);
 
@@ -427,6 +431,29 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         ordered_indices = prepare_ordered_mask_indices(context, type, format, indices, count, mem);
         type = SCE_GXM_PRIMITIVE_TRIANGLES;
     }
+#ifdef __APPLE__
+    // Metal has no native triangle fans. MoltenVK's GPU index expansion ends
+    // the render pass for each fan; expand our CPU-owned indices before upload.
+    // Ordered framebuffer fetch already expands fans above, and mapped guest
+    // buffers must retain their existing synchronization path.
+    std::vector<uint16_t> fan_indices_u16;
+    std::vector<uint32_t> fan_indices_u32;
+    const size_t index_capacity = context.index_stream_ring_buffer.capacity_bytes();
+    if (type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN && !context.state.features.enable_memory_mapping
+        && (format == SCE_GXM_INDEX_FORMAT_U16 ? triangle_fan_fits<uint16_t>(count, index_capacity)
+                                              : triangle_fan_fits<uint32_t>(count, index_capacity))) {
+        if (format == SCE_GXM_INDEX_FORMAT_U16) {
+            fan_indices_u16 = triangle_fan_to_list(static_cast<const uint16_t *>(indices_ptr), count);
+            indices_ptr = fan_indices_u16.data();
+            count = fan_indices_u16.size();
+        } else {
+            fan_indices_u32 = triangle_fan_to_list(static_cast<const uint32_t *>(indices_ptr), count);
+            indices_ptr = fan_indices_u32.data();
+            count = fan_indices_u32.size();
+        }
+        type = SCE_GXM_PRIMITIVE_TRIANGLES;
+    }
+#endif
     if (masked_fetch)
         LOG_INFO_ONCE("Using late-tested framebuffer fetch for rejecting GXM masks; programmable blending is ordered per primitive when rasterization-order attachment access is unavailable");
 
@@ -476,7 +503,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
         // We don't want to defer cases where we draw a whole quad over the screen as these draws could be necessary
         // to be able to see anything
-        bool can_be_whole_quad = instance_count == 1 && count <= 6;
+        bool can_be_whole_quad = instance_count == 1 && guest_count <= 6;
         vk::Pipeline new_pipeline = context.state.pipeline_cache.retrieve_pipeline(context, type, !can_be_whole_quad, mem);
 
         if (new_pipeline != context.current_pipeline) {

@@ -122,6 +122,10 @@ public:
     vk::Buffer handle() const {
         return buffer.buffer;
     }
+
+    uint32_t capacity_bytes() const {
+        return capacity;
+    }
 };
 
 // RingBuffer allocated in the GPU memory, may not be accessible from the host
