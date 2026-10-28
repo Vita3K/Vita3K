@@ -310,15 +310,15 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         state.async_flip_requested.store(false, std::memory_order_relaxed);
 
 #ifdef TRACY_ENABLE
+        const uint64_t current_vblank = display.vblank_count.load(std::memory_order_relaxed);
+        const uint64_t delta_vblank = current_vblank - last_vblank_count;
+        last_vblank_count = current_vblank;
+
+        const auto now = std::chrono::steady_clock::now();
+        const double frame_time_ms = std::chrono::duration<double, std::milli>(now - last_frame_time).count();
+        last_frame_time = now;
+
         if (TracyIsConnected) {
-            const uint64_t current_vblank = display.vblank_count.load(std::memory_order_relaxed);
-            const uint64_t delta_vblank = current_vblank - last_vblank_count;
-            last_vblank_count = current_vblank;
-
-            const auto now = std::chrono::steady_clock::now();
-            const double frame_time_ms = std::chrono::duration<double, std::milli>(now - last_frame_time).count();
-            last_frame_time = now;
-
             uint64_t total_mapped = 0;
             {
                 const std::lock_guard<std::mutex> lock(mem.generation_mutex);
