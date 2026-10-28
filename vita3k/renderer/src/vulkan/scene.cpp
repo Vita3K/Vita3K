@@ -19,6 +19,9 @@
 
 #include <gxm/functions.h>
 #include <renderer/vulkan/gxm_to_vulkan.h>
+#ifdef __APPLE__
+#include <renderer/vulkan/triangle_fan.h>
+#endif
 
 #include <config/state.h>
 #include <spdlog/fmt/bin_to_hex.h>
@@ -427,6 +430,19 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         ordered_indices = prepare_ordered_mask_indices(context, type, format, indices, count, mem);
         type = SCE_GXM_PRIMITIVE_TRIANGLES;
     }
+#ifdef __APPLE__
+    // Metal has no native triangle-fan support. MoltenVK supports it through portability extensions but their
+    // implementation does it via a GPU index-expansion that ends the current render pass on every fan draw.
+    // On games that frequently use triangle fans (ex. Disgaea 3), this is very costly.
+    // Thus, we will expand the fan to triangles ourselves (on CPU) and give MVK a plain triangle list
+    // If other GPUs end up having this problem (unlikely but mali/adreno?) then it should be a FeatureState var instead of an ifdef
+    const size_t fan_index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
+    const bool is_fan = ((type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN) && (count >= 3));
+    // expanded list should fit into the 64mb index ring buffer and oversized fans fall back to MVK's method
+    const bool expand_fan_for_metal = is_fan && (count - 2) <= MiB(64) / (3 * fan_index_size);
+    if (expand_fan_for_metal)
+        type = SCE_GXM_PRIMITIVE_TRIANGLES;
+#endif
     if (masked_fetch)
         LOG_INFO_ONCE("Using late-tested framebuffer fetch for rejecting GXM masks; programmable blending is ordered per primitive when rasterization-order attachment access is unavailable");
 
@@ -470,7 +486,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     }
 
     // do we need to check for a pipeline change?
-    if (context.refresh_pipeline || type != context.last_primitive) {
+    if (context.refresh_pipeline || type != context.last_primitive || context.current_pipeline == nullptr) {
         context.refresh_pipeline = false;
         context.last_primitive = type;
 
@@ -558,6 +574,12 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     uint32_t max_index = 0;
     if (use_memory_mapping) {
+#ifdef __APPLE__
+        // macOS does not yet have memory mapping but it will soon
+        // The memory mapping + expansion combo is not wired up because it relies on index_stream_ring_buffer
+        // which is explicitly unavailable under memory mapping, so it will need restructuring when that comes
+        assert(!expand_fan_for_metal);
+#endif
         auto [buffer, offset] = context.state.get_matching_mapping(indices);
         if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
             TrappedBuffer *trapped_buffer = context.state.buffer_trapping.access_buffer(indices.address(), count * index_size, mem);
@@ -575,9 +597,27 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         }
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else if (!ordered_indices) {
-        const size_t index_buffer_size = index_size * count;
-        context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
-        context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+#ifdef __APPLE__
+        // Expand a triangle fan into a triangle list and stream that instead
+        std::vector<uint16_t> fan_indices_u16;
+        std::vector<uint32_t> fan_indices_u32;
+        if (expand_fan_for_metal) {
+            if (format == SCE_GXM_INDEX_FORMAT_U16) {
+                fan_indices_u16 = triangle_fan_to_list(static_cast<const uint16_t *>(indices_ptr), count);
+                indices_ptr = fan_indices_u16.data();
+                count = fan_indices_u16.size();
+            } else {
+                fan_indices_u32 = triangle_fan_to_list(static_cast<const uint32_t *>(indices_ptr), count);
+                indices_ptr = fan_indices_u32.data();
+                count = fan_indices_u32.size();
+            }
+        }
+#endif
+        if (count) {
+            const size_t index_buffer_size = index_size * count;
+            context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
+            context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+        }
     }
 
     // bind the vertex streams
