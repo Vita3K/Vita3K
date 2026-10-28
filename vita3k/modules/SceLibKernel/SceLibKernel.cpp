@@ -1984,14 +1984,16 @@ EXPORT(SceInt32, sceKernelWaitLwCondCB, Ptr<SceKernelLwCondWork> pWork, SceUInt3
     return CALL_EXPORT(_sceKernelWaitLwCondCB, pWork, pTimeout);
 }
 
-EXPORT(int, sceKernelWaitMultipleEvents) {
-    TRACY_FUNC(sceKernelWaitMultipleEvents);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelWaitMultipleEvents, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, Ptr<SceKernelResultEvent> results, Ptr<SceUInt32> timeout) {
+    TRACY_FUNC(sceKernelWaitMultipleEvents, events, count, mode, results, timeout);
+    SceKernelWaitMultipleEventsOpt opt{ results, timeout };
+    return CALL_EXPORT(_sceKernelWaitMultipleEvents, events, count, mode, &opt);
 }
 
-EXPORT(int, sceKernelWaitMultipleEventsCB) {
-    TRACY_FUNC(sceKernelWaitMultipleEventsCB);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelWaitMultipleEventsCB, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, Ptr<SceKernelResultEvent> results, Ptr<SceUInt32> timeout) {
+    TRACY_FUNC(sceKernelWaitMultipleEventsCB, events, count, mode, results, timeout);
+    SceKernelWaitMultipleEventsOpt opt{ results, timeout };
+    return CALL_EXPORT(_sceKernelWaitMultipleEventsCB, events, count, mode, &opt);
 }
 
 EXPORT(SceInt32, sceKernelWaitSema, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {

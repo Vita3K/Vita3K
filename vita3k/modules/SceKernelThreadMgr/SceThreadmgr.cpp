@@ -1096,13 +1096,13 @@ EXPORT(SceInt32, _sceKernelWaitLwCondCB, Ptr<SceKernelLwCondWork> pWork, SceUInt
     return result;
 }
 
-EXPORT(int, _sceKernelWaitMultipleEvents) {
-    TRACY_FUNC(_sceKernelWaitMultipleEvents);
+EXPORT(SceInt32, _sceKernelWaitMultipleEvents, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt) {
+    TRACY_FUNC(_sceKernelWaitMultipleEvents, events, count, mode, opt);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitMultipleEventsCB) {
-    TRACY_FUNC(_sceKernelWaitMultipleEventsCB);
+EXPORT(SceInt32, _sceKernelWaitMultipleEventsCB, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt) {
+    TRACY_FUNC(_sceKernelWaitMultipleEventsCB, events, count, mode, opt);
     return UNIMPLEMENTED();
 }
 
