@@ -45,6 +45,8 @@ public:
     vk::SurfaceFormatKHR surface_format;
     vk::PresentModeKHR present_mode{};
     vk::Extent2D extent;
+    // aspect ratio of the frame being presented, the surface cache can clamp the viewport it is sourced from
+    float frame_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
     uint32_t swapchain_size{};
     std::vector<vk::Image> swapchain_images;
     std::vector<vk::ImageView> swapchain_views;

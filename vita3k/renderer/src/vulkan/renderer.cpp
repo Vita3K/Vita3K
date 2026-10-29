@@ -1176,13 +1176,15 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
 
     // store viewport for touch
     {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        display.viewport_frame_size = frame.image_size;
         const float fb_w = static_cast<float>(screen_renderer.extent.width);
         const float fb_h = static_cast<float>(screen_renderer.extent.height);
         display.viewport_drawable_w = static_cast<int>(fb_w);
         display.viewport_drawable_h = static_cast<int>(fb_h);
         if (fb_h > 0.0f) {
             const float window_aspect = fb_w / fb_h;
-            constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+            const float vita_aspect = display_aspect_ratio(frame.image_size.x, frame.image_size.y);
             const bool pixel_perfect = fullscreen_hd_res_pixel_perfect && fullscreen
                 && !(screen_renderer.extent.width % DEFAULT_RES_WIDTH)
                 && !(screen_renderer.extent.height % (DEFAULT_RES_HEIGHT - 4));
@@ -1262,6 +1264,7 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
             layout = vk::ImageLayout::eShaderReadOnlyOptimal;
         }
 
+        screen_renderer.frame_aspect = display_aspect_ratio(frame.image_size.x, frame.image_size.y);
         screen_renderer.render(surface_handle, layout, viewport);
     } else if (has_overlays) {
         screen_renderer.begin_default_render_pass();
