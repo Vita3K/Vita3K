@@ -55,7 +55,7 @@ struct EmulatorConfigFields {
     jfieldID exportTextures = nullptr;
     jfieldID importTextures = nullptr;
     jfieldID exportAsPng = nullptr;
-    jfieldID fpsHack = nullptr;
+    jfieldID vblankRate = nullptr;
     jfieldID turboMode = nullptr;
     jfieldID shaderCache = nullptr;
     jfieldID spirvShader = nullptr;
@@ -140,7 +140,7 @@ EmulatorConfigFields resolve_config_fields(JNIEnv *env) {
     fields.exportTextures = env->GetFieldID(fields.cls, "exportTextures", "Z");
     fields.importTextures = env->GetFieldID(fields.cls, "importTextures", "Z");
     fields.exportAsPng = env->GetFieldID(fields.cls, "exportAsPng", "Z");
-    fields.fpsHack = env->GetFieldID(fields.cls, "fpsHack", "Z");
+    fields.vblankRate = env->GetFieldID(fields.cls, "vblankRate", "I");
     fields.turboMode = env->GetFieldID(fields.cls, "turboMode", "Z");
     fields.shaderCache = env->GetFieldID(fields.cls, "shaderCache", "Z");
     fields.spirvShader = env->GetFieldID(fields.cls, "spirvShader", "Z");
@@ -320,7 +320,7 @@ void fill_config_object(JNIEnv *env, jobject obj, const EmulatorConfigFields &fi
     env->SetBooleanField(obj, fields.exportTextures, current_config.export_textures);
     env->SetBooleanField(obj, fields.importTextures, current_config.import_textures);
     env->SetBooleanField(obj, fields.exportAsPng, current_config.export_as_png);
-    env->SetBooleanField(obj, fields.fpsHack, current_config.fps_hack);
+    env->SetIntField(obj, fields.vblankRate, static_cast<jint>(current_config.vblank_rate));
     env->SetBooleanField(obj, fields.turboMode, config.turbo_mode);
     env->SetBooleanField(obj, fields.shaderCache, current_config.shader_cache);
     env->SetBooleanField(obj, fields.spirvShader, current_config.spirv_shader);
@@ -462,7 +462,7 @@ void read_config_object(JNIEnv *env, jobject obj, const EmulatorConfigFields &fi
     current_config.export_textures = env->GetBooleanField(obj, fields.exportTextures) != JNI_FALSE;
     current_config.import_textures = env->GetBooleanField(obj, fields.importTextures) != JNI_FALSE;
     current_config.export_as_png = env->GetBooleanField(obj, fields.exportAsPng) != JNI_FALSE;
-    current_config.fps_hack = env->GetBooleanField(obj, fields.fpsHack) != JNI_FALSE;
+    current_config.vblank_rate = static_cast<int>(env->GetIntField(obj, fields.vblankRate));
     config.turbo_mode = env->GetBooleanField(obj, fields.turboMode) != JNI_FALSE;
     current_config.shader_cache = env->GetBooleanField(obj, fields.shaderCache) != JNI_FALSE;
     current_config.spirv_shader = env->GetBooleanField(obj, fields.spirvShader) != JNI_FALSE;

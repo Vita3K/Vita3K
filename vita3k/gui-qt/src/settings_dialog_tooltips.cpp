@@ -93,7 +93,7 @@ QString SettingsDialogTooltips::category_summary(SettingsTab tab) const {
     case SettingsTab::Network:
         return tr("Configure network related settings here.");
     case SettingsTab::Advanced:
-        return tr("Settings most users do not need to change: module loading, shader and OpenGL options.");
+        return tr("Settings most users do not need to change, such as module loading.");
     case SettingsTab::Debug:
         return tr("Internal diagnostics, GPU debugging, and watch controls live here. These settings are mainly for developers.");
     default:
@@ -117,12 +117,12 @@ SettingsDialogTooltips::SettingsDialogTooltips(QObject *parent)
     , gpu_device(tr("Select which GPU Vita3k should use."))
     , resolution_upscaling(tr("Scale the games resolution by a multiplier.\nExperimental: apps are not guaranteed to render properly at more than 1x."))
     , anisotropic_filtering(tr("Technique to increase the sharpness of textures which are sloped relative to the viewer.\nIt has no drawbacks but can impact performance on older GPUs."))
+    , vblank_rate(tr("Frequency of the emulated vertical blank, which most apps use to pace themselves.\nOnly raise it for apps that run at 60 FPS (for example with a 60FPS patch) and do not tie their speed to the frame rate, otherwise they run too fast.\nThe 60 Hz default is the speed of the real console."))
     , export_textures(tr("Export textures used by the app to the textures folder."))
     , import_textures(tr("Import replacement textures from the textures folder."))
     , texture_export_format(tr("Format to export textures in."))
     , shader_cache(tr("Enable shader caching. Reduces stuttering on subsequent runs."))
     , spirv_shader(tr("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, and not all GPUs are compatible with this."))
-    , fps_hack(tr("Game hack. May double the framerate from 30 FPS to 60 FPS in some games, but can cause some games to run twice as fast."))
     , memory_mapping(tr("Memory mapping improved performance, reduces memory usage and fixes many graphical issues. However, it may be unstable on some GPUs."))
     , audio_backend(tr("Select the audio backend. Cubeb is recommended for most systems."))
     , audio_volume(tr("Set the in-game audio volume."))

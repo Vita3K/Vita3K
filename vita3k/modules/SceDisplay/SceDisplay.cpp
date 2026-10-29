@@ -31,11 +31,6 @@ TRACY_MODULE_NAME(SceDisplay);
 static SceInt32 display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
     const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
 
-    if (emuenv.display.fps_hack)
-        // a game can use a vcount of 2 to render as 30fps
-        // thus doing this can allow some games to run at 60fps
-        vcount = 1;
-
     const SceInt32 result = is_since_setbuf
         ? wait_until_vblank(emuenv, *thread, emuenv.display.last_setframe_vblank_count + vcount, is_cb)
         : wait_vblank_start(emuenv, *thread, vcount, is_cb);
@@ -178,7 +173,7 @@ EXPORT(SceInt32, sceDisplayGetRefreshRate, float *pFps) {
 
 EXPORT(SceInt32, sceDisplayGetVcount) {
     TRACY_FUNC(sceDisplayGetVcount);
-    return static_cast<SceInt32>(emuenv.display.vblank_count.load()) & 0xFFFF;
+    return static_cast<SceInt32>(emuenv.display.vcount_60hz.load()) & 0xFFFF;
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
