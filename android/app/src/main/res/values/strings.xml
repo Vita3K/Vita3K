@@ -405,8 +405,6 @@
     <string name="settings_gpu_import_textures_desc">Import replacement textures from the textures folder.</string>
     <string name="settings_gpu_texture_format">Texture Exporting Format</string>
     <string name="settings_gpu_texture_format_desc">Format to export textures in</string>
-    <string name="settings_gpu_fps_hack">FPS Hack</string>
-    <string name="settings_gpu_fps_hack_desc">Game hack. May double the framerate from 30 FPS to 60 FPS in some games,\nbut can cause some games to run twice as fast.</string>
     <string name="settings_gpu_turbo_mode">Turbo Mode</string>
     <string name="settings_gpu_turbo_mode_desc">Provides a way to force the GPU to run at the maximum possible clocks. Thermal constraints will still be applied.</string>
     <string name="settings_gpu_shader_cache">Enable Shader Cache</string>

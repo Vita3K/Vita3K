@@ -46,6 +46,7 @@
 
 #include <QtGui/qopenglcontext_platform.h>
 
+#include <cmath>
 #include <cstdint>
 
 #if defined(HAVE_X11) || defined(HAVE_WAYLAND)
@@ -531,6 +532,9 @@ void GameWindow::toggle_fullscreen() {
 }
 
 void GameWindow::update_window_title() {
+    if (const auto *s = screen())
+        m_emuenv.display.host_refresh_rate = static_cast<int>(std::lround(s->refreshRate()));
+
     if (!app::update_runtime_metrics(m_emuenv, m_runtime_metrics))
         return;
 

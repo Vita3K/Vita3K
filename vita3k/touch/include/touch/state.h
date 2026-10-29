@@ -5,6 +5,7 @@
 #include <touch/touch.h>
 
 #include <algorithm>
+#include <atomic>
 
 struct TouchState {
     SceTouchSamplingState touch_mode[2] = { SCE_TOUCH_SAMPLING_STATE_STOP, SCE_TOUCH_SAMPLING_STATE_STOP };
@@ -26,6 +27,9 @@ struct TouchState {
     int curr_touch_id[2] = { 0, 0 };
     int next_touch_id = 1;
     uint64_t last_vcount[2] = { 0, 0 };
+    // how many times the panel was sampled, and how many of those each port has already returned
+    std::atomic<uint64_t> sample_count{ 0 };
+    uint64_t last_sample_count[2] = { 0, 0 };
     bool force_touch_enabled[2] = { false, false };
     bool pinch_modifier_enabled = false;
     float pinch_velocity = 0.f;
@@ -57,6 +61,9 @@ struct TouchState {
         next_touch_id = 1;
         last_vcount[0] = 0;
         last_vcount[1] = 0;
+        sample_count = 0;
+        last_sample_count[0] = 0;
+        last_sample_count[1] = 0;
         force_touch_enabled[0] = false;
         force_touch_enabled[1] = false;
         pinch_modifier_enabled = false;

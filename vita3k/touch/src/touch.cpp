@@ -27,6 +27,7 @@
 
 #include <SDL3/SDL_events.h>
 
+#include <algorithm>
 #include <cstring>
 
 void set_rear_touchscreen(TouchState &state, bool is_back) {
@@ -183,6 +184,7 @@ void touch_vsync_update(EmuEnvState &emuenv) {
 
     touch.touch_buffer_idx++;
     touch.touch_buffer_idx %= MAX_TOUCH_BUFFER_SAVED;
+    touch.sample_count++;
 }
 
 void pinch_modifier(TouchState &state, bool isHold) {
@@ -333,10 +335,14 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
 
             wait_vblank(emuenv.display, thread, emuenv.touch.last_vcount[port_idx] + 1, false);
         }
-        uint64_t vblank_count = emuenv.display.vblank_count.load();
-        // clamp to 1 and not 0
-        nb_returned_data = std::max<int>(1, std::min<int>(nBufs, vblank_count - emuenv.touch.last_vcount[port_idx]));
-        emuenv.touch.last_vcount[port_idx] = vblank_count;
+        emuenv.touch.last_vcount[port_idx] = emuenv.display.vblank_count.load();
+        // the panel is sampled at 60 Hz, so above that a vblank can come without a new sample
+        // the read still only waits for a vblank, so an app that reads the panel every frame is not held to 60 FPS
+        // return what was sampled since the last read, clamped to 1 and not 0
+        const uint64_t sample_count = emuenv.touch.sample_count;
+        const uint64_t new_samples = sample_count - emuenv.touch.last_sample_count[port_idx];
+        nb_returned_data = std::max<int>(1, static_cast<int>(std::min<uint64_t>(nBufs, new_samples)));
+        emuenv.touch.last_sample_count[port_idx] = sample_count;
     }
 
     int corr_buffer_idx;
