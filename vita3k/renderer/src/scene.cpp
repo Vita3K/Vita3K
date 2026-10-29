@@ -72,9 +72,10 @@ COMMAND(handle_set_context) {
     if (depth_stencil_surface && !depth_stencil_surface->disabled()) {
         render_context->record.depth_stencil_surface = *depth_stencil_surface;
     } else {
-        render_context->record.depth_stencil_surface.depth_data.reset();
-        render_context->record.depth_stencil_surface.stencil_data.reset();
+        render_context->record.depth_stencil_surface = {};
+        render_context->record.depth_stencil_surface.background_depth = 1.0f;
         render_context->record.depth_stencil_surface.mask = 1;
+        render_context->record.depth_stencil_surface.unk2 = 1;
     }
 
     destroy_command_payload(*helper.cmd);
