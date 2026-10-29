@@ -23,6 +23,7 @@
 #include <packages/sfo.h>
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <pugixml.hpp>
 
@@ -229,6 +230,82 @@ static std::vector<AppTime>::iterator find_app_time(
     });
 }
 
+struct SharedAppDataUsage {
+    bool verified{};
+    bool addcont{};
+    bool savedata{};
+};
+
+static bool is_safe_app_data_id(const std::string &value) {
+    const fs::path path{ value };
+    return !value.empty() && value.find('\0') == std::string::npos
+        && !path.is_absolute() && !path.has_root_name() && !path.has_root_directory()
+        && !path.has_parent_path() && path != "." && path != "..";
+}
+
+static std::string safe_app_data_id(const std::string &value, const std::string &fallback) {
+    return is_safe_app_data_id(value) ? value : fallback;
+}
+
+static SharedAppDataUsage find_shared_app_data(
+    EmuEnvState &emuenv,
+    const std::string &app_path,
+    const std::string &addcont_id,
+    const std::string &savedata_id) {
+    const auto apps_path{ emuenv.vita_fs_path / "ux0/app" };
+    std::error_code err{};
+    fs::directory_iterator it{ apps_path, err };
+    if (err) {
+        LOG_WARN("Unable to verify app-data ownership in '{}': {}", apps_path, err.message());
+        return {};
+    }
+
+    SharedAppDataUsage usage{};
+    while (it != fs::directory_iterator{}) {
+        const auto other_app_path{ it->path().filename().string() };
+        if (other_app_path != app_path && !other_app_path.ends_with("_dec")) {
+            const bool is_app_directory = fs::is_directory(it->path(), err);
+            if (err) {
+                LOG_WARN("Unable to inspect installed app '{}': {}", it->path(), err.message());
+                return {};
+            }
+
+            if (is_app_directory) {
+                vfs::FileBuffer param;
+                if (!vfs::read_app_file(param, emuenv.vita_fs_path, other_app_path, "sce_sys/param.sfo")) {
+                    LOG_WARN("Unable to read '{}'; preserving addcont and savedata because ownership cannot be verified.",
+                        it->path() / "sce_sys/param.sfo");
+                    return {};
+                }
+
+                sfo::SfoAppInfo other_info;
+                if (!sfo::get_param_info(other_info, param, emuenv.cfg.sys_lang)) {
+                    LOG_WARN("Malformed param.sfo in '{}', preserving app data.", it->path());
+                    return {};
+                }
+                if (!is_safe_app_data_id(other_info.app_addcont) || !is_safe_app_data_id(other_info.app_savedata)) {
+                    LOG_WARN("Invalid addcont or savedata metadata in '{}'; preserving app data.", it->path());
+                    return {};
+                }
+
+                usage.addcont = usage.addcont
+                    || string_utils::toupper(other_info.app_addcont) == string_utils::toupper(addcont_id);
+                usage.savedata = usage.savedata
+                    || string_utils::toupper(other_info.app_savedata) == string_utils::toupper(savedata_id);
+            }
+        }
+
+        it.increment(err);
+        if (err) {
+            LOG_WARN("Unable to finish scanning installed apps for shared data: {}", err.message());
+            return {};
+        }
+    }
+
+    usage.verified = true;
+    return usage;
+}
+
 } // namespace
 
 bool init_apps_list(EmuEnvState &emuenv) {
@@ -323,8 +400,8 @@ void save_apps_cache(EmuEnvState &emuenv) {
 AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id) {
     sfo::SfoAppInfo info;
     vfs::FileBuffer param;
-    if (vfs::read_app_file(param, emuenv.vita_fs_path, title_id, "sce_sys/param.sfo")) {
-        sfo::get_param_info(info, param, emuenv.cfg.sys_lang);
+    if (vfs::read_app_file(param, emuenv.vita_fs_path, title_id, "sce_sys/param.sfo")
+        && sfo::get_param_info(info, param, emuenv.cfg.sys_lang)) {
     } else {
         info.app_title_id = title_id;
         info.app_addcont = title_id;
@@ -478,6 +555,15 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
         app_entry = *it;
     }
 
+    const bool addcont_id_valid = is_safe_app_data_id(app_entry.addcont);
+    const bool savedata_id_valid = is_safe_app_data_id(app_entry.savedata);
+    const auto addcont_id{ safe_app_data_id(app_entry.addcont, app_path) };
+    const auto savedata_id{ safe_app_data_id(app_entry.savedata, app_path) };
+    const auto title_id{ safe_app_data_id(app_entry.title_id, app_path) };
+    const auto shared_data{ find_shared_app_data(emuenv, app_path, addcont_id, savedata_id) };
+    if (!shared_data.verified)
+        LOG_WARN("Keeping addcont and savedata for '{}' because ownership could not be verified.", app_path);
+
     try {
         fs::remove_all(emuenv.vita_fs_path / "ux0/app" / app_path);
 
@@ -485,39 +571,47 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
         if (fs::exists(custom_cfg))
             fs::remove_all(custom_cfg);
 
-        const auto addcont{ emuenv.vita_fs_path / "ux0/addcont" / app_entry.addcont };
-        if (fs::exists(addcont))
+        const auto addcont{ emuenv.vita_fs_path / "ux0/addcont" / addcont_id };
+        if (shared_data.verified && addcont_id_valid && !shared_data.addcont && fs::exists(addcont))
             fs::remove_all(addcont);
+        else if (!addcont_id_valid)
+            LOG_WARN("Keeping addcont because '{}' contains an invalid app-data ID.", app_path);
+        else if (shared_data.addcont)
+            LOG_WARN("Keeping addcont '{}' because another installed app uses it.", addcont_id);
 
-        const auto license{ emuenv.vita_fs_path / "ux0/license" / app_entry.title_id };
+        const auto license{ emuenv.vita_fs_path / "ux0/license" / title_id };
         if (fs::exists(license))
             fs::remove_all(license);
 
-        const auto patch{ emuenv.vita_fs_path / "ux0/patch" / app_entry.title_id };
+        const auto patch{ emuenv.vita_fs_path / "ux0/patch" / title_id };
         if (fs::exists(patch))
             fs::remove_all(patch);
 
-        const auto savedata{ emuenv.vita_fs_path / "ux0/user" / emuenv.io.user_id / "savedata" / app_entry.savedata };
-        if (fs::exists(savedata))
+        const auto savedata{ emuenv.vita_fs_path / "ux0/user" / emuenv.io.user_id / "savedata" / savedata_id };
+        if (shared_data.verified && savedata_id_valid && !shared_data.savedata && fs::exists(savedata))
             fs::remove_all(savedata);
+        else if (!savedata_id_valid)
+            LOG_WARN("Keeping savedata because '{}' contains an invalid app-data ID.", app_path);
+        else if (shared_data.savedata)
+            LOG_WARN("Keeping savedata '{}' because another installed app uses it.", savedata_id);
 
-        const auto shader_cache{ emuenv.cache_path / "shaders" / app_entry.title_id };
+        const auto shader_cache{ emuenv.cache_path / "shaders" / title_id };
         if (fs::exists(shader_cache))
             fs::remove_all(shader_cache);
 
-        const auto shader_log{ emuenv.cache_path / "shaderlog" / app_entry.title_id };
+        const auto shader_log{ emuenv.cache_path / "shaderlog" / title_id };
         if (fs::exists(shader_log))
             fs::remove_all(shader_log);
 
-        const auto shader_log2{ emuenv.log_path / "shaderlog" / app_entry.title_id };
+        const auto shader_log2{ emuenv.log_path / "shaderlog" / title_id };
         if (fs::exists(shader_log2))
             fs::remove_all(shader_log2);
 
-        const auto export_tex{ emuenv.shared_path / "textures/export" / app_entry.title_id };
+        const auto export_tex{ emuenv.shared_path / "textures/export" / title_id };
         if (fs::exists(export_tex))
             fs::remove_all(export_tex);
 
-        const auto import_tex{ emuenv.shared_path / "textures/import" / app_entry.title_id };
+        const auto import_tex{ emuenv.shared_path / "textures/import" / title_id };
         if (fs::exists(import_tex))
             fs::remove_all(import_tex);
 

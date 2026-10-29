@@ -36,6 +36,7 @@
 #include <exception>
 #include <iostream>
 #include <map>
+#include <system_error>
 #include <vector>
 
 namespace config {
@@ -224,26 +225,57 @@ static bool load_new_config(Config &self, const fs::path &path) {
     return legacy_keyboard_bindings;
 }
 
-static std::set<std::string> get_file_set(const fs::path &loc, bool dirs_only = true) {
-    std::set<std::string> cur_set{};
-    if (!fs::exists(loc)) {
-        return cur_set;
-    }
+static std::string transform_installed_app_id(std::string &value, const fs::path &installed_apps_path) {
+    std::vector<std::string> installed_apps;
+    std::error_code err{};
+    const bool installed_apps_path_exists = fs::exists(installed_apps_path, err);
+    if (err)
+        return "Failed to inspect installed apps directory: " + err.message();
 
-    fs::directory_iterator it{ loc };
-    while (it != fs::directory_iterator{}) {
-        if (dirs_only) {
-            if (!it->path().empty() && fs::is_directory(it->path())) {
-                cur_set.insert(it->path().stem().string());
+    if (installed_apps_path_exists) {
+        fs::directory_iterator it{ installed_apps_path, err };
+        if (err)
+            return "Failed to open installed apps directory: " + err.message();
+
+        while (it != fs::directory_iterator{}) {
+            const auto app_path = it->path();
+            if (!app_path.empty()) {
+                const bool is_app_directory = fs::is_directory(app_path, err);
+                if (err == std::errc::no_such_file_or_directory)
+                    err.clear();
+                else if (err)
+                    return "Failed to inspect installed app directory: " + err.message();
+                const auto app_name{ app_path.filename().string() };
+                if (is_app_directory && !app_name.ends_with("_dec"))
+                    installed_apps.push_back(app_name);
             }
-        } else {
-            cur_set.insert(it->path().stem().string());
-        }
 
-        std::error_code err{};
-        it.increment(err);
+            it.increment(err);
+            if (err)
+                return "Failed to scan installed apps directory: " + err.message();
+        }
     }
-    return cur_set;
+
+    for (const auto &app : installed_apps) {
+        if (app == value)
+            return {};
+    }
+
+    const auto key = string_utils::toupper(value);
+    const std::string *matched_app = nullptr;
+    for (const auto &app : installed_apps) {
+        if (string_utils::toupper(app) != key)
+            continue;
+        if (matched_app)
+            return "Ambiguous installed app ID " + value + ", use the exact directory name";
+        matched_app = &app;
+    }
+
+    if (!matched_app)
+        return "No installed app matches " + value;
+
+    value = *matched_app;
+    return {};
 }
 
 static fs::path check_path(const fs::path &output_path) {
@@ -362,12 +394,18 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         ->transform(CLI::CheckedTransformer(frontends, CLI::ignore_case))->default_str("qt")->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
+    const CLI::Validator installed_app_transformer{
+        [&cfg](std::string &value) {
+            return transform_installed_app_id(value, cfg.get_vita_fs_path() / "ux0/app");
+        },
+        "installed app title ID"
+    };
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
+        ->default_str({})->transform(installed_app_transformer)->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
+        ->default_str({})->transform(installed_app_transformer)->group("Input");
     input->add_option("--firmware", command_line.pup_path, "Path to the firmware file (.pup extension) to install");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");
