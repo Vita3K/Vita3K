@@ -130,11 +130,19 @@ int main(int argc, char *argv[]) {
                 shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
             }
             if (cfg.delete_title_id.has_value()) {
-                LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
-                fs::remove_all(cfg.get_vita_fs_path() / "ux0/app" / *cfg.delete_title_id);
-                fs::remove_all(cfg.get_vita_fs_path() / "ux0/addcont" / *cfg.delete_title_id);
-                fs::remove_all(cfg.get_vita_fs_path() / "ux0/user/00/savedata" / *cfg.delete_title_id);
-                fs::remove_all(root_paths.get_cache_path() / "shaders" / *cfg.delete_title_id);
+                const auto app_path{ *cfg.delete_title_id };
+                emuenv.vita_fs_path = cfg.get_vita_fs_path();
+                emuenv.config_path = root_paths.get_config_path();
+                emuenv.log_path = root_paths.get_log_path();
+                emuenv.cache_path = root_paths.get_cache_path();
+                emuenv.shared_path = root_paths.get_shared_path();
+                emuenv.cfg.sys_lang = cfg.sys_lang;
+                emuenv.io.user_id = "00";
+                if (!app::init_apps_list(emuenv)) {
+                    LOG_ERROR("Failed to load installed apps; refusing to delete '{}'.", app_path);
+                    return InitConfigFailed;
+                }
+                app::delete_app(emuenv, app_path);
             }
             if (cfg.pup_path.has_value()) {
                 fs::create_directories(cfg.get_vita_fs_path());
