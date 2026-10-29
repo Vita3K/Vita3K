@@ -266,7 +266,7 @@ memblock_alias_close_orders     fail     # a find of a closed alias still finds 
 memblock_alias_edges            fail     # finds of a freed spacer and of alias edge ranges give the wrong error
 memblock_alias_gaps             fail     # finds and info by range in the gaps around an alias and a freed block
 memblock_alias_write_through    fail     # a 0x10 alias open succeeds where the Vita refuses it with 0x80024B01
-memblock_alignment              fail     # USER_CDRAM_RW alignment differs from the Vita's at 0x1, 0x2 and 0x4
+memblock_alignment              pass
 memblock_alignment_free_size    pass
 memblock_alignment_zero         pass
 memblock_base_block             pass

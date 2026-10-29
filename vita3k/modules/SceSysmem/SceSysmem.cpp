@@ -123,10 +123,13 @@ static SceInt32 alignment_error(SceKernelMemBlockType type, SceSize alignment) {
     if (alignment == 0)
         return 0;
     const SceUInt32 phymempart = type & MEMBLOCK_TYPE_PHYMEMPART_MASK;
-    if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_PHYCONT || (alignment & (alignment - 1)) != 0)
+    if ((alignment & (alignment - 1)) != 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    // Under a page the alignment is below what every block has anyway
+    if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_PHYCONT)
+        return alignment >= MEMBLOCK_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
     if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_CDRAM) {
-        if (alignment < MEMBLOCK_CDRAM_MIN_ALIGNMENT)
+        if (alignment >= MEMBLOCK_MIN_ALIGNMENT && alignment < MEMBLOCK_CDRAM_MIN_ALIGNMENT)
             return SCE_KERNEL_ERROR_NO_FREE_PHYSICAL_PAGE_CDRAM;
         return alignment > MiB(64) ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
     }
