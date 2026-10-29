@@ -25,63 +25,101 @@
 #include <kernel/state.h>
 #include <renderer/state.h>
 
+#include <algorithm>
 #include <chrono>
 #include <motion/functions.h>
 #include <touch/functions.h>
+#include <util/log.h>
 
 // Code heavily influenced by PPSSSPP's SceDisplay.cpp
 
-static constexpr int TARGET_FPS = 60;
-static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
+static constexpr int NATIVE_VBLANK_RATE = 60;
+// never below the native rate, the touch panel and the motion sensor are sampled on vblanks and must keep their 60 Hz
+static constexpr int MIN_VBLANK_RATE = NATIVE_VBLANK_RATE;
+static constexpr int MAX_VBLANK_RATE = 240;
 // how many cycles do we need to see before we start predicting the next frame
 static constexpr int predict_threshold = 3;
 static constexpr int max_expected_swapchain_size = 6;
 // The bit of the first display head in its vblank event
 static constexpr SceUInt32 VBLANK_EVENT_BIT = 0x1;
 
+static int current_vblank_rate(const DisplayState &display) {
+    const int rate = display.vblank_rate.load();
+    return std::clamp(rate > 0 ? rate : display.host_refresh_rate.load(), MIN_VBLANK_RATE, MAX_VBLANK_RATE);
+}
+
 static void vblank_sync_thread(EmuEnvState &emuenv) {
     DisplayState &display = emuenv.display;
+    // what the game sees through sceDisplayGetVcount, it advances with the vblanks to stay in step with the wait functions
+    double vcount_60hz = 0;
+    double paused_redraw_credit = 0;
+    int logged_rate = NATIVE_VBLANK_RATE;
 
     const cheat::JitInvalidate invalidate_jit = [&emuenv](uint32_t address, size_t size) {
         emuenv.kernel.invalidate_jit_cache(address, size);
     };
 
     while (!display.abort.load()) {
+        const int rate = current_vblank_rate(display);
+        display.active_vblank_rate = rate;
+        // the rate can change while the app runs (settings, or the window moving to another screen)
+        if (rate != logged_rate) {
+            if (rate != NATIVE_VBLANK_RATE)
+                LOG_WARN("Emulated vblank rate: {} Hz (setting: {}, host: {} Hz)", rate, display.vblank_rate.load(), display.host_refresh_rate.load());
+            logged_rate = rate;
+        }
+        // the touch panel, the motion sensor and the cheats keep their 60 Hz whatever the vblank rate,
+        // so the history they keep, their filters and their delays behave as they do on the console
+        vcount_60hz += static_cast<double>(NATIVE_VBLANK_RATE) / rate;
+        const uint64_t next_vcount = static_cast<uint64_t>(vcount_60hz);
+        const bool native_vblank = next_vcount != display.vcount_60hz;
         {
             // Before the count goes up, so a read that waited for this vblank gets its samples
-            touch_vsync_update(emuenv);
-            refresh_motion(emuenv.motion, emuenv.ctrl);
+            if (native_vblank) {
+                touch_vsync_update(emuenv);
+                refresh_motion(emuenv.motion, emuenv.ctrl);
+            }
 
             bool has_frame = false;
             {
                 const std::lock_guard<std::mutex> guard_info(display.display_info_mutex);
                 ++display.vblank_count;
+                display.vcount_60hz = next_vcount;
 
                 has_frame = static_cast<bool>(display.sce_frame.base);
 
                 // in this case, even though no new game frames are being rendered, we still need to update the screen
-                if (emuenv.kernel.is_threads_paused() || (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING))
+                if (emuenv.kernel.is_threads_paused() || (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING)) {
                     // only display the UI/common dialog at 30 fps
                     // this is necessary so that the command buffer processing doesn't get starved
                     // with vsync enabled and a screen with a refresh rate of 60Hz or less
-                    if (display.vblank_count % 2 == 0)
+                    // the credit grows by 30 every second whatever the vblank rate, so the average stays at 30 fps
+                    paused_redraw_credit += 30.0 / rate;
+                    if (paused_redraw_credit >= 1.0) {
+                        paused_redraw_credit -= 1.0;
                         emuenv.renderer->should_display = true;
+                    }
+                }
             }
 
-            if (has_frame)
-                emuenv.cheat.count_frame();
+            if (native_vblank) {
+                if (has_frame)
+                    emuenv.cheat.count_frame();
 
-            // Cheat codes are re-applied on every vblank, the same way the Vita cheat plugins do.
-            // The pad is read here rather than taken from the game, which may stop reading it while a button is held.
-            cheat::set_buttons(emuenv.cheat, ctrl_peek_buttons(emuenv, 1));
-            cheat::apply(emuenv.cheat, emuenv.mem, invalidate_jit);
+                // Cheat codes are re-applied on every vblank, the same way the Vita cheat plugins do.
+                // The pad is read here rather than taken from the game, which may stop reading it while a button is held.
+                cheat::set_buttons(emuenv.cheat, ctrl_peek_buttons(emuenv, 1));
+                cheat::apply(emuenv.cheat, emuenv.mem, invalidate_jit);
+            }
 
             // Wakes the display waits and notifies the vblank start callbacks
+            // they follow the emulated vblank rate, this is what lets an app run above 60 FPS
             if (const SimpleEventRef event = emuenv.kernel.kernel_objects.find<SimpleEvent>(display.vblank_event))
                 event->pulse_and_notify(VBLANK_EVENT_BIT, 0);
         }
         const auto time_ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        const auto time_left = TARGET_MICRO_PER_FRAME - (time_ms % TARGET_MICRO_PER_FRAME);
+        const int64_t micro_per_frame = 1000000LL / rate;
+        const auto time_left = micro_per_frame - (time_ms % micro_per_frame);
         std::this_thread::sleep_for(std::chrono::microseconds(time_left));
     }
 }
@@ -251,9 +289,10 @@ void DisplayState::deinit(KernelState &kernel) {
     current_sync_object = 0;
 
     vblank_count = 0;
+    vcount_60hz = 0;
     last_setframe_vblank_count = 0;
 
-    fps_hack = false;
+    vblank_rate = 60;
     // pretty sure we set this on game boot
     fullscreen = false;
 }

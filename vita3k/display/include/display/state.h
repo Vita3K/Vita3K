@@ -68,13 +68,15 @@ struct DisplayState {
     // The UID of the kernel's event pulsed at each vblank, which the display waits wait on and the
     // vblank start callbacks are registered to
     SceUID vblank_event = 0;
+    // vblank_count in 60Hz units, this is what the game sees through sceDisplayGetVcount
+    std::atomic<std::uint64_t> vcount_60hz{ 0 };
+    // emulated vblank rate in Hz, 0 follows the refresh rate of the host screen
+    std::atomic<int> vblank_rate{ 60 };
+    // refresh rate of the screen the game window is on, only the Qt frontend updates it
+    std::atomic<int> host_refresh_rate{ 60 };
+    // the rate the vblank thread is running at right now, in Hz
+    std::atomic<int> active_vblank_rate{ 60 };
     std::atomic<uint64_t> last_setframe_vblank_count = 0;
-
-    // if set to true, make sceDisplayWaitVblankStartMulti/sceDisplayWaitSetFrameBufMulti behave as sceDisplayWaitVblankStart/sceDisplayWaitSetFrameBuf
-    // this allows some game running at 30fps to run at 60fps without any issue
-    // however this is not always the case, some games may not be affected (if they look at the Vcount)
-    // or run twice as fast (if they only rely on these function calls for their timings)
-    bool fps_hack = false;
 
     // should contain the list of sync objects / swapchain images (in the order they appear in the cycle)
     std::vector<PredictedDisplayFrame> predicted_frames;
