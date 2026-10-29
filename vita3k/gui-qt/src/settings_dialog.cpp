@@ -1491,7 +1491,6 @@ void SettingsDialog::update_gpu_visibility() {
     m_ui->gb_gpu_device->setVisible(is_vulkan);
     m_ui->gb_renderer_accuracy->setVisible(is_vulkan);
     m_ui->gb_vulkan_options->setVisible(is_vulkan);
-    m_ui->spirv_shader->setVisible(is_vulkan);
 
     m_ui->label_memory_mapping->setVisible(has_mapping);
     m_ui->memory_mapping_box->setVisible(has_mapping);
