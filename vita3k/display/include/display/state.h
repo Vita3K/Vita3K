@@ -49,12 +49,14 @@ struct PredictedDisplayFrame {
 };
 
 struct DisplayState {
+    // the renderer writes these under display_info_mutex, with the size of the frame they were laid out for
     int viewport_drawable_w = 0;
     int viewport_drawable_h = 0;
     float viewport_x = 0;
     float viewport_y = 0;
     float viewport_w = 0;
     float viewport_h = 0;
+    SceIVector2 viewport_frame_size = { 0, 0 };
 
     // next frame as seen by SceDisplay
     DisplayFrameInfo sce_frame;

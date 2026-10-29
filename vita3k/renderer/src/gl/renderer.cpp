@@ -667,7 +667,7 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
 
     if (fb_h > 0.0f) {
         const float window_aspect = fb_w / fb_h;
-        constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        const float vita_aspect = display_aspect_ratio(display_frame.image_size.x, display_frame.image_size.y);
         const bool pixel_perfect = fullscreen_hd_res_pixel_perfect && fullscreen
             && !(static_cast<int>(fb_w) % DEFAULT_RES_WIDTH)
             && !(static_cast<int>(fb_h) % (DEFAULT_RES_HEIGHT - 4));
@@ -689,12 +689,16 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
     }
 
     // store viewport for touch
-    display.viewport_drawable_w = static_cast<int>(fb_w);
-    display.viewport_drawable_h = static_cast<int>(fb_h);
-    display.viewport_x = vp_pos.x;
-    display.viewport_y = vp_pos.y;
-    display.viewport_w = vp_size.x;
-    display.viewport_h = vp_size.y;
+    {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        display.viewport_drawable_w = static_cast<int>(fb_w);
+        display.viewport_drawable_h = static_cast<int>(fb_h);
+        display.viewport_x = vp_pos.x;
+        display.viewport_y = vp_pos.y;
+        display.viewport_w = vp_size.x;
+        display.viewport_h = vp_size.y;
+        display.viewport_frame_size = display_frame.image_size;
+    }
 
     if (display_frame.base) {
         // Check if the surface exists
