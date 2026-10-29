@@ -106,6 +106,20 @@ jobs:
           key: ccache-${{ matrix.platform }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: ccache-${{ matrix.platform }}${{ steps.compiler.outputs.flavor }}-
 
+      # A ThinLTO link recompiles every module, unless its code generation is already here
+      - name: Set up ThinLTO cache
+        shell: bash
+        run: echo "THINLTO_CACHE_DIR=${{ runner.temp }}/thinlto-cache" >> "$GITHUB_ENV"
+        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
+
+      - name: Restore ThinLTO cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/thinlto-cache
+          key: thinlto-${{ matrix.platform }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: thinlto-${{ matrix.platform }}${{ steps.compiler.outputs.flavor }}-
+        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
+
       - name: Restore vcpkg binary cache
         id: vcpkg-cache
         uses: actions/cache/restore@v6
@@ -299,6 +313,13 @@ jobs:
         with:
           path: ${{ runner.temp }}/compiler-cache
           key: ccache-${{ matrix.platform }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save ThinLTO cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' && env.THINLTO_CACHE_DIR != '' }}
+        with:
+          path: ${{ runner.temp }}/thinlto-cache
+          key: thinlto-${{ matrix.platform }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       # vcpkg only adds packages it had to build, so save only when it added any
       - name: Check for new vcpkg packages
