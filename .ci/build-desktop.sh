@@ -31,7 +31,25 @@ done
 require_arg "$PRESET" "preset"
 require_arg "$CONFIG" "config"
 
-cmake --preset "$PRESET"
+# CI keeps the check results of an earlier configure with the same CMake files here
+cmake_args=()
+if [[ -f "build/$PRESET/cmake-checks.cmake" ]]; then
+    cmake_args+=(-C "build/$PRESET/cmake-checks.cmake")
+fi
+
+# CI keeps the ThinLTO code generation of unchanged modules here, so a link only redoes what changed
+if [[ -n "${THINLTO_CACHE_DIR:-}" ]]; then
+    case "$(uname)" in
+        Linux)
+            cmake_args+=("-DCMAKE_EXE_LINKER_FLAGS_RELEASE=-Wl,--thinlto-cache-dir=$THINLTO_CACHE_DIR")
+            ;;
+        Darwin)
+            cmake_args+=("-DCMAKE_EXE_LINKER_FLAGS_RELEASE=-Wl,-cache_path_lto,$THINLTO_CACHE_DIR")
+            ;;
+    esac
+fi
+
+cmake --preset "$PRESET" ${cmake_args[@]+"${cmake_args[@]}"}
 download_qt_translations "build/$PRESET/qt_translations"
 cmake --build "build/$PRESET" --config "$CONFIG"
 

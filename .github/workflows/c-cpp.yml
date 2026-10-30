@@ -8,199 +8,115 @@ on:
     paths-ignore:
       - '**.md'
 
+concurrency:
+  # Master builds are releases, so only other branches cancel their superseded runs
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/master' && github.run_id || github.ref }}
+  cancel-in-progress: true
+
 env:
   BUILD_CONFIG: Release
   QT_VERSION: '6.11.0'
-  SCCACHE_GHA_ENABLED: "true"
   # The VitaAutotests commit to test with. Bump it to pick up new tests.
   AUTOTESTS_REF: 78b977da8fbc9aaf4d57710d044a8eee4a63dee6
+  # Pull request caches are only visible to that pull request, and push the branch caches out of the 10GB quota
+  SAVE_CACHE: ${{ github.event_name == 'push' }}
 
 jobs:
-  desktop-build:
-    name: Desktop (${{ matrix.platform }})
-    runs-on: ${{ matrix.runs_on }}
+  # The desktop build of Linux x64 on its own, so the autotests start as soon as it is done
+  linux-x64-build:
+    name: Desktop (linux-x64)
+    runs-on: ubuntu-26.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    env:
+      BUILD_PLATFORM: linux-x64
+      CMAKE_PRESET: ci-linux-clang-appimage
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux-arm64
-            runs_on: ubuntu-26.04-arm
-            arch: aarch64
-            cmake_preset: ci-linux-clang-appimage
-            cache_path: ''
-            qt_install_deps: 'true'
-
-          - platform: windows-x64
-            runs_on: windows-latest
-            arch: x86_64
-            cmake_preset: ci-windows-msvc
-            vcpkg_root: C:\vcpkg
-            vcpkg_triplet: x64-windows-static-md
-            cache_path: C:\vcpkg-binary-cache
-            qt_install_deps: 'false'
-
-          - platform: windows-arm64
-            runs_on: windows-11-arm
-            cmake_preset: ci-windows-msys2-clang
-            msys2_env: CLANGARM64
-            cache_path: C:\msys2-ccache
-            qt_install_deps: 'false'
-
-          - platform: macos-x64
-            runs_on: macos-latest
-            cmake_preset: ci-macos-x64
-            cache_path: ~/Library/Caches/ccache
-            qt_install_deps: 'false'
-
-          - platform: macos-arm64
-            runs_on: macos-latest
-            cmake_preset: ci-macos-arm64
-            cache_path: ~/Library/Caches/ccache
-            qt_install_deps: 'false'
-
-    steps: &desktop-build-steps
+    steps: &linux-build-steps
+      # The build number counts the commits, so fetch all of them but not their trees
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          submodules: recursive
+          filter: tree:0
+          persist-credentials: false
 
-      - name: Restore cache
-        uses: actions/cache@v6
-        if: ${{ matrix.cache_path != '' }}
-        with:
-          path: ${{ matrix.cache_path }}
-          key: cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'cmake/**', '.ci/**', '.github/workflows/c-cpp.yml', 'vcpkg.json') }}
-          restore-keys: |
-            cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-
+      - name: Check out submodules
+        run: git submodule update --init --recursive --depth 1 --jobs 8
 
-      - name: Set up build environment (Linux)
-        run: bash ./.ci/setup-linux.sh
-        if: startsWith(matrix.platform, 'linux-')
-
-      - name: Set up build environment (macOS)
-        run: bash ./.ci/setup-macos.sh
-        if: startsWith(matrix.platform, 'macos-')
-
-      - name: Set up build environment (Windows MSVC)
-        shell: pwsh
-        env:
-          VCPKG_ROOT: ${{ matrix.vcpkg_root }}
-          VCPKG_DEFAULT_BINARY_CACHE: ${{ matrix.cache_path }}
+      - name: Set up compiler cache
         run: |
-          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
-          .\.ci\setup-windows-msvc.ps1 -VcpkgTriplet '${{ matrix.vcpkg_triplet }}'
-        if: matrix.platform == 'windows-x64'
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=${{ runner.temp }}/compiler-cache" >> "$GITHUB_ENV"
+          echo "CCACHE_MAXSIZE=5G" >> "$GITHUB_ENV"
 
-      - uses: TheMrMilchmann/setup-msvc-dev@v4
+      # Keyed per run: an exact hit would never save again, and the cache would freeze
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v6
         with:
-          arch: ${{ matrix.arch }}
-        if: matrix.platform == 'windows-x64'
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-${{ env.BUILD_PLATFORM }}-
 
-      - uses: mozilla-actions/sccache-action@v0.0.11
-        if: startsWith(matrix.platform, 'linux-') || matrix.platform == 'windows-x64'
+      # A ThinLTO link recompiles every module, unless its code generation is already here
+      - name: Set up ThinLTO cache
+        run: echo "THINLTO_CACHE_DIR=${{ runner.temp }}/thinlto-cache" >> "$GITHUB_ENV"
+
+      - name: Restore ThinLTO cache
+        uses: actions/cache/restore@v6
         with:
-          disable_annotations: true
+          path: ${{ runner.temp }}/thinlto-cache
+          key: thinlto-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: thinlto-${{ env.BUILD_PLATFORM }}-
 
-      - name: Set up MSYS2 (Windows ARM)
-        uses: msys2/setup-msys2@v2
-        if: matrix.platform == 'windows-arm64'
-        with:
-          msystem: ${{ matrix.msys2_env }}
-          update: true
-          cache: true
-          install: |
-            git
-          pacboy: |
-            clang:p
-            ccache:p
-            cmake:p
-            lld:p
-            ninja:p
-            boost:p
-            openssl:p
-            curl:p
-            zlib:p
-            qt6-base:p
-            qt6-multimedia:p
-            qt6-svg:p
-            qt6-tools:p
-
-      - name: Reset ccache statistics
-        run: ccache -z
-        if: startsWith(matrix.platform, 'macos-')
-
-      - name: Install Qt 6.11.0 (Windows MSVC)
-        uses: jurplel/install-qt-action@v4
-        if: matrix.platform == 'windows-x64'
-        with:
-          version: ${{ env.QT_VERSION }}
-          modules: qtmultimedia
-          host: windows
-          target: desktop
-          arch: win64_msvc2022_64
-          cache: true
-          install-deps: ${{ matrix.qt_install_deps }}
-          aqtsource: git+https://github.com/miurahr/aqtinstall.git@f383b3c7d9658e881bd8ce8810057393bd934ee1
+      - name: Set up build environment
+        run: bash ./.ci/setup-linux.sh
 
       - name: Install Qt 6.11.0
         uses: jurplel/install-qt-action@v4
-        if: matrix.platform != 'windows-arm64' && matrix.platform != 'windows-x64'
         with:
           version: ${{ env.QT_VERSION }}
           modules: qtmultimedia
           cache: true
-          install-deps: ${{ matrix.qt_install_deps }}
+          install-deps: 'true'
 
-      - name: Build desktop target (Linux/macOS)
-        run: bash ./.ci/build-desktop.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
-        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
+      - name: Build desktop target
+        run: bash ./.ci/build-desktop.sh --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }}
 
-      - name: Package Linux AppImage with Anylinux
-        run: bash ./.ci/package-appimage.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
-        if: startsWith(matrix.platform, 'linux-')
+      - name: Print compiler cache statistics
+        run: ccache --show-stats --verbose
 
-      - name: Build desktop target (Windows MSVC)
-        shell: bash
-        env:
-          VCPKG_ROOT: ${{ matrix.vcpkg_root }}
-          VCPKG_DEFAULT_BINARY_CACHE: ${{ matrix.cache_path }}
-        run: bash ./.ci/build-desktop.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
-        if: matrix.platform == 'windows-x64'
+      # Hits refresh the mtime, so whatever is older than the job start was not used by this build
+      - name: Prune compiler cache
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - JOB_START ))s"
+          ccache --zero-stats
+        if: env.SAVE_CACHE == 'true'
 
-      - name: Build desktop target (Windows ARM MSYS2)
-        shell: msys2 {0}
-        run: bash ./.ci/build-windows-msys2.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
-        if: matrix.platform == 'windows-arm64'
+      # Also after a failed build, unpruned, so the next run does not start cold
+      - name: Save compiler cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save ThinLTO cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        with:
+          path: ${{ runner.temp }}/thinlto-cache
+          key: thinlto-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Package AppImage with Anylinux
+        run: bash ./.ci/package-appimage.sh --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }}
 
       - name: Compute artifact paths
-        shell: bash
         run: |
           echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-          echo "ARTIFACT_NAME=vita3k-$(git rev-parse --short HEAD)-${{ matrix.platform }}" >> "$GITHUB_ENV"
-          echo "ARTIFACT_DIR=artifacts/vita3k-$(git rev-parse --short HEAD)-${{ matrix.platform }}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_DIR=artifacts/vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
 
-      - name: Stage desktop artifact (Linux/macOS)
-        run: bash ./.ci/package-desktop.sh --platform ${{ matrix.platform }} --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
-        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
-
-      - name: Stage desktop artifact (Windows MSVC)
-        shell: bash
-        run: bash ./.ci/package-desktop.sh --platform ${{ matrix.platform }} --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
-        if: matrix.platform == 'windows-x64'
-
-      - name: Stage desktop artifact (Windows ARM MSYS2)
-        shell: msys2 {0}
-        run: bash ./.ci/package-desktop.sh --platform ${{ matrix.platform }} --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
-        if: matrix.platform == 'windows-arm64'
-
-      - name: Print ccache statistics
-        run: ccache -s
-        if: startsWith(matrix.platform, 'macos-')
-
-      - name: Print sccache statistics
-        run: sccache --show-stats
-        if: startsWith(matrix.platform, 'linux-') || matrix.platform == 'windows-x64'
+      - name: Stage desktop artifact
+        run: bash ./.ci/package-desktop.sh --platform ${{ env.BUILD_PLATFORM }} --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
 
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v7
@@ -208,22 +124,422 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_DIR }}
 
-  # The desktop build of Linux x64 on its own, so the autotests start as soon as it is done
-  linux-x64-build:
-    name: Desktop (${{ matrix.platform }})
-    runs-on: ${{ matrix.runs_on }}
+  linux-arm64-build:
+    name: Desktop (linux-arm64)
+    runs-on: ubuntu-26.04-arm
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    env:
+      BUILD_PLATFORM: linux-arm64
+      CMAKE_PRESET: ci-linux-clang-appimage
 
-    strategy:
-      matrix:
-        include:
-          - platform: linux-x64
-            runs_on: ubuntu-26.04
-            arch: x86_64
-            cmake_preset: ci-linux-clang-appimage
-            cache_path: ''
-            qt_install_deps: 'true'
+    steps: *linux-build-steps
 
-    steps: *desktop-build-steps
+  macos-x64-build:
+    name: Desktop (macos-x64)
+    runs-on: macos-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    env:
+      BUILD_PLATFORM: macos-x64
+      CMAKE_PRESET: ci-macos-x64
+
+    steps: &macos-build-steps
+      # The build number counts the commits, so fetch all of them but not their trees
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: tree:0
+          persist-credentials: false
+
+      - name: Check out submodules
+        run: git submodule update --init --recursive --depth 1 --jobs 8
+
+      - name: Set up build environment
+        run: bash ./.ci/setup-macos.sh
+
+      # The runners come with different Xcode and ccache versions, and a cache from one finds nothing
+      # for the other, so each gets its own
+      - name: Identify the compiler
+        id: compiler
+        run: echo "flavor=-$(shasum "$(xcrun -f clang)" | cut -c1-8)-$(ccache --version | head -n 1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up compiler cache
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=${{ runner.temp }}/compiler-cache" >> "$GITHUB_ENV"
+          echo "CCACHE_MAXSIZE=5G" >> "$GITHUB_ENV"
+          # By content, not by the modification time of the compiler, which differs on every runner VM.
+          # An environment variable, since ccache --set-config writes to the config of another cache directory.
+          echo "CCACHE_COMPILERCHECK=content" >> "$GITHUB_ENV"
+
+      # Keyed per run: an exact hit would never save again, and the cache would freeze
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-${{ env.BUILD_PLATFORM }}${{ steps.compiler.outputs.flavor }}-
+
+      # A ThinLTO link recompiles every module, unless its code generation is already here
+      - name: Set up ThinLTO cache
+        run: echo "THINLTO_CACHE_DIR=${{ runner.temp }}/thinlto-cache" >> "$GITHUB_ENV"
+
+      - name: Restore ThinLTO cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/thinlto-cache
+          key: thinlto-${{ env.BUILD_PLATFORM }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: thinlto-${{ env.BUILD_PLATFORM }}${{ steps.compiler.outputs.flavor }}-
+
+      # Boost and OpenSSL are built while configuring, so keep them and the CMake check results until a
+      # CMake file, Boost or the compiler changes
+      - name: Compute configure cache key
+        id: configure-key
+        run: |
+          compiler="$(xcrun clang --version | head -n 1 | shasum | cut -c1-8)"
+          boost="$(git rev-parse --short HEAD:external/boost)"
+          echo "key=configure-${{ env.BUILD_PLATFORM }}-$compiler-$boost-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'CMakePresets.json') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore configure cache
+        id: configure-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            build/${{ env.CMAKE_PRESET }}/cmake-checks.cmake
+            build/${{ env.CMAKE_PRESET }}/external/boost/lib
+            build/${{ env.CMAKE_PRESET }}/external/openssl/include
+            build/${{ env.CMAKE_PRESET }}/external/openssl/libcrypto.a
+            build/${{ env.CMAKE_PRESET }}/external/openssl/libssl.a
+          key: ${{ steps.configure-key.outputs.key }}
+
+      - name: Install Qt 6.11.0
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          cache: true
+          install-deps: 'false'
+
+      - name: Build desktop target
+        run: bash ./.ci/build-desktop.sh --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }}
+
+      - name: Collect CMake check results
+        run: bash ./.ci/save-cmake-checks.sh "build/${{ env.CMAKE_PRESET }}"
+        if: env.SAVE_CACHE == 'true' && steps.configure-cache.outputs.cache-hit != 'true'
+
+      - name: Save configure cache
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            build/${{ env.CMAKE_PRESET }}/cmake-checks.cmake
+            build/${{ env.CMAKE_PRESET }}/external/boost/lib
+            build/${{ env.CMAKE_PRESET }}/external/openssl/include
+            build/${{ env.CMAKE_PRESET }}/external/openssl/libcrypto.a
+            build/${{ env.CMAKE_PRESET }}/external/openssl/libssl.a
+          key: ${{ steps.configure-key.outputs.key }}
+        if: env.SAVE_CACHE == 'true' && steps.configure-cache.outputs.cache-hit != 'true'
+
+      - name: Print compiler cache statistics
+        run: ccache --show-stats --verbose
+
+      # Hits refresh the mtime, so whatever is older than the job start was not used by this build
+      - name: Prune compiler cache
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - JOB_START ))s"
+          ccache --zero-stats
+        if: env.SAVE_CACHE == 'true'
+
+      # Also after a failed build, unpruned, so the next run does not start cold
+      - name: Save compiler cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save ThinLTO cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        with:
+          path: ${{ runner.temp }}/thinlto-cache
+          key: thinlto-${{ env.BUILD_PLATFORM }}${{ steps.compiler.outputs.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Compute artifact paths
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_DIR=artifacts/vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
+
+      - name: Stage desktop artifact
+        run: bash ./.ci/package-desktop.sh --platform ${{ env.BUILD_PLATFORM }} --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_DIR }}
+
+  macos-arm64-build:
+    name: Desktop (macos-arm64)
+    runs-on: macos-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    env:
+      BUILD_PLATFORM: macos-arm64
+      CMAKE_PRESET: ci-macos-arm64
+
+    steps: *macos-build-steps
+
+  windows-x64-build:
+    name: Desktop (windows-x64)
+    runs-on: windows-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    env:
+      BUILD_PLATFORM: windows-x64
+      CMAKE_PRESET: ci-windows-msvc
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: C:\vcpkg-binary-cache
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # The build number counts the commits, so fetch all of them but not their trees
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: tree:0
+          persist-credentials: false
+
+      - name: Check out submodules
+        run: git submodule update --init --recursive --depth 1 --jobs 8
+
+      - name: Set up compiler cache
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=${{ runner.temp }}/compiler-cache" >> "$GITHUB_ENV"
+          echo "CCACHE_MAXSIZE=5G" >> "$GITHUB_ENV"
+
+      # Keyed per run: an exact hit would never save again, and the cache would freeze
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-${{ env.BUILD_PLATFORM }}-
+
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ env.BUILD_PLATFORM }}-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-${{ env.BUILD_PLATFORM }}-${{ hashFiles('vcpkg.json') }}-
+            vcpkg-${{ env.BUILD_PLATFORM }}-
+
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x86_64
+
+      - name: Install ccache
+        run: |
+          version=4.14.1
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/ccache.zip" "https://github.com/ccache/ccache/releases/download/v$version/ccache-$version-windows-x86_64.zip"
+          echo "6219f3865ca59aec41ee4b678df171d5d35855ecb2b6dbbbd20690b3a68af7b4 *$RUNNER_TEMP/ccache.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/ccache.zip" -d "$RUNNER_TEMP"
+          cygpath -w "$RUNNER_TEMP/ccache-$version-windows-x86_64" >> "$GITHUB_PATH"
+
+      - name: Install Qt 6.11.0
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          cache: true
+          install-deps: 'false'
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@f383b3c7d9658e881bd8ce8810057393bd934ee1
+
+      - name: Build desktop target
+        run: |
+          mkdir -p "$(cygpath -u "$VCPKG_DEFAULT_BINARY_CACHE")"
+          bash ./.ci/build-desktop.sh --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }}
+
+      - name: Print compiler cache statistics
+        run: ccache --show-stats --verbose
+
+      # Hits refresh the mtime, so whatever is older than the job start was not used by this build
+      - name: Prune compiler cache
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - JOB_START ))s"
+          ccache --zero-stats
+        if: env.SAVE_CACHE == 'true'
+
+      # Also after a failed build, unpruned, so the next run does not start cold
+      - name: Save compiler cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # vcpkg only adds packages it had to build, so save only when it added any
+      - name: Check for new vcpkg packages
+        id: vcpkg-new
+        run: |
+          if [[ -n "$(find "$(cygpath -u '${{ env.VCPKG_DEFAULT_BINARY_CACHE }}')" -type f -newermt "@$JOB_START" -print -quit)" ]]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+
+      - name: Save vcpkg binary cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && steps.vcpkg-new.outputs.found == 'true' }}
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
+
+      - name: Compute artifact paths
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_DIR=artifacts/vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
+
+      - name: Stage desktop artifact
+        run: bash ./.ci/package-desktop.sh --platform ${{ env.BUILD_PLATFORM }} --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_DIR }}
+
+  windows-arm64-build:
+    name: Desktop (windows-arm64)
+    runs-on: windows-11-arm
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    env:
+      BUILD_PLATFORM: windows-arm64
+      CMAKE_PRESET: ci-windows-msys2-clang
+      MSYS2_ENV: CLANGARM64
+      MSYS2_PACKAGES: clang:p ccache:p cmake:p lld:p ninja:p boost:p openssl:p curl:p zlib:p qt6-base:p qt6-multimedia:p qt6-svg:p qt6-tools:p
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # The build number counts the commits, so fetch all of them but not their trees
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: tree:0
+          persist-credentials: false
+
+      - name: Check out submodules
+        run: git submodule update --init --recursive --depth 1 --jobs 8
+
+      - name: Set up compiler cache
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=${{ runner.temp }}/compiler-cache" >> "$GITHUB_ENV"
+          echo "CCACHE_MAXSIZE=5G" >> "$GITHUB_ENV"
+
+      # Keyed per run: an exact hit would never save again, and the cache would freeze
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-${{ env.BUILD_PLATFORM }}-
+
+      # Installing the packages takes about four minutes, so keep the installation for a week
+      - name: Compute MSYS2 cache key
+        id: msys2-key
+        run: echo "key=msys2-${{ env.MSYS2_ENV }}-$(date -u +%G-%V)-$(echo '${{ env.MSYS2_PACKAGES }}' | sha1sum | cut -c1-8)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore MSYS2
+        id: msys2-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}\msys64
+          key: ${{ steps.msys2-key.outputs.key }}
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        if: steps.msys2-cache.outputs.cache-hit != 'true'
+        with:
+          msystem: ${{ env.MSYS2_ENV }}
+          update: true
+          cache: false
+          install: git
+          pacboy: ${{ env.MSYS2_PACKAGES }}
+
+      # setup-msys2 only takes an existing installation in C:\msys64, which the runner has already, so
+      # write the msys2 shell wrapper it would write
+      - name: Set up cached MSYS2
+        run: |
+          wrapper_dir="$RUNNER_TEMP/setup-msys2"
+          mkdir -p "$wrapper_dir"
+          printf '%s\r\n' '@echo off' 'setlocal' 'IF NOT DEFINED MSYSTEM set MSYSTEM=${{ env.MSYS2_ENV }}' \
+            'IF NOT DEFINED MSYS2_PATH_TYPE set MSYS2_PATH_TYPE=minimal' 'set CHERE_INVOKING=1' \
+            "$(cygpath -w "$RUNNER_TEMP/msys64/usr/bin/bash.exe") -leo pipefail %*" > "$wrapper_dir/msys2.cmd"
+          cygpath -w "$wrapper_dir" >> "$GITHUB_PATH"
+          echo "MSYSTEM=${{ env.MSYS2_ENV }}" >> "$GITHUB_ENV"
+        if: steps.msys2-cache.outputs.cache-hit == 'true'
+
+      - name: Drop downloaded MSYS2 packages
+        shell: msys2 {0}
+        run: rm -rf /var/cache/pacman/pkg/*
+        if: steps.msys2-cache.outputs.cache-hit != 'true' && env.SAVE_CACHE == 'true'
+
+      - name: Save MSYS2
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}\msys64
+          key: ${{ steps.msys2-key.outputs.key }}
+        if: steps.msys2-cache.outputs.cache-hit != 'true' && env.SAVE_CACHE == 'true'
+
+      - name: Build desktop target
+        shell: msys2 {0}
+        run: bash ./.ci/build-windows-msys2.sh --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }}
+
+      - name: Print compiler cache statistics
+        shell: msys2 {0}
+        run: ccache --show-stats --verbose
+
+      # Hits refresh the mtime, so whatever is older than the job start was not used by this build
+      - name: Prune compiler cache
+        shell: msys2 {0}
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - JOB_START ))s"
+          ccache --zero-stats
+        if: env.SAVE_CACHE == 'true'
+
+      # Also after a failed build, unpruned, so the next run does not start cold
+      - name: Save compiler cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-${{ env.BUILD_PLATFORM }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Compute artifact paths
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_DIR=artifacts/vita3k-$(git rev-parse --short HEAD)-${{ env.BUILD_PLATFORM }}" >> "$GITHUB_ENV"
+
+      - name: Stage desktop artifact
+        shell: msys2 {0}
+        run: bash ./.ci/package-desktop.sh --platform ${{ env.BUILD_PLATFORM }} --preset ${{ env.CMAKE_PRESET }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_DIR }}
 
   autotests:
     name: VitaAutotests (linux-x64)
@@ -277,6 +593,7 @@ jobs:
   android-build:
     name: Android
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     env:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-binary-cache
 
@@ -284,15 +601,34 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          submodules: recursive
+          filter: tree:0
+          persist-credentials: false
+
+      - name: Check out submodules
+        run: git submodule update --init --recursive --depth 1 --jobs 8
+
+      - name: Set up compiler cache
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          echo "CCACHE_DIR=${{ runner.temp }}/compiler-cache" >> "$GITHUB_ENV"
+          echo "CCACHE_MAXSIZE=5G" >> "$GITHUB_ENV"
+
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-android-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ccache-android-
 
       - name: Restore vcpkg binary cache
-        uses: actions/cache@v6
+        id: vcpkg-cache
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-bincache-android-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'cmake/**', '.ci/**', 'android/app/build.gradle', '.github/workflows/c-cpp.yml') }}
+          key: vcpkg-android-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
           restore-keys: |
-            vcpkg-bincache-android-
+            vcpkg-android-${{ hashFiles('vcpkg.json') }}-
+            vcpkg-android-
 
       - name: Set up Java
         uses: actions/setup-java@v6
@@ -313,13 +649,9 @@ jobs:
           packages: ''
 
       - name: Set up Android build environment
-        env:
-          VCPKG_ROOT: /usr/local/share/vcpkg
         run: |
           mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
           bash ./.ci/setup-android.sh
-
-      - uses: hendrikmuhs/ccache-action@v1.2.24
 
       - name: Decode Android keystore
         env:
@@ -347,7 +679,36 @@ jobs:
         run: bash ./.ci/build-android.sh "${{ env.ARTIFACT_DIR }}"
 
       - name: Print Android ccache statistics
-        run: ccache -s
+        run: ccache --show-stats --verbose
+
+      - name: Prune compiler cache
+        run: |
+          ccache --evict-older-than "$(( $(date +%s) - JOB_START ))s"
+          ccache --zero-stats
+        if: env.SAVE_CACHE == 'true'
+
+      # Also after a failed build, unpruned, so the next run does not start cold
+      - name: Save compiler cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        with:
+          path: ${{ runner.temp }}/compiler-cache
+          key: ccache-android-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Check for new vcpkg packages
+        id: vcpkg-new
+        if: ${{ !cancelled() && env.SAVE_CACHE == 'true' }}
+        run: |
+          if [[ -n "$(find "$VCPKG_DEFAULT_BINARY_CACHE" -type f -newermt "@$JOB_START" -print -quit)" ]]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save vcpkg binary cache
+        uses: actions/cache/save@v6
+        if: ${{ !cancelled() && steps.vcpkg-new.outputs.found == 'true' }}
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v7
@@ -356,7 +717,7 @@ jobs:
           path: ${{ env.ARTIFACT_DIR }}
 
   create-release:
-    needs: [desktop-build, linux-x64-build, autotests, android-build]
+    needs: [linux-x64-build, linux-arm64-build, macos-x64-build, macos-arm64-build, windows-x64-build, windows-arm64-build, autotests, android-build]
     runs-on: ubuntu-latest
     concurrency:
       group: create-release
@@ -368,6 +729,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          filter: tree:0
+          persist-credentials: false
 
       - name: Download artifacts
         uses: actions/download-artifact@v8
