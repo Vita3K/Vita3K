@@ -17,6 +17,7 @@
 
 #include <gui-qt/cheats_dialog.h>
 
+#include <gui-qt/gui_settings.h>
 #include <gui-qt/qt_utils.h>
 
 #include <app/functions.h>
@@ -82,9 +83,10 @@ QString format_address(uint32_t address) {
 
 } // namespace
 
-CheatsDialog::CheatsDialog(EmuEnvState &emuenv, QWidget *parent)
+CheatsDialog::CheatsDialog(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_settings, QWidget *parent)
     : QDialog(parent)
-    , emuenv(emuenv) {
+    , emuenv(emuenv)
+    , m_gui_settings(std::move(gui_settings)) {
     setWindowTitle(tr("Cheat Manager"));
     setMinimumSize(640, 620);
     resize(860, 900);
@@ -94,7 +96,17 @@ CheatsDialog::CheatsDialog(EmuEnvState &emuenv, QWidget *parent)
     m_master = new QCheckBox(tr("Enable cheats"), this);
     m_master->setToolTip(tr("Master switch. When it is off, no cheat is applied to any game."));
     m_master->setChecked(emuenv.cfg.enable_cheats);
-    layout->addWidget(m_master);
+
+    m_installed_only = new QCheckBox(tr("Installed games only"), this);
+    m_installed_only->setToolTip(tr("Hide the games of the cheat databases that are not in the app list."));
+    m_installed_only->setChecked(m_gui_settings && m_gui_settings->get_value(gui::ch_installedOnly).toBool());
+
+    auto *top_layout = new QHBoxLayout;
+    top_layout->addWidget(m_master);
+    top_layout->addSpacing(16);
+    top_layout->addWidget(m_installed_only);
+    top_layout->addStretch();
+    layout->addLayout(top_layout);
 
     m_enable_all_button = new QPushButton(tr("Enable All"), this);
     m_enable_all_button->setToolTip(tr("Turn on every cheat of the selected game."));
@@ -235,6 +247,12 @@ CheatsDialog::CheatsDialog(EmuEnvState &emuenv, QWidget *parent)
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
     connect(m_master, &QCheckBox::toggled, this, &CheatsDialog::on_master_toggled);
     connect(m_filter, &QLineEdit::textChanged, this, [this] { apply_filter(); });
+    connect(m_installed_only, &QCheckBox::toggled, this, [this](bool checked) {
+        if (m_gui_settings)
+            m_gui_settings->set_value(gui::ch_installedOnly, checked);
+        apply_filter();
+        update_status();
+    });
     connect(m_tree, &QTreeWidget::itemChanged, this, &CheatsDialog::on_item_changed);
     connect(m_tree, &QTreeWidget::itemExpanded, this, &CheatsDialog::on_item_expanded);
     connect(m_tree, &QTreeWidget::itemSelectionChanged, this, &CheatsDialog::on_selection_changed);
@@ -353,6 +371,7 @@ void CheatsDialog::reload() {
 
     for (auto &game : m_games) {
         const auto &title_id = game.info.title_id;
+        game.installed = app_titles.contains(title_id);
         if (const auto it = app_titles.find(title_id); it != app_titles.end())
             game.title = it->second;
         else if (title_id == running)
@@ -493,8 +512,15 @@ void CheatsDialog::on_selection_changed() {
 
 void CheatsDialog::apply_filter() {
     const QString needle = m_filter->text().trimmed();
+    const bool installed_only = m_installed_only->isChecked();
     for (int i = 0; i < m_tree->topLevelItemCount(); ++i) {
         auto *game_item = m_tree->topLevelItem(i);
+        const auto index = game_item->data(COLUMN_NAME, game_role).toULongLong();
+        if (installed_only && (index < m_games.size()) && !m_games[index].installed && !is_live(m_games[index])) {
+            game_item->setHidden(true);
+            continue;
+        }
+
         const bool game_matches = needle.isEmpty() || game_item->text(COLUMN_NAME).contains(needle, Qt::CaseInsensitive);
 
         bool any_cheat_matches = false;
@@ -524,10 +550,13 @@ void CheatsDialog::update_buttons() {
 void CheatsDialog::update_status() {
     const Game *game = selected_game();
     if (!game) {
-        m_status->setText(m_games.empty()
-                ? tr("No cheat file in %1. Put FinalCheat / VitaCheat databases there, named after the title ID of the game (e.g. PCSA00147.psv).")
-                      .arg(gui::utils::to_qt_path(emuenv.cheat_path))
-                : tr("%n game(s) with cheats.", "", static_cast<int>(m_games.size())));
+        const auto installed = std::ranges::count_if(m_games, [](const Game &game) { return game.installed; });
+        if (m_games.empty()) {
+            m_status->setText(tr("No cheat file in %1. Put FinalCheat / VitaCheat databases there, named after the title ID of the game (e.g. PCSA00147.psv).")
+                    .arg(gui::utils::to_qt_path(emuenv.cheat_path)));
+        } else {
+            m_status->setText(tr("%n game(s) with cheats, %1 of them installed.", "", static_cast<int>(m_games.size())).arg(installed));
+        }
         return;
     }
 

@@ -22,11 +22,13 @@
 
 #include <QDialog>
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 struct EmuEnvState;
+class GuiSettings;
 
 class QCheckBox;
 class QComboBox;
@@ -46,7 +48,7 @@ class CheatsDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit CheatsDialog(EmuEnvState &emuenv, QWidget *parent = nullptr);
+    CheatsDialog(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_settings, QWidget *parent = nullptr);
 
     // Selects the game, listing it even when it has no cheat file yet. An empty id picks the running game.
     void set_app(const std::string &title_id, const QString &app_title);
@@ -72,6 +74,7 @@ private:
     struct Game {
         cheat::CheatGame info;
         QString title;
+        bool installed = false;
         bool loaded = false;
         cheat::CheatFile file;
         QTreeWidgetItem *item = nullptr;
@@ -97,6 +100,7 @@ private:
     std::optional<uint32_t> selected_address() const;
 
     EmuEnvState &emuenv;
+    std::shared_ptr<GuiSettings> m_gui_settings;
 
     std::vector<Game> m_games;
     // Game the app list asked for, kept across reloads.
@@ -109,6 +113,7 @@ private:
     std::string m_search_title_id;
 
     QCheckBox *m_master = nullptr;
+    QCheckBox *m_installed_only = nullptr;
     QLineEdit *m_filter = nullptr;
     QTreeWidget *m_tree = nullptr;
     QPlainTextEdit *m_details = nullptr;

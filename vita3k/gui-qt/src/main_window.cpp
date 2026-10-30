@@ -1437,7 +1437,7 @@ void MainWindow::open_trophy_collection() {
 
 void MainWindow::open_cheats_for(const std::string &title_id, const QString &app_title) {
     if (!m_cheats_dialog) {
-        m_cheats_dialog = new CheatsDialog(emuenv, this);
+        m_cheats_dialog = new CheatsDialog(emuenv, m_gui_settings, this);
         register_auxiliary_window(m_cheats_dialog);
     }
 
