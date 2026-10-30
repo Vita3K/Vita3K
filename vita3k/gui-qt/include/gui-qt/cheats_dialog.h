@@ -52,7 +52,8 @@ public:
 
     // Selects the game, listing it even when it has no cheat file yet. An empty id picks the running game.
     void set_app(const std::string &title_id, const QString &app_title);
-    void reload();
+    // `keep_toggles` keeps the unsaved toggles of the games that are not running.
+    void reload(bool keep_toggles = true);
 
 private Q_SLOTS:
     void on_item_changed(QTreeWidgetItem *item, int column);
@@ -111,6 +112,7 @@ private:
 
     cheat::MemorySearch m_search;
     std::string m_search_title_id;
+    std::string m_last_running_title_id;
 
     QCheckBox *m_master = nullptr;
     QCheckBox *m_installed_only = nullptr;

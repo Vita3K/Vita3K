@@ -336,10 +336,10 @@ void CheatsDialog::on_reload() {
             [this](uint32_t address, size_t size) { emuenv.kernel.invalidate_jit_cache(address, size); });
     }
 
-    reload();
+    reload(false);
 }
 
-void CheatsDialog::reload() {
+void CheatsDialog::reload(bool keep_toggles) {
     std::string selected_title_id;
     std::optional<size_t> selected_index;
     if (const Game *game = selected_game()) {
@@ -351,6 +351,16 @@ void CheatsDialog::reload() {
     for (const auto &game : m_games) {
         if (game.item && game.item->isExpanded())
             expanded.insert(game.info.title_id);
+    }
+
+    // Toggles of a game that is not running only exist here until saved, a game starting or another one being saved must not drop them.
+    std::map<std::string, std::vector<cheat::Cheat>> unsaved;
+    if (keep_toggles) {
+        for (auto &game : m_games) {
+            const auto toggled = [](const cheat::Cheat &cheat) { return cheat.enabled != cheat.enabled_on_boot; };
+            if (game.loaded && !is_live(game) && std::ranges::any_of(game.file.cheats, toggled))
+                unsaved.emplace(game.info.title_id, std::move(game.file.cheats));
+        }
     }
 
     std::map<std::string, QString> app_titles;
@@ -414,10 +424,25 @@ void CheatsDialog::reload() {
             load_game(game);
             item->setExpanded(true);
         }
+
+        if (const auto it = unsaved.find(game.info.title_id); (it != unsaved.end()) && !is_live(game)) {
+            load_game(game);
+            const auto &previous = it->second;
+            for (size_t c = 0; c < std::min(game.file.cheats.size(), previous.size()); ++c) {
+                if (game.file.cheats[c].name == previous[c].name)
+                    game.file.cheats[c].enabled = previous[c].enabled;
+            }
+            populate_cheats(game);
+        }
     }
     m_populating = false;
 
-    if (!selected_title_id.empty())
+    // Opened from the Manage menu, the dialog follows whichever game starts.
+    const bool running_changed = running != m_last_running_title_id;
+    m_last_running_title_id = running;
+    if (running_changed && !running.empty() && m_focus_title_id.empty())
+        select_game(running);
+    else if (!selected_title_id.empty())
         select_game(selected_title_id, selected_index);
     else if (!running.empty())
         select_game(running);
@@ -534,6 +559,13 @@ void CheatsDialog::apply_filter() {
         game_item->setHidden(!game_matches && !any_cheat_matches);
         if (any_cheat_matches && !game_matches)
             game_item->setExpanded(true);
+    }
+
+    // Enable All, Disable All and Save act on the current game, which must not be one the filter hides.
+    if (auto *current = m_tree->currentItem(); current && (current->isHidden() || (current->parent() && current->parent()->isHidden()))) {
+        m_tree->clearSelection();
+        m_tree->setCurrentItem(nullptr);
+        on_selection_changed();
     }
 }
 
