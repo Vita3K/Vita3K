@@ -241,6 +241,7 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
         emuenv.ime.edit_text.caretIndex = emuenv.ime.caretIndex;
         emuenv.ime.edit_text.preeditIndex = emuenv.ime.caretIndex;
         emuenv.ime.param.maxTextLength = p->maxTextLength;
+        emuenv.ime.clear_pending_event();
     }
     emuenv.common_dialog.active_ime = &emuenv.ime;
 
@@ -270,7 +271,7 @@ EXPORT(int, sceImeDialogTerm) {
         emuenv.ime.str.clear();
         emuenv.ime.caretIndex = 0;
         emuenv.ime.edit_text = {};
-        emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
+        emuenv.ime.clear_pending_event();
     }
 
 #ifdef __ANDROID__
