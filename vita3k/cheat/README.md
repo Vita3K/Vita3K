@@ -9,6 +9,7 @@ Support for the cheat databases of the PS Vita plugins [FinalCheat / VitaCheat][
    (`PCSA00147.psv`). `.txt` is accepted as well, some databases ship that extension. A combined
    database covering many games at once (`cheat.db`) works too, see below.
 2. Open **Manage ▸ Cheats**, or right click a game in the app list and pick **Manage Cheats**.
+   The cheat manager lists every game of the cheats folder, the running one first.
 3. Tick the cheats to turn on. While the game is running they take effect immediately, otherwise
    press **Save** so that they are on the next time it boots. Selecting a cheat shows its codes
    below the list, so what it writes can be checked before turning it on.
@@ -16,6 +17,21 @@ Support for the cheat databases of the PS Vita plugins [FinalCheat / VitaCheat][
    back on the next time the game boots.
 5. **Open Cheat File** opens the database of the selected game in the default editor, and
    **Reload** reads it back. Editing a cheat file while its game runs does not need a restart.
+
+### Cheat search
+
+While a game runs, **Cheat Search** finds the address of a value the way RPCS3 does: enter the
+value (decimal, or hexadecimal with `0x`), pick its type and press **New Search**. Change the value
+in game, enter the new one and press **Filter Results**, until only a few addresses are left.
+
+- **Apply** writes the value typed in **Current value** to the selected address once.
+- **Add as Cheat...** (or a double click) appends a `$0X00` write code keeping the address at that
+  value to the cheat file of the game, creating `<title id>.psv` when there is none. It is on
+  right away, and **Save** makes it start on boot.
+
+Values are compared at their natural alignment, floats with a relative tolerance of 1e-5 so that
+`3.14` finds `3.1400001`. Only allocated memory is scanned, and a first search keeps at most ten
+million matches.
 
 The **Enable cheats** checkbox is the master switch (`enable-cheats` in `config.yml`). Turning it
 off stops every cheat and puts back the instructions the ARM write codes replaced.

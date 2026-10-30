@@ -20,6 +20,7 @@
 #include <mem/ptr.h>
 #include <mem/state.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <algorithm>
 #include <mutex>
@@ -597,6 +598,32 @@ bool reload(CheatState &state, const fs::path &cheats_dir, const std::string &ti
     set_all_cheats_enabled(state, false, mem, invalidate_jit);
 
     return load(state, cheats_dir, title_id);
+}
+
+bool add_cheat(CheatState &state, const fs::path &cheats_dir, const std::string &title_id, const Cheat &cheat, MemState &mem, const JitInvalidate &invalidate_jit) {
+    auto path = find_cheat_file(cheats_dir, title_id);
+    if (path.empty())
+        path = cheats_dir / (string_utils::toupper(title_id) + ".psv");
+    if (!append_cheat(path, title_id, cheat))
+        return false;
+
+    if (loaded_title_id(state) != title_id)
+        return true;
+
+    // Reloading puts every cheat back to its boot state, carry over what was toggled since.
+    const CheatFile before = snapshot(state);
+    reload(state, cheats_dir, title_id, mem, invalidate_jit);
+
+    const std::lock_guard<std::mutex> lock(state.mutex);
+    auto &cheats = state.file.cheats;
+    for (size_t i = 0; i < std::min(cheats.size(), before.cheats.size()); ++i) {
+        if (cheats[i].name == before.cheats[i].name)
+            cheats[i].enabled = before.cheats[i].enabled;
+    }
+    if (cheats.size() == before.cheats.size() + 1)
+        cheats.back().enabled = cheat.enabled;
+
+    return true;
 }
 
 void add_module(CheatState &state, const CheatModule &module) {

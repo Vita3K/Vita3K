@@ -38,6 +38,9 @@ bool load(CheatState &state, const fs::path &cheats_dir, const std::string &titl
 
 bool reload(CheatState &state, const fs::path &cheats_dir, const std::string &title_id, MemState &mem, const JitInvalidate &invalidate_jit);
 
+// Writes `cheat` to the cheat file of the game, and turns it on right away when that game is running.
+bool add_cheat(CheatState &state, const fs::path &cheats_dir, const std::string &title_id, const Cheat &cheat, MemState &mem, const JitInvalidate &invalidate_jit);
+
 // Module index 0 of a `$B2` code is whichever module is registered first.
 void add_module(CheatState &state, const CheatModule &module);
 

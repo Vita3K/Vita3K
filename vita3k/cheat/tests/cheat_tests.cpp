@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <cheat/functions.h>
+#include <cheat/search.h>
 
 #include <mem/functions.h>
 #include <mem/ptr.h>
@@ -23,9 +24,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <random>
 #include <system_error>
 
@@ -707,4 +710,117 @@ TEST_F(CheatTest, unloading_restarts_the_frame_count) {
     cheat::set_enabled(state, true, mem, {});
     cheat::apply(state, mem, {});
     EXPECT_EQ(read32(0), 0u);
+}
+
+TEST_F(CheatTest, lists_every_game_with_the_file_that_wins_for_it) {
+    write_named("cheat.db",
+        "_S PCSA00001 From the database\n"
+        "_V0 Hidden\n"
+        "$0200 81000000 0000000A\n"
+        "_S PCSB00002 Second Game\n"
+        "_V0 Listed\n"
+        "$0200 81000000 0000000A\n");
+    write_file(title_id, "# PCSA00001 First Game\n_V0 Mine\n$0200 81000000 0000000A\n");
+    write_named("notes.psv", "_V0 Not a game\n$0200 81000000 0000000A\n");
+
+    const auto games = cheat::list_cheat_games(directory);
+    ASSERT_EQ(games.size(), 2u);
+    EXPECT_EQ(games[0].title_id, title_id);
+    EXPECT_EQ(games[0].name, "First Game");
+    EXPECT_EQ(games[0].path, cheat::find_cheat_file(directory, title_id));
+    EXPECT_EQ(games[1].title_id, "PCSB00002");
+    EXPECT_EQ(games[1].name, "Second Game");
+    EXPECT_EQ(fs_utils::path_to_utf8(games[1].path.filename()), "cheat.db");
+}
+
+TEST_F(CheatTest, appending_to_a_database_lands_at_the_end_of_the_section) {
+    const auto path = write_named("cheat.db",
+        "_S PCSA00001\r\n"
+        "_V1 First\r\n"
+        "$0200 81000000 0000000A\r\n"
+        "\r\n"
+        "_S PCSA00002\r\n"
+        "_V1 Other\r\n"
+        "$0200 81000004 0000000B\r\n");
+
+    cheat::Cheat added;
+    added.name = "Found";
+    added.lines.push_back(cheat::make_write_code(0x81000010, cheat::SearchType::u16, 0x1234));
+    ASSERT_TRUE(cheat::append_cheat(path, title_id, added));
+
+    const auto mine = cheat::parse_cheat_file(path, title_id);
+    ASSERT_EQ(mine.cheats.size(), 2u);
+    EXPECT_EQ(mine.cheats[1].name, "Found");
+    EXPECT_EQ(cheat::format_code_line(mine.cheats[1].lines[0]), "$0100 81000010 00001234");
+    EXPECT_EQ(cheat::parse_cheat_file(path, "PCSA00002").cheats.size(), 1u);
+
+    std::ifstream stream(path.c_str(), std::ios::binary);
+    const std::string contents((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+    EXPECT_NE(contents.find("$0200 81000000 0000000A\r\n_V0 Found\r\n$0100 81000010 00001234\r\n\r\n_S PCSA00002"), std::string::npos);
+}
+
+TEST_F(CheatTest, adding_a_cheat_while_running_keeps_the_other_toggles) {
+    write_file(title_id, fmt::format("_V0 First\n$0200 {:08X} 00000001\n_V0 Second\n$0200 {:08X} 00000002\n", at(0), at(4)));
+    ASSERT_TRUE(cheat::load(state, directory, title_id));
+    cheat::set_enabled(state, true, mem, {});
+    cheat::set_cheat_enabled(state, 1, true, mem, {});
+
+    cheat::Cheat added;
+    added.name = "Found";
+    added.enabled = true;
+    added.lines.push_back(cheat::make_write_code(at(8), cheat::SearchType::u32, 3));
+    ASSERT_TRUE(cheat::add_cheat(state, directory, title_id, added, mem, {}));
+    cheat::apply(state, mem, {});
+
+    EXPECT_EQ(read32(0), 0u);
+    EXPECT_EQ(read32(4), 2u);
+    EXPECT_EQ(read32(8), 3u);
+    EXPECT_EQ(cheat::enabled_cheat_count(state), 2u);
+}
+
+TEST_F(CheatTest, adding_a_cheat_creates_the_file_of_a_game_without_one) {
+    cheat::Cheat added;
+    added.name = "Found";
+    added.lines.push_back(cheat::make_write_code(at(0), cheat::SearchType::u8, 0xFF));
+    ASSERT_TRUE(cheat::add_cheat(state, directory, title_id, added, mem, {}));
+
+    const auto file = cheat::parse_cheat_file(directory / (title_id + ".psv"), title_id);
+    ASSERT_EQ(file.cheats.size(), 1u);
+    EXPECT_EQ(file.header, title_id);
+}
+
+TEST_F(CheatTest, search_narrows_down_to_the_value_that_changed) {
+    write32(0x10, 0x13572468);
+    write32(0x20, 0x13572468);
+
+    cheat::MemorySearch search;
+    search.new_search(mem, cheat::SearchType::u32, 0x13572468);
+    const auto &found = search.results();
+    EXPECT_NE(std::ranges::find(found, at(0x10)), found.end());
+    EXPECT_NE(std::ranges::find(found, at(0x20)), found.end());
+
+    write32(0x20, 7);
+    search.filter(mem, 7);
+    ASSERT_EQ(search.results().size(), 1u);
+    EXPECT_EQ(search.results()[0], at(0x20));
+
+    ASSERT_TRUE(cheat::write_search_value(mem, at(0x20), cheat::SearchType::u32, 99));
+    EXPECT_EQ(cheat::read_search_value(mem, at(0x20), cheat::SearchType::u32), 99u);
+}
+
+TEST_F(CheatTest, search_values_parse_as_the_picked_type) {
+    EXPECT_EQ(cheat::parse_search_value("-1", cheat::SearchType::s16), 0xFFFFu);
+    EXPECT_EQ(cheat::parse_search_value("0xFF", cheat::SearchType::u8), 0xFFu);
+    EXPECT_FALSE(cheat::parse_search_value("256", cheat::SearchType::u8));
+    EXPECT_FALSE(cheat::parse_search_value("12abc", cheat::SearchType::s32));
+    EXPECT_EQ(cheat::parse_search_value("1.5", cheat::SearchType::f32), 0x3FC00000u);
+    EXPECT_EQ(cheat::format_search_value(0xFFFFu, cheat::SearchType::s16), "-1");
+}
+
+TEST_F(CheatTest, float_search_tolerates_rounding) {
+    *Ptr<float>(at(0x30)).get(mem) = 3.14159274f;
+
+    cheat::MemorySearch search;
+    search.new_search(mem, cheat::SearchType::f32, *cheat::parse_search_value("3.14159", cheat::SearchType::f32));
+    EXPECT_NE(std::ranges::find(search.results(), at(0x30)), search.results().end());
 }

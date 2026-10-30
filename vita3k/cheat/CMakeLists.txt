@@ -3,9 +3,11 @@ add_library(
 	STATIC
 	include/cheat/cheat.h
 	include/cheat/functions.h
+	include/cheat/search.h
 	include/cheat/state.h
 	src/cheat.cpp
 	src/parser.cpp
+	src/search.cpp
 )
 
 target_include_directories(cheat PUBLIC include)

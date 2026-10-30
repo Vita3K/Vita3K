@@ -91,12 +91,27 @@ struct CheatFile {
     std::vector<Cheat> cheats;
 };
 
+// A game the cheats folder holds cheats for, `path` is what find_cheat_file() picks for it.
+struct CheatGame {
+    std::string title_id;
+    // From the `_S` line or the first comment of the file, empty when neither names the game.
+    std::string name;
+    fs::path path;
+};
+
 fs::path find_cheat_file(const fs::path &cheats_dir, const std::string &title_id);
+
+std::vector<CheatGame> list_cheat_games(const fs::path &cheats_dir);
 
 // Parse a cheat file. A malformed line marks its cheat as broken, it never aborts the parsing.
 CheatFile parse_cheat_file(const fs::path &path, const std::string &title_id);
 
 // Rewrite only the `_V0`/`_V1` markers of `file`, so that cheats on now are on again at next boot.
 bool save_cheat_file(const CheatFile &file);
+
+// Add `cheat` after the other cheats of `title_id` in `path`, creating the file when it is missing.
+bool append_cheat(const fs::path &path, const std::string &title_id, const Cheat &cheat);
+
+std::string format_code_line(const CodeLine &code);
 
 } // namespace cheat
