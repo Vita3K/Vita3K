@@ -188,7 +188,14 @@ struct ShaderProgram {
     TextureInfo textures_used; // textures_used[i] is true if and only if the i-th texture is used by the shader
 };
 
+struct FragmentProgramLinkInfo {
+    std::array<uint8_t, 10> texcoord_map{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    SceGxmOutputRegisterFormat output_format = SCE_GXM_OUTPUT_REGISTER_FORMAT_DECLARED;
+    SceGxmMultisampleMode multisample_mode = SCE_GXM_MULTISAMPLE_NONE;
+};
+
 struct FragmentProgram : ShaderProgram {
+    FragmentProgramLinkInfo link_info;
 };
 
 struct VertexProgram : ShaderProgram {

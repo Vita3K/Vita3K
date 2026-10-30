@@ -1417,6 +1417,7 @@ typedef std::map<VertexProgramCacheKey, Ptr<SceGxmVertexProgram>> VertexProgramC
 struct FragmentProgramCacheKey {
     SceGxmRegisteredProgram fragment_program;
     SceGxmBlendInfo blend_info;
+    renderer::FragmentProgramLinkInfo link_info;
 };
 
 typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
@@ -1474,13 +1475,19 @@ static bool operator<(const SceGxmBlendInfo &a, const SceGxmBlendInfo &b) {
 }
 
 static bool operator<(const FragmentProgramCacheKey &a, const FragmentProgramCacheKey &b) {
-    if (a.fragment_program < b.fragment_program) {
+    if (a.fragment_program < b.fragment_program)
         return true;
-    }
-    if (b.fragment_program < a.fragment_program) {
+    if (b.fragment_program < a.fragment_program)
         return false;
-    }
-    return b.blend_info < a.blend_info;
+    if (a.blend_info < b.blend_info)
+        return true;
+    if (b.blend_info < a.blend_info)
+        return false;
+    if (a.link_info.texcoord_map != b.link_info.texcoord_map)
+        return a.link_info.texcoord_map < b.link_info.texcoord_map;
+    if (a.link_info.output_format != b.link_info.output_format)
+        return a.link_info.output_format < b.link_info.output_format;
+    return a.link_info.multisample_mode < b.link_info.multisample_mode;
 }
 
 static int init_texture_base(const char *export_name, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat tex_format, uint32_t width, uint32_t height, uint32_t mipCount,
@@ -4562,9 +4569,15 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         SCE_GXM_BLEND_FACTOR_ONE,
         SCE_GXM_BLEND_FACTOR_ZERO
     };
+    const renderer::FragmentProgramLinkInfo link_info = {
+        .texcoord_map = gxp::get_texcoord_link_map(vertexProgram ? vertexProgram.get(mem) : nullptr),
+        .output_format = outputFormat,
+        .multisample_mode = multisampleMode
+    };
     const FragmentProgramCacheKey key = {
         *programId,
-        (blendInfo != nullptr) ? *blendInfo : default_blend_info
+        (blendInfo != nullptr) ? *blendInfo : default_blend_info,
+        link_info
     };
     FragmentProgramCache::const_iterator cached = shaderPatcher->fragment_program_cache.find(key);
     if (cached != shaderPatcher->fragment_program_cache.end()) {
@@ -4583,7 +4596,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     fp->is_maskupdate = false;
     fp->program = programId->program;
 
-    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *programId->program.get(mem), blendInfo, emuenv.renderer->gxp_ptr_map)) {
+    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *programId->program.get(mem), blendInfo, link_info, emuenv.renderer->gxp_ptr_map)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -4610,7 +4623,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     fp->program = Ptr<const SceGxmProgram>(alloc_callbacked(emuenv, thread_id, shaderPatcher->params, size_mask_gxp));
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
 
-    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *fp->program.get(mem), nullptr, emuenv.renderer->gxp_ptr_map)) {
+    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *fp->program.get(mem), nullptr, renderer::FragmentProgramLinkInfo{}, emuenv.renderer->gxp_ptr_map)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 

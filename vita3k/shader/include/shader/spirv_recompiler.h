@@ -23,6 +23,7 @@
 
 #include <features/state.h>
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -46,6 +47,8 @@ enum struct Target {
 // Hints given while compiling the shader
 // For example, the gxp shader knows at runtime the swizzle of the color surface
 // or the format / number of components of the sampled images, but we can't
+using TexCoordLinkMap = std::array<uint8_t, 10>;
+
 struct Hints {
     // used when symbols are stripped
     // also used when scaled attribute formats are not supported and conversion must be done in the shader
@@ -71,7 +74,7 @@ struct GeneratedShader {
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
 
 // the returned object will only have its glsl or spirv field non-empty depending on the target
-GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const Hints &hints, bool maskupdate = false,
+GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const Hints &hints, const TexCoordLinkMap *fragment_texcoord_map = nullptr, bool maskupdate = false,
     bool force_shader_debug = false, const std::function<bool(const std::string &ext, const std::string &dump)> &dumper = nullptr);
 
 usse::SpirvCode create_mask_test_shader();
