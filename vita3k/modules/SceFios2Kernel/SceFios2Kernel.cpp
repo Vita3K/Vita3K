@@ -35,6 +35,9 @@ struct sceFiosKernelOverlayResolveWithRangeSync_opt {
     int reserved6;
 };
 
+// checked on a real Vita
+static constexpr int SCE_FIOS_ERROR_NULL_OUT_ID = 0x80820006;
+
 EXPORT(int, _sceFiosKernelOverlayAdd) {
     return UNIMPLEMENTED();
 }
@@ -42,6 +45,9 @@ EXPORT(int, _sceFiosKernelOverlayAdd) {
 EXPORT(int, _sceFiosKernelOverlayAddForProcess, SceUID pid, const void *pOverlay, SceUID *pOutID) {
     TRACY_FUNC(_sceFiosKernelOverlayAddForProcess, pid, pOverlay, pOutID);
     STUBBED("Only returns a new overlay ID, the paths are not remapped");
+    if (!pOutID)
+        return SCE_FIOS_ERROR_NULL_OUT_ID;
+
     const std::lock_guard<std::mutex> guard(emuenv.io.overlay_mutex);
     *pOutID = emuenv.io.next_overlay_id++;
     return 0;
