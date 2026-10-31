@@ -39,6 +39,7 @@
 #include <gui-qt/physical_key_qt.h>
 #include <gui-qt/pkg_install_dialog.h>
 #include <gui-qt/qt_utils.h>
+#include <gui-qt/save_data_manager_dialog.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
 #include <gui-qt/theme_manager.h>
@@ -442,6 +443,9 @@ void MainWindow::initialize() {
 
     connect(m_ui->trophy_collection_action, &QAction::triggered,
         this, &MainWindow::open_trophy_collection);
+
+    connect(m_ui->save_data_manager_action, &QAction::triggered,
+        this, &MainWindow::open_save_data_manager);
 
     connect(m_ui->vita_themes_action, &QAction::triggered,
         this, &MainWindow::open_vita_themes);
@@ -1429,6 +1433,14 @@ void MainWindow::open_trophy_collection() {
     present_tool_window(m_trophy_dialog);
 }
 
+void MainWindow::open_save_data_manager() {
+    if (!m_save_data_dialog) {
+        m_save_data_dialog = new SaveDataManagerDialog(emuenv, m_gui_settings, [this] { return m_game_window != nullptr; });
+        register_auxiliary_window(m_save_data_dialog);
+    }
+    present_tool_window(m_save_data_dialog);
+}
+
 void MainWindow::open_vita_themes() {
     if (!m_vita_themes_dialog) {
         m_vita_themes_dialog = new VitaThemesDialog(m_gui_settings, *m_theme_manager, this);
@@ -1451,6 +1463,8 @@ void MainWindow::open_user_management() {
             this, [this] {
                 if (m_trophy_dialog)
                     m_trophy_dialog->reload();
+                if (m_save_data_dialog)
+                    m_save_data_dialog->reload();
             });
     }
     present_tool_window(m_user_mgmt_dialog);

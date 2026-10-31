@@ -947,8 +947,9 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
     auto &icon_buf_tmp = emuenv.common_dialog.savedata.icon_buffer[index];
     icon_buf_tmp.clear();
 
-    SceUID fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[index]).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
-    if (fd < 0) {
+    SceAppUtilSaveDataSlotParam slot_param{};
+    const bool slot_exists = sdslot_read_slot_param(emuenv, emuenv.common_dialog.savedata.slot_id[index], &slot_param, export_name);
+    if (!slot_exists) {
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         if (empty_param) {
             emuenv.common_dialog.savedata.title[index] = empty_param->title ? empty_param->title.get(emuenv.mem) : lang::get(lang::str::new_saved_data);
@@ -965,9 +966,6 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         }
     } else {
         vfs::FileBuffer thumbnail_buffer;
-        SceAppUtilSaveDataSlotParam slot_param{};
-        read_file(&slot_param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-        close_file(emuenv.io, fd, export_name);
         emuenv.common_dialog.savedata.slot_info[index].isExist = 1;
         emuenv.common_dialog.savedata.title[index] = slot_param.title;
         emuenv.common_dialog.savedata.subtitle[index] = slot_param.subTitle;
