@@ -25,6 +25,9 @@
 
 #include <cpu/functions.h>
 
+#include <bit>
+#include <cerrno>
+#include <iterator>
 #include <kernel/state.h>
 #include <mem/state.h>
 #include <sstream>
@@ -59,6 +62,9 @@
 
 typedef char PacketData[1200];
 
+// The longest packet the stub waits for before it drops it
+constexpr size_t MAX_PACKET_SIZE = 16384;
+
 struct PacketCommand {
     char *data{};
     int64_t length = -1;
@@ -88,7 +94,7 @@ static std::string content_string(PacketCommand &command) {
 
 // Hexes
 static std::string be_hex(uint32_t value) {
-    return fmt::format("{:0>8x}", htonl(value));
+    return fmt::format("{:0>8x}", std::byteswap(value));
 }
 
 static std::string to_hex(uint32_t value) {
@@ -101,6 +107,11 @@ static std::string to_hex(SceUID value) {
 
 static uint32_t parse_hex(const std::string &hex) {
     return static_cast<uint32_t>(std::strtoul(hex.c_str(), nullptr, 16));
+}
+
+// A register value gdb sends, as hex bytes in the target's little endian order
+static uint32_t parse_reg(const std::string &hex) {
+    return std::byteswap(parse_hex(hex));
 }
 
 static uint8_t make_checksum(const char *data, int64_t length) {
@@ -148,7 +159,17 @@ static PacketCommand parse_command(char *data, int64_t length) {
 static int64_t server_reply(GDBState &state, const char *data, int64_t length) {
     uint8_t checksum = make_checksum(data, length);
     std::string packet_data = fmt::format("${}#{:0>2x}", std::string(data, length), checksum);
-    return send(state.client_socket, &packet_data[0], packet_data.size(), 0);
+    size_t sent = 0;
+    while (sent < packet_data.size()) {
+        const int64_t n = send(state.client_socket, packet_data.data() + sent, static_cast<int>(packet_data.size() - sent), 0);
+        // A signal can interrupt send before it writes anything, so try again
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n <= 0)
+            return n;
+        sent += static_cast<size_t>(n);
+    }
+    return static_cast<int64_t>(sent);
 }
 
 static int64_t server_reply(GDBState &state, const char *text) {
@@ -161,7 +182,66 @@ static int64_t server_ack(GDBState &state, char ack = '+') {
 
 static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
     return "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
-           "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;xmlRegisters=arm";
+           "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;qXfer:features:read+";
+}
+
+// Register numbers in the target description and in remote packets.
+constexpr uint32_t REG_CPSR = 16;
+constexpr uint32_t REG_D0 = 17;
+constexpr uint32_t VFP_DOUBLE_REGS = 32;
+constexpr uint32_t REG_FPSCR = REG_D0 + VFP_DOUBLE_REGS;
+constexpr uint32_t REG_Q0 = REG_FPSCR + 1;
+constexpr uint32_t NEON_QUAD_REGS = 16;
+
+// Core, VFP and NEON registers. gdb shows s0-s31 from the d registers by itself but not q0-q15, so
+// the q registers are listed too.
+static std::string make_target_xml() {
+    std::string xml = R"(<?xml version="1.0"?>
+<!DOCTYPE target SYSTEM "gdb-target.dtd">
+<target version="1.0">
+<architecture>arm</architecture>
+<feature name="org.gnu.gdb.arm.core">
+)";
+    for (int r = 0; r < 13; r++)
+        fmt::format_to(std::back_inserter(xml), R"(<reg name="r{}" bitsize="32" type="uint32"/>)", r);
+    xml += fmt::format(R"(<reg name="sp" bitsize="32" type="data_ptr"/>
+<reg name="lr" bitsize="32" type="uint32"/>
+<reg name="pc" bitsize="32" type="code_ptr"/>
+<reg name="cpsr" bitsize="32" type="uint32" regnum="{}"/>
+</feature>
+<feature name="org.gnu.gdb.arm.vfp">
+)",
+        REG_CPSR);
+    for (uint32_t d = 0; d < VFP_DOUBLE_REGS; d++)
+        fmt::format_to(std::back_inserter(xml), R"(<reg name="d{}" bitsize="64" type="ieee_double" regnum="{}"/>)", d, REG_D0 + d);
+    xml += fmt::format(R"(<reg name="fpscr" bitsize="32" type="int" group="float" regnum="{}"/>
+</feature>
+<feature name="org.gnu.gdb.arm.neon">
+<vector id="v4u32" type="uint32" count="4"/>
+)",
+        REG_FPSCR);
+    for (uint32_t q = 0; q < NEON_QUAD_REGS; q++)
+        fmt::format_to(std::back_inserter(xml), R"(<reg name="q{}" bitsize="128" type="v4u32" regnum="{}"/>)", q, REG_Q0 + q);
+    xml += "</feature>\n</target>";
+    return xml;
+}
+
+static const std::string TARGET_XML = make_target_xml();
+
+// qXfer:features:read:target.xml:OFFSET,LENGTH returns the part of TARGET_XML gdb asks for, with m
+// before it while more follows and l before the last part
+static std::string cmd_target_xml(EmuEnvState &state, PacketCommand &command) {
+    const std::string content = content_string(command);
+    const size_t comma = content.find(',');
+    const size_t colon = content.rfind(':', comma);
+    if (colon == std::string::npos || comma == std::string::npos)
+        return "E00";
+    const size_t offset = parse_hex(content.substr(colon + 1, comma - colon - 1));
+    const size_t length = parse_hex(content.substr(comma + 1));
+    if (offset >= TARGET_XML.size())
+        return "l";
+    const std::string part = TARGET_XML.substr(offset, length);
+    return (offset + part.size() < TARGET_XML.size() ? "m" : "l") + part;
 }
 
 static std::string cmd_reply_empty(EmuEnvState &state, PacketCommand &command) {
@@ -215,14 +295,9 @@ static uint32_t fetch_reg(CPUState &state, uint32_t reg) {
     if (reg == 15)
         return read_pc(state);
 
-    if (reg <= 23) {
-        float value = read_float_reg(state, reg - 16);
-        return std::bit_cast<uint32_t>(value);
-    }
-
-    if (reg == 24)
+    if (reg == REG_FPSCR)
         return read_fpscr(state);
-    if (reg == 25)
+    if (reg == REG_CPSR)
         return read_cpsr(state);
 
     LOG_GDB("GDB Server Queried Invalid Register {}", reg);
@@ -248,21 +323,38 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
         return;
     }
 
-    if (reg <= 23) {
-        write_float_reg(state, reg - 16, std::bit_cast<float>(value));
-        return;
-    }
-
-    if (reg == 24) {
+    if (reg == REG_FPSCR) {
         write_fpscr(state, value);
         return;
     }
-    if (reg == 25) {
+    if (reg == REG_CPSR) {
         write_cpsr(state, value);
         return;
     }
 
     LOG_GDB("GDB Server Modified Invalid Register {}", reg);
+}
+
+// How many 32-bit words a register has in p and P packets
+static size_t reg_words(uint32_t reg) {
+    if (reg >= REG_D0 && reg < REG_D0 + VFP_DOUBLE_REGS)
+        return 2;
+    if (reg >= REG_Q0 && reg < REG_Q0 + NEON_QUAD_REGS)
+        return 4;
+    return 1;
+}
+
+// Single registers first to first + count - 1 as one hex value, the low one first
+static std::string read_float_regs(CPUState &cpu, size_t first, size_t count) {
+    std::string result;
+    for (size_t i = 0; i < count; i++)
+        result += be_hex(std::bit_cast<uint32_t>(read_float_reg(cpu, first + i)));
+    return result;
+}
+
+static void write_float_regs(CPUState &cpu, size_t first, size_t count, const std::string &hex) {
+    for (size_t i = 0; i < count; i++)
+        write_float_reg(cpu, first + i, std::bit_cast<float>(parse_reg(hex.substr(i * 8, 8))));
 }
 
 static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command) {
@@ -273,13 +365,11 @@ static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
+    // gdb reads the registers after cpsr one by one with p
     std::string str;
-    str.reserve(16 * 8);
-
-    for (uint32_t a = 0; a < 16; a++) {
+    str.reserve((REG_CPSR + 1) * 8);
+    for (uint32_t a = 0; a <= REG_CPSR; a++)
         str += be_hex(fetch_reg(cpu, a));
-    }
-
     return str;
 }
 
@@ -293,10 +383,8 @@ static std::string cmd_write_registers(EmuEnvState &state, PacketCommand &comman
 
     const std::string content = content_string(command).substr(1);
 
-    for (uint32_t a = 0; a < content.size() / 8; a++) {
-        uint32_t value = parse_hex(content.substr(a * 8, 8));
-        modify_reg(cpu, a, value);
-    }
+    for (uint32_t a = 0; a <= REG_CPSR && a < content.size() / 8; a++)
+        modify_reg(cpu, a, parse_reg(content.substr(a * 8, 8)));
 
     return "OK";
 }
@@ -310,8 +398,12 @@ static std::string cmd_read_register(EmuEnvState &state, PacketCommand &command)
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
-    uint32_t reg = parse_hex(content.substr(1, content.size() - 1));
-
+    const uint32_t reg = parse_hex(content.substr(1));
+    // A double register is two single registers and a quad register is four
+    if (reg >= REG_D0 && reg < REG_D0 + VFP_DOUBLE_REGS)
+        return read_float_regs(cpu, (reg - REG_D0) * 2, 2);
+    if (reg >= REG_Q0 && reg < REG_Q0 + NEON_QUAD_REGS)
+        return read_float_regs(cpu, (reg - REG_Q0) * 4, 4);
     return be_hex(fetch_reg(cpu, reg));
 }
 
@@ -324,10 +416,17 @@ static std::string cmd_write_register(EmuEnvState &state, PacketCommand &command
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
-    size_t equal_index = content.find('=');
-    uint32_t reg = parse_hex(content.substr(1, equal_index - 1));
-    uint32_t value = parse_hex(content.substr(equal_index + 1));
-    modify_reg(cpu, reg, value);
+    const size_t equal_index = content.find('=');
+    const uint32_t reg = parse_hex(content.substr(1, equal_index - 1));
+    const std::string value = content.substr(equal_index + 1);
+    if (value.size() != reg_words(reg) * 8)
+        return "E00";
+    if (reg >= REG_D0 && reg < REG_D0 + VFP_DOUBLE_REGS)
+        write_float_regs(cpu, (reg - REG_D0) * 2, 2, value);
+    else if (reg >= REG_Q0 && reg < REG_Q0 + NEON_QUAD_REGS)
+        write_float_regs(cpu, (reg - REG_Q0) * 4, 4, value);
+    else
+        modify_reg(cpu, reg, parse_reg(value));
 
     return "OK";
 }
@@ -636,6 +735,7 @@ const static PacketFunctionBundle functions[] = {
     { "qfThreadInfo", cmd_get_first_thread },
     { "qsThreadInfo", cmd_get_next_thread },
     { "qSupported", cmd_supported },
+    { "qXfer:features:read:target.xml:", cmd_target_xml },
     { "qAttached", cmd_attached },
     { "qTStatus", cmd_thread_status },
     { "qC", cmd_get_current_thread },
@@ -694,23 +794,35 @@ static int64_t server_next(EmuEnvState &state) {
         LOG_GDB("GDB Server Connection Closed");
         return -1;
     }
-    buffer[length] = '\0';
-
-    for (int64_t a = 0; a < length; a++) {
-        switch (buffer[a]) {
+    state.gdb.input_buffer.append(buffer, static_cast<size_t>(length));
+    auto &input = state.gdb.input_buffer;
+    while (!input.empty()) {
+        switch (input.front()) {
         case '+': {
+            input.erase(0, 1);
             break; // Cool.
         }
         case '-': {
-            LOG_GDB("GDB Server Transmission Error. {}", std::string(buffer, length));
+            input.erase(0, 1);
+            LOG_GDB("GDB Server Transmission Error");
             server_reply(state.gdb, state.gdb.last_reply.c_str());
             break;
         }
         case '$': {
-            server_ack(state.gdb, '+');
-
-            PacketCommand command = parse_command(buffer + a, length - a);
+            const size_t end = input.find('#');
+            // Wait for the rest of a packet split across reads, up to a limit
+            if (end == std::string::npos || input.size() < end + 3) {
+                if (input.size() > MAX_PACKET_SIZE) {
+                    LOG_GDB("GDB Server Packet Too Long");
+                    input.clear();
+                    server_ack(state.gdb, '-');
+                }
+                return length;
+            }
+            const size_t packet_size = end + 3;
+            PacketCommand command = parse_command(input.data(), static_cast<int64_t>(packet_size));
             if (command.is_valid) {
+                server_ack(state.gdb, '+');
                 bool found_command = false;
                 for (const auto &function : functions) {
                     if (command_begins_with(command, function.name)) {
@@ -729,16 +841,16 @@ static int64_t server_next(EmuEnvState &state) {
                     state.gdb.last_reply = "";
                     server_reply(state.gdb, state.gdb.last_reply.c_str());
                 }
-                a += command.content_length + 3;
-
             } else {
                 server_ack(state.gdb, '-');
-
-                LOG_GDB("GDB Server Invalid Command. {}", std::string(buffer, length));
+                LOG_GDB("GDB Server Invalid Command. {}", input.substr(0, packet_size));
             }
+            input.erase(0, packet_size);
             break;
         }
-        default: break;
+        default:
+            input.erase(0, 1);
+            break;
         }
         if (state.gdb.server_die)
             break;
@@ -749,6 +861,7 @@ static int64_t server_next(EmuEnvState &state) {
 
 static void server_listen(EmuEnvState &state) {
     state.gdb.client_socket = accept(state.gdb.listen_socket, nullptr, nullptr);
+    state.gdb.input_buffer.clear();
 
     if (state.gdb.client_socket == -1) {
         LOG_GDB("GDB Server Failed: Could not accept socket.");

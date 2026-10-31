@@ -18,6 +18,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <thread>
 
 #ifdef _WIN32
@@ -46,6 +47,7 @@ struct GDBState {
     bool server_die = false;
 
     std::string last_reply = "";
+    std::string input_buffer;
     int thread_info_index = 0;
 
     SceUID current_thread = 0;
