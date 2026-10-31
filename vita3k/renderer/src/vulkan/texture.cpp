@@ -184,7 +184,7 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     // if we are not using the previous buffer, we wait if the buffer was used at least once,
     // less than MAX_FRAMES_RENDERING frames ago and we have not yet waited for its fence
     const bool need_wait = !use_previous_buffer
-        && is_frame_timestamp_in_flight(staging_buffer->frame_timestamp, context->frame_timestamp)
+        && is_frame_timestamp_in_flight(staging_buffer->frame_timestamp, state.frame_timestamp)
         && staging_buffer->scene_timestamp > last_waited_scene;
     const vk::Fence current_fence = context->next_fence;
 
@@ -239,7 +239,7 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     cmd_buffer = context->prerender_cmd;
     if (!use_previous_buffer) {
         staging_buffer->scene_timestamp = current_scene_timestamp;
-        staging_buffer->frame_timestamp = context->frame_timestamp;
+        staging_buffer->frame_timestamp = state.frame_timestamp;
         staging_buffer->waiting_fence = current_fence;
         staging_buffer->used_so_far = 0;
 
