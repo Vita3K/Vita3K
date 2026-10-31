@@ -215,6 +215,14 @@ struct State {
     }
     virtual void set_turbo_mode(bool set) {}
 #endif
+
+    // Surface readbacks may complete after later commands; anything observing guest memory must complete them first
+    virtual bool has_pending_readbacks() const {
+        return false;
+    }
+    virtual void complete_readbacks(MemState &mem, bool wait) {}
+    virtual void complete_readbacks_overlapping(MemState &mem, Address begin, Address end) {}
+
     virtual uint32_t get_gpu_version() {
         return 0;
     }
