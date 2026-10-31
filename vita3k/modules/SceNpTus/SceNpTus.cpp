@@ -332,7 +332,7 @@ EXPORT(int, sceNpTusDeleteRequest, SceInt32 requestId) {
         return RET_ERROR(SCE_NP_COMMUNITY_ERROR_INVALID_ID);
 
     tus.requests.erase(requestId);
-    LOG_DEBUG("sceNpTusDeleteRequest: requestId: {}", requestId);
+    STUBBED("Deleting a simulated request handle");
     return 0;
 }
 
@@ -349,7 +349,7 @@ EXPORT(int, sceNpTusDeleteTitleCtx, SceInt32 titleCtxId) {
         return request.second.title_context_id == titleCtxId;
     });
     tus.title_contexts.erase(titleCtxId);
-    LOG_DEBUG("sceNpTusDeleteTitleCtx: titleCtxId: {}", titleCtxId);
+    STUBBED("Deleting a simulated title context and its request handles");
     return 0;
 }
 

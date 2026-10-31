@@ -1585,7 +1585,14 @@ std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32
     // this is a raii buffer, it will be destroyed at the end of this function
     vkutil::Buffer temp_buff(width * height * 4);
     temp_buff.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
-    vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
+
+    // Capture runs outside the render thread, so it must not record into its command pool.
+    const vk::CommandPoolCreateInfo pool_info{
+        .flags = vk::CommandPoolCreateFlagBits::eTransient,
+        .queueFamilyIndex = state.general_family_index
+    };
+    const auto command_pool = state.device.createCommandPoolUnique(pool_info);
+    vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, *command_pool);
 
     // layout is general, we can directly copy from it
     vk::BufferImageCopy image_copy{
@@ -1601,7 +1608,7 @@ std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32
     // this will cause a waitIdle, not an issue
     {
         std::lock_guard<std::mutex> lock(state.queue_mutex);
-        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+        vkutil::end_single_time_command(state.device, state.general_queue, *command_pool, cmd_buffer);
     }
 
     memcpy(frame.data(), temp_buff.mapped_data, frame.size() * 4);

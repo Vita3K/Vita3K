@@ -5,18 +5,10 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License along
-// with this program; if not, write to the Free Software Foundation, Inc.,
-// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "frame_host.h"
+#include <sdl/frame_host.h>
 
+#include <sdl/functions.h>
 #include <util/log.h>
 
 #include <SDL3/SDL_vulkan.h>
@@ -26,8 +18,10 @@
 #endif
 
 #include <cstdlib>
-
-namespace sdl_frontend {
+#include <string>
+#include <utility>
+#include <vector>
+namespace sdl {
 
 FrameHost::FrameHost(SDL_Window *window, SDL_GLContext *gl_context)
     : window(window)
@@ -75,10 +69,8 @@ std::pair<int, int> FrameHost::drawable_size() const {
     if (!renderer::vulkan::has_android_surface())
         return { 0, 0 };
 #endif
-    int width = 960;
-    int height = 544;
-    SDL_GetWindowSizeInPixels(window, &width, &height);
-    return { width, height };
+    const auto &viewport = get_viewport();
+    return { static_cast<int>(viewport.drawable_width), static_cast<int>(viewport.drawable_height) };
 }
 
 int FrameHost::drawable_width() const {
@@ -115,17 +107,17 @@ void *FrameHost::get_proc_address(const char *name) const {
 }
 
 bool FrameHost::make_current() {
-    if (!gl_context || !*gl_context)
-        return false;
-    return SDL_GL_MakeCurrent(window, *gl_context);
+    return gl_context && *gl_context && SDL_GL_MakeCurrent(window, *gl_context);
 }
 
 void FrameHost::done_current() {
-    SDL_GL_MakeCurrent(window, nullptr);
+    if (gl_context && *gl_context)
+        SDL_GL_MakeCurrent(window, nullptr);
 }
 
 void FrameHost::swap_buffers() {
-    SDL_GL_SwapWindow(window);
+    if (gl_context && *gl_context)
+        SDL_GL_SwapWindow(window);
 }
 
 bool FrameHost::set_vsync(bool enabled) {
@@ -133,8 +125,7 @@ bool FrameHost::set_vsync(bool enabled) {
 }
 
 void FrameHost::prepare_for_render_thread() {
-    if (gl_context && *gl_context)
-        SDL_GL_MakeCurrent(window, nullptr);
+    done_current();
 }
 
 void FrameHost::destroy_render_context() {
@@ -145,4 +136,4 @@ void FrameHost::destroy_render_context() {
     *gl_context = nullptr;
 }
 
-} // namespace sdl_frontend
+} // namespace sdl

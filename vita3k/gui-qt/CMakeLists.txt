@@ -116,6 +116,7 @@ target_link_libraries(gui-qt PUBLIC
     gxm
     audio
     ime
+    vita_shell
 
     miniz
     libzRIF

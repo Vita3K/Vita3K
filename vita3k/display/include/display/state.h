@@ -66,7 +66,6 @@ struct DisplayState {
     std::mutex mutex;
     std::unique_ptr<std::thread> vblank_thread;
     std::atomic<bool> abort{ false };
-    std::atomic<bool> imgui_render{ true };
     std::atomic<bool> fullscreen{ false };
     std::atomic<std::uint64_t> vblank_count{ 0 };
     WaitQueue<VBlankWaitEntry> vblank_waiters;

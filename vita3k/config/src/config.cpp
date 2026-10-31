@@ -357,17 +357,21 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         ->default_str("")->group("Input");
     input->add_option("--load-app-list,-a", command_line.load_app_list, "Starts the emulator with load app list.")
        ->default_val(false)->group("Input");
-    const std::map<std::string, Frontend> frontends{ { "qt", Frontend::qt }, { "sdl", Frontend::sdl } };
-    input->add_option("--frontend", command_line.frontend, "Frontend to use: qt for the full interface, sdl for a plain window that runs the app given by -r and quits with it")
+    const std::map<std::string, Frontend> frontends{ { "qt", Frontend::qt }, { "imgui", Frontend::imgui }, { "sdl", Frontend::sdl } };
+    input->add_option("--frontend", command_line.frontend, "Frontend to use: qt for the configured full interface, imgui to force ImGui, or sdl for a basic SDL game selector (or directly run the app given by -r)")
         ->transform(CLI::CheckedTransformer(frontends, CLI::ignore_case))->default_str("qt")->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
+    std::map<std::string, std::string> installed_apps;
+    for (const auto &app_path : get_file_set(cfg.get_vita_fs_path() / "ux0/app"))
+        installed_apps.emplace(app_path, app_path);
+    const auto installed_app_transformer = CLI::CheckedTransformer(installed_apps, CLI::ignore_case);
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
+        ->default_str({})->transform(installed_app_transformer)->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
+        ->default_str({})->transform(installed_app_transformer)->group("Input");
     input->add_option("--firmware", command_line.pup_path, "Path to the firmware file (.pup extension) to install");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");
@@ -472,11 +476,9 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
-        static constexpr std::array LIST_LOG_LEVEL = SPDLOG_LEVEL_NAMES;
 
         LOG_INFO_IF(cfg.content_path, "input-content-path: {}", cfg.content_path->string());
         LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
-        LOG_INFO("log-level: {}", LIST_LOG_LEVEL[cfg.log_level]);
         LOG_INFO_IF(cfg.log_active_shaders, "log-active-shaders: enabled");
         LOG_INFO_IF(cfg.log_uniforms, "log-uniforms: enabled");
     }
