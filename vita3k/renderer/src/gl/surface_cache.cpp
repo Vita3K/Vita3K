@@ -143,7 +143,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
         if (ite->first == key) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
-                surface_stat_changed = surface_extent_changed || (base_format != info.format);
+                surface_stat_changed = surface_extent_changed || (base_format != info.format) || (pixel_stride != info.pixel_stride);
             } else {
                 // If the extent changed but format is not the same, then the probability of it being a cast is high
                 surface_stat_changed = surface_extent_changed && (base_format == info.format);
