@@ -203,7 +203,7 @@ format                          fail     # sceClibSnprintf with %#x, %.0d and lo
 forvm_attr_refusal              pass
 forvm_suspend_core_handover     fail     # the ForVM suspend hands the core over in the wrong order between T and U
 fpscr_flags_across_calls        fail     # the start handler sees an inexact flag (0x10) in FPSCR that the Vita does not set
-gxm_context_memory              timeout  # sceGxmDestroyContext hangs on Vulkan
+gxm_context_memory              fail     # sceGxmCreateContext checks no buffer size, alignment, mapping or NULL pointer
 gxm_map_alias_close             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_alias_pages             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_app_memory              fail     # the app's code maps

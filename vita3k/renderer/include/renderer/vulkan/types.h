@@ -102,7 +102,7 @@ struct FrameObject {
     vk::CommandPool prerender_pool;
 
     std::vector<vk::Fence> rendered_fences;
-    // equals to context.frame_timestamp when the frame object is used
+    // equals to state.frame_timestamp when the frame object is used
     uint64_t frame_timestamp;
 
     // there are at most 16 different textures for a given stage
@@ -239,7 +239,6 @@ struct VKContext : public renderer::Context {
 
     MemState &mem;
 
-    uint64_t frame_timestamp = 1;
     uint64_t scene_timestamp = 1;
     // Unlike scene_timestamp, recording splits do not advance the logical GXM scene.
     uint64_t gxm_scene_id = 0;
@@ -343,12 +342,6 @@ struct VKContext : public renderer::Context {
     // only useful if shader interlock is enabled, to know if we need to transition
     bool last_draw_was_framebuffer_fetch;
 
-    // only used if memory mapping is enabled
-    std::mutex new_frame_mutex;
-    std::condition_variable new_frame_condv;
-    std::thread gpu_request_wait_thread;
-    uint64_t last_frame_waited = 0;
-
     explicit VKContext(VKState &state, MemState &mem);
     // TODO: properly destroy the context
     ~VKContext() override;
@@ -363,9 +356,6 @@ struct VKContext : public renderer::Context {
 
     // check (when the render target has macroblock set) if we are drawing to another block
     void check_for_macroblock_change(bool is_draw);
-
-private:
-    void wait_thread_function(const MemState &mem);
 };
 
 struct VKRenderTarget : public renderer::RenderTarget {

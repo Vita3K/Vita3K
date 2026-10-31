@@ -58,7 +58,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
         std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, state.default_buffer.buffer);
 
         // also initialize the gpu wait thread
-        gpu_request_wait_thread = std::thread(&VKContext::wait_thread_function, this, std::ref(mem));
+        if (!state.gpu_request_wait_thread.joinable())
+            state.gpu_request_wait_thread = std::thread(&VKState::wait_thread_function, &state, std::cref(mem));
     } else {
         // these are not needed when using memory mapping
         vertex_stream_ring_buffer.create();
@@ -150,9 +151,6 @@ VKContext::VKContext(VKState &state, MemState &mem)
 }
 
 VKContext::~VKContext() {
-    if (gpu_request_wait_thread.joinable())
-        gpu_request_wait_thread.join();
-
     for (auto pool : visibility_query_pools)
         state.device.destroy(pool);
     visibility_buffers.clear();

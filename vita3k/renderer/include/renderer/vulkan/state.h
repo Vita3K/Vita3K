@@ -95,6 +95,8 @@ struct VKState : public renderer::State {
 
     // objects for which one copy is needed for every frame being rendered at the same time
     std::array<FrameObject, MAX_FRAMES_RENDERING> frames;
+    // shared by all the contexts, like the frame objects
+    uint64_t frame_timestamp = 1;
     // start at 1 because last_frame_waited is set to 0
     int current_frame_idx = 1;
 
@@ -111,6 +113,11 @@ struct VKState : public renderer::State {
 
     // queue where we put requests that need to wait for the GPU
     Queue<WaitThreadRequest> request_queue;
+    // only used if memory mapping is enabled, one thread for all the contexts as they share the queue
+    std::thread gpu_request_wait_thread;
+    std::mutex new_frame_mutex;
+    std::condition_variable new_frame_condv;
+    uint64_t last_frame_waited = 0;
 
     vkutil::Image default_image;
     vkutil::Buffer default_buffer;
@@ -133,6 +140,7 @@ struct VKState : public renderer::State {
     bool create(std::unique_ptr<renderer::State> &state, const Config &config);
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
     void cleanup() override;
+    void wait_thread_function(const MemState &mem);
 
     TextureCache *get_texture_cache() override {
         return &texture_cache;
