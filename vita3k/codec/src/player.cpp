@@ -23,13 +23,18 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/mathematics.h>
 }
 
 #include <cassert>
 
 uint64_t PlayerState::get_framerate_microseconds() {
-    AVRational rational = format->streams[video_stream_id]->avg_frame_rate;
-    return 1000000ull * rational.den / rational.num;
+    if (!format || video_stream_id < 0)
+        return 0;
+    AVRational rational = av_guess_frame_rate(format, format->streams[video_stream_id], nullptr);
+    if (rational.num <= 0 || rational.den <= 0)
+        return 0;
+    return av_rescale_q(1, av_inv_q(rational), AVRational{ 1, 1000000 });
 }
 
 DecoderSize PlayerState::get_size() {
@@ -67,18 +72,31 @@ void PlayerState::free_video() {
     }
 
     video_playing.clear();
+    video_stream_id = audio_stream_id = -1;
+    demux_eof = video_draining = audio_draining = false;
+    video_eof = audio_eof = true;
+    last_timestamp = last_audio_timestamp = 0;
 }
 
 void PlayerState::switch_video(const std::string &path) {
+    const std::string next_path = path;
     free_video();
-    video_playing = path;
+    video_playing = next_path;
 
-    int error = avformat_open_input(&format, path.c_str(), nullptr, nullptr);
-    assert(error == 0);
+    int error = avformat_open_input(&format, next_path.c_str(), nullptr, nullptr);
+    if (error < 0) {
+        LOG_ERROR("Cannot open video '{}': {}", next_path, error);
+        free_video();
+        return;
+    }
 
     // Load stream info.
     error = avformat_find_stream_info(format, nullptr);
-    assert(error >= 0);
+    if (error < 0) {
+        LOG_ERROR("Cannot read video stream info '{}': {}", next_path, error);
+        free_video();
+        return;
+    }
 
     video_stream_id = av_find_best_stream(format, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     audio_stream_id = av_find_best_stream(format, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
@@ -88,7 +106,11 @@ void PlayerState::switch_video(const std::string &path) {
         const AVCodec *video_codec = avcodec_find_decoder(video_stream->codecpar->codec_id);
         video_context = avcodec_alloc_context3(video_codec);
         avcodec_parameters_to_context(video_context, video_stream->codecpar);
-        avcodec_open2(video_context, video_codec, nullptr);
+        if (avcodec_open2(video_context, video_codec, nullptr) < 0) {
+            free_video();
+            return;
+        }
+        video_eof = false;
     }
 
     if (audio_stream_id >= 0) {
@@ -96,47 +118,78 @@ void PlayerState::switch_video(const std::string &path) {
         const AVCodec *audio_codec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
         audio_context = avcodec_alloc_context3(audio_codec);
         avcodec_parameters_to_context(audio_context, audio_stream->codecpar);
-        avcodec_open2(audio_context, audio_codec, nullptr);
+        if (avcodec_open2(audio_context, audio_codec, nullptr) < 0) {
+            free_video();
+            return;
+        }
+        audio_eof = false;
     }
 }
 
 bool PlayerState::next_packet(int32_t stream_id) {
-    std::queue<AVPacket *> &this_queue = stream_id == video_stream_id ? video_packets : audio_packets;
-    std::queue<AVPacket *> &other_queue = stream_id != video_stream_id ? video_packets : audio_packets;
+    if (!format)
+        return false;
+    AVCodecContext *context = stream_id == video_stream_id ? video_context : audio_context;
+    if (!context)
+        return false;
+    auto &packets = stream_id == video_stream_id ? video_packets : audio_packets;
+    bool &draining = stream_id == video_stream_id ? video_draining : audio_draining;
 
     while (true) {
-        if (!this_queue.empty()) {
-            AVPacket *this_packet = this_queue.front();
-            this_queue.pop();
+        if (!packets.empty()) {
+            AVPacket *packet = packets.front();
+            packets.pop();
+            const int error = avcodec_send_packet(context, packet);
+            av_packet_free(&packet);
+            return error >= 0;
+        }
 
-            if (stream_id == video_stream_id) {
-                int err = avcodec_send_packet(video_context, this_packet);
-                assert(err == 0);
-            }
-
-            if (stream_id == audio_stream_id) {
-                int err = avcodec_send_packet(audio_context, this_packet);
-                assert(err == 0);
-            }
-
-            av_packet_free(&this_packet);
-            return true;
+        if (demux_eof) {
+            if (draining)
+                return false;
+            draining = true;
+            return avcodec_send_packet(context, nullptr) >= 0;
         }
 
         AVPacket *packet = av_packet_alloc();
-        if (av_read_frame(format, packet) != 0)
+        if (!packet)
             return false;
-
-        if (packet->stream_index == stream_id) {
-            this_queue.push(packet);
-        } else {
-            other_queue.push(packet);
+        const int error = av_read_frame(format, packet);
+        if (error < 0) {
+            av_packet_free(&packet);
+            demux_eof = true;
+            if (error != AVERROR_EOF)
+                LOG_WARN("Video demux stopped with error {}", error);
+            continue;
         }
+        if (packet->stream_index == video_stream_id)
+            video_packets.push(packet);
+        else if (packet->stream_index == audio_stream_id)
+            audio_packets.push(packet);
+        else
+            av_packet_free(&packet);
     }
 }
 
+void PlayerState::finish_stream(int32_t stream_id) {
+    if (stream_id == video_stream_id)
+        video_eof = true;
+    if (stream_id == audio_stream_id)
+        audio_eof = true;
+    // The shorter stream must not discard queued frames from the longer stream.
+    if (!video_eof || !audio_eof)
+        return;
+    if (!videos_queue.empty())
+        pop_video();
+    else if (looping) {
+        LOG_DEBUG("Looping video '{}'", video_playing);
+        switch_video(video_playing);
+    } else
+        video_playing.clear();
+}
+
 std::vector<int16_t> PlayerState::receive_audio() {
-    if (audio_stream_id < 0)
+    if (audio_stream_id < 0 || audio_eof || !audio_context)
         return {};
 
     if (video_playing.empty())
@@ -151,20 +204,15 @@ std::vector<int16_t> PlayerState::receive_audio() {
             continue;
 
         if (error != 0) {
-            if (videos_queue.empty()) {
-                // Stop playing videos or
-                video_playing.clear();
-                break;
-            } else {
-                // Play the next video (if there is any).
-                switch_video(videos_queue.front());
-                videos_queue.pop();
-                continue;
-            }
+            finish_stream(audio_stream_id);
+            break;
         }
 
         LOG_WARN_IF(frame->format != AV_SAMPLE_FMT_FLTP, "Unknown audio format {}.", frame->format);
 
+        const int64_t timestamp = frame->best_effort_timestamp;
+        last_audio_timestamp = timestamp == AV_NOPTS_VALUE || timestamp < 0 ? 0
+                                                                            : av_rescale_q(timestamp, format->streams[audio_stream_id]->time_base, AVRational{ 1, 1000 });
         last_channels = frame->ch_layout.nb_channels;
         last_sample_count = frame->nb_samples;
         last_sample_rate = frame->sample_rate;
@@ -189,7 +237,7 @@ std::vector<int16_t> PlayerState::receive_audio() {
 }
 
 std::vector<uint8_t> PlayerState::receive_video() {
-    if (video_stream_id < 0)
+    if (video_stream_id < 0 || video_eof || !video_context)
         return {};
 
     if (video_playing.empty())
@@ -204,19 +252,13 @@ std::vector<uint8_t> PlayerState::receive_video() {
             continue;
 
         if (error != 0) {
-            if (videos_queue.empty()) {
-                // Stop playing videos or
-                video_playing.clear();
-                break;
-            } else {
-                // Play the next video (if there is any).
-                switch_video(videos_queue.front());
-                videos_queue.pop();
-                continue;
-            }
+            finish_stream(video_stream_id);
+            break;
         }
 
-        last_timestamp = frame->best_effort_timestamp;
+        const int64_t timestamp = frame->best_effort_timestamp;
+        last_timestamp = timestamp == AV_NOPTS_VALUE || timestamp < 0 ? 0
+                                                                      : av_rescale_q(timestamp, format->streams[video_stream_id]->time_base, AVRational{ 1, 1000 });
 
         data.resize(H264DecoderState::buffer_size(
             { { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) } }));
