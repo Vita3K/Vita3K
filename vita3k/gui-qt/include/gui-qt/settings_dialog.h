@@ -98,6 +98,7 @@ private:
     void setup_dirty_tracking();
     void update_resolution_label();
     void update_aniso_label();
+    void update_vblank_label();
     void update_gpu_visibility();
     void update_camera_widgets();
     void update_camera_color_preview();

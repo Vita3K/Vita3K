@@ -831,37 +831,6 @@ QGroupBox[flat=&quot;true&quot;]::title {
                   </layout>
                  </widget>
                 </item>
-                <item row="2" column="0" colspan="2">
-                 <widget class="QGroupBox" name="gb_fps_hack">
-                  <property name="title">
-                   <string>Hacks</string>
-                  </property>
-                  <property name="flat">
-                   <bool>true</bool>
-                  </property>
-                  <layout class="QVBoxLayout" name="gb_fps_hack_layout">
-                   <property name="leftMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>6</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QCheckBox" name="fps_hack">
-                     <property name="text">
-                      <string>FPS Hack</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
                </layout>
               </widget>
              </item>
@@ -2968,6 +2937,84 @@ QGroupBox[flat=&quot;true&quot;]::title {
                    <string>Disable Mask Bit Emulation</string>
                   </property>
                  </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="gb_vblank_rate">
+               <property name="title">
+                <string>VBlank Frequency</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_vblank_rate_layout">
+                <property name="spacing">
+                 <number>8</number>
+                </property>
+                <item>
+                 <widget class="QCheckBox" name="vblank_rate_follow_screen">
+                  <property name="text">
+                   <string>Match the refresh rate of the screen</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="vblank_layout_top">
+                  <item>
+                   <widget class="QLabel" name="vblank_min">
+                    <property name="text">
+                     <string>60 Hz</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QSlider" name="vblank_rate_slider">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="tickPosition">
+                     <enum>QSlider::TickPosition::TicksBelow</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="vblank_max">
+                    <property name="text">
+                     <string>240 Hz</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="vblank_layout_bottom">
+                  <item>
+                   <widget class="QLabel" name="vblank_rate_val">
+                    <property name="text">
+                     <string>60 Hz</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="vblank_rate_spacer">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="vblank_rate_reset">
+                    <property name="text">
+                     <string>Reset</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </item>
                </layout>
               </widget>

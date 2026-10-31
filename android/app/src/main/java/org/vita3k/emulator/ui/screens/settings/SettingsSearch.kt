@@ -71,7 +71,6 @@ internal fun rememberSettingsSearchEntries(
         add(entry(SettingsCategory.Gpu, R.string.settings_gpu_import_textures, R.string.settings_gpu_import_textures_desc))
         add(entry(SettingsCategory.Gpu, R.string.settings_gpu_shader_cache, R.string.settings_gpu_shader_cache_desc))
         add(entry(SettingsCategory.Gpu, R.string.settings_gpu_spirv_shader, R.string.settings_gpu_spirv_shader_desc))
-        add(entry(SettingsCategory.Gpu, R.string.settings_gpu_fps_hack, R.string.settings_gpu_fps_hack_desc, keywords = "fps framerate 30 60 game hack"))
         if (!isPerApp && showTurboModeOption) {
             add(entry(SettingsCategory.Gpu, R.string.settings_gpu_turbo_mode, R.string.settings_gpu_turbo_mode_desc, scope = SettingsScope.Global, keywords = "gpu clocks adreno thermal"))
         }

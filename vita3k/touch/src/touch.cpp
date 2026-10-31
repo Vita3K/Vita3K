@@ -27,7 +27,9 @@
 
 #include <SDL3/SDL_events.h>
 
+#include <algorithm>
 #include <cstring>
+#include <mutex>
 
 void set_rear_touchscreen(TouchState &state, bool is_back) {
     state.touchscreen_port = static_cast<SceTouchPortType>(is_back);
@@ -42,23 +44,62 @@ static bool is_common_dialog_running(const EmuEnvState &emuenv) {
         && emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING;
 }
 
-static SceTouchData recover_touch_events(const EmuEnvState &emuenv) {
+// An app can draw a frame larger than the 960x544 its screen layout is made for, for example with a patch for an
+// ultrawide or a portrait screen. It still lays its UI out in a 960x544 area at the middle of the frame, so that
+// area is what the touch panel has to cover.
+// Takes a position along one axis (0 at one edge of the frame, 1 at the other) and returns it measured over that
+// middle area instead: 0 at its edge, 1 at the other. The parts of the frame outside of it end up below 0 or above 1.
+static float touch_axis_to_layout(float pos, float frame_size, float layout_size) {
+    if (frame_size <= layout_size)
+        return pos;
+    const float margin = (frame_size - layout_size) / 2.0f;
+    return (pos * frame_size - margin) / layout_size;
+}
+
+struct TouchViewport {
+    float drawable_w, drawable_h;
+    float x, y, w, h;
+    SceIVector2 frame_size;
+};
+
+// the renderer can lay out a new frame at any time, so take the viewport and its frame size together
+static TouchViewport get_touch_viewport(EmuEnvState &emuenv) {
+    auto &display = emuenv.display;
+    std::lock_guard<std::mutex> guard(display.display_info_mutex);
+    return { static_cast<float>(display.viewport_drawable_w), static_cast<float>(display.viewport_drawable_h),
+        display.viewport_x, display.viewport_y, display.viewport_w, display.viewport_h, display.viewport_frame_size };
+}
+
+// The same for a position over the frame, where x and y are measured against the same frame.
+static SceFVector2 touch_to_layout(const TouchViewport &viewport, float x, float y) {
+    return { touch_axis_to_layout(x, static_cast<float>(viewport.frame_size.x), 960.0f), touch_axis_to_layout(y, static_cast<float>(viewport.frame_size.y), 544.0f) };
+}
+
+// Turns a position over the panel (0 to 1) into the units the panel reports (0 to panel_size - 1).
+// A touch outside of the layout area is moved to the nearest edge, so it can never go outside of the panel.
+static uint16_t to_panel_units(float pos, float panel_size) {
+    return static_cast<uint16_t>(std::clamp(pos * panel_size, 0.0f, panel_size - 1.0f));
+}
+
+static SceTouchData recover_touch_events(EmuEnvState &emuenv) {
     const auto &touch = emuenv.touch;
     SceTouchData touch_data;
     memset(&touch_data, 0, sizeof(touch_data));
 
+    const TouchViewport viewport = get_touch_viewport(emuenv);
     for (uint8_t i = 0; i < touch.finger_count; i++) {
         touch_data.report[i].id = static_cast<uint8_t>(touch.finger_buffer[i].touchID);
         touch_data.report[i].force = touch.force_touch_enabled[touch.touchscreen_port] ? 128 : 0;
 
-        float x = (touch.finger_buffer[i].x * emuenv.display.viewport_drawable_w - emuenv.display.viewport_x) / emuenv.display.viewport_w;
-        float y = (touch.finger_buffer[i].y * emuenv.display.viewport_drawable_h - emuenv.display.viewport_y) / emuenv.display.viewport_h;
-        touch_data.report[i].x = static_cast<uint16_t>(x * 1920);
+        float x = (touch.finger_buffer[i].x * viewport.drawable_w - viewport.x) / viewport.w;
+        float y = (touch.finger_buffer[i].y * viewport.drawable_h - viewport.y) / viewport.h;
+        const SceFVector2 layout_pos = touch_to_layout(viewport, x, y);
+        touch_data.report[i].x = to_panel_units(layout_pos.x, 1920);
 
         if (touch.touchscreen_port == SCE_TOUCH_PORT_FRONT) {
-            touch_data.report[i].y = static_cast<uint16_t>(y * 1088);
+            touch_data.report[i].y = to_panel_units(layout_pos.y, 1088);
         } else {
-            touch_data.report[i].y = static_cast<uint16_t>(108 + y * 781);
+            touch_data.report[i].y = 108 + to_panel_units(layout_pos.y, 781);
         }
     }
 
@@ -137,17 +178,20 @@ void touch_vsync_update(EmuEnvState &emuenv) {
                     touch.is_touched[port] = true;
                 }
 
+                const TouchViewport viewport = get_touch_viewport(emuenv);
                 const SceFVector2 touch_pos_viewport = {
-                    (mouse_x - emuenv.display.viewport_x) / emuenv.display.viewport_w,
-                    (mouse_y - emuenv.display.viewport_y) / emuenv.display.viewport_h
+                    (mouse_x - viewport.x) / viewport.w,
+                    (mouse_y - viewport.y) / viewport.h
                 };
 
+                // a click anywhere in the displayed frame counts, even outside of the area the layout covers
                 if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
-                    data->report[data->reportNum].x = static_cast<uint16_t>(touch_pos_viewport.x * 1920);
+                    const SceFVector2 layout_pos = touch_to_layout(viewport, touch_pos_viewport.x, touch_pos_viewport.y);
+                    data->report[data->reportNum].x = to_panel_units(layout_pos.x, 1920);
                     if (port == SCE_TOUCH_PORT_FRONT) {
-                        data->report[data->reportNum].y = static_cast<uint16_t>(touch_pos_viewport.y * 1088);
+                        data->report[data->reportNum].y = to_panel_units(layout_pos.y, 1088);
                     } else {
-                        data->report[data->reportNum].y = static_cast<uint16_t>(108 + touch_pos_viewport.y * 781);
+                        data->report[data->reportNum].y = 108 + to_panel_units(layout_pos.y, 781);
                     }
                     data->report[data->reportNum].id = touch.curr_touch_id[port];
                     ++data->reportNum;
@@ -183,6 +227,7 @@ void touch_vsync_update(EmuEnvState &emuenv) {
 
     touch.touch_buffer_idx++;
     touch.touch_buffer_idx %= MAX_TOUCH_BUFFER_SAVED;
+    touch.sample_count++;
 }
 
 void pinch_modifier(TouchState &state, bool isHold) {
@@ -333,10 +378,14 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
 
             wait_vblank(emuenv.display, thread, emuenv.touch.last_vcount[port_idx] + 1, false);
         }
-        uint64_t vblank_count = emuenv.display.vblank_count.load();
-        // clamp to 1 and not 0
-        nb_returned_data = std::max<int>(1, std::min<int>(nBufs, vblank_count - emuenv.touch.last_vcount[port_idx]));
-        emuenv.touch.last_vcount[port_idx] = vblank_count;
+        emuenv.touch.last_vcount[port_idx] = emuenv.display.vblank_count.load();
+        // the panel is sampled at 60 Hz, so above that a vblank can come without a new sample
+        // the read still only waits for a vblank, so an app that reads the panel every frame is not held to 60 FPS
+        // return what was sampled since the last read, clamped to 1 and not 0
+        const uint64_t sample_count = emuenv.touch.sample_count;
+        const uint64_t new_samples = sample_count - emuenv.touch.last_sample_count[port_idx];
+        nb_returned_data = std::max<int>(1, static_cast<int>(std::min<uint64_t>(nBufs, new_samples)));
+        emuenv.touch.last_sample_count[port_idx] = sample_count;
     }
 
     int corr_buffer_idx;

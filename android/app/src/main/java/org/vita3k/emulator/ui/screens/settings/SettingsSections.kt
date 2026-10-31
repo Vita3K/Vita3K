@@ -765,18 +765,8 @@ private fun GpuSettingsSection(
                     onShowHelp = onShowHelp
                 )
             }
-            SettingsSubsectionTitle(title = stringResource(R.string.settings_gpu_hacks))
-            SettingsToggleRow(
-                title = stringResource(R.string.settings_gpu_fps_hack),
-                checked = cfg.fpsHack,
-                onCheckedChange = { onUpdate { fpsHack = it } },
-                help = SettingsHelpEntry(
-                    title = stringResource(R.string.settings_gpu_fps_hack),
-                    body = stringResource(R.string.settings_gpu_fps_hack_desc)
-                ),
-                onShowHelp = onShowHelp
-            )
             if (!isPerApp && isVulkan && showTurboModeOption) {
+                SettingsSubsectionTitle(title = stringResource(R.string.settings_gpu_hacks))
                 SettingsToggleRow(
                     title = stringResource(R.string.settings_gpu_turbo_mode),
                     checked = cfg.turboMode,

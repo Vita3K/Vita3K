@@ -50,7 +50,7 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
     current.import_textures = cfg.import_textures;
     current.export_textures = cfg.export_textures;
     current.export_as_png = cfg.export_as_png;
-    current.fps_hack = cfg.fps_hack;
+    current.vblank_rate = cfg.vblank_rate;
     current.shader_cache = cfg.shader_cache;
     current.spirv_shader = cfg.spirv_shader;
     current.texture_cache = cfg.texture_cache;
@@ -96,7 +96,7 @@ void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.import_textures = current.import_textures;
     cfg.export_textures = current.export_textures;
     cfg.export_as_png = current.export_as_png;
-    cfg.fps_hack = current.fps_hack;
+    cfg.vblank_rate = current.vblank_rate;
     cfg.shader_cache = current.shader_cache;
     cfg.spirv_shader = current.spirv_shader;
     cfg.texture_cache = current.texture_cache;
@@ -200,7 +200,7 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
         out.import_textures = gpu.attribute("import-textures").as_bool();
         out.export_textures = gpu.attribute("export-textures").as_bool();
         out.export_as_png = gpu.attribute("export-as-png").as_bool();
-        out.fps_hack = gpu.attribute("fps-hack").as_bool();
+        out.vblank_rate = gpu.attribute("vblank-rate").as_int(out.vblank_rate);
         out.shader_cache = gpu.attribute("shader-cache").as_bool(true);
         out.spirv_shader = gpu.attribute("spirv-shader").as_bool();
         out.texture_cache = gpu.attribute("texture-cache").as_bool(true);
@@ -289,7 +289,7 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
     gpu_child.append_attribute("import-textures") = cc.import_textures;
     gpu_child.append_attribute("export-textures") = cc.export_textures;
     gpu_child.append_attribute("export-as-png") = cc.export_as_png;
-    gpu_child.append_attribute("fps-hack") = cc.fps_hack;
+    gpu_child.append_attribute("vblank-rate") = cc.vblank_rate;
     gpu_child.append_attribute("shader-cache") = cc.shader_cache;
     gpu_child.append_attribute("spirv-shader") = cc.spirv_shader;
     gpu_child.append_attribute("texture-cache") = cc.texture_cache;

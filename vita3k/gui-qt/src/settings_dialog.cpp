@@ -369,6 +369,14 @@ void SettingsDialog::load_config() {
         static_cast<int>(log2f(static_cast<float>(m_config.anisotropic_filtering))));
     update_aniso_label();
 
+    m_ui->vblank_rate_slider->setMinimum(60);
+    m_ui->vblank_rate_slider->setMaximum(240);
+    m_ui->vblank_rate_slider->setSingleStep(1);
+    m_ui->vblank_rate_slider->setTickInterval(30);
+    m_ui->vblank_rate_slider->setValue(m_config.vblank_rate > 0 ? std::clamp(m_config.vblank_rate, 60, 240) : 60);
+    m_ui->vblank_rate_follow_screen->setChecked(m_config.vblank_rate <= 0);
+    update_vblank_label();
+
     m_ui->export_textures->setChecked(m_config.export_textures);
     m_ui->import_textures->setChecked(m_config.import_textures);
 
@@ -378,7 +386,6 @@ void SettingsDialog::load_config() {
 
     m_ui->shader_cache->setChecked(m_config.shader_cache);
     m_ui->spirv_shader->setChecked(m_config.spirv_shader);
-    m_ui->fps_hack->setChecked(m_config.fps_hack);
 
     m_ui->audio_backend_box->clear();
     m_ui->audio_backend_box->addItems({ QStringLiteral("SDL"), QStringLiteral("Cubeb") });
@@ -621,7 +628,7 @@ void SettingsDialog::build_desired_config(Config &desired) const {
     current.export_textures = m_ui->export_textures->isChecked();
     current.import_textures = m_ui->import_textures->isChecked();
     current.export_as_png = m_ui->texture_export_format->currentIndex() == 0;
-    current.fps_hack = m_ui->fps_hack->isChecked();
+    current.vblank_rate = m_ui->vblank_rate_follow_screen->isChecked() ? 0 : m_ui->vblank_rate_slider->value();
     current.shader_cache = m_ui->shader_cache->isChecked();
     current.spirv_shader = m_ui->spirv_shader->isChecked();
     current.gpu_idx = m_ui->gpu_device_box->currentIndex();
@@ -1028,6 +1035,15 @@ void SettingsDialog::setup_connections() {
         m_ui->anisotropic_filter->setValue(0); // 1x
     });
 
+    connect(m_ui->vblank_rate_slider, &QSlider::valueChanged,
+        this, &SettingsDialog::update_vblank_label);
+    connect(m_ui->vblank_rate_follow_screen, &QCheckBox::toggled,
+        this, &SettingsDialog::update_vblank_label);
+    connect(m_ui->vblank_rate_reset, &QPushButton::clicked, this, [this] {
+        m_ui->vblank_rate_follow_screen->setChecked(false);
+        m_ui->vblank_rate_slider->setValue(60);
+    });
+
     connect(m_ui->audio_volume, &QSlider::valueChanged, this, [this](int val) {
         m_ui->audio_volume_label->setText(tr("Current volume: %1%").arg(val));
     });
@@ -1207,6 +1223,9 @@ void SettingsDialog::setup_connections() {
         { m_ui->gpu_device_box, tr("Graphics Device"), m_tooltips->gpu_device },
         { m_ui->resolution_upscale, tr("Internal Resolution Upscaling"), m_tooltips->resolution_upscaling },
         { m_ui->anisotropic_filter, tr("Anisotropic Filtering"), m_tooltips->anisotropic_filtering },
+        { m_ui->gb_vblank_rate, tr("VBlank Frequency"), m_tooltips->vblank_rate },
+        { m_ui->vblank_rate_slider, tr("VBlank Frequency"), m_tooltips->vblank_rate },
+        { m_ui->vblank_rate_follow_screen, tr("VBlank Frequency"), m_tooltips->vblank_rate },
         { m_ui->export_textures, tr("Export Textures"), m_tooltips->export_textures },
         { m_ui->import_textures, tr("Import Textures"), m_tooltips->import_textures },
         { m_ui->gb_export_format, tr("Texture Exporting Format"), m_tooltips->texture_export_format },
@@ -1214,7 +1233,6 @@ void SettingsDialog::setup_connections() {
         { m_ui->shader_cache, tr("Enable Shader Cache"), m_tooltips->shader_cache },
         { m_ui->spirv_shader, tr("Use SPIR-V Shader"), m_tooltips->spirv_shader },
         { m_ui->disable_mask_bit, tr("Disable Mask Bit Emulation"), m_tooltips->disable_mask_bit },
-        { m_ui->fps_hack, tr("FPS Hack"), m_tooltips->fps_hack },
         // Audio
         { m_ui->audio_backend_box, tr("Audio Backend"), m_tooltips->audio_backend },
         { m_ui->audio_volume, tr("Volume"), m_tooltips->audio_volume },
@@ -1364,6 +1382,12 @@ void SettingsDialog::update_aniso_label() {
     m_ui->anisotropic_filter_val->setText(QStringLiteral("%1x").arg(val));
 }
 
+void SettingsDialog::update_vblank_label() {
+    const bool follow = m_ui->vblank_rate_follow_screen->isChecked();
+    m_ui->vblank_rate_slider->setEnabled(!follow);
+    m_ui->vblank_rate_val->setText(follow ? tr("Screen refresh rate") : QStringLiteral("%1 Hz").arg(m_ui->vblank_rate_slider->value()));
+}
+
 void SettingsDialog::on_save_clicked() {
     if (!m_dirty) {
         accept();
@@ -1467,7 +1491,6 @@ void SettingsDialog::update_gpu_visibility() {
     m_ui->gb_gpu_device->setVisible(is_vulkan);
     m_ui->gb_renderer_accuracy->setVisible(is_vulkan);
     m_ui->gb_vulkan_options->setVisible(is_vulkan);
-    m_ui->spirv_shader->setVisible(is_vulkan);
 
     m_ui->label_memory_mapping->setVisible(has_mapping);
     m_ui->memory_mapping_box->setVisible(has_mapping);
