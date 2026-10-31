@@ -171,15 +171,10 @@ public:
     RegMgrState &regmgr;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
-    float system_dpi_scale = 1.f;
-    float manual_dpi_scale = 1.f;
-    FVector2 gui_scale = { 1.f, 1.f };
     GDBState &gdb;
     HTTPState &http;
     CameraState &camera;
     CompatState &compat;
-    int max_font_level = 0;
-    int current_font_level = 0;
 
     std::unique_ptr<overlay::display_manager> overlay_manager;
 

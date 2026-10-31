@@ -19,10 +19,8 @@
 
 #include <memory>
 
-struct SDL_Window;
 namespace renderer {
 struct State;
 }
 
-using WindowPtr = std::unique_ptr<SDL_Window, void (*)(SDL_Window *)>;
 using RendererPtr = std::unique_ptr<renderer::State>;

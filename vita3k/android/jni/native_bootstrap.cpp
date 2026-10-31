@@ -140,15 +140,6 @@ bool prepare_frontend_runtime() {
     SDL_SetMainReady();
 
     SDL_SetAppMetadata(window_title, app_version, "org.vita3k.emulator");
-
-    if (SDL_WasInit(SDL_INIT_CAMERA) & SDL_INIT_CAMERA)
-        return true;
-
-    if (!SDL_InitSubSystem(SDL_INIT_CAMERA)) {
-        LOG_ERROR("Failed to initialize SDL camera subsystem: {}", SDL_GetError());
-        return false;
-    }
-
     return true;
 }
 

@@ -104,7 +104,22 @@ if(NOT MSVC)
 endif()
 
 if(NOT ANDROID)
-	include(${CMAKE_SOURCE_DIR}/cmake/qt6.cmake)
+	set(VITA3K_QT_MIN_VER 6.11.0)
+	set(VITA3K_QT_COMPONENTS Core Gui Widgets Network Concurrent Svg Multimedia LinguistTools)
+	if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+		list(APPEND VITA3K_QT_COMPONENTS GuiPrivate)
+	endif()
+	find_package(Qt6 ${VITA3K_QT_MIN_VER} QUIET CONFIG COMPONENTS ${VITA3K_QT_COMPONENTS})
+	if(Qt6_FOUND AND TARGET Qt6::lrelease AND TARGET Qt6::lupdate)
+		set(HAS_QT TRUE)
+	endif()
+	if(HAS_QT)
+		include(${CMAKE_SOURCE_DIR}/cmake/qt6.cmake)
+		add_compile_definitions(HAS_QT)
+		message(STATUS "Qt SDK detected, building with the Qt frontend.")
+	else()
+		message(STATUS "Qt SDK not detected, using the SDL frontend. Install Qt 6.11.0 or newer to use the Qt frontend.")
+	endif()
 endif()
 
 add_subdirectory(app)
@@ -121,7 +136,7 @@ add_subdirectory(display)
 add_subdirectory(features)
 add_subdirectory(glutil)
 add_subdirectory(updater)
-if(NOT ANDROID)
+if(HAS_QT)
 	add_subdirectory(gui-qt)
 endif()
 add_subdirectory(gxm)
@@ -144,6 +159,7 @@ add_subdirectory(overlay)
 add_subdirectory(regmgr)
 add_subdirectory(renderer)
 add_subdirectory(rtc)
+add_subdirectory(sdl)
 add_subdirectory(sdl-frontend)
 add_subdirectory(shader)
 add_subdirectory(threads)
@@ -208,15 +224,15 @@ if(WIN32)
 	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
 endif()
 
-target_link_libraries(vita3k PRIVATE app audio compat config ctrl dialog display ime lang gdbstub gxm io miniz modules motion packages patch renderer sdl-frontend shader touch util psvpfsparser)
-if(NOT ANDROID)
+target_link_libraries(vita3k PRIVATE app audio compat config ctrl dialog display ime lang gdbstub gxm io miniz modules motion packages patch pugixml::pugixml renderer sdl sdl-frontend shader touch util psvpfsparser)
+if(HAS_QT)
 	target_link_libraries(vita3k PRIVATE gui-qt)
 endif()
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()
 
-if(NOT ANDROID)
+if(HAS_QT)
 	file(GLOB VITA3K_QT_TS_FILES CONFIGURE_DEPENDS
 		"${CMAKE_SOURCE_DIR}/i18n/qt/*.ts")
 	set(VITA3K_QT_QM_DIR "${CMAKE_BINARY_DIR}/qt_translations")
@@ -352,8 +368,11 @@ if(APPLE)
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/../Resources/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/../Resources/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin")
+	if(HAS_QT)
+		add_custom_command(TARGET vita3k POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/../Resources/translations")
+	endif()
 	if(USE_DISCORD_RICH_PRESENCE)
 		if(ARCHITECTURE STREQUAL "x86_64")
 			set(discord_dylib "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib")
@@ -376,10 +395,12 @@ if(APPLE)
 	target_sources(vita3k PRIVATE ${MOLTENVK_DYLIB})
 	set_source_files_properties(${MOLTENVK_DYLIB} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
 
-	qt_finalize_target(vita3k)
-	if(MACDEPLOYQT_EXECUTABLE)
-		add_custom_command(TARGET vita3k POST_BUILD
-			COMMAND "${MACDEPLOYQT_EXECUTABLE}" "$<TARGET_FILE_DIR:vita3k>/../.." "$<$<CONFIG:Debug,RelWithDebInfo>:-no-strip>")
+	if(HAS_QT)
+		qt_finalize_target(vita3k)
+		if(MACDEPLOYQT_EXECUTABLE)
+			add_custom_command(TARGET vita3k POST_BUILD
+				COMMAND "${MACDEPLOYQT_EXECUTABLE}" "$<TARGET_FILE_DIR:vita3k>/../.." "$<$<CONFIG:Debug,RelWithDebInfo>:-no-strip>")
+		endif()
 	endif()
 
 	add_custom_command(
@@ -397,9 +418,11 @@ elseif(LINUX)
 		${CMAKE_CURRENT_SOURCE_DIR}/icons
 		${CMAKE_SOURCE_DIR}/data
 		DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
-	install(DIRECTORY
-		"${VITA3K_QT_QM_DIR}/"
-		DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/translations/")
+	if(HAS_QT)
+		install(DIRECTORY
+			"${VITA3K_QT_QM_DIR}/"
+			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/translations/")
+	endif()
 	install(FILES
 		"${CMAKE_CURRENT_SOURCE_DIR}/${VITA3K_APP_ID}.svg"
 		PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
@@ -431,7 +454,6 @@ elseif(LINUX)
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:vita3k>/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/COPYING.txt" "$<TARGET_FILE_DIR:vita3k>/COPYING.txt"
@@ -439,6 +461,10 @@ elseif(LINUX)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/dist/linux/${VITA3K_APP_ID}.metainfo.xml" "$<TARGET_FILE_DIR:vita3k>/${VITA3K_APP_ID}.metainfo.xml"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/${VITA3K_APP_ID}.svg" "$<TARGET_FILE_DIR:vita3k>/${VITA3K_APP_ID}.svg"
 	)
+	if(HAS_QT)
+		add_custom_command(TARGET vita3k POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations")
+	endif()
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k
@@ -454,11 +480,14 @@ elseif(WIN32)
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/COPYING.txt" "$<TARGET_FILE_DIR:vita3k>/COPYING.txt"
 	)
+	if(HAS_QT)
+		add_custom_command(TARGET vita3k POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations")
+	endif()
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k
@@ -472,7 +501,7 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libssl-4-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libcrypto-4-x64.dll" "$<TARGET_FILE_DIR:vita3k>")
 	endif()
-	if(WINDEPLOYQT_EXECUTABLE)
+	if(HAS_QT AND WINDEPLOYQT_EXECUTABLE)
 		add_custom_command(TARGET vita3k POST_BUILD
 			COMMAND "${WINDEPLOYQT_EXECUTABLE}" --no-compiler-runtime --no-opengl-sw --no-patchqt
 				--no-system-d3d-compiler --no-system-dxc-compiler
