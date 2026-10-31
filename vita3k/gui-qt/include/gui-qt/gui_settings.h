@@ -38,6 +38,7 @@ const QString controls = QStringLiteral("Controls");
 const QString settings = QStringLiteral("Settings");
 const QString user_mgmt = QStringLiteral("UserManagement");
 const QString vita_themes = QStringLiteral("VitaThemes");
+const QString cheats = QStringLiteral("Cheats");
 const QString meta = QStringLiteral("Meta");
 
 const GuiSave m_currentStylesheet = GuiSave(meta, QStringLiteral("currentStylesheet"), DarkStylesheet);
@@ -89,6 +90,8 @@ const GuiSave um_geometry = GuiSave(user_mgmt, QStringLiteral("geometry"), QByte
 const GuiSave vt_geometry = GuiSave(vita_themes, QStringLiteral("geometry"), QByteArray());
 const GuiSave vt_appliedSelection = GuiSave(vita_themes, QStringLiteral("appliedSelection"), QString());
 const GuiSave vt_bgmEnabled = GuiSave(vita_themes, QStringLiteral("bgmEnabled"), false);
+
+const GuiSave ch_installedOnly = GuiSave(cheats, QStringLiteral("installedOnly"), false);
 const GuiSave vt_bgmVolume = GuiSave(vita_themes, QStringLiteral("bgmVolume"), 50);
 
 } // namespace gui
