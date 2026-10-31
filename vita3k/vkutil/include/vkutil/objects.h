@@ -97,6 +97,8 @@ protected:
 
     uint32_t cursor = ~0;
     uint32_t capacity;
+    uint64_t wrap_generation = 0;
+    uint64_t retired_wrap_generation = 0;
 
 public:
     // any buffer alignment on vulkan is at most 256 on 99% of instances
@@ -121,6 +123,27 @@ public:
 
     vk::Buffer handle() const {
         return buffer.buffer;
+    }
+
+    uint32_t capacity_bytes() const {
+        return capacity;
+    }
+
+    uint32_t cursor_bytes() const {
+        return cursor;
+    }
+
+    uint64_t current_wrap_generation() const {
+        return wrap_generation;
+    }
+
+    uint64_t last_retired_wrap_generation() const {
+        return retired_wrap_generation;
+    }
+
+    void retire_wrap_generation(uint64_t generation) {
+        if (generation > retired_wrap_generation)
+            retired_wrap_generation = generation;
     }
 };
 
