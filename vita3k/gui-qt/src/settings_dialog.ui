@@ -2337,6 +2337,13 @@ QGroupBox[flat=&quot;true&quot;]::title {
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QCheckBox" name="remember_game_window_size">
+                     <property name="text">
+                      <string>Remember game window size</string>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </widget>
                 </item>

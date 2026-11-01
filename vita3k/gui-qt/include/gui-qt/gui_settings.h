@@ -65,6 +65,7 @@ const GuiSave l_bufferSize = GuiSave(logger, QStringLiteral("bufferSize"), 1000)
 const GuiSave l_fontFamily = GuiSave(logger, QStringLiteral("fontFamily"), QString());
 
 const GuiSave gw_size = GuiSave(game_window, QStringLiteral("size"), QSize());
+const GuiSave gw_rememberSize = GuiSave(game_window, QStringLiteral("rememberSize"), false);
 const GuiSave gw_roundedCorners = GuiSave(game_window, QStringLiteral("roundedCorners"), false);
 
 const GuiSave tr_geometry = GuiSave(trophy, QStringLiteral("geometry"), QByteArray());
