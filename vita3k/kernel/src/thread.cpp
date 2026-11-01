@@ -140,7 +140,7 @@ void ThreadState::remove() {
     if (status == ThreadStatus::dormant)
         update_status(ThreadStatus::deleted);
     else if (status == ThreadStatus::running)
-        cpu->stop();
+        cpu->request_stop();
 
     // Wake the thread if it is parked dormant, held at its gate or blocked in a wait
     cv.notify_all();
@@ -241,44 +241,44 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
             lock.lock();
         }
 
-        // The hold gate checks the thread before each run or step of guest code
-        bool after_kernel_call = from_kernel_call;
-        while (!exiting() && status == ThreadStatus::running) {
-            stopped_after_kernel_call = after_kernel_call;
-            // The holds can change while the thread waits, and with them what its status shows
-            while (!exiting()) {
-                // The guest sees the debugger's hold and a ForVM suspend as SUSPENDED, not a pause
-                const bool shown = holds.debugger || holds.vm > 0;
-                if (!shown && !holds.pause)
-                    break;
-                const ThreadStatus held_status = shown ? ThreadStatus::suspended : ThreadStatus::running;
-                if (status != held_status)
-                    update_status(held_status);
-                cv.wait(lock);
-            }
-            if (status != ThreadStatus::running)
-                update_status(ThreadStatus::running);
-            if (exiting())
-                return std::nullopt;
-
-            const bool stepped = std::exchange(step_requested, false);
-            lock.unlock();
-            const CPUStop stop = stepped ? cpu->step() : cpu->run();
-            after_kernel_call = stop.kernel_call;
-            if (stop.kernel_call) {
-                kernel.call_import(*cpu, stop.nid, id);
-                cpu->clear_exclusive();
-            }
-            if (cpu->abort_pending.exchange(false))
-                dispatch_abort();
-            lock.lock();
-            // A finished step or a breakpoint holds the thread for the debugger
-            if (stepped || cpu->hit_breakpoint())
-                holds.debugger = true;
-            if (stop.returned)
-                return cpu->get_reg(0);
-        }
+        // The CPU runs guest code until the function returns or a checkpoint leaves, and a thread
+        // that doesn't run here parks again
+        lock.unlock();
+        const std::optional<uint32_t> returned = cpu->execute(*this, from_kernel_call);
+        lock.lock();
+        if (returned)
+            return returned;
     }
+}
+
+GuestResume ThreadState::checkpoint(GuestStop stop) {
+    std::unique_lock<std::mutex> lock(mutex);
+    // A finished step or a breakpoint holds the thread for the debugger
+    if (stop.debugger_stop)
+        holds.debugger = true;
+    if (stop.returned || exiting() || status != ThreadStatus::running)
+        return GuestResume::leave;
+    stopped_after_kernel_call = stop.after_kernel_call;
+    // The holds can change while the thread waits, and with them what its status shows
+    while (!exiting()) {
+        // The guest sees the debugger's hold and a ForVM suspend as SUSPENDED, not a pause
+        const bool shown = holds.debugger || holds.vm > 0;
+        if (!shown && !holds.pause)
+            break;
+        const ThreadStatus held_status = shown ? ThreadStatus::suspended : ThreadStatus::running;
+        if (status != held_status)
+            update_status(held_status);
+        cv.wait(lock);
+    }
+    if (status != ThreadStatus::running)
+        update_status(ThreadStatus::running);
+    if (exiting())
+        return GuestResume::leave;
+    return std::exchange(step_requested, false) ? GuestResume::step : GuestResume::run;
+}
+
+void ThreadState::call_import(uint32_t nid) {
+    kernel.call_import(*cpu, nid, id);
 }
 
 uint32_t ThreadState::run_callback(Address callback_address, std::initializer_list<uint32_t> args, bool fresh_vfp_state) {
@@ -313,9 +313,8 @@ uint32_t ThreadState::run_callback(Address callback_address, std::initializer_li
     return returned.value_or(returned_value);
 }
 
-void ThreadState::dispatch_abort() {
+void ThreadState::dispatch_abort(Address fault_addr) {
     CPUState &cpu = *this->cpu;
-    const uint32_t fault_addr = cpu.abort_fault_addr.load();
     // DABT = type 0
     const Address handler = kernel.exception_handlers[0].load();
     if (!handler)
@@ -592,7 +591,7 @@ void ThreadState::set_suspended(bool suspended) {
     holds.debugger = suspended;
     step_requested = false;
     if (suspended && status == ThreadStatus::running)
-        cpu->stop();
+        cpu->request_stop();
     // The gate checks the holds again, and with them what the status shows
     cv.notify_all();
 }
@@ -614,7 +613,7 @@ void ThreadState::set_paused(bool paused) {
     const std::lock_guard<std::mutex> lock(mutex);
     holds.pause = paused;
     if (paused && status == ThreadStatus::running)
-        cpu->stop();
+        cpu->request_stop();
     cv.notify_all();
 }
 
@@ -626,7 +625,7 @@ int ThreadState::vm_suspend() {
     // A thread a pause already holds at its gate shows as suspended now
     cv.notify_all();
     if (status == ThreadStatus::running)
-        cpu->stop();
+        cpu->request_stop();
     // Like on a Vita, return once the thread has stopped, so its context holds still
     cv.wait(lock, [&] { return status != ThreadStatus::running || holds.vm == 0 || exiting(); });
     return count;
