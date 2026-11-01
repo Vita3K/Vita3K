@@ -24,6 +24,7 @@
 
 #include <atomic>
 #include <initializer_list>
+#include <optional>
 #include <string>
 
 // The CPU of one guest thread, which a backend like DynarmicCPU implements
@@ -43,12 +44,10 @@ struct CPUState {
 
     virtual ~CPUState() = default;
 
-    // Runs guest code from the PC until an SVC, the return address, a breakpoint, an abort or
-    // stop(), and says why it stopped
-    virtual CPUStop run() = 0;
-    // Runs one instruction of guest code
-    virtual CPUStop step() = 0;
-    virtual void stop() = 0;
+    // Runs guest code from the PC until the function returns r0 or a checkpoint says to leave
+    virtual std::optional<uint32_t> execute(GuestBoundary &boundary, bool from_kernel_call) = 0;
+    // Asks the CPU to stop guest code soon so it reaches a checkpoint, safe in a signal handler
+    virtual void request_stop() = 0;
 
     virtual uint32_t get_reg(uint8_t idx) = 0;
     virtual void set_reg(uint8_t idx, uint32_t val) = 0;
@@ -76,9 +75,6 @@ struct CPUState {
     virtual void set_log_code(bool log) = 0;
     virtual void set_log_mem(bool log) = 0;
     virtual bool get_log_mem() = 0;
-
-    // Drops the exclusive access the guest code has open on this CPU
-    virtual void clear_exclusive() = 0;
 
     uint32_t get_sp() { return get_reg(13); }
     void set_sp(uint32_t val) { set_reg(13, val); }

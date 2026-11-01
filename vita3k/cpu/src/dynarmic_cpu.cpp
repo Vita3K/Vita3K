@@ -307,25 +307,39 @@ DynarmicCPU::DynarmicCPU(MemState &mem, SceUID thread_id, std::size_t processor_
 
 DynarmicCPU::~DynarmicCPU() = default;
 
-CPUStop DynarmicCPU::run() {
-    halted = false;
-    break_ = false;
-    svc_called = false;
-    // Run until the JIT stops for something other than a step or a cache invalidation
-    Dynarmic::HaltReason reason;
-    do {
-        reason = jit->Run();
-    } while (reason == Dynarmic::HaltReason::Step || reason == Dynarmic::HaltReason::CacheInvalidation);
-    // The import's NID is the word after the SVC, and a halted run stopped at the return address
-    const uint32_t nid = svc_called ? *Ptr<uint32_t>(get_pc() + 4).get(mem) : 0;
-    return { .kernel_call = svc_called, .nid = nid, .returned = halted };
-}
-
-CPUStop DynarmicCPU::step() {
-    svc_called = false;
-    jit->Step();
-    const uint32_t nid = svc_called ? *Ptr<uint32_t>(get_pc() + 4).get(mem) : 0;
-    return { .kernel_call = svc_called, .nid = nid };
+std::optional<uint32_t> DynarmicCPU::execute(GuestBoundary &boundary, bool from_kernel_call) {
+    GuestResume resume = boundary.checkpoint({ .after_kernel_call = from_kernel_call });
+    while (resume != GuestResume::leave) {
+        const bool stepped = resume == GuestResume::step;
+        svc_called = false;
+        if (stepped) {
+            jit->Step();
+        } else {
+            halted = false;
+            break_ = false;
+            // Run until the JIT stops for something other than a step or a cache invalidation
+            Dynarmic::HaltReason reason;
+            do {
+                reason = jit->Run();
+            } while (reason == Dynarmic::HaltReason::Step || reason == Dynarmic::HaltReason::CacheInvalidation);
+        }
+        // The import and the abort handler can run guest code on this CPU, so the stop is read first
+        const bool kernel_call = svc_called;
+        // A run that halted stopped at the return address, and a step never returns
+        const bool returned = !stepped && halted;
+        if (kernel_call) {
+            // The import's NID is the word after the SVC
+            boundary.call_import(*Ptr<uint32_t>(get_pc() + 4).get(mem));
+            shared_monitor.ClearProcessor(processor_id);
+        }
+        if (abort_pending.exchange(false))
+            boundary.dispatch_abort(abort_fault_addr.load());
+        // A breakpoint in a nested call counts too, so break_ is read after the import and the handler
+        resume = boundary.checkpoint({ .after_kernel_call = kernel_call, .debugger_stop = stepped || break_, .returned = returned });
+        if (returned)
+            return get_reg(0);
+    }
+    return std::nullopt;
 }
 
 bool DynarmicCPU::hit_breakpoint() {
@@ -352,7 +366,7 @@ bool DynarmicCPU::get_log_mem() {
     return log_mem;
 }
 
-void DynarmicCPU::stop() {
+void DynarmicCPU::request_stop() {
     jit->HaltExecution();
 }
 
@@ -422,8 +436,4 @@ void DynarmicCPU::set_float_reg(uint8_t idx, float val) {
 
 void DynarmicCPU::invalidate_jit_cache(Address start, size_t length) {
     jit->InvalidateCacheRange(start, length);
-}
-
-void DynarmicCPU::clear_exclusive() {
-    shared_monitor.ClearProcessor(processor_id);
 }

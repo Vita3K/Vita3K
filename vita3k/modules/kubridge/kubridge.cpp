@@ -62,7 +62,7 @@ static bool abort_aware_fault_callback(Address fault_addr, bool write, Address r
     if (cpu) {
         cpu->abort_fault_addr.store(fault_addr);
         cpu->abort_pending.store(true);
-        cpu->stop(); // Only sets an atomic, so it is signal safe
+        cpu->request_stop(); // Only sets an atomic, so it is signal safe
     }
     return true;
 }

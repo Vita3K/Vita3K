@@ -35,13 +35,36 @@ using CPUStatePtr = std::unique_ptr<CPUState>;
 
 inline constexpr std::size_t MAX_CORE_COUNT = 150;
 
-// Why a run or a step of guest code stopped
-struct CPUStop {
-    // The guest code called the import with this NID through an SVC
-    bool kernel_call = false;
-    uint32_t nid = 0;
-    // The guest function returned to the return address
+// How guest code goes on after a checkpoint
+enum class GuestResume : uint8_t {
+    run,
+    // One instruction, for the debugger
+    step,
+    // The function returned, the thread is ending, or it doesn't run on this host thread now
+    leave,
+};
+
+// Why guest code stopped, passed from the CPU to the checkpoint
+struct GuestStop {
+    // The stop came right after a kernel call, or the invocation starts inside one
+    bool after_kernel_call = false;
+    // A finished step or a breakpoint stopped guest code
+    bool debugger_stop = false;
+    // The function returned to the return address
     bool returned = false;
+};
+
+// The kernel side of one thread's guest code, which the CPU calls without the thread's lock
+struct GuestBoundary {
+    // Checks the thread at a stop and says how guest code goes on, blocking while something holds it
+    virtual GuestResume checkpoint(GuestStop stop) = 0;
+    // Runs the import with this NID, which guest code called
+    virtual void call_import(uint32_t nid) = 0;
+    // Runs the guest's abort handler for the abort the CPU noted at fault_addr
+    virtual void dispatch_abort(Address fault_addr) = 0;
+
+protected:
+    ~GuestBoundary() = default;
 };
 
 struct CPUContext {

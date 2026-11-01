@@ -58,7 +58,7 @@ enum class ThreadStatus : SceUInt32 {
     suspended = SCE_KERNEL_THREAD_STATUS_SUSPENDED, // Suspended by debugger
 };
 
-struct ThreadState {
+struct ThreadState final : private GuestBoundary {
     // Fixed when the thread is created
     const SceUID id;
     const std::string name;
@@ -233,8 +233,12 @@ private:
     // the kernel makes starts from_kernel_call. Returns r0 once the level's function returns, or
     // nothing once the thread is ending.
     std::optional<uint32_t> run_guest(std::unique_lock<std::mutex> &lock, bool from_kernel_call);
+    // The hold gate, checked before guest code starts and at each stop. It may block. Takes mutex.
+    GuestResume checkpoint(GuestStop stop) override;
+    // Runs an import the thread's guest code called, without mutex held
+    void call_import(uint32_t nid) override;
     // Calls the guest's data abort handler with the abort context on the stack, without mutex held
-    void dispatch_abort();
+    void dispatch_abort(Address fault_addr) override;
 
     // Fixed when the thread is created
     KernelState &kernel;
@@ -283,8 +287,8 @@ private:
     Holds holds;
     // The debugger asked for one instruction, after which the thread holds again
     bool step_requested = false;
-    // Whether the last check of the thread's guest code came right after a kernel call, which a
-    // hold there reports
+    // Whether the gate's last check of the thread's guest code came right after a kernel call,
+    // which a hold there reports. Only checkpoint() writes it.
     bool stopped_after_kernel_call = false;
 
     // Threads blocked in sceKernelWaitThreadEnd on this one, with their own lock, taken after mutex
