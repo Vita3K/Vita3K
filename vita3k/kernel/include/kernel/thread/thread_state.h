@@ -233,6 +233,8 @@ private:
     // the kernel makes starts from_kernel_call. Returns r0 once the level's function returns, or
     // nothing once the thread is ending.
     std::optional<uint32_t> run_guest(std::unique_lock<std::mutex> &lock, bool from_kernel_call);
+    // Ends the thread's run and returns whether it parks dormant for another start
+    bool finish_run(std::unique_lock<std::mutex> &lock);
     // The hold gate, checked before guest code starts and at each stop. It may block. Takes mutex.
     GuestResume checkpoint(GuestStop stop) override;
     // Runs an import the thread's guest code called, without mutex held

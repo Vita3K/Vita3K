@@ -172,53 +172,56 @@ void ThreadState::run_loop() {
     const CurrentCpuState current_cpu(*cpu);
 
     std::unique_lock<std::mutex> lock(mutex);
-    while (true) {
+    do {
         // A thread that returns from its entry ends like one that exits, end handler included
         if (const std::optional<uint32_t> returned = run_guest(lock, false)) {
             returned_value = *returned;
             request_ending(Ending::exit);
         }
+    } while (finish_run(lock));
+}
 
-        // The thread is ending. One that ran ends here: an exit leaves it dormant, while a delete
-        // makes it gone for guest calls before its end waiters wake.
-        if (status != ThreadStatus::dormant && status != ThreadStatus::deleted) {
-            if (ending != Ending::remove && kernel.thread_event_end) {
-                // The thread is RUNNING here, since the hold gate and wait() put it back to RUNNING.
-                // The handler runs guest code on it, which a pending ending would end at once, and
-                // an exit in the handler must not change the exit status.
-                const uint32_t old_returned_value = returned_value;
-                const Ending old_ending = std::exchange(ending, Ending::none);
-                lock.unlock();
-                // A thread event handler starts with the VFP state of a new thread, like a callback
-                const int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg }, true);
-                if (ret != 0)
-                    LOG_WARN("Thread end event handler returned {}", log_hex(ret));
-                lock.lock();
-                returned_value = old_returned_value;
-                // Keep a stronger request made while the handler ran, like a teardown's remove
-                request_ending(old_ending);
-            }
-
+bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
+    // The thread is ending. One that ran ends here: an exit leaves it dormant, while a delete
+    // makes it gone for guest calls before its end waiters wake.
+    if (status != ThreadStatus::dormant && status != ThreadStatus::deleted) {
+        if (ending != Ending::remove && kernel.thread_event_end) {
+            // The thread is RUNNING here, since the hold gate and wait() put it back to RUNNING.
+            // The handler runs guest code on it, which a pending ending would end at once, and
+            // an exit in the handler must not change the exit status.
+            const uint32_t old_returned_value = returned_value;
+            const Ending old_ending = std::exchange(ending, Ending::none);
             lock.unlock();
-            // A mutex or a write lock the thread still holds goes to its next waiter, and the
-            // event flags it holds are free again
-            kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) { mutex.release_ended_owner(*this); });
-            kernel.objects.for_each<RWLock>([&](RWLock &rwlock) { rwlock.release_ended_writer(*this); });
-            kernel.objects.for_each<EventFlag>([&](EventFlag &flag) { flag.release_ended_holder(*this); });
-            // The callbacks the thread created end with it, with their pending notifications
-            for (const auto &weak_cb : callbacks) {
-                if (const CallbackPtr cb = weak_cb.lock())
-                    kernel.delete_callback(cb->uid, id);
-            }
-            callbacks.clear();
+            // A thread event handler starts with the VFP state of a new thread, like a callback
+            const int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg }, true);
+            if (ret != 0)
+                LOG_WARN("Thread end event handler returned {}", log_hex(ret));
             lock.lock();
-            update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
+            returned_value = old_returned_value;
+            // Keep a stronger request made while the handler ran, like a teardown's remove
+            request_ending(old_ending);
         }
-        if (ending != Ending::exit)
-            break;
-        // The thread is dormant now, and the next run_guest parks it until a start or a delete
-        ending = Ending::none;
+
+        lock.unlock();
+        // A mutex or a write lock the thread still holds goes to its next waiter, and the
+        // event flags it holds are free again
+        kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) { mutex.release_ended_owner(*this); });
+        kernel.objects.for_each<RWLock>([&](RWLock &rwlock) { rwlock.release_ended_writer(*this); });
+        kernel.objects.for_each<EventFlag>([&](EventFlag &flag) { flag.release_ended_holder(*this); });
+        // The callbacks the thread created end with it, with their pending notifications
+        for (const auto &weak_cb : callbacks) {
+            if (const CallbackPtr cb = weak_cb.lock())
+                kernel.delete_callback(cb->uid, id);
+        }
+        callbacks.clear();
+        lock.lock();
+        update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
     }
+    if (ending != Ending::exit)
+        return false;
+    // The thread is dormant now, and the next run_guest parks it until a start or a delete
+    ending = Ending::none;
+    return true;
 }
 
 std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &lock, bool from_kernel_call) {
