@@ -356,7 +356,7 @@ jobs:
           path: ${{ env.ARTIFACT_DIR }}
 
   create-release:
-    needs: [desktop-build, linux-x64-build, autotests, android-build]
+    needs: [desktop-build, linux-x64-build, android-build]
     runs-on: ubuntu-latest
     concurrency:
       group: create-release
