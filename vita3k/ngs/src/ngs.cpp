@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <cpu/functions.h>
+#include <cpu/state.h>
 #include <kernel/state.h>
 
 #include <ngs/modules/atrac9.h>
@@ -323,7 +323,7 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
     }
 
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
-    const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(SceNgsCallbackInfo));
+    const Address callback_info_addr = thread->cpu->stack_alloc(sizeof(SceNgsCallbackInfo));
 
     SceNgsCallbackInfo *info = Ptr<SceNgsCallbackInfo>(callback_info_addr).get(mem);
     info->rack_handle = Ptr<void>(rack, mem);
@@ -335,7 +335,7 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
     info->userdata = user_data;
 
     thread->run_callback(callback.address(), { callback_info_addr });
-    stack_free(*thread->cpu, sizeof(SceNgsCallbackInfo));
+    thread->cpu->stack_free(sizeof(SceNgsCallbackInfo));
 }
 
 uint32_t System::get_required_memspace_size(SceNgsSystemInitParams *parameters) {

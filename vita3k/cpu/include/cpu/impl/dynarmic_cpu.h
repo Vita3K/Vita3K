@@ -19,24 +19,19 @@
 
 #include <dynarmic/interface/A32/a32.h>
 
-#include <cpu/functions.h>
-#include <cpu/impl/interface.h>
+#include <cpu/state.h>
 
 #include <memory>
 
 class ArmDynarmicCallback;
 class ArmDynarmicCP15;
 
-class DynarmicCPU : public CPUInterface {
+class DynarmicCPU : public CPUState {
     friend class ArmDynarmicCallback;
-
-    CPUState *parent;
 
     std::unique_ptr<Dynarmic::A32::Jit> jit;
     std::unique_ptr<ArmDynarmicCallback> cb;
     std::shared_ptr<ArmDynarmicCP15> cp15;
-
-    std::size_t core_id = 0;
 
     bool halted = false;
     bool break_ = false;
@@ -50,7 +45,7 @@ class DynarmicCPU : public CPUInterface {
     std::unique_ptr<Dynarmic::A32::Jit> make_jit();
 
 public:
-    DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt);
+    DynarmicCPU(MemState &mem, SceUID thread_id, std::size_t processor_id, bool cpu_opt);
     ~DynarmicCPU() override;
     CPUStop run() override;
     CPUStop step() override;
@@ -58,15 +53,6 @@ public:
 
     uint32_t get_reg(uint8_t idx) override;
     void set_reg(uint8_t idx, uint32_t val) override;
-
-    uint32_t get_sp() override;
-    void set_sp(uint32_t val) override;
-
-    uint32_t get_pc() override;
-    void set_pc(uint32_t val) override;
-
-    uint32_t get_lr() override;
-    void set_lr(uint32_t val) override;
 
     uint32_t get_cpsr() override;
     void set_cpsr(uint32_t val) override;
@@ -86,15 +72,11 @@ public:
     CPUContext save_context() override;
     void load_context(const CPUContext &ctx) override;
 
-    bool is_thumb_mode() override;
-
     bool hit_breakpoint() override;
-    void trigger_breakpoint() override;
     void set_log_code(bool log) override;
     void set_log_mem(bool log) override;
     bool get_log_mem() override;
 
     void clear_exclusive() override;
-    std::size_t processor_id() const override;
     void invalidate_jit_cache(Address start, size_t length) override;
 };

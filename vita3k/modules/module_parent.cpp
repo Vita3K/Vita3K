@@ -20,7 +20,7 @@
 
 #include <modules/module_parent.h>
 
-#include <cpu/functions.h>
+#include <cpu/state.h>
 #include <emuenv/state.h>
 #include <io/device.h>
 #include <io/state.h>
@@ -156,7 +156,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
             0x46E7BE7B, // sceKernelLockLwMutex
             0x91FA6614, // sceKernelUnlockLwMutex
         };
-        auto lr = read_lr(cpu);
+        auto lr = cpu.get_lr();
         log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
     }
     const ImportFn *fn = resolve_import(nid);
@@ -165,7 +165,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
     } else {
         const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
         // make the function return 0
-        write_reg(*thread->cpu, 0, 0);
+        thread->cpu->set_reg(0, 0);
 
         if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
             LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);

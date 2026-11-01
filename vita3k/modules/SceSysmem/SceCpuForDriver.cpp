@@ -17,7 +17,6 @@
 
 #include <module/module.h>
 
-#include <cpu/functions.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
 

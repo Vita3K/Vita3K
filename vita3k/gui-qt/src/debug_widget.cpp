@@ -17,7 +17,7 @@
 
 #include <gui-qt/debug_widget.h>
 
-#include <cpu/functions.h>
+#include <cpu/state.h>
 #include <emuenv/state.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
@@ -380,9 +380,9 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
 
     CPUState &cpu = *thread->cpu;
 
-    const uint32_t pc = read_pc(cpu);
-    const uint32_t sp = read_sp(cpu);
-    const uint32_t lr = read_lr(cpu);
+    const uint32_t pc = cpu.get_pc();
+    const uint32_t sp = cpu.get_sp();
+    const uint32_t lr = cpu.get_lr();
 
     auto *dlg = new QDialog(this);
     dlg->setWindowTitle(tr("Thread: %1 (0x%2)")
@@ -405,7 +405,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
     form->addRow(tr("PC:"), new QLabel(make_hex(pc), dlg));
     form->addRow(tr("SP:"), new QLabel(make_hex(sp), dlg));
     form->addRow(tr("LR:"), new QLabel(make_hex(lr), dlg));
-    form->addRow(tr("Executing:"), new QLabel(QString::fromStdString(disassemble(cpu, pc)), dlg));
+    form->addRow(tr("Executing:"), new QLabel(QString::fromStdString(cpu.disassemble(pc)), dlg));
 
     layout->addLayout(form);
 
@@ -422,7 +422,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
     for (int i = 0; i < 13; i++) {
         auto *row = new QTreeWidgetItem(reg_tree);
         row->setText(0, QStringLiteral("r%1").arg(i));
-        row->setText(1, make_hex(read_reg(cpu, i)));
+        row->setText(1, make_hex(cpu.get_reg(i)));
     }
     {
         auto *row = new QTreeWidgetItem(reg_tree);
@@ -504,7 +504,7 @@ void DebugWidget::on_disassembly_evaluate() {
         }
 
         std::string disasm = fmt::format("{:0>8X}: {}",
-            addr, disassemble(cpu, addr, thumb, &size));
+            addr, cpu.disassemble(addr, thumb, &size));
         output += QString::fromStdString(disasm);
         output += QLatin1Char('\n');
         addr += size;

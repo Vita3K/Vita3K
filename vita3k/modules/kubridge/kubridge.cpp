@@ -25,7 +25,6 @@
 
 #include <module/module.h>
 
-#include <cpu/functions.h>
 #include <cpu/state.h>
 #include <kernel/state.h>
 #include <mem/functions.h>
@@ -63,7 +62,7 @@ static bool abort_aware_fault_callback(Address fault_addr, bool write, Address r
     if (cpu) {
         cpu->abort_fault_addr.store(fault_addr);
         cpu->abort_pending.store(true);
-        stop(*cpu); // Only sets an atomic, so it is signal safe
+        cpu->stop(); // Only sets an atomic, so it is signal safe
     }
     return true;
 }
