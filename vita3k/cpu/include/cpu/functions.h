@@ -23,15 +23,17 @@
 #include <cpu/common.h>
 
 #include <cstdint>
+#include <initializer_list>
 
 struct MemState;
 
 CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem);
-int run(CPUState &state);
-int step(CPUState &state);
+CPUStop run(CPUState &state);
+CPUStop step(CPUState &state);
+// Sets up a call of fn with args: the first four in r0 to r3, the rest on the stack, and the
+// return address in LR
+void place_call(CPUState &state, Address fn, std::initializer_list<uint32_t> args);
 void stop(CPUState &state);
-void set_thread_id(CPUState &state, SceUID thread_id);
-SceUID get_thread_id(CPUState &state);
 uint32_t read_reg(CPUState &state, size_t index);
 float read_float_reg(CPUState &state, size_t index);
 void write_float_reg(CPUState &state, size_t index, float value);
@@ -46,7 +48,6 @@ void write_pc(CPUState &state, uint32_t value);
 void write_lr(CPUState &state, uint32_t value);
 void write_tpidruro(CPUState &state, uint32_t value);
 void write_tpidrurw(CPUState &state, uint32_t value);
-bool is_thumb_mode(CPUState &state);
 CPUContext save_context(CPUState &state);
 void load_context(CPUState &state, const CPUContext &ctx);
 std::size_t get_processor_id(CPUState &state);
@@ -58,7 +59,7 @@ uint32_t read_cpsr(CPUState &state);
 void write_cpsr(CPUState &state, uint32_t value);
 
 uint32_t stack_alloc(CPUState &state, size_t size);
-uint32_t stack_free(CPUState &state, size_t size);
+void stack_free(CPUState &state, size_t size);
 
 void clear_exclusive(CPUState &state);
 
@@ -69,9 +70,9 @@ bool hit_breakpoint(CPUState &state);
 void trigger_breakpoint(CPUState &state);
 void set_log_code(CPUState &state, bool log);
 
-// Thread-local CPU state for signal handler access (exception handlers)
+void set_log_mem(CPUState &state, bool log);
+bool get_log_mem(CPUState &state);
+
+// The CPU state running on this host thread, for signal handlers
 void set_current_cpu_state(CPUState *state);
 CPUState *get_current_cpu_state();
-void set_log_mem(CPUState &state, bool log);
-bool get_log_code(CPUState &state);
-bool get_log_mem(CPUState &state);

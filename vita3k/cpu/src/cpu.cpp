@@ -23,19 +23,12 @@
 #include <mem/ptr.h>
 #include <util/types.h>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 
 static void delete_cpu_state(CPUState *state) {
     delete state;
-}
-
-void set_thread_id(CPUState &state, SceUID thread_id) {
-    state.thread_id = thread_id;
-}
-
-SceUID get_thread_id(CPUState &state) {
-    return state.thread_id;
 }
 
 CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem) {
@@ -52,12 +45,26 @@ CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, M
     return state;
 }
 
-int run(CPUState &state) {
+CPUStop run(CPUState &state) {
     return state.cpu->run();
 }
 
-int step(CPUState &state) {
+CPUStop step(CPUState &state) {
     return state.cpu->step();
+}
+
+void place_call(CPUState &state, Address fn, std::initializer_list<uint32_t> args) {
+    write_pc(state, fn);
+    write_lr(state, state.return_pc);
+    Address sp = read_sp(state);
+    for (size_t i = 0; i < std::min<size_t>(args.size(), 4); i++)
+        write_reg(state, i, args.begin()[i]);
+    if (args.size() > 4) {
+        // TODO align to 16 bytes
+        sp -= 4 * (args.size() - 4);
+        std::ranges::copy(args.begin() + 4, args.end(), Ptr<uint32_t>(sp).get(*state.mem));
+    }
+    write_sp(state, sp);
 }
 
 void stop(CPUState &state) {
@@ -136,10 +143,6 @@ void write_tpidrurw(CPUState &state, uint32_t value) {
     state.cpu->set_tpidrurw(value);
 }
 
-bool is_thumb_mode(CPUState &state) {
-    return state.cpu->is_thumb_mode();
-}
-
 bool hit_breakpoint(CPUState &state) {
     return state.cpu->hit_breakpoint();
 }
@@ -154,10 +157,6 @@ void set_log_code(CPUState &state, bool log) {
 
 void set_log_mem(CPUState &state, bool log) {
     state.cpu->set_log_mem(log);
-}
-
-bool get_log_code(CPUState &state) {
-    return state.cpu->get_log_code();
 }
 
 bool get_log_mem(CPUState &state) {
@@ -202,10 +201,8 @@ uint32_t stack_alloc(CPUState &state, size_t size) {
     return new_sp;
 }
 
-uint32_t stack_free(CPUState &state, size_t size) {
-    const uint32_t new_sp = read_sp(state) + size;
-    write_sp(state, new_sp);
-    return new_sp;
+void stack_free(CPUState &state, size_t size) {
+    write_sp(state, read_sp(state) + size);
 }
 
 static thread_local CPUState *current_cpu_state = nullptr;

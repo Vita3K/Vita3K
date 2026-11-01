@@ -34,13 +34,19 @@ struct CPUContext;
 struct CPUInterface;
 
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-typedef std::unique_ptr<CPUInterface> CPUInterfacePtr;
 
 inline constexpr std::size_t MAX_CORE_COUNT = 150;
 
-struct CPUContext {
-    CPUContext() = default;
+// Why a run or a step of guest code stopped
+struct CPUStop {
+    // The guest code called the import with this NID through an SVC
+    bool kernel_call = false;
+    uint32_t nid = 0;
+    // The guest function returned to the return address
+    bool returned = false;
+};
 
+struct CPUContext {
     std::array<uint32_t, 16> cpu_registers{};
     std::array<float, 64> fpu_registers{};
     uint32_t cpsr = 0;
@@ -81,14 +87,9 @@ struct CPUContext {
         cpu_registers[15] = val;
     }
 
-    std::string description() {
-        uint32_t pc = get_pc();
-        uint32_t sp = get_sp();
-        uint32_t lr = get_lr();
-
-        std::string str;
+    std::string description() const {
+        std::string str = fmt::format("PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}\n", get_pc(), get_sp(), get_lr());
         auto back_it = std::back_inserter(str);
-        fmt::format_to(back_it, "PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}\n", pc, sp, lr);
         for (int a = 0; a < 6; a++) {
             fmt::format_to(back_it, "r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}\n", a, cpu_registers[a], a + 6, cpu_registers[a + 6]);
         }
@@ -96,9 +97,4 @@ struct CPUContext {
         fmt::format_to(back_it, "Thumb: {}\n", thumb());
         return str;
     }
-};
-
-union DoubleReg {
-    double d;
-    float f[2];
 };

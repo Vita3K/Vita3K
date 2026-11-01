@@ -143,9 +143,8 @@ struct KernelState {
     CorenumAllocator corenum_allocator;
     CallImportFunc call_import;
 
-    // Shared NOP+WFI sentinel used by the Dynarmic as the halt return address
+    // Thumb NOP and WFI that guest functions called by the kernel return to
     Block halt_instruction;
-    Address halt_instruction_pc;
 
     ObjectStore obj_store;
 
@@ -172,9 +171,8 @@ struct KernelState {
     bool init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt);
     void deinit(MemState &mem);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
-    ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
     // Creates a dormant thread with these creation arguments, attr without THREAD_ATTR_USER, or returns null
-    ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr, const SceKernelThreadOptParam *option);
+    ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr);
 
     ThreadStatePtr get_thread(SceUID thread_id);
 
@@ -189,11 +187,11 @@ struct KernelState {
         const std::lock_guard<std::mutex> lock(mutex);
         return threads_paused;
     }
-    void pause_threads();
-    void resume_threads();
-    // Stops every thread for the debugger, and the threads created until the resume start stopped
-    void suspend_threads();
-    void resume_suspended_threads();
+    // Pauses every thread, and the threads created until the pause ends, or lets them run again
+    void set_threads_paused(bool paused);
+    // Stops every thread for the debugger, and the threads created until it lets them go, or lets
+    // them run again
+    void set_threads_suspended(bool suspended);
 
     // Kill all guest threads and block until they have exited. Must only be called from a host thread.
     void process_exit();

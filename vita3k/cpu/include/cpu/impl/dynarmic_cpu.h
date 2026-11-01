@@ -40,6 +40,8 @@ class DynarmicCPU : public CPUInterface {
 
     bool halted = false;
     bool break_ = false;
+    // The last run or step stopped at an SVC
+    bool svc_called = false;
 
     bool log_mem = false;
     bool log_code = false;
@@ -50,7 +52,8 @@ class DynarmicCPU : public CPUInterface {
 public:
     DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt);
     ~DynarmicCPU() override;
-    int run() override;
+    CPUStop run() override;
+    CPUStop step() override;
     void stop() override;
 
     uint32_t get_reg(uint8_t idx) override;
@@ -84,18 +87,14 @@ public:
     void load_context(const CPUContext &ctx) override;
 
     bool is_thumb_mode() override;
-    int step() override;
 
     bool hit_breakpoint() override;
     void trigger_breakpoint() override;
     void set_log_code(bool log) override;
     void set_log_mem(bool log) override;
-    bool get_log_code() override;
     bool get_log_mem() override;
 
     void clear_exclusive() override;
     std::size_t processor_id() const override;
     void invalidate_jit_cache(Address start, size_t length) override;
-
-    static Dynarmic::ExclusiveMonitor shared_monitor;
 };

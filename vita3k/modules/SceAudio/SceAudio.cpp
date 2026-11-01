@@ -202,14 +202,10 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return 0;
 
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    if (!thread) {
+    if (!thread)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
-    }
-    // is it really useful to update the thread status?
-    thread->begin_host_wait();
+    const ThreadState::HostWait waiting(*thread);
     emuenv.audio.audio_output(*prt, buf);
-    thread->end_host_wait();
-
     return prt->len;
 }
 

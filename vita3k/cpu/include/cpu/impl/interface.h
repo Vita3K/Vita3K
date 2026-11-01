@@ -25,7 +25,11 @@
 struct CPUInterface {
     virtual ~CPUInterface() = default;
 
-    virtual int run() = 0;
+    // Runs guest code from the PC until an SVC, the return address, a breakpoint, an abort or
+    // stop(), and says why it stopped
+    virtual CPUStop run() = 0;
+    // Runs one instruction of guest code
+    virtual CPUStop step() = 0;
     virtual void stop() = 0;
 
     virtual uint32_t get_reg(uint8_t idx) = 0;
@@ -60,18 +64,15 @@ struct CPUInterface {
     virtual void invalidate_jit_cache(Address start, size_t length) = 0;
 
     virtual bool is_thumb_mode() = 0;
-    virtual int step() = 0;
 
     virtual bool hit_breakpoint() = 0;
     virtual void trigger_breakpoint() = 0;
     virtual void set_log_code(bool log) = 0;
     virtual void set_log_mem(bool log) = 0;
-    virtual bool get_log_code() = 0;
     virtual bool get_log_mem() = 0;
 
+    // Drops the exclusive access the guest code has open on this CPU
     virtual void clear_exclusive() = 0;
 
-    virtual std::size_t processor_id() const {
-        return 0;
-    }
+    virtual std::size_t processor_id() const = 0;
 };

@@ -25,20 +25,15 @@
 #include <atomic>
 
 struct CPUState {
-    CPUState() = default;
-
     SceUID thread_id = 0;
     MemState *mem = nullptr;
     DisasmState disasm;
 
-    CPUInterfacePtr cpu;
-    bool svc_called;
-    uint32_t svc;
+    std::unique_ptr<CPUInterface> cpu;
+    // Return address place_call() writes to LR. Execution stops there.
+    Address return_pc = 0;
 
-    // Exception handler support (kubridge abort handlers)
-    // These are set by the page fault callback (signal-safe atomics)
-    // and consumed by run_loop after HaltExecution returns.
+    // Set by the kubridge fault handler from a signal, read by the CPU after it halts
     std::atomic<bool> abort_pending{ false };
     std::atomic<uint32_t> abort_fault_addr{ 0 };
-    std::atomic<bool> abort_is_write{ false };
 };
