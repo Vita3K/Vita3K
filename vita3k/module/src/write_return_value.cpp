@@ -17,42 +17,42 @@
 
 #include <module/write_return_value.h>
 
-#include <cpu/functions.h>
+#include <cpu/state.h>
 
 void write_return_value(CPUState &cpu, int32_t ret) {
-    write_reg(cpu, 0, ret);
+    cpu.set_reg(0, ret);
 }
 
 void write_return_value(CPUState &cpu, int64_t ret) {
-    write_reg(cpu, 0, ret & UINT32_MAX);
-    write_reg(cpu, 1, ret >> 32);
+    cpu.set_reg(0, ret & UINT32_MAX);
+    cpu.set_reg(1, ret >> 32);
 }
 
 void write_return_value(CPUState &cpu, uint32_t ret) {
-    write_reg(cpu, 0, ret);
+    cpu.set_reg(0, ret);
 }
 
 void write_return_value(CPUState &cpu, uint64_t ret) {
-    write_reg(cpu, 0, ret & UINT32_MAX);
-    write_reg(cpu, 1, ret >> 32);
+    cpu.set_reg(0, ret & UINT32_MAX);
+    cpu.set_reg(1, ret >> 32);
 }
 
 void write_return_value(CPUState &cpu, std::div_t ret) {
-    write_reg(cpu, 0, ret.quot);
-    write_reg(cpu, 1, ret.rem);
+    cpu.set_reg(0, ret.quot);
+    cpu.set_reg(1, ret.rem);
 }
 
 void write_return_value(CPUState &cpu, std::lldiv_t ret) {
-    write_reg(cpu, 0, ret.quot & UINT32_MAX);
-    write_reg(cpu, 1, ret.quot >> 32);
-    write_reg(cpu, 2, ret.rem & UINT32_MAX);
-    write_reg(cpu, 3, ret.rem >> 32);
+    cpu.set_reg(0, ret.quot & UINT32_MAX);
+    cpu.set_reg(1, ret.quot >> 32);
+    cpu.set_reg(2, ret.rem & UINT32_MAX);
+    cpu.set_reg(3, ret.rem >> 32);
 }
 
 void write_return_value(CPUState &cpu, bool ret) {
-    write_reg(cpu, 0, ret);
+    cpu.set_reg(0, ret);
 }
 
 void write_return_value(CPUState &cpu, float ret) {
-    write_float_reg(cpu, 0, ret);
+    cpu.set_float_reg(0, ret);
 }

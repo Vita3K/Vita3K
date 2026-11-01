@@ -23,7 +23,7 @@
 #include <../SceKernelModulemgr/SceModulemgr.h>
 #include <../SceKernelThreadMgr/SceThreadmgr.h>
 
-#include <cpu/functions.h>
+#include <cpu/state.h>
 #include <dlmalloc.h>
 #include <io/functions.h>
 #include <kernel/state.h>
@@ -85,7 +85,7 @@ EXPORT(int, __stack_chk_fail) {
     LOG_CRITICAL("Stack corruption on TID: {}", thread_id);
 
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    auto ctx = save_context(*thread->cpu);
+    auto ctx = thread->cpu->save_context();
     LOG_ERROR("{}", ctx.description());
 
     assert(false); // if this triggers then something is seriously wrong somewhere else
@@ -97,11 +97,11 @@ EXPORT(int, _sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const c
     TRACY_FUNC(_sceKernelCreateLwMutex, workarea, name, attr, init_count, opt_param);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    Ptr<SceKernelCreateLwMutex_opt> options = Ptr<SceKernelCreateLwMutex_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateLwMutex_opt)));
+    Ptr<SceKernelCreateLwMutex_opt> options = Ptr<SceKernelCreateLwMutex_opt>(thread->cpu->stack_alloc(sizeof(SceKernelCreateLwMutex_opt)));
     options.get(emuenv.mem)->init_count = init_count;
     options.get(emuenv.mem)->opt_param = opt_param;
     int res = CALL_EXPORT(__sceKernelCreateLwMutex, workarea, name, attr, options);
-    stack_free(*thread->cpu, sizeof(SceKernelCreateLwMutex_opt));
+    thread->cpu->stack_free(sizeof(SceKernelCreateLwMutex_opt));
     return res;
 }
 
@@ -594,11 +594,11 @@ EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeek
     TRACY_FUNC(sceIoLseek, fd, offset, whence);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    Ptr<_sceIoLseekOpt> options = Ptr<_sceIoLseekOpt>(stack_alloc(*thread->cpu, sizeof(_sceIoLseekOpt)));
+    Ptr<_sceIoLseekOpt> options = Ptr<_sceIoLseekOpt>(thread->cpu->stack_alloc(sizeof(_sceIoLseekOpt)));
     options.get(emuenv.mem)->offset = offset;
     options.get(emuenv.mem)->whence = whence;
     SceOff res = CALL_EXPORT(_sceIoLseek, fd, options);
-    stack_free(*thread->cpu, sizeof(_sceIoLseekOpt));
+    thread->cpu->stack_free(sizeof(_sceIoLseekOpt));
     return res;
 }
 
@@ -1169,11 +1169,11 @@ EXPORT(SceInt32, sceKernelCancelEventWithSetPattern, SceUID eventId, SceUInt32 s
     TRACY_FUNC(sceKernelCancelEventWithSetPattern, eventId, setPattern, userData, pNumWaitThreads);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    Ptr<SceKernelCancelEventWithSetPattern_opt> options = Ptr<SceKernelCancelEventWithSetPattern_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCancelEventWithSetPattern_opt)));
+    Ptr<SceKernelCancelEventWithSetPattern_opt> options = Ptr<SceKernelCancelEventWithSetPattern_opt>(thread->cpu->stack_alloc(sizeof(SceKernelCancelEventWithSetPattern_opt)));
     options.get(emuenv.mem)->userData = userData;
     options.get(emuenv.mem)->pNumWaitThreads = pNumWaitThreads;
     const SceInt32 res = CALL_EXPORT(_sceKernelCancelEventWithSetPattern, eventId, setPattern, options);
-    stack_free(*thread->cpu, sizeof(SceKernelCancelEventWithSetPattern_opt));
+    thread->cpu->stack_free(sizeof(SceKernelCancelEventWithSetPattern_opt));
     return res;
 }
 
@@ -1214,7 +1214,7 @@ EXPORT(int, sceKernelChangeCurrentThreadAttr, SceUInt clear_attr, SceUInt set_at
 EXPORT(int, sceKernelCheckThreadStack) {
     TRACY_FUNC(sceKernelCheckThreadStack);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    int stack_size = read_sp(*thread->cpu) - (thread->stack.get());
+    int stack_size = thread->cpu->get_sp() - (thread->stack.get());
     if (stack_size < 0 || stack_size > thread->stack_size)
         stack_size = 0;
     return stack_size;
@@ -1239,11 +1239,11 @@ EXPORT(int, sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const char
     TRACY_FUNC(sceKernelCreateLwCond, workarea, name, attr, workarea_mutex, opt_param);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    Ptr<SceKernelCreateLwCond_opt> options = Ptr<SceKernelCreateLwCond_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateLwCond_opt)));
+    Ptr<SceKernelCreateLwCond_opt> options = Ptr<SceKernelCreateLwCond_opt>(thread->cpu->stack_alloc(sizeof(SceKernelCreateLwCond_opt)));
     options.get(emuenv.mem)->workarea_mutex = workarea_mutex;
     options.get(emuenv.mem)->opt_param = opt_param;
     int res = CALL_EXPORT(_sceKernelCreateLwCond, workarea, name, attr, options);
-    stack_free(*thread->cpu, sizeof(SceKernelCreateLwCond_opt));
+    thread->cpu->stack_free(sizeof(SceKernelCreateLwCond_opt));
     return res;
 }
 
@@ -1284,11 +1284,11 @@ EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal,
     TRACY_FUNC(sceKernelCreateSema, name, attr, initVal, maxVal, option);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    Ptr<SceKernelCreateSema_opt> options = Ptr<SceKernelCreateSema_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateSema_opt)));
+    Ptr<SceKernelCreateSema_opt> options = Ptr<SceKernelCreateSema_opt>(thread->cpu->stack_alloc(sizeof(SceKernelCreateSema_opt)));
     options.get(emuenv.mem)->maxVal = maxVal;
     options.get(emuenv.mem)->option = option;
     int res = CALL_EXPORT(_sceKernelCreateSema, name, attr, initVal, options);
-    stack_free(*thread->cpu, sizeof(SceKernelCreateSema_opt));
+    thread->cpu->stack_free(sizeof(SceKernelCreateSema_opt));
     return res;
 }
 
@@ -1296,11 +1296,11 @@ EXPORT(int, sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initVa
     TRACY_FUNC(sceKernelCreateSema_16XX, name, attr, initVal, maxVal, option);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    Ptr<SceKernelCreateSema_opt> options = Ptr<SceKernelCreateSema_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateSema_opt)));
+    Ptr<SceKernelCreateSema_opt> options = Ptr<SceKernelCreateSema_opt>(thread->cpu->stack_alloc(sizeof(SceKernelCreateSema_opt)));
     options.get(emuenv.mem)->maxVal = maxVal;
     options.get(emuenv.mem)->option = option;
     int res = CALL_EXPORT(_sceKernelCreateSema, name, attr, initVal, options);
-    stack_free(*thread->cpu, sizeof(SceKernelCreateSema_opt));
+    thread->cpu->stack_free(sizeof(SceKernelCreateSema_opt));
     return res;
 }
 
@@ -1313,13 +1313,13 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry ent
     TRACY_FUNC(sceKernelCreateThread, name, entry, init_priority, stack_size, attr, cpu_affinity_mask, option);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
-    auto options = Ptr<SceKernelCreateThread_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateThread_opt))).get(emuenv.mem);
+    auto options = Ptr<SceKernelCreateThread_opt>(thread->cpu->stack_alloc(sizeof(SceKernelCreateThread_opt))).get(emuenv.mem);
     options->stack_size = stack_size;
     options->attr = attr;
     options->cpu_affinity_mask = cpu_affinity_mask;
     options->option = option;
     SceUID res = CALL_EXPORT(sceKernelCreateThreadForUser, name, entry, init_priority, options);
-    stack_free(*thread->cpu, sizeof(SceKernelCreateThread_opt));
+    thread->cpu->stack_free(sizeof(SceKernelCreateThread_opt));
     return res;
 }
 

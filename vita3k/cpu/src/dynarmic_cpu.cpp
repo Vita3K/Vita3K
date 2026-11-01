@@ -91,16 +91,14 @@ public:
 static constexpr bool LOG_INVALID_ACCESS = false;
 
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
-    CPUState *parent;
-    DynarmicCPU *cpu;
+    DynarmicCPU &cpu;
 
 public:
-    explicit ArmDynarmicCallback(CPUState &parent, DynarmicCPU &cpu)
-        : parent(&parent)
-        , cpu(&cpu) {}
+    explicit ArmDynarmicCallback(DynarmicCPU &cpu)
+        : cpu(cpu) {}
 
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A32::VAddr addr) override {
-        if (cpu->log_mem)
+        if (cpu.log_mem)
             LOG_TRACE("Instruction fetch at address 0x{:X}", addr);
         if (addr < KiB(4))
             return std::nullopt;
@@ -110,33 +108,33 @@ public:
     static void TraceInstruction(uint64_t self_, uint64_t address, uint64_t is_thumb) {
         ArmDynarmicCallback &self = *reinterpret_cast<ArmDynarmicCallback *>(self_);
 
-        const bool valid = is_valid_addr(*self.parent->mem, static_cast<Address>(address));
-        const std::string disassembly = valid ? disassemble(*self.parent, address) : "invalid address";
-        LOG_TRACE("{} ({}): {} {}", log_hex(self_), self.parent->thread_id, log_hex(address), disassembly);
+        const bool valid = is_valid_addr(self.cpu.mem, static_cast<Address>(address));
+        const std::string disassembly = valid ? self.cpu.disassemble(address) : "invalid address";
+        LOG_TRACE("{} ({}): {} {}", log_hex(self_), self.cpu.thread_id, log_hex(address), disassembly);
     }
 
     void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
-        if (cpu->log_code) {
+        if (cpu.log_code) {
             ir.CallHostFunction(&TraceInstruction, ir.Imm64(reinterpret_cast<uint64_t>(this)), ir.Imm64(pc), ir.Imm64(is_thumb));
         }
     }
 
     // Logs and returns true if guest code may not access addr
     bool invalid_access(const char *access, Dynarmic::A32::VAddr addr) {
-        MemState &mem = *parent->mem;
+        MemState &mem = cpu.mem;
         if (addr >= mem.host_page_size && is_valid_addr(mem, addr))
             return false;
-        const uint32_t pc = cpu->get_pc();
+        const uint32_t pc = cpu.get_pc();
         if (LOG_INVALID_ACCESS) {
-            LOG_ERROR("Invalid {} at 0x{:x}\n{}", access, addr, cpu->save_context().description());
+            LOG_ERROR("Invalid {} at 0x{:x}\n{}", access, addr, cpu.save_context().description());
             if (pc < mem.host_page_size)
                 LOG_CRITICAL("PC is 0x{:x}", pc);
             else
-                LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+                LOG_ERROR("Executing: {}", cpu.disassemble(pc, nullptr));
         } else if (!mem.invalid_access_logged.test_and_set()) {
-            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x}). Set LOG_INVALID_ACCESS for full reports", access, addr, parent->thread_id, pc);
+            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x}). Set LOG_INVALID_ACCESS for full reports", access, addr, cpu.thread_id, pc);
         } else {
-            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x})", access, addr, parent->thread_id, pc);
+            LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x})", access, addr, cpu.thread_id, pc);
         }
         return true;
     }
@@ -145,8 +143,8 @@ public:
     T MemoryRead(Dynarmic::A32::VAddr addr) {
         if (invalid_access("read", addr))
             return 0;
-        const T ret = *Ptr<T>(addr).get(*parent->mem);
-        if (cpu->log_mem) {
+        const T ret = *Ptr<T>(addr).get(cpu.mem);
+        if (cpu.log_mem) {
             LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
         }
         return ret;
@@ -172,8 +170,8 @@ public:
     void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
         if (invalid_access("write", addr))
             return;
-        *Ptr<T>(addr).get(*parent->mem) = value;
-        if (cpu->log_mem) {
+        *Ptr<T>(addr).get(cpu.mem) = value;
+        if (cpu.log_mem) {
             LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
         }
     }
@@ -198,8 +196,8 @@ public:
     bool MemoryWriteExclusive(Dynarmic::A32::VAddr addr, T value, T expected) {
         if (invalid_access("exclusive write", addr))
             return false;
-        const bool result = Ptr<T>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
-        if (cpu->log_mem) {
+        const bool result = Ptr<T>(addr).atomic_compare_and_swap(cpu.mem, value, expected);
+        if (cpu.log_mem) {
             LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}", sizeof(T) * 8, addr, value, expected);
         }
         return result;
@@ -222,22 +220,22 @@ public:
     }
 
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) override {
-        LOG_ERROR("Unimplemented instruction at address {}:\n{}", log_hex(addr), save_context(*parent).description());
+        LOG_ERROR("Unimplemented instruction at address {}:\n{}", log_hex(addr), cpu.save_context().description());
     }
 
     void ExceptionRaised(uint32_t pc, Dynarmic::A32::Exception exception) override {
         switch (exception) {
         case Dynarmic::A32::Exception::Breakpoint:
-            cpu->break_ = true;
-            cpu->jit->HaltExecution();
-            cpu->set_pc(cpu->is_thumb_mode() ? pc | 1 : pc);
+            cpu.break_ = true;
+            cpu.jit->HaltExecution();
+            cpu.set_pc(cpu.is_thumb_mode() ? pc | 1 : pc);
             break;
         case Dynarmic::A32::Exception::NoExecuteFault:
-            LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, parent->thread_id, cpu->save_context().description());
+            LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, cpu.thread_id, cpu.save_context().description());
             [[fallthrough]];
         case Dynarmic::A32::Exception::WaitForInterrupt:
-            cpu->halted = true;
-            cpu->jit->HaltExecution();
+            cpu.halted = true;
+            cpu.jit->HaltExecution();
             break;
         case Dynarmic::A32::Exception::PreloadDataWithIntentToWrite:
         case Dynarmic::A32::Exception::PreloadData:
@@ -248,26 +246,26 @@ public:
         case Dynarmic::A32::Exception::Yield:
             break;
         case Dynarmic::A32::Exception::UndefinedInstruction:
-            LOG_WARN("Undefined instruction at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
+            LOG_WARN("Undefined instruction at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), cpu.disassemble(pc, nullptr));
             InterpreterFallback(pc, 1);
             break;
         case Dynarmic::A32::Exception::UnpredictableInstruction:
-            LOG_WARN("Unpredictable instruction at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
+            LOG_WARN("Unpredictable instruction at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), cpu.disassemble(pc, nullptr));
             InterpreterFallback(pc, 1);
             break;
         case Dynarmic::A32::Exception::DecodeError:
-            LOG_WARN("Decode error at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
+            LOG_WARN("Decode error at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), cpu.disassemble(pc, nullptr));
             InterpreterFallback(pc, 1);
             break;
         default:
             LOG_WARN("Unknown exception {} Raised at pc = 0x{:x}", static_cast<size_t>(exception), pc);
-            LOG_TRACE("at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
+            LOG_TRACE("at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), cpu.disassemble(pc, nullptr));
         }
     }
 
     void CallSVC(uint32_t) override {
-        cpu->svc_called = true;
-        cpu->jit->HaltExecution(Dynarmic::HaltReason::UserDefined8);
+        cpu.svc_called = true;
+        cpu.jit->HaltExecution(Dynarmic::HaltReason::UserDefined8);
     }
 
     void AddTicks(uint64_t ticks) override {}
@@ -283,27 +281,26 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
-    if (parent->mem->use_page_table) {
-        config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
+    if (mem.use_page_table) {
+        config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(mem.page_table.get());
         config.absolute_offset_page_table = true;
     } else if (!log_mem && cpu_opt) {
-        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
+        config.fastmem_pointer = std::bit_cast<uintptr_t>(mem.memory.get());
     }
     config.hook_hint_instructions = true;
     config.global_monitor = &shared_monitor;
     config.coprocessors[15] = cp15;
-    config.processor_id = core_id;
+    config.processor_id = processor_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
     config.enable_cycle_counting = false;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
-DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt)
-    : parent(state)
-    , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
+DynarmicCPU::DynarmicCPU(MemState &mem, SceUID thread_id, std::size_t processor_id, bool cpu_opt)
+    : CPUState(mem, thread_id, processor_id)
+    , cb(std::make_unique<ArmDynarmicCallback>(*this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
-    , core_id(processor_id)
     , cpu_opt(cpu_opt) {
     jit = make_jit();
 }
@@ -320,24 +317,19 @@ CPUStop DynarmicCPU::run() {
         reason = jit->Run();
     } while (reason == Dynarmic::HaltReason::Step || reason == Dynarmic::HaltReason::CacheInvalidation);
     // The import's NID is the word after the SVC, and a halted run stopped at the return address
-    const uint32_t nid = svc_called ? *Ptr<uint32_t>(get_pc() + 4).get(*parent->mem) : 0;
+    const uint32_t nid = svc_called ? *Ptr<uint32_t>(get_pc() + 4).get(mem) : 0;
     return { .kernel_call = svc_called, .nid = nid, .returned = halted };
 }
 
 CPUStop DynarmicCPU::step() {
     svc_called = false;
     jit->Step();
-    const uint32_t nid = svc_called ? *Ptr<uint32_t>(get_pc() + 4).get(*parent->mem) : 0;
+    const uint32_t nid = svc_called ? *Ptr<uint32_t>(get_pc() + 4).get(mem) : 0;
     return { .kernel_call = svc_called, .nid = nid };
 }
 
 bool DynarmicCPU::hit_breakpoint() {
     return break_;
-}
-
-void DynarmicCPU::trigger_breakpoint() {
-    break_ = true;
-    stop();
 }
 
 void DynarmicCPU::set_log_code(bool log) {
@@ -368,14 +360,6 @@ uint32_t DynarmicCPU::get_reg(uint8_t idx) {
     return jit->Regs()[idx];
 }
 
-uint32_t DynarmicCPU::get_sp() {
-    return jit->Regs()[13];
-}
-
-uint32_t DynarmicCPU::get_pc() {
-    return jit->Regs()[15];
-}
-
 void DynarmicCPU::set_reg(uint8_t idx, uint32_t val) {
     jit->Regs()[idx] = val;
 }
@@ -398,25 +382,6 @@ uint32_t DynarmicCPU::get_tpidrurw() {
 
 void DynarmicCPU::set_tpidrurw(uint32_t val) {
     cp15->tpidrurw = val;
-}
-
-void DynarmicCPU::set_pc(uint32_t val) {
-    if (val & 1) {
-        set_cpsr(get_cpsr() | 0x20);
-        val = val & 0xFFFFFFFE;
-    } else {
-        set_cpsr(get_cpsr() & 0xFFFFFFDF);
-        val = val & 0xFFFFFFFC;
-    }
-    jit->Regs()[15] = val;
-}
-
-void DynarmicCPU::set_lr(uint32_t val) {
-    jit->Regs()[14] = val;
-}
-
-void DynarmicCPU::set_sp(uint32_t val) {
-    jit->Regs()[13] = val;
 }
 
 uint32_t DynarmicCPU::get_cpsr() {
@@ -447,10 +412,6 @@ void DynarmicCPU::load_context(const CPUContext &ctx) {
     jit->SetFpscr(ctx.fpscr);
 }
 
-uint32_t DynarmicCPU::get_lr() {
-    return jit->Regs()[14];
-}
-
 float DynarmicCPU::get_float_reg(uint8_t idx) {
     return std::bit_cast<float>(jit->ExtRegs()[idx]);
 }
@@ -459,18 +420,10 @@ void DynarmicCPU::set_float_reg(uint8_t idx, float val) {
     jit->ExtRegs()[idx] = std::bit_cast<uint32_t>(val);
 }
 
-bool DynarmicCPU::is_thumb_mode() {
-    return jit->Cpsr() & 0x20;
-}
-
-std::size_t DynarmicCPU::processor_id() const {
-    return core_id;
-}
-
 void DynarmicCPU::invalidate_jit_cache(Address start, size_t length) {
     jit->InvalidateCacheRange(start, length);
 }
 
 void DynarmicCPU::clear_exclusive() {
-    shared_monitor.ClearProcessor(core_id);
+    shared_monitor.ClearProcessor(processor_id);
 }

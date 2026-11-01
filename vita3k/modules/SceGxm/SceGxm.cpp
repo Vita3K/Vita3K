@@ -949,12 +949,12 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     const std::lock_guard<std::mutex> guard(global_lock);
 
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
-    const Address final_size_addr = stack_alloc(*thread->cpu, 4);
+    const Address final_size_addr = thread->cpu->stack_alloc(4);
 
     Ptr<void> result(thread->run_callback(callback.address(), { userdata.address(), size, final_size_addr }));
 
     return_size = *Ptr<std::uint32_t>(final_size_addr).get(mem);
-    stack_free(*thread->cpu, 4);
+    thread->cpu->stack_free(4);
 
     return result;
 }

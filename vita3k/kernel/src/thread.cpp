@@ -15,7 +15,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <cpu/functions.h>
 #include <cpu/state.h>
 #include <kernel/thread/thread_state.h>
 
@@ -88,7 +87,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
 
     const Ptr<uint8_t> user_tls_ptr = tls.get_ptr<uint8_t>() + KERNEL_TLS_SIZE;
-    write_tpidruro(*this->cpu, user_tls_ptr.address());
+    this->cpu->set_tpidruro(user_tls_ptr.address());
     if (kernel.tls_address) {
         assert(kernel.tls_psize <= kernel.tls_msize);
         memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
@@ -107,16 +106,16 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     affinity_mask = init_affinity_mask;
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
-    load_context(*cpu, initial_context(stack.get() + stack_size));
+    cpu->load_context(initial_context(stack.get() + stack_size));
     // A thread starts with TPIDRURW at 0, also when it starts again
-    write_tpidrurw(*cpu, 0);
+    cpu->set_tpidrurw(0);
     // The entry gets the size of the argument data and its copy on the stack, or null for none
     Address data_addr = 0;
     if (argp && arglen > 0) {
-        data_addr = stack_alloc(*cpu, align(arglen, 8));
+        data_addr = cpu->stack_alloc(align(arglen, 8));
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
     }
-    place_call(*cpu, entry_point, { arglen, data_addr });
+    cpu->place_call(entry_point, { arglen, data_addr });
 
     update_status(ThreadStatus::running);
     return SCE_KERNEL_OK;
@@ -141,7 +140,7 @@ void ThreadState::remove() {
     if (status == ThreadStatus::dormant)
         update_status(ThreadStatus::deleted);
     else if (status == ThreadStatus::running)
-        stop(*cpu);
+        cpu->stop();
 
     // Wake the thread if it is parked dormant, held at its gate or blocked in a wait
     cv.notify_all();
@@ -264,20 +263,20 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
 
             const bool stepped = std::exchange(step_requested, false);
             lock.unlock();
-            const CPUStop stop = stepped ? ::step(*cpu) : ::run(*cpu);
+            const CPUStop stop = stepped ? cpu->step() : cpu->run();
             after_kernel_call = stop.kernel_call;
             if (stop.kernel_call) {
                 kernel.call_import(*cpu, stop.nid, id);
-                clear_exclusive(*cpu);
+                cpu->clear_exclusive();
             }
             if (cpu->abort_pending.exchange(false))
                 dispatch_abort();
             lock.lock();
             // A finished step or a breakpoint holds the thread for the debugger
-            if (stepped || hit_breakpoint(*cpu))
+            if (stepped || cpu->hit_breakpoint())
                 holds.debugger = true;
             if (stop.returned)
-                return read_reg(*cpu, 0);
+                return cpu->get_reg(0);
         }
     }
 }
@@ -286,27 +285,27 @@ uint32_t ThreadState::run_callback(Address callback_address, std::initializer_li
     std::unique_lock<std::mutex> thread_lock(mutex);
 
     // Save the thread's context before the call overwrites PC and LR
-    const CPUContext previous_ctx = save_context(*cpu);
-    const uint32_t previous_tpidruro = read_tpidruro(*cpu);
+    const CPUContext previous_ctx = cpu->save_context();
+    const uint32_t previous_tpidruro = cpu->get_tpidruro();
     // A callback sees the thread's TPIDRURW, and the thread gets its own value back after it
-    const uint32_t previous_tpidrurw = read_tpidrurw(*cpu);
+    const uint32_t previous_tpidrurw = cpu->get_tpidrurw();
     int &vfp_exception = tls_slot(TLS_VFP_EXCEPTION);
     const int previous_vfp_exception = vfp_exception;
     if (fresh_vfp_state) {
-        write_fpscr(*cpu, INITIAL_FPSCR);
+        cpu->set_fpscr(INITIAL_FPSCR);
         vfp_exception = 0;
     }
 
-    place_call(*cpu, callback_address, args);
+    cpu->place_call(callback_address, args);
 
     // A callback runs inside a kernel call, so a hold before its first instruction finds the
     // thread there
     const std::optional<uint32_t> returned = run_guest(thread_lock, true);
 
     // The caller and the callback should keep to the calling convention, but put everything back
-    load_context(*cpu, previous_ctx);
-    write_tpidruro(*cpu, previous_tpidruro);
-    write_tpidrurw(*cpu, previous_tpidrurw);
+    cpu->load_context(previous_ctx);
+    cpu->set_tpidruro(previous_tpidruro);
+    cpu->set_tpidrurw(previous_tpidrurw);
     if (fresh_vfp_state)
         vfp_exception = previous_vfp_exception;
 
@@ -326,15 +325,15 @@ void ThreadState::dispatch_abort() {
     // address. protect_tree already unprotected the page and the CPU may have run past the faulting
     // instruction, so the call is only a notification and nothing is restored from the context.
     const uint32_t ctx_size = 17 * 4;
-    const uint32_t sp_orig = read_sp(cpu);
+    const uint32_t sp_orig = cpu.get_sp();
     const uint32_t sp_aligned = align_down(sp_orig - ctx_size, 8);
 
-    auto *ctx = Ptr<uint32_t>(sp_aligned).get(*cpu.mem);
+    auto *ctx = Ptr<uint32_t>(sp_aligned).get(cpu.mem);
     for (int i = 0; i < 13; i++)
-        ctx[i] = read_reg(cpu, i);
+        ctx[i] = cpu.get_reg(i);
     ctx[13] = sp_aligned + ctx_size;
-    ctx[14] = read_lr(cpu);
-    ctx[15] = read_pc(cpu);
+    ctx[14] = cpu.get_lr();
+    ctx[15] = cpu.get_pc();
     ctx[16] = fault_addr;
 
     LOG_DEBUG("DABT handler=0x{:08X} FAR=0x{:08X} PC=0x{:08X} SP=0x{:08X} sp_aligned=0x{:08X}",
@@ -419,7 +418,7 @@ int ThreadState::stack_free_size() const {
     // A dormant thread's whole stack is free, a started one's is free below its stack pointer
     if (status == ThreadStatus::dormant)
         return stack_size;
-    return static_cast<int>(read_sp(*cpu) - stack.get());
+    return static_cast<int>(cpu->get_sp() - stack.get());
 }
 
 ThreadState::HostWait::HostWait(ThreadState &thread)
@@ -593,7 +592,7 @@ void ThreadState::set_suspended(bool suspended) {
     holds.debugger = suspended;
     step_requested = false;
     if (suspended && status == ThreadStatus::running)
-        stop(*cpu);
+        cpu->stop();
     // The gate checks the holds again, and with them what the status shows
     cv.notify_all();
 }
@@ -615,7 +614,7 @@ void ThreadState::set_paused(bool paused) {
     const std::lock_guard<std::mutex> lock(mutex);
     holds.pause = paused;
     if (paused && status == ThreadStatus::running)
-        stop(*cpu);
+        cpu->stop();
     cv.notify_all();
 }
 
@@ -627,7 +626,7 @@ int ThreadState::vm_suspend() {
     // A thread a pause already holds at its gate shows as suspended now
     cv.notify_all();
     if (status == ThreadStatus::running)
-        stop(*cpu);
+        cpu->stop();
     // Like on a Vita, return once the thread has stopped, so its context holds still
     cv.wait(lock, [&] { return status != ThreadStatus::running || holds.vm == 0 || exiting(); });
     return count;
@@ -652,8 +651,8 @@ SceInt32 ThreadState::get_vm_context(CPUContext &context, uint32_t &tpidrurw, bo
     cv.wait(lock, [&] { return status != ThreadStatus::running || holds.vm == 0 || exiting(); });
     if (holds.vm == 0)
         return SCE_KERNEL_ERROR_NOT_SUSPENDED;
-    context = save_context(*cpu);
-    tpidrurw = read_tpidrurw(*cpu);
+    context = cpu->save_context();
+    tpidrurw = cpu->get_tpidrurw();
     // Inside a kernel call means waiting, or held on the way back from one
     in_kernel_call = status == ThreadStatus::waiting || (status == ThreadStatus::suspended && stopped_after_kernel_call);
     return SCE_KERNEL_OK;
@@ -666,5 +665,5 @@ void ThreadState::wait_until_not_running() {
 
 bool ThreadState::stopped_at_breakpoint() const {
     const std::lock_guard<std::mutex> lock(mutex);
-    return holds.debugger && status == ThreadStatus::suspended && hit_breakpoint(*cpu);
+    return holds.debugger && status == ThreadStatus::suspended && cpu->hit_breakpoint();
 }

@@ -23,7 +23,7 @@
 #include <gdbstub/functions.h>
 #include <gdbstub/state.h>
 
-#include <cpu/functions.h>
+#include <cpu/state.h>
 
 #include <bit>
 #include <cerrno>
@@ -285,20 +285,20 @@ static std::string cmd_get_current_thread(EmuEnvState &state, PacketCommand &com
 
 static uint32_t fetch_reg(CPUState &state, uint32_t reg) {
     if (reg <= 12) {
-        return read_reg(state, reg);
+        return state.get_reg(reg);
     }
 
     if (reg == 13)
-        return read_sp(state);
+        return state.get_sp();
     if (reg == 14)
-        return read_lr(state);
+        return state.get_lr();
     if (reg == 15)
-        return read_pc(state);
+        return state.get_pc();
 
     if (reg == REG_FPSCR)
-        return read_fpscr(state);
+        return state.get_fpscr();
     if (reg == REG_CPSR)
-        return read_cpsr(state);
+        return state.get_cpsr();
 
     LOG_GDB("GDB Server Queried Invalid Register {}", reg);
     return 0;
@@ -306,29 +306,29 @@ static uint32_t fetch_reg(CPUState &state, uint32_t reg) {
 
 static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
     if (reg <= 12) {
-        write_reg(state, reg, value);
+        state.set_reg(reg, value);
         return;
     }
 
     if (reg == 13) {
-        write_sp(state, value);
+        state.set_sp(value);
         return;
     }
     if (reg == 14) {
-        write_lr(state, value);
+        state.set_lr(value);
         return;
     }
     if (reg == 15) {
-        write_pc(state, value);
+        state.set_pc(value);
         return;
     }
 
     if (reg == REG_FPSCR) {
-        write_fpscr(state, value);
+        state.set_fpscr(value);
         return;
     }
     if (reg == REG_CPSR) {
-        write_cpsr(state, value);
+        state.set_cpsr(value);
         return;
     }
 
@@ -348,13 +348,13 @@ static size_t reg_words(uint32_t reg) {
 static std::string read_float_regs(CPUState &cpu, size_t first, size_t count) {
     std::string result;
     for (size_t i = 0; i < count; i++)
-        result += be_hex(std::bit_cast<uint32_t>(read_float_reg(cpu, first + i)));
+        result += be_hex(std::bit_cast<uint32_t>(cpu.get_float_reg(first + i)));
     return result;
 }
 
 static void write_float_regs(CPUState &cpu, size_t first, size_t count, const std::string &hex) {
     for (size_t i = 0; i < count; i++)
-        write_float_reg(cpu, first + i, std::bit_cast<float>(parse_reg(hex.substr(i * 8, 8))));
+        cpu.set_float_reg(first + i, std::bit_cast<float>(parse_reg(hex.substr(i * 8, 8))));
 }
 
 static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command) {
@@ -517,7 +517,7 @@ static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) { retu
 
 static std::string log_stack_traceback(EmuEnvState &state, CPUState &cpu) {
     std::string str;
-    const Address sp = read_sp(cpu);
+    const Address sp = cpu.get_sp();
     for (Address addr = sp; addr <= sp + 1024; addr += 4) {
         if (!Ptr<uint32_t>(addr).valid(state.mem))
             continue;
@@ -597,7 +597,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             }
 
             LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
-            LOG_INFO("PC: {} LR: {}", read_pc(*stopped->cpu), read_lr(*stopped->cpu));
+            LOG_INFO("PC: {} LR: {}", stopped->cpu->get_pc(), stopped->cpu->get_lr());
             LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
 
             // Stop the world. A thread inside a kernel call stops when the call returns.

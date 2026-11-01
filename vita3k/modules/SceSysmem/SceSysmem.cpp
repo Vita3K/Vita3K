@@ -425,7 +425,7 @@ EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
     if (base < range.addr || uint64_t(base) + size > uint64_t(range.addr) + range.size)
         return RET_ERROR(SCE_KERNEL_ERROR_MEMBLOCK_RANGE_ERROR);
-    invalidate_jit_cache(*emuenv.kernel.get_thread(thread_id)->cpu, base, size);
+    emuenv.kernel.get_thread(thread_id)->cpu->invalidate_jit_cache(base, size);
 
     return 0;
 }

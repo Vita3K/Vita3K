@@ -25,7 +25,6 @@
 
 #include <kernel/thread/thread_state.h>
 
-#include <cpu/functions.h>
 #include <cpu/state.h>
 #include <mem/ptr.h>
 #include <util/lock_and_find.h>
@@ -74,9 +73,9 @@ static int SDLCALL thread_function(void *data) {
 #endif
 
     thread->run_loop();
-    const uint32_t r0 = read_reg(*thread->cpu, 0);
+    const uint32_t r0 = thread->cpu->get_reg(0);
     const SceUID id = thread->id;
-    const int processor_id = get_processor_id(*thread->cpu);
+    const int processor_id = thread->cpu->processor_id;
     // release our reference first so the erase below destroys the ThreadState before process_exit() is woken
     thread.reset();
 
@@ -127,11 +126,11 @@ void KernelState::set_memory_watch(bool enabled) {
     std::lock_guard<std::mutex> lock(mutex);
     for (const auto &thread : threads) {
         auto &cpu = *thread.second->cpu;
-        if (enabled != get_log_mem(cpu)) {
+        if (enabled != cpu.get_log_mem()) {
             if (enabled)
-                set_log_mem(cpu, true);
+                cpu.set_log_mem(true);
             else
-                set_log_mem(cpu, false);
+                cpu.set_log_mem(false);
         }
     }
 }
@@ -139,7 +138,7 @@ void KernelState::set_memory_watch(bool enabled) {
 void KernelState::invalidate_jit_cache(Address start, size_t length) {
     std::lock_guard<std::mutex> lock(mutex);
     for (const auto &[_, thread] : threads) {
-        ::invalidate_jit_cache(*thread->cpu, start, length);
+        thread->cpu->invalidate_jit_cache(start, length);
     }
 }
 
@@ -179,8 +178,8 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
         return nullptr;
     // A guest function the kernel calls returns to the halt instruction, in Thumb mode
     cpu->return_pc = halt_instruction.get() | 1;
-    set_log_code(*cpu, debugger.watch_code);
-    set_log_mem(*cpu, debugger.watch_memory);
+    cpu->set_log_code(debugger.watch_code);
+    cpu->set_log_mem(debugger.watch_memory);
     ThreadStatePtr thread = std::make_shared<ThreadState>(id, *this, mem, std::move(cpu), name, entry_point.address(), init_priority, affinity_mask, stack_size, attr);
 
     {

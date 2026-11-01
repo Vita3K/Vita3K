@@ -23,7 +23,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <iterator>
 #include <memory>
 #include <sstream>
@@ -31,9 +30,8 @@
 
 struct CPUState;
 struct CPUContext;
-struct CPUInterface;
 
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
+using CPUStatePtr = std::unique_ptr<CPUState>;
 
 inline constexpr std::size_t MAX_CORE_COUNT = 150;
 
