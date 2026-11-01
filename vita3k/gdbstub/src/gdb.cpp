@@ -515,6 +515,19 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
 
 static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) { return "OK"; }
 
+static std::string log_stack_traceback(EmuEnvState &state, CPUState &cpu) {
+    std::string str;
+    const Address sp = read_sp(cpu);
+    for (Address addr = sp; addr <= sp + 1024; addr += 4) {
+        if (!Ptr<uint32_t>(addr).valid(state.mem))
+            continue;
+        const Address value = *Ptr<uint32_t>(addr).get(state.mem);
+        if (const auto mod = state.kernel.find_module_by_addr(value))
+            fmt::format_to(std::back_inserter(str), "0x{:X} (module: {})\n", value, mod->module_name);
+    }
+    return str;
+}
+
 // The stop reply for a thread that stopped on a trap
 static std::string stop_reply(SceUID thread_id) {
     return "T05thread:" + to_hex(thread_id) + ";";
@@ -552,10 +565,9 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 return "E00";
 
             // A thread something else holds can't step, and gdb takes the error as a stop
-            if (!thread->resume(true))
-                return "E01";
             // TODO: a step into a call that waits on a thread the debugger holds never returns
-            thread->wait_until_stopped_for_debugger();
+            if (!thread->step())
+                return "E01";
 
             state.gdb.current_thread = thread_id;
             return stop_reply(thread_id);
@@ -563,7 +575,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         case 'c':
         case 'C': {
             // Resume the world. A thread something else holds stays stopped.
-            state.kernel.resume_suspended_threads();
+            state.kernel.set_threads_suspended(false);
 
             // Wait until some thread hits a breakpoint
             ThreadStatePtr stopped;
@@ -586,10 +598,10 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
             LOG_INFO("PC: {} LR: {}", read_pc(*stopped->cpu), read_lr(*stopped->cpu));
-            LOG_INFO("{}", stopped->log_stack_traceback());
+            LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
 
             // Stop the world. A thread inside a kernel call stops when the call returns.
-            state.kernel.suspend_threads();
+            state.kernel.set_threads_suspended(true);
             for (const ThreadStatePtr &thread : list_threads(state))
                 thread->wait_until_not_running();
 

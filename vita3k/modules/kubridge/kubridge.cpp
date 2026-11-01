@@ -26,6 +26,7 @@
 #include <module/module.h>
 
 #include <cpu/functions.h>
+#include <cpu/state.h>
 #include <kernel/state.h>
 #include <mem/functions.h>
 #include <modules/sysmem_state.h>
@@ -55,17 +56,14 @@ struct KuKernelExceptionHandlerOpt {
     uint32_t size;
 };
 
-// Page fault callback that triggers an abort handler if one is registered.
-// Called from signal handler context — must be signal-safe.
-// Sets abort_pending on the current thread's CPU and halts execution so
-// run_loop can invoke the ARM exception handler.
+// Page fault callback, called from a signal handler. It notes the abort on this host thread's CPU and
+// halts it, so the thread runs the registered abort handler, if any.
 static bool abort_aware_fault_callback(Address fault_addr, bool write, Address range_start, uint32_t range_size) {
     CPUState *cpu = get_current_cpu_state();
     if (cpu) {
         cpu->abort_fault_addr.store(fault_addr);
-        cpu->abort_is_write.store(write);
         cpu->abort_pending.store(true);
-        stop(*cpu); // HaltExecution — signal-safe (atomic only)
+        stop(*cpu); // Only sets an atomic, so it is signal safe
     }
     return true;
 }
@@ -92,8 +90,8 @@ EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
 
     if (perm == MemPerm::None || perm == MemPerm::ReadOnly) {
         // Use add_protect so fault handler can catch violations gracefully.
-        // If an exception handler is registered, the fault callback will
-        // halt the CPU and let run_loop invoke the ARM handler.
+        // If an exception handler is registered, the fault callback halts
+        // the CPU and the thread then runs the ARM handler.
         const Address va = addr.address();
         add_protect(emuenv.mem, va, len, perm, [va, len](Address fault_addr, bool write) {
             return abort_aware_fault_callback(fault_addr, write, va, len);
@@ -194,15 +192,15 @@ EXPORT(int, kuKernelMemDecommit, Ptr<void> addr, SceSize len) {
 
 // kuKernelRegisterExceptionHandler — register user-mode exception handler.
 // On real Vita, kubridge hooks ARM exception vectors (DABT/PABT/UNDEF).
-// In Vita3K, we store the handler address and invoke it from run_loop
-// when a page fault triggers an abort via the add_protect callback.
+// In Vita3K, we store the handler address and the thread calls it when
+// a page fault from the add_protect callback notes an abort.
 EXPORT(int, kuKernelRegisterExceptionHandler, uint32_t exceptionType,
     Ptr<void> pHandler, Ptr<Ptr<void>> pOldHandler, Ptr<KuKernelExceptionHandlerOpt> pOpt) {
     TRACY_FUNC(kuKernelRegisterExceptionHandler, exceptionType, pHandler, pOldHandler, pOpt);
     if (exceptionType >= KernelState::EXCEPTION_HANDLER_MAX)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
-    // Only DABT (type 0) is currently dispatched from run_loop.
+    // Only DABT (type 0) is currently dispatched.
     // PABT (1) and UNDEF (2) are stored but never fired.
     if (exceptionType != 0)
         LOG_WARN("kuKernelRegisterExceptionHandler: type={} stored but not yet dispatched (only DABT=0 is)",

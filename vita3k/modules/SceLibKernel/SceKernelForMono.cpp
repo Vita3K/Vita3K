@@ -50,7 +50,6 @@ EXPORT(int, sceKernelWaitExceptionCBForMono) {
 EXPORT(int, sceKernelWaitExceptionForMono) {
     TRACY_FUNC(sceKernelWaitExceptionForMono);
     STUBBED("Inifinite wait");
-    ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    thread->suspend();
+    emuenv.kernel.get_thread(thread_id)->set_suspended(true);
     return 0;
 }
