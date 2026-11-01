@@ -1492,8 +1492,8 @@ void MsgPipe::drain(Receiver &receiver) {
 
 SceSize MsgPipe::available() const {
     SceSize bytes = static_cast<SceSize>(data_buffer.Used());
-    for (const auto *sender : senders)
-        bytes += sender->entry.left;
+    for (const auto &sender : senders)
+        bytes += sender.entry.left;
     return bytes;
 }
 

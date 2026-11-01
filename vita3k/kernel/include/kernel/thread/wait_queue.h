@@ -19,10 +19,10 @@
 
 #include <kernel/thread/wait.h>
 #include <kernel/types.h>
+#include <util/intrusive_list.h>
 
 #include <algorithm>
 #include <concepts>
-#include <list>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -33,7 +33,8 @@ using ThreadStatePtr = std::shared_ptr<ThreadState>;
 
 // Threads blocked on a sync object, in FIFO or thread priority order.
 // Entry is the per-waiter data the object needs, such as a requested count.
-// Every method must be called with the object's lock held.
+// Every method must be called with the object's lock held. Waiters are linked in place, so queueing
+// allocates nothing.
 template <typename Entry>
 class WaitQueue {
 public:
@@ -44,6 +45,8 @@ public:
         Entry entry;
         // Set by a waker that decided the outcome of the wait
         std::optional<SceInt32> result;
+        // The waiter's place in the queue
+        IntrusiveLink<Waiter> link;
     };
 
     // How the queue orders its waiters
@@ -99,7 +102,7 @@ public:
 
     // Returns the waiter that would be woken first, or null.
     Waiter *front() {
-        return waiters.empty() ? nullptr : waiters.front();
+        return waiters.empty() ? nullptr : &waiters.front();
     }
 
     // Returns whether a thread of this priority would be first in the queue, ahead of every waiter.
@@ -107,18 +110,18 @@ public:
         if (waiters.empty())
             return true;
         // Lower value is higher priority, and equal priorities keep FIFO order
-        return by_priority && waiters.front()->priority > priority;
+        return by_priority && waiters.front().priority > priority;
     }
 
     // Returns the first waiter accepted by pick, or null.
     Waiter *find_if(std::predicate<Waiter &> auto pick) {
-        const auto it = std::find_if(waiters.begin(), waiters.end(), [&](Waiter *w) { return pick(*w); });
-        return it == waiters.end() ? nullptr : *it;
+        const auto it = std::find_if(waiters.begin(), waiters.end(), pick);
+        return it == waiters.end() ? nullptr : &*it;
     }
 
     // Returns how many waiters pick accepts.
     std::size_t count_if(std::predicate<const Waiter &> auto pick) const {
-        return std::count_if(waiters.begin(), waiters.end(), [&](const Waiter *w) { return pick(*w); });
+        return std::count_if(waiters.begin(), waiters.end(), pick);
     }
 
     // Ends a wait with result and takes the waiter off the queue.
@@ -132,12 +135,10 @@ public:
     std::size_t wake_if(std::predicate<Waiter &> auto pick, SceInt32 result = SCE_KERNEL_OK) {
         std::size_t woken = 0;
         for (auto it = waiters.begin(); it != waiters.end();) {
-            Waiter &waiter = **it;
-            if (!pick(waiter)) {
-                ++it;
+            Waiter &waiter = *it++;
+            if (!pick(waiter))
                 continue;
-            }
-            it = waiters.erase(it);
+            remove(waiter);
             waiter.result = result;
             waiter.thread->wake();
             ++woken;
@@ -155,18 +156,20 @@ public:
         auto pos = waiters.end();
         if (by_priority) {
             // Lower value is higher priority, equal priorities keep FIFO order
-            pos = std::find_if(waiters.begin(), waiters.end(), [&](const Waiter *w) { return w->priority > waiter.priority; });
+            pos = waiters.begin();
+            while (pos != waiters.end() && pos->priority <= waiter.priority)
+                ++pos;
             // A waiter whose place is the front goes right behind a head that keeps its place, so
             // it lands ahead of the waiters already behind that head, whatever their priority
-            if (pos == waiters.begin() && pos != waiters.end() && keeps_place((*pos)->entry))
+            if (pos == waiters.begin() && pos != waiters.end() && keeps_place(pos->entry))
                 ++pos;
         }
-        waiters.insert(pos, &waiter);
+        waiters.insert(pos, waiter);
     }
 
     // Takes a waiter off the queue if it is still on it.
     void remove(Waiter &waiter) {
-        std::erase(waiters, &waiter);
+        waiters.remove(waiter);
     }
 
 private:
@@ -180,5 +183,5 @@ private:
     }
 
     bool by_priority = false;
-    std::list<Waiter *> waiters;
+    IntrusiveList<Waiter, &Waiter::link> waiters;
 };
