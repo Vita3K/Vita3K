@@ -20,6 +20,9 @@
 
 #include "renderer/vulkan/state.h"
 
+#include <algorithm>
+#include <cmath>
+
 namespace renderer::vulkan {
 
 ScreenFilter::ScreenFilter(ScreenRenderer &screen_renderer)
@@ -277,7 +280,7 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         };
         // compute viewport now
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
-        constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        const float vita_aspect = display_aspect_ratio(static_cast<int>(viewport.width), static_cast<int>(viewport.height));
         const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect && screen.state.fullscreen && !(screen.extent.width % DEFAULT_RES_WIDTH) && !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
         if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
             // Match the aspect ratio to the screen size.
@@ -506,10 +509,9 @@ void FSRScreenFilter::init() {
     on_resize();
 }
 
-void FSRScreenFilter::on_resize() {
-    // compute the extent
+void FSRScreenFilter::compute_output_rect() {
     const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
-    const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+    const float vita_aspect = output_aspect;
     const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect & screen.state.fullscreen & !(screen.extent.width % DEFAULT_RES_WIDTH) & !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
     if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
         // Match the aspect ratio to the screen size.
@@ -519,17 +521,21 @@ void FSRScreenFilter::on_resize() {
         output_offset.height = 0.0f;
     } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
         // Window is wide. Pin top and bottom.
-        output_size.width = static_cast<uint32_t>(std::round(screen.extent.height * vita_aspect));
+        output_size.width = std::max(1u, static_cast<uint32_t>(std::round(screen.extent.height * vita_aspect)));
         output_size.height = screen.extent.height;
         output_offset.width = static_cast<uint32_t>(std::round((screen.extent.width - output_size.width) / 2.0f));
         output_offset.height = 0.0;
     } else {
         // Window is tall. Pin left and right.
         output_size.width = screen.extent.width;
-        output_size.height = static_cast<uint32_t>(std::round(screen.extent.width / vita_aspect));
+        output_size.height = std::max(1u, static_cast<uint32_t>(std::round(screen.extent.width / vita_aspect)));
         output_offset.width = 0.0f;
         output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height - output_size.height) / 2.0f));
     }
+}
+
+void FSRScreenFilter::on_resize() {
+    compute_output_rect();
 
     // recreate the intermediate images
     for (auto &img : intermediate_images) {
@@ -576,6 +582,31 @@ void FSRScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_img, vk::
     if (!is_pre_renderpass)
         // we are using compute shaders
         return;
+
+    // the output follows the aspect ratio of the frame, which an app can change at any time
+    const float frame_aspect = display_aspect_ratio(static_cast<int>(viewport.width), static_cast<int>(viewport.height));
+    if (frame_aspect != output_aspect) {
+        output_aspect = frame_aspect;
+        compute_output_rect();
+    }
+    vkutil::Image &intermediate = intermediate_images[screen.swapchain_image_idx];
+    if (intermediate.width != output_size.width || intermediate.height != output_size.height) {
+        // only the image of this swapchain image is resized, the fence of this frame was waited on so it is not in use
+        intermediate.destroy();
+        intermediate.width = output_size.width;
+        intermediate.height = output_size.height;
+        intermediate.init_image(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
+
+        std::array<vk::DescriptorImageInfo, 2> descr_images{};
+        descr_images[0].setImageView(intermediate.view).setImageLayout(vk::ImageLayout::eGeneral);
+        descr_images[1].setImageView(intermediate.view).setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+        std::array<vk::WriteDescriptorSet, 2> writes{};
+        // easu dst
+        writes[0].setDstSet(descriptor_sets[2 * screen.swapchain_image_idx]).setDstBinding(2).setDescriptorType(vk::DescriptorType::eStorageImage).setImageInfo(descr_images[0]);
+        // rcas src
+        writes[1].setDstSet(descriptor_sets[2 * screen.swapchain_image_idx + 1]).setDstBinding(1).setDescriptorType(vk::DescriptorType::eSampledImage).setImageInfo(descr_images[1]);
+        screen.state.device.updateDescriptorSets(writes, {});
+    }
 
     // update descriptor set, (only the easu src)
     vk::DescriptorImageInfo descr_image_info{

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <renderer/types.h>
 #include <vkutil/objects.h>
 
 #include <string_view>
@@ -150,6 +151,10 @@ private:
 
     vk::Extent2D output_offset;
     vk::Extent2D output_size;
+    // aspect ratio of the frame the output size was computed for
+    float output_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+
+    void compute_output_rect();
 
     vk::Sampler sampler;
 

@@ -32,6 +32,11 @@
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
+// aspect ratio of the picture the app sends to the display, apps may use a size other than 960x544
+inline float display_aspect_ratio(int width, int height) {
+    return (width > 0 && height > 0) ? static_cast<float>(width) / static_cast<float>(height) : static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+}
+
 struct SceGxmProgram;
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;

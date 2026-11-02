@@ -26,7 +26,7 @@ class EmulatorConfig {
     @JvmField var exportTextures: Boolean = false
     @JvmField var importTextures: Boolean = false
     @JvmField var exportAsPng: Boolean = true
-    @JvmField var fpsHack: Boolean = false
+    @JvmField var vblankRate: Int = 60
     @JvmField var turboMode: Boolean = false
     @JvmField var shaderCache: Boolean = true
     @JvmField var spirvShader: Boolean = false
@@ -113,7 +113,7 @@ class EmulatorConfig {
         config.exportTextures = exportTextures
         config.importTextures = importTextures
         config.exportAsPng = exportAsPng
-        config.fpsHack = fpsHack
+        config.vblankRate = vblankRate
         config.turboMode = turboMode
         config.shaderCache = shaderCache
         config.spirvShader = spirvShader
@@ -192,7 +192,7 @@ class EmulatorConfig {
             exportTextures == other.exportTextures &&
             importTextures == other.importTextures &&
             exportAsPng == other.exportAsPng &&
-            fpsHack == other.fpsHack &&
+            vblankRate == other.vblankRate &&
             turboMode == other.turboMode &&
             shaderCache == other.shaderCache &&
             spirvShader == other.spirvShader &&
@@ -268,7 +268,7 @@ class EmulatorConfig {
         result = 31 * result + exportTextures.hashCode()
         result = 31 * result + importTextures.hashCode()
         result = 31 * result + exportAsPng.hashCode()
-        result = 31 * result + fpsHack.hashCode()
+        result = 31 * result + vblankRate
         result = 31 * result + turboMode.hashCode()
         result = 31 * result + shaderCache.hashCode()
         result = 31 * result + spirvShader.hashCode()

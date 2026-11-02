@@ -33,11 +33,6 @@ static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const
     if (is_cb)
         thread->process_callbacks();
 
-    if (emuenv.display.fps_hack)
-        // a game can use a vcount of 2 to render as 30fps
-        // thus doing this can allow some games to run at 60fps
-        vcount = 1;
-
     uint64_t target_vcount;
     if (is_since_setbuf) {
         target_vcount = emuenv.display.last_setframe_vblank_count + vcount;
@@ -186,7 +181,7 @@ EXPORT(SceInt32, sceDisplayGetRefreshRate, float *pFps) {
 
 EXPORT(SceInt32, sceDisplayGetVcount) {
     TRACY_FUNC(sceDisplayGetVcount);
-    return static_cast<SceInt32>(emuenv.display.vblank_count.load()) & 0xFFFF;
+    return static_cast<SceInt32>(emuenv.display.vcount_60hz.load()) & 0xFFFF;
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
