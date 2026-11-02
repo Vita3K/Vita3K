@@ -674,6 +674,15 @@ void take_screenshot(EmuEnvState &emuenv) {
     }
 }
 
+bool save_screenshot(EmuEnvState &emuenv, const std::string &path) {
+    uint32_t width, height;
+    const auto frame = get_current_app_frame(emuenv, width, height);
+    if (frame.empty())
+        return false;
+
+    return stbi_write_png(path.c_str(), width, height, 4, frame.data(), width * 4) == 1;
+}
+
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
     return load_app(main_module_id, emuenv, AppLaunchRequest{
                                                 .app_path = emuenv.io.app_path,

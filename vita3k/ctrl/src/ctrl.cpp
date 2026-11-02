@@ -213,6 +213,14 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvSta
     axes[1] += kb.axes[1];
     axes[2] += kb.axes[2];
     axes[3] += kb.axes[3];
+
+    auto &scripted = emuenv.ctrl.scripted_input;
+    if (scripted.length.update(emuenv.display.vblank_count.load()))
+        scripted = {};
+
+    *buttons |= ext ? scripted.buttons_ext : scripted.buttons;
+    for (int i = 0; i < 4; i++)
+        axes[i] += scripted.axes[i];
 }
 
 static std::array<ControllerBinding, 13> get_controller_bindings(EmuEnvState &emuenv) {

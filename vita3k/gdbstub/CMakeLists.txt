@@ -8,7 +8,7 @@ add_library(
 
 target_include_directories(gdbstub PUBLIC include)
 target_link_libraries(gdbstub PUBLIC cpu emuenv)
-target_link_libraries(gdbstub PRIVATE audio config io kernel)
+target_link_libraries(gdbstub PRIVATE audio config ctrl display io kernel)
 
 if(NOT ANDROID)
     add_executable(
