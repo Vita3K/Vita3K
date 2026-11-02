@@ -20,6 +20,8 @@
 
 #include <audio/state.h>
 #include <config/state.h>
+#include <ctrl/state.h>
+#include <display/state.h>
 #include <emuenv/state.h>
 #include <util/align.h>
 #include <util/log.h>
@@ -694,6 +696,12 @@ static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) {
     state.kernel.set_threads_suspended(false);
 
     state.gdb.current_thread = 0;
+    state.gdb.stop_after_frames = 0;
+    {
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        state.ctrl.scripted_input = {};
+        state.ctrl.scripted_touch = {};
+    }
     state.audio.switch_state(false);
     LOG_INFO("GDB Server Detached — breakpoints removed, threads resumed.");
     return "OK";
@@ -876,6 +884,12 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         }
         case 'c':
         case 'C': {
+            uint64_t stop_vcount = 0;
+            if (state.gdb.stop_after_frames != 0) {
+                stop_vcount = state.display.vblank_count.load() + state.gdb.stop_after_frames;
+                state.gdb.stop_after_frames = 0;
+            }
+
             // Resume the world. A thread something else holds stays stopped.
             state.kernel.debugger.has_break = false;
             state.kernel.debugger.break_watch_addr = 0;
@@ -884,14 +898,15 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // Wait for a breakpoint hit (condvar) or a Ctrl-C interrupt
             // (\x03 byte on the socket). The condvar fires instantly on
-            // breakpoint; the 100ms timeout is only for the interrupt poll.
+            // breakpoint; the timeout is only for the frame limit and the interrupt poll.
+            const auto poll_interval = std::chrono::milliseconds(stop_vcount != 0 ? 5 : 100);
             SceUID stopped_id = 0;
             bool did_break = false;
             bool interrupted = false;
             while (!did_break && !interrupted && !state.gdb.server_die) {
                 {
                     std::unique_lock<std::mutex> bk_lock(state.kernel.debugger.break_mutex);
-                    state.kernel.debugger.break_cv.wait_for(bk_lock, std::chrono::milliseconds(100), [&]() {
+                    state.kernel.debugger.break_cv.wait_for(bk_lock, poll_interval, [&]() {
                         return state.kernel.debugger.has_break.load() || state.gdb.server_die;
                     });
                 }
@@ -902,8 +917,13 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     did_break = true;
                 }
 
+                if (!did_break && stop_vcount != 0 && state.display.vblank_count.load() >= stop_vcount) {
+                    interrupted = true;
+                    stopped_id = started_thread(state);
+                }
+
                 // Check for gdb interrupt (Ctrl-C sends raw \x03).
-                if (!did_break) {
+                if (!did_break && !interrupted) {
                     fd_set read_set;
                     timeval tv = { 0, 0 };
                     FD_ZERO(&read_set);
@@ -930,7 +950,9 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
             }
 
-            // Stop the world. A thread inside a kernel call stops when the call returns.
+            // Stop the world. A thread inside a kernel call stops when the call returns, which can
+            // take until the next continue if the call waits on another thread, like
+            // sceGxmDisplayQueueAddEntry does, so the wait is limited. Such a thread runs no guest code.
             state.kernel.set_threads_suspended(true);
             const auto stop_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
             for (const ThreadStatePtr &thread : list_threads(state))
@@ -1314,6 +1336,165 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
     return "";
 }
 
+struct MonitorButton {
+    std::string_view name;
+    uint32_t buttons;
+    uint32_t buttons_ext;
+};
+
+// sceCtrlRead and sceCtrlReadBufferPositive2 report the shoulder buttons differently
+constexpr MonitorButton MONITOR_BUTTONS[] = {
+    { "select", SCE_CTRL_SELECT, SCE_CTRL_SELECT },
+    { "start", SCE_CTRL_START, SCE_CTRL_START },
+    { "up", SCE_CTRL_UP, SCE_CTRL_UP },
+    { "right", SCE_CTRL_RIGHT, SCE_CTRL_RIGHT },
+    { "down", SCE_CTRL_DOWN, SCE_CTRL_DOWN },
+    { "left", SCE_CTRL_LEFT, SCE_CTRL_LEFT },
+    { "triangle", SCE_CTRL_TRIANGLE, SCE_CTRL_TRIANGLE },
+    { "circle", SCE_CTRL_CIRCLE, SCE_CTRL_CIRCLE },
+    { "cross", SCE_CTRL_CROSS, SCE_CTRL_CROSS },
+    { "square", SCE_CTRL_SQUARE, SCE_CTRL_SQUARE },
+    { "l1", SCE_CTRL_L, SCE_CTRL_L1 },
+    { "r1", SCE_CTRL_R, SCE_CTRL_R1 },
+    { "l2", 0, SCE_CTRL_L2 },
+    { "r2", 0, SCE_CTRL_R2 },
+    { "l3", 0, SCE_CTRL_L3 },
+    { "r3", 0, SCE_CTRL_R3 },
+};
+
+constexpr uint32_t MONITOR_DEFAULT_FRAMES = 6;
+
+static const char *const MONITOR_HELP = R"(screenshot <path>                  save the current frame as a PNG
+press <button>[+<button>] [frames] press buttons, for 6 frames by default
+hold <button>[+<button>]           press buttons until released
+stick <left|right> <x> <y> [frames] move a stick, -1 to 1, until released by default
+touch <x> <y> [frames]             touch the front screen at a point in 960x544, until released by default
+release                            release all input
+stop-after <frames>                stop the next continue after this many frames
+Lengths start when the app reads the input. Buttons: select start up right down left triangle
+circle cross square l1 r1 l2 r2 l3 r3)";
+
+static bool parse_buttons(const std::string &names, uint32_t &buttons, uint32_t &buttons_ext) {
+    std::istringstream stream(names);
+    std::string name;
+    while (std::getline(stream, name, '+')) {
+        const auto button = std::find_if(std::begin(MONITOR_BUTTONS), std::end(MONITOR_BUTTONS), [&](const MonitorButton &entry) {
+            return entry.name == name;
+        });
+        if (button == std::end(MONITOR_BUTTONS))
+            return false;
+        buttons |= button->buttons;
+        buttons_ext |= button->buttons_ext;
+    }
+    return !names.empty();
+}
+
+static std::string run_monitor_command(EmuEnvState &state, const std::string &line) {
+    std::istringstream args(line);
+    std::string name;
+    args >> name;
+
+    // An optional trailing length. Fails on anything but a number or the end of the line.
+    const auto read_frames = [&](uint32_t &frames) {
+        args >> std::ws;
+        return args.eof() || (args >> frames && !args.fail());
+    };
+
+    if (name.empty() || name == "help")
+        return MONITOR_HELP;
+
+    if (name == "screenshot") {
+        std::string path;
+        std::getline(args >> std::ws, path);
+        if (path.empty())
+            return "usage: screenshot <path>";
+        if (!state.gdb.save_frame || !state.gdb.save_frame(path))
+            return "error: no frame could be saved";
+        return "saved " + path;
+    }
+
+    if (name == "press" || name == "hold") {
+        std::string names;
+        args >> names;
+        uint32_t buttons = 0;
+        uint32_t buttons_ext = 0;
+        uint32_t frames = name == "press" ? MONITOR_DEFAULT_FRAMES : 0;
+        if (!parse_buttons(names, buttons, buttons_ext) || (name == "press" && !read_frames(frames)))
+            return "error: bad arguments, see monitor help";
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        auto &scripted = state.ctrl.scripted_input;
+        scripted.buttons |= buttons;
+        scripted.buttons_ext |= buttons_ext;
+        scripted.length = { .frames = frames };
+        return "pressed " + names;
+    }
+
+    if (name == "stick") {
+        std::string side;
+        float x = 0;
+        float y = 0;
+        uint32_t frames = 0;
+        args >> side >> x >> y;
+        if ((side != "left" && side != "right") || args.fail() || !read_frames(frames))
+            return "error: bad arguments, see monitor help";
+        const int axis = side == "left" ? 0 : 2;
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        auto &scripted = state.ctrl.scripted_input;
+        scripted.axes[axis] = std::clamp(x, -1.f, 1.f);
+        scripted.axes[axis + 1] = std::clamp(y, -1.f, 1.f);
+        scripted.length = { .frames = frames };
+        return "moved " + side + " stick";
+    }
+
+    if (name == "touch") {
+        uint32_t x = 0;
+        uint32_t y = 0;
+        uint32_t frames = 0;
+        args >> x >> y;
+        if (args.fail() || x >= 960 || y >= 544 || !read_frames(frames))
+            return "error: bad arguments, see monitor help";
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        auto &scripted = state.ctrl.scripted_touch;
+        scripted.active = true;
+        scripted.x = static_cast<uint16_t>(x * 2);
+        scripted.y = static_cast<uint16_t>(y * 2);
+        scripted.length = { .frames = frames };
+        return "touching";
+    }
+
+    if (name == "release") {
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        state.ctrl.scripted_input = {};
+        state.ctrl.scripted_touch = {};
+        return "released";
+    }
+
+    if (name == "stop-after") {
+        uint32_t frames = 0;
+        if (!(args >> frames))
+            return "error: bad arguments, see monitor help";
+        state.gdb.stop_after_frames = frames;
+        return "stopping after " + std::to_string(frames) + " frames";
+    }
+
+    return "unknown command, see monitor help";
+}
+
+static std::string cmd_monitor(EmuEnvState &state, PacketCommand &command) {
+    const std::string content = content_string(command);
+    constexpr size_t PREFIX_LENGTH = sizeof("qRcmd,") - 1;
+
+    std::string line;
+    for (size_t i = PREFIX_LENGTH; i + 1 < content.size(); i += 2)
+        line.push_back(static_cast<char>(parse_hex(content.substr(i, 2))));
+
+    const std::string output = run_monitor_command(state, line) + "\n";
+    std::string reply;
+    for (const char c : output)
+        fmt::format_to(std::back_inserter(reply), "{:02x}", static_cast<uint8_t>(c));
+    return reply;
+}
+
 static std::string cmd_deprecated(EmuEnvState &state, PacketCommand &command) {
     LOG_GDB_PACKET(state, "GDB Server: Deprecated Packet. {}", content_string(command));
 
@@ -1359,6 +1540,7 @@ const static PacketFunctionBundle functions[] = {
     { "qAttached", cmd_attached },
     { "qTStatus", cmd_thread_status },
     { "qC", cmd_get_current_thread },
+    { "qRcmd,", cmd_monitor },
     { "q", cmd_unimplemented },
     { "Q", cmd_unimplemented },
 

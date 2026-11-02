@@ -67,6 +67,26 @@ Once connected:
 - `info threads` — list all threads
 - `detach` — disconnect cleanly (app resumes, can reconnect)
 
+## Screenshots and Input
+
+`monitor` commands let a script see the game and play it, without a window to focus. `monitor help` lists them:
+
+- `monitor screenshot /tmp/frame.png` — save the current frame as a PNG
+- `monitor press cross` — press buttons, `cross+up` for several, for 6 frames or the length given after them
+- `monitor hold cross` — press buttons until `monitor release`
+- `monitor stick left 0 -1` — move a stick, from -1 to 1, until `monitor release` or for the length given after the position
+- `monitor touch 480 272` — touch the front screen at a point in 960x544, likewise. Sending another position while it's held drags.
+- `monitor release` — release all input
+- `monitor stop-after 60` — stop the next `continue` after 60 frames
+
+GDB only sends commands while the target is stopped, so `stop-after` is what lets a script go on after a `continue`. This presses a button and looks at the result:
+
+```
+arm-none-eabi-gdb -batch path/to/eboot.elf -ex "target remote localhost:2159" -ex "monitor stop-after 300" -ex continue -ex "monitor press cross" -ex "monitor stop-after 60" -ex continue -ex "monitor screenshot /tmp/frame.png" -ex detach
+```
+
+The length of an input starts when the app first reads it, so it doesn't run out at a stop. It's still counted in frames of the display, so a stop in the middle of it shortens it. A relative path is relative to the working directory of Vita3K.
+
 ## Static Analysis
 
 Give GDB the decrypted `eboot.bin` ELF for its symbols, as in the commands above. `info files` and `qOffsets` show where the segments loaded, and where those match the ELF's `p_vaddr`, addresses in GDB and in a disassembler like Ghidra are the same. An offset for a patch file is the address minus the start of its segment.
@@ -84,6 +104,7 @@ Writing to memory from GDB also invalidates the JIT cache, so a change to code t
 - Module enumeration (`info sharedlibrary`)
 - Symbol-relative breakpoints via `qOffsets`
 - Ctrl-C interrupt during continue
+- Screenshots and controller and touch input through `monitor`
 - Disconnect and reconnect without restarting the emulator
 - target.xml with ARM + VFP description (for XML-capable GDB clients)
 
@@ -92,6 +113,7 @@ Writing to memory from GDB also invalidates the JIT cache, so a change to code t
 - Data watchpoints (Z2/Z3/Z4) work but are slow. Enabling a watchpoint switches Dynarmic into callback mode for every memory access, which is ~100-1000x slower than JIT-inlined loads/stores. Watching a variable that is written every frame will appear to freeze the app. Best used on rarely-written globals or in simple test apps. A page-protection-based approach would be needed for real-time watchpoints.
 - The stub reports the **real CPSR** (the Cortex-A9 runs both ARM and Thumb; the T-bit reflects the actual mode and is no longer force-set). Dynarmic's A32 core does not model the CPSR mode field, so `cpsr & 0x1f` reads `0` instead of `0x10` (User). This is cosmetic — GDB only needs the T-bit for ARM/Thumb decode and breakpoint kind, which is correct.
 - The GDB Thumb-breakpoint bit is stripped (`align_down(addr, 2)`) before recording the breakpoint. Modern GDB (13.x/15.x) actually sends an even address plus `kind=2`, so this is a defensive no-op there; it is required by older GDB (≤9.2) that set bit 0 of the address.
+- `monitor screenshot` reads the frame on the main thread, which has no OpenGL context, so it needs the Vulkan renderer, like the screenshot hotkey.
 - Modules from the boot image have no file of their own, so they aren't in the library list and GDB has no symbols for them.
 - Ctrl-C cannot cleanly interrupt a thread that is stuck in a crash loop (e.g. dynarmic's "Invalid read" spam from executing garbage code). GDB gets the stop after 200ms, but that thread keeps running, so its registers can't be trusted. Setting breakpoints *before* the crash point is the workaround.
 - Setting 3+ breakpoints in rapid succession and then continuing can cause a `Remote communication error` disconnect immediately after `vCont;c` — root cause not yet identified. Workaround: set one breakpoint at a time with a `c` in between, or use `disable`/`enable` on a single breakpoint to swap targets.
