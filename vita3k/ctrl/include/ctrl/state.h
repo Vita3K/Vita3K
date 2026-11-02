@@ -60,6 +60,37 @@ struct VirtualKeyboardState {
     float axes[4] = {};
 };
 
+// How long input sent by the debugger lasts. The length starts when the app first reads the input,
+// so input sent while the app is stopped isn't used up before it runs. 0 lasts until it's released.
+struct ScriptedLength {
+    uint32_t frames = 0;
+    uint64_t end_vcount = 0;
+
+    // Returns whether the length is over
+    bool update(uint64_t vcount) {
+        if (frames == 0)
+            return false;
+        if (end_vcount == 0)
+            end_vcount = vcount + frames;
+        return vcount >= end_vcount;
+    }
+};
+
+struct ScriptedInput {
+    uint32_t buttons = 0;
+    uint32_t buttons_ext = 0;
+    float axes[4] = {};
+    ScriptedLength length;
+};
+
+struct ScriptedTouch {
+    bool active = false;
+    bool down = false;
+    uint16_t x = 0; // Range is (0-1919)
+    uint16_t y = 0; // Range is (0-1087)
+    ScriptedLength length;
+};
+
 struct CtrlState {
     std::mutex mutex;
     ControllerList controllers;
@@ -74,6 +105,8 @@ struct CtrlState {
     uint64_t last_vcount[5] = {}; // sceCtrl ports.
 
     VirtualKeyboardState keyboard_state;
+    ScriptedInput scripted_input;
+    ScriptedTouch scripted_touch;
 
     std::atomic<bool> overlay_input_intercepted{ false };
 
@@ -93,6 +126,8 @@ struct CtrlState {
         input_mode_ext = SCE_CTRL_MODE_DIGITAL;
         std::fill_n(last_vcount, 5, 0);
         keyboard_state = {};
+        scripted_input = {};
+        scripted_touch = {};
         overlay_input_intercepted.store(false, std::memory_order_relaxed);
         overlay_mouse.x.store(0.f, std::memory_order_relaxed);
         overlay_mouse.y.store(0.f, std::memory_order_relaxed);

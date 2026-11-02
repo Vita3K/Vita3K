@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -61,6 +62,12 @@ struct GDBState {
     int thread_info_index = 0;
 
     SceUID current_thread = 0;
+
+    // Saves the current frame as a PNG. The frontend sets it, since the frame is read on its thread.
+    std::function<bool(const std::string &)> save_frame;
+
+    // Frames the next continue runs for before stopping, 0 for no limit
+    uint32_t stop_after_frames = 0;
 
     // vFile fd cache. Each open allocates a fresh fd and stores the
     // file's bytes in memory; pread/fstat/close operate on these buffers.
