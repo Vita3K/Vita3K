@@ -665,9 +665,9 @@ bool ThreadState::step() {
     return true;
 }
 
-void ThreadState::wait_until_not_running() {
+void ThreadState::wait_until_not_running(std::chrono::steady_clock::time_point deadline) {
     std::unique_lock<std::mutex> lock(mutex);
-    cv.wait(lock, [&] { return !runs(); });
+    cv.wait_until(lock, deadline, [&] { return !runs(); });
 }
 
 bool ThreadState::stopped_at_breakpoint() const {
