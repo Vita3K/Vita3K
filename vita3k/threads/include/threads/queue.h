@@ -87,6 +87,7 @@ public:
                 return;
             }
             queue_.push(item);
+            ++unfinished_;
         }
         condempty_.notify_one();
     }
@@ -100,7 +101,11 @@ public:
     }
 
     void abort() {
-        aborted = true;
+        {
+            // Without the lock a waiter could miss the notification between checking aborted and sleeping
+            std::unique_lock<std::mutex> mlock(mutex_);
+            aborted = true;
+        }
         condempty_.notify_all();
         cond_.notify_all();
     }
@@ -112,12 +117,28 @@ public:
     void reset() {
         std::queue<T> empty;
         std::swap(queue_, empty);
+        unfinished_ = 0;
         aborted = false;
     }
 
     void wait_empty() {
         std::unique_lock<std::mutex> mlock(mutex_);
         cond_.wait(mlock, [&]() { return aborted || queue_.empty(); });
+    }
+
+    // Marks one popped item as fully processed, see wait_done
+    void task_done() {
+        {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            --unfinished_;
+        }
+        cond_.notify_all();
+    }
+
+    // Unlike wait_empty, also waits for popped items that are still being processed
+    void wait_done() {
+        std::unique_lock<std::mutex> mlock(mutex_);
+        cond_.wait(mlock, [&]() { return aborted || unfinished_ == 0; });
     }
 
     Queue() = default;
@@ -133,6 +154,7 @@ private:
     std::condition_variable condempty_;
     std::queue<T> queue_;
     std::mutex mutex_;
+    size_t unfinished_ = 0;
     std::atomic<bool> aborted{ false };
 };
 

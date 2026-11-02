@@ -918,11 +918,15 @@ static void display_entry_thread(EmuEnvState &emuenv) {
             }
         }
 
+        // Free the queue slot before running the callback, which can wait for vblank.
+        // Holding the slot would also block sceGxmDisplayQueueAddEntry and lower the framerate.
+        display_queue.pop();
+
         // check if we're shutting down before calling run_guest_function to avoid deadlock
         if (emuenv.display.abort.load()) {
             LOG_DEBUG("Abort detected, removing display callback data and exiting");
-            display_queue.pop();
             free(emuenv.mem, display_callback->data);
+            display_queue.task_done();
             break;
         }
 
@@ -940,7 +944,7 @@ static void display_entry_thread(EmuEnvState &emuenv) {
             renderer::subject_done(new_sync, display_callback->new_sync_timestamp + 1);
 
         free(emuenv.mem, display_callback->data);
-        display_queue.pop();
+        display_queue.task_done();
     }
 }
 
@@ -2290,7 +2294,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
     TRACY_FUNC(sceGxmDisplayQueueFinish);
-    emuenv.gxm.display_queue.wait_empty();
+    emuenv.gxm.display_queue.wait_done();
 
     return 0;
 }
@@ -4907,7 +4911,7 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 EXPORT(int, sceGxmTerminate) {
     TRACY_FUNC(sceGxmTerminate);
     // Make sure everything is done in SDL side before killing Vita thread
-    emuenv.gxm.display_queue.wait_empty();
+    emuenv.gxm.display_queue.wait_done();
     gxm::destroy_all_contexts(emuenv, false);
     gxm::destroy_all_render_targets(emuenv, false);
     emuenv.gxm.display_queue.abort();
