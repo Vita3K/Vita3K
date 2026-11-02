@@ -960,6 +960,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     m_game_window->setIcon(windowIcon());
     if (m_live_area_widget)
         m_game_window->setGeometry(m_live_area_widget->geometry());
+    if (const QSize size = m_gui_settings->get_value(gui::gw_size).toSize(); size.isValid() && m_gui_settings->get_value(gui::gw_rememberSize).toBool())
+        m_game_window->resize(size);
 
     if (m_live_area_widget) {
         m_live_area_widget->removeEventFilter(this);
@@ -1076,6 +1078,8 @@ void MainWindow::on_game_closed() {
         return;
 
     LOG_INFO("Game closed: {}", emuenv.current_app_title);
+    if (m_gui_settings->get_value(gui::gw_rememberSize).toBool() && m_game_window->visibility() == QWindow::Windowed)
+        m_gui_settings->set_value(gui::gw_size, m_game_window->size());
 
     m_game_window->stop_ui_updates();
     m_app_session.stop(m_is_app_closing

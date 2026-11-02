@@ -114,6 +114,7 @@ public:
     QString confirm_exit_app;
     QString warn_admin_privileges;
     QString windows_rounded_corners;
+    QString remember_game_window_size;
     QString log_buffer_size;
     QString log_font;
     QString gui_stylesheet;
