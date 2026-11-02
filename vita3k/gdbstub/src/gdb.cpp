@@ -712,6 +712,32 @@ static std::string log_stack_traceback(EmuEnvState &state, CPUState &cpu) {
     return str;
 }
 
+// The thread to report for a stop no thread asked for. While module_start runs, the main thread
+// exists but hasn't started, and gdb can't step it.
+static SceUID started_thread(EmuEnvState &state) {
+    const auto guard = std::lock_guard(state.kernel.mutex);
+    const auto started = [](const ThreadStatePtr &thread) {
+        const ThreadStatus status = thread->get_status();
+        return status != ThreadStatus::dormant && status != ThreadStatus::deleted;
+    };
+    const auto &threads = state.kernel.threads;
+    if (const auto it = threads.find(state.gdb.current_thread); it != threads.end() && started(it->second))
+        return it->first;
+    SceUID chosen = 0;
+    for (const auto &[uid, thread] : threads) {
+        if (!started(thread))
+            continue;
+        // The main thread has the title ID for a name
+        if (thread->name == state.io.title_id)
+            return uid;
+        if (chosen == 0)
+            chosen = uid;
+    }
+    if (chosen == 0 && !threads.empty())
+        chosen = threads.begin()->first;
+    return chosen;
+}
+
 static std::vector<ThreadStatePtr> list_threads(EmuEnvState &state) {
     const auto guard = std::lock_guard(state.kernel.mutex);
     std::vector<ThreadStatePtr> threads;
@@ -888,9 +914,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                             recv(state.gdb.client_socket, &byte, 1, 0);
                             interrupted = true;
                             LOG_INFO("GDB interrupt received (Ctrl-C)");
-                            auto lock = std::unique_lock(state.kernel.mutex);
-                            if (!state.kernel.threads.empty())
-                                stopped_id = state.kernel.threads.begin()->first;
+                            stopped_id = started_thread(state);
                         }
                     }
                 }
@@ -973,20 +997,7 @@ static std::string cmd_offsets(EmuEnvState &state, PacketCommand &command) {
 static std::string cmd_thread_status(EmuEnvState &state, PacketCommand &command) { return "T0"; }
 
 static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) {
-    // Point gdb at the main app thread. The main thread is created with the
-    // title_id as its name (see interface.cpp load_app).
-    const auto guard = std::lock_guard(state.kernel.mutex);
-    SceUID chosen = 0;
-    for (const auto &[uid, thread] : state.kernel.threads) {
-        if (thread->name == state.io.title_id) {
-            chosen = uid;
-            break;
-        }
-        if (chosen == 0 && thread->cpu->get_pc() != 0)
-            chosen = uid;
-    }
-    if (chosen == 0 && !state.kernel.threads.empty())
-        chosen = state.kernel.threads.begin()->first;
+    const SceUID chosen = started_thread(state);
     if (chosen == 0)
         return "S05";
     state.gdb.current_thread = chosen;
