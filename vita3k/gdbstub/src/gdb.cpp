@@ -1534,10 +1534,18 @@ void server_open(EmuEnvState &state) {
 
     LOG_INFO("Starting GDB Server...");
 
+    // The threads wait for the debugger's first continue, which can't come without a server
+    const auto fail = [&](const char *reason) {
+        LOG_ERROR("GDB Server Failed: {}", reason);
+        close_socket(state.gdb.listen_socket);
+        cleanup_gdb_platform(state.gdb);
+        state.kernel.set_threads_suspended(false);
+    };
+
 #ifdef _WIN32
     int32_t err = WSAStartup(MAKEWORD(2, 2), &state.gdb.wsaData);
     if (err) {
-        LOG_ERROR("GDB Server Failed: Could not start WSA service.");
+        fail("Could not start WSA service.");
         return;
     }
     state.gdb.winsock_started = true;
@@ -1545,8 +1553,7 @@ void server_open(EmuEnvState &state) {
 
     state.gdb.listen_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (state.gdb.listen_socket == -1) {
-        LOG_ERROR("GDB Server Failed: Could not create socket.");
-        cleanup_gdb_platform(state.gdb);
+        fail("Could not create socket.");
         return;
     }
 
@@ -1566,22 +1573,18 @@ void server_open(EmuEnvState &state) {
 #endif
 
     if (bind(state.gdb.listen_socket, (sockaddr *)&socket_address, sizeof(socket_address)) == -1) {
-        LOG_ERROR("GDB Server Failed: Could not bind socket.");
-        close_socket(state.gdb.listen_socket);
-        cleanup_gdb_platform(state.gdb);
+        fail("Could not bind socket.");
         return;
     }
 
     if (listen(state.gdb.listen_socket, 1) == -1) {
-        LOG_ERROR("GDB Server Failed: Could not listen on socket.");
-        close_socket(state.gdb.listen_socket);
-        cleanup_gdb_platform(state.gdb);
+        fail("Could not listen on socket.");
         return;
     }
 
     state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
 
-    LOG_INFO("GDB Server is listening on port {}", GDB_SERVER_PORT);
+    LOG_WARN("GDB Server is listening on port {}. The app waits for a client to connect and continue.", GDB_SERVER_PORT);
 }
 
 void server_close(EmuEnvState &state) {
