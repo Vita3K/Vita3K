@@ -25,6 +25,7 @@
 #include <mem/ptr.h>
 
 #include <algorithm>
+#include <chrono>
 #include <condition_variable>
 #include <initializer_list>
 #include <memory>
@@ -167,7 +168,7 @@ struct ThreadState final : public WithUidClass<SyncPrimitive, UidClass::thread> 
     // dormant or deleted. Returns false and doesn't step while something else holds the thread.
     bool step();
     // Waits until the thread doesn't run guest code
-    void wait_until_not_running();
+    void wait_until_not_running(std::chrono::steady_clock::time_point deadline);
     // Whether the debugger holds the thread and it has stopped. Once the debugger has let every
     // thread go, only a breakpoint or a finished step holds a thread for it again.
     bool stopped_at_breakpoint() const;

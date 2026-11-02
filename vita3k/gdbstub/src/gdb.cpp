@@ -932,8 +932,9 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // Stop the world. A thread inside a kernel call stops when the call returns.
             state.kernel.set_threads_suspended(true);
+            const auto stop_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
             for (const ThreadStatePtr &thread : list_threads(state))
-                thread->wait_until_not_running();
+                thread->wait_until_not_running(stop_deadline);
             state.audio.switch_state(true);
 
             state.gdb.current_thread = stopped_id;
