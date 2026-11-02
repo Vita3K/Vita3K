@@ -379,6 +379,10 @@ static std::string build_library_list_xml(EmuEnvState &state, bool svr4) {
                 first = false;
                 continue;
             }
+            // A module from the boot image has no file of its own, and gdb stops loading
+            // symbols with an error when it can't open one
+            if (module->elf_bytes.empty())
+                continue;
             // Prefer the real Vita-style path so gdb can vFile:open it and
             // auto-load the .suprx symbols. Fall back to module name for any
             // module loaded without a recorded path.
