@@ -625,6 +625,8 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
         LOG_INFO("Vulkan device: {}", physical_device_properties.deviceName.data());
         LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.vendorID, physical_device_properties.driverVersion));
+        if (physical_device_properties.vendorID == 0x13B5)
+            LOG_INFO("ARM Mali GPU detected");
     }
 
 #ifdef __ANDROID__
@@ -711,13 +713,30 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 #endif
         };
 
+        // Mali drivers (e.g. Mali-G68 on the Exynos 1380) often only expose the pre-promotion
+        // VK_ARM_rasterization_order_attachment_access. It is an exact alias of the EXT one
+        // (same structs, same flag values), so it is enabled as a fallback.
+        constexpr const char *arm_rasterization_order_ext = "VK_ARM_rasterization_order_attachment_access";
+        bool has_ext_rasterization_order = false;
+        bool has_arm_rasterization_order = false;
+
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
             auto it = optional_extensions.find(ext.extensionName.data());
             if (it != optional_extensions.end()) {
                 // this extension is available on the GPU
                 *it->second = true;
                 device_extensions.push_back(it->first.data());
+                if (it->first == VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME)
+                    has_ext_rasterization_order = true;
+            } else if (std::string_view(ext.extensionName.data()) == arm_rasterization_order_ext) {
+                has_arm_rasterization_order = true;
             }
+        }
+
+        if (!has_ext_rasterization_order && has_arm_rasterization_order) {
+            support_rasterized_order_access = true;
+            device_extensions.push_back(arm_rasterization_order_ext);
+            LOG_INFO("Using VK_ARM_rasterization_order_attachment_access for coherent framebuffer fetch");
         }
 
         bool support_memory_mapping = true;
