@@ -1001,6 +1001,31 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         m_game_container = nullptr;
     };
 
+    // The rest of the boot blocks the event loop, but on Wayland presenting to a window
+    // the compositor hasn't configured yet is a protocol error that closes the connection.
+    QTimer expose_timeout;
+    expose_timeout.setSingleShot(true);
+    expose_timeout.start(std::chrono::seconds(2));
+    // Processing events can close the window or boot another app that replaces it.
+    const QPointer<GameWindow> game_window = m_game_window;
+    const auto waiting_for_expose = [&] {
+        return game_window && m_game_window == game_window && !m_game_window->isExposed();
+    };
+    while (waiting_for_expose() && expose_timeout.isActive())
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::WaitForMoreEvents);
+
+    // The compositor may not expose the window for a while, e.g. on a hidden workspace.
+    // Close events are user input, so let input through to allow closing the game window.
+    if (waiting_for_expose() && QGuiApplication::platformName().startsWith(QStringLiteral("wayland"))) {
+        setEnabled(false);
+        while (waiting_for_expose())
+            QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents);
+        setEnabled(true);
+    }
+
+    if (!game_window || m_game_window != game_window)
+        return std::nullopt;
+
     if (emuenv.backend_renderer == renderer::Backend::OpenGL) {
         if (!m_game_window->create_gl_context()) {
             abort_boot(tr("Could not create OpenGL context.\nDoes your GPU support at least OpenGL 4.4?"));
