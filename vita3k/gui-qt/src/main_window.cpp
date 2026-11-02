@@ -984,6 +984,20 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     connect(m_game_window, &GameWindow::closed,
         this, &MainWindow::on_game_closed);
 
+    // The rest of the boot blocks the event loop, for as long as a debugger takes to continue with
+    // the gdb stub, but on Wayland presenting to a window the compositor hasn't configured yet is
+    // a protocol error that closes the connection. The compositor always answers, while elsewhere
+    // a window can stay unexposed, e.g. on another workspace, and presenting to it is harmless.
+    const bool must_expose = QGuiApplication::platformName().startsWith(QStringLiteral("wayland"));
+    QTimer expose_timeout;
+    expose_timeout.setSingleShot(true);
+    expose_timeout.start(std::chrono::seconds(2));
+    while (m_game_window && !m_game_window->isExposed() && (must_expose || expose_timeout.isActive()))
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::WaitForMoreEvents);
+
+    if (!m_game_window)
+        return std::nullopt;
+
     const auto abort_boot = [&](const QString &msg) {
         QMessageBox::critical(this, tr("Error"), msg);
         m_app_session.stop(app::AppSessionStopReason::LaunchFailure);
