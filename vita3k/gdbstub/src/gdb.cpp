@@ -701,6 +701,12 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
+    const uint32_t bp_size = (kind == 2 || kind == 3) ? 2 : 4;
+    if (!check_memory_region(address, bp_size, state.mem)) {
+        LOG_WARN("GDB Server Breakpoint rejected — address {} not mapped.", log_hex(address));
+        return "E01";
+    }
+
     LOG_INFO("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
 
     // kind is 2 for a 16-bit Thumb instruction, 3 for a 32-bit one and 4 for ARM. A 16-bit BKPT
