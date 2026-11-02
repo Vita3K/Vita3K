@@ -656,6 +656,8 @@ static std::string cmd_write_memory(EmuEnvState &state, PacketCommand &command) 
     for (uint32_t a = 0; a < length; a++) {
         *Ptr<uint8_t>(address + a).get(state.mem) = static_cast<uint8_t>(parse_hex(hex_data.substr(a * 2, 2)));
     }
+    // The write may be to code the JIT already compiled
+    state.kernel.invalidate_jit_cache(address, length);
 
     return "OK";
 }
@@ -677,6 +679,8 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
     for (uint32_t a = 0; a < length; a++) {
         *Ptr<uint8_t>(address + a).get(state.mem) = data[a];
     }
+    // The write may be to code the JIT already compiled
+    state.kernel.invalidate_jit_cache(address, length);
 
     return "OK";
 }
