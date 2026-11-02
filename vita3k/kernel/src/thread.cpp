@@ -707,8 +707,9 @@ void ThreadState::set_suspended(bool suspended) {
 bool ThreadState::step() {
     std::unique_lock<std::mutex> lock(thread_mutex);
     // A pause or a ForVM suspend holds the thread, so it doesn't step. One that comes after this
-    // check delays the step until it ends.
-    if (kernel.is_threads_paused() || vm_suspend_count > 0)
+    // check delays the step until it ends. A thread that hasn't started has nothing to step, and
+    // would lose its hold.
+    if (kernel.is_threads_paused() || vm_suspend_count > 0 || status == ThreadStatus::dormant)
         return false;
     // A thread with no run, or one that is ending, has no instruction to step, and the wait ends
     // once it is dormant or deleted
