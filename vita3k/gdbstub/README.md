@@ -22,6 +22,14 @@ arm-none-eabi-gdb path/to/eboot.elf -ex "target remote localhost:2159"
 
 This GDB version has XML support, so VFP registers are available.
 
+### gdb
+
+A plain `gdb` works too when it's built with `--enable-targets=all` and `--with-expat`, which you can check with `gdb --configuration`. Arch's `gdb` package is, and some distributions call such a build `gdb-multiarch`:
+
+```
+gdb path/to/eboot.elf -ex "target remote localhost:2159"
+```
+
 ### arm-vita-eabi-gdb (VitaSDK)
 
 ```
