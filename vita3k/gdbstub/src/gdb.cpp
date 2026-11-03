@@ -1048,6 +1048,9 @@ static std::string cmd_get_first_thread(EmuEnvState &state, PacketCommand &comma
     const auto guard = std::lock_guard(state.kernel.mutex);
     state.gdb.thread_info_index = 0;
 
+    if (state.kernel.threads.empty())
+        return "l";
+
     return 'm' + to_hex(state.kernel.threads.begin()->first);
 }
 
@@ -1055,8 +1058,9 @@ static std::string cmd_get_next_thread(EmuEnvState &state, PacketCommand &comman
     const auto guard = std::lock_guard(state.kernel.mutex);
     std::string str;
 
+    // Threads can exit between the packets, leaving the index past the end
     ++state.gdb.thread_info_index;
-    if (state.gdb.thread_info_index == state.kernel.threads.size()) {
+    if (state.gdb.thread_info_index >= state.kernel.threads.size()) {
         str += 'l';
     } else {
         auto iter = state.kernel.threads.begin();
