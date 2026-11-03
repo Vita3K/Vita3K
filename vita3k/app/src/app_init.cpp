@@ -98,6 +98,14 @@ static overlay::button_states poll_overlay_input(EmuEnvState &emuenv) {
     axes[2] += kb.axes[2];
     axes[3] += kb.axes[3];
 
+    // Input from the debugger, so a script can work system dialogs too
+    auto &scripted = emuenv.ctrl.scripted_input;
+    if (scripted.length.update(emuenv.display.vblank_count.load()))
+        scripted = {};
+    buttons |= scripted.buttons_ext;
+    for (int i = 0; i < 4; i++)
+        axes[i] += scripted.axes[i];
+
     for (const auto &[_, controller] : emuenv.ctrl.controllers) {
         SDL_Gamepad *gp = controller.controller.get();
         for (const auto &binding : get_controller_bindings_ext(emuenv)) {
@@ -637,8 +645,22 @@ void apply_renderer_config(EmuEnvState &emuenv) {
             }
         },
         [&emuenv]() -> overlay::overlay_touch_state {
-            auto &mouse = emuenv.ctrl.overlay_mouse;
             overlay::overlay_touch_state state;
+            {
+                std::lock_guard<std::mutex> lock(emuenv.ctrl.mutex);
+                auto &scripted = emuenv.ctrl.scripted_touch;
+                if (scripted.active && scripted.length.update(emuenv.display.vblank_count.load()))
+                    scripted = {};
+                if (scripted.active) {
+                    // The touch panel is twice the screen's resolution
+                    state.x = scripted.x / 2.f;
+                    state.y = scripted.y / 2.f;
+                    state.pressed = true;
+                    return state;
+                }
+            }
+
+            auto &mouse = emuenv.ctrl.overlay_mouse;
             state.x = mouse.x.load(std::memory_order_relaxed);
             state.y = mouse.y.load(std::memory_order_relaxed);
             state.pressed = mouse.pressed.load(std::memory_order_relaxed);
