@@ -2245,12 +2245,17 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     if (!oldBuffer || !newBuffer || (!callbackData && data_size != 0))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    // The firmware waits for a free slot before it reserves the sync objects
-    const std::lock_guard<std::mutex> add_guard(emuenv.gxm.display_queue_add_mutex);
-    if (emuenv.gxm.display_queue_closed)
-        return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
-    if (!emuenv.gxm.display_queue.wait_space())
-        return 0;
+    // The firmware waits for a free slot before it reserves the sync objects. The thread waits here
+    // for another thread's addition and for the slot, and the debugger can stop the process meanwhile.
+    std::unique_lock<std::mutex> add_lock(emuenv.gxm.display_queue_add_mutex, std::defer_lock);
+    {
+        const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
+        add_lock.lock();
+        if (emuenv.gxm.display_queue_closed)
+            return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
+        if (!emuenv.gxm.display_queue.wait_space())
+            return 0;
+    }
 
     const Address address = alloc(emuenv.mem, data_size, __FUNCTION__);
     memcpy(Ptr<void>(address).get(emuenv.mem), callbackData.get(emuenv.mem), data_size);
@@ -2302,6 +2307,7 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
     TRACY_FUNC(sceGxmDisplayQueueFinish);
     if (!emuenv.gxm.params.displayQueueCallback)
         return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
+    const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
     emuenv.gxm.display_queue.wait_empty();
 
     return 0;
@@ -2723,6 +2729,7 @@ EXPORT(int, sceGxmFinish, SceGxmContext *context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     // Wait on this context's rendering finish code.
+    const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
     renderer::finish(*emuenv.renderer, renderer_context);
 
     return 0;
@@ -3027,6 +3034,7 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
     std::uint32_t volatile *value = notification->address.get(emuenv.mem);
     const std::uint32_t target_value = notification->value;
 
+    const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
     std::unique_lock<std::mutex> lock(emuenv.renderer->notification_mutex);
     if (*value != target_value) {
         emuenv.renderer->notification_ready.wait(lock, [&]() { return *value == target_value || emuenv.display.abort.load(); });
