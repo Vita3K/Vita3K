@@ -59,7 +59,6 @@ private Q_SLOTS:
 private:
     EmuEnvState &m_emuenv;
     AppsListTable *m_table{};
-    QString m_search_text;
 
     std::vector<app::AppEntry> m_apps;
 };
