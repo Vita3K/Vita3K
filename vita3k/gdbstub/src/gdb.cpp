@@ -947,10 +947,17 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     FD_SET(state.gdb.client_socket, &read_set);
                     if (select(state.gdb.client_socket + 1, &read_set, nullptr, nullptr, &tv) > 0) {
                         char byte;
-                        if (recv(state.gdb.client_socket, &byte, 1, MSG_PEEK) == 1 && byte == '\x03') {
+                        const auto peeked = recv(state.gdb.client_socket, &byte, 1, MSG_PEEK);
+                        if (peeked == 1 && byte == '\x03') {
                             recv(state.gdb.client_socket, &byte, 1, 0);
                             interrupted = true;
                             LOG_INFO("GDB interrupt received (Ctrl-C)");
+                            stopped_id = started_thread(state);
+                        } else if (peeked <= 0) {
+                            // The client is gone. Stop like an interrupt; the next read sees the
+                            // closed connection and resumes the app.
+                            interrupted = true;
+                            LOG_INFO("GDB client disconnected during continue");
                             stopped_id = started_thread(state);
                         }
                     }
