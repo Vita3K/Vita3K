@@ -175,3 +175,6 @@ enum SceAppUtilErrorCode : uint32_t {
 
 std::string construct_savedata0_path(const std::string &data, const char *ext = "");
 std::string construct_slotparam_path(const unsigned int data);
+
+struct EmuEnvState;
+bool sdslot_read_slot_param(EmuEnvState &emuenv, uint32_t slot_id, SceAppUtilSaveDataSlotParam *param, const char *export_name);
