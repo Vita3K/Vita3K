@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <chrono>
 #include <cstdlib>
 #include <string>
 #include <thread>
@@ -28,6 +29,10 @@
 #include <gtest/gtest.h>
 
 #include <util/exit_code.h>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 struct AppLaunchRequest;
 
@@ -65,3 +70,24 @@ TEST(gdb_state, server_close_is_safe_when_server_thread_also_closes) {
         },
         testing::ExitedWithCode(0), "");
 }
+
+#ifndef _WIN32
+// closesocket() already wakes accept() on Windows
+TEST(gdb_state, server_close_wakes_server_waiting_for_client) {
+    // Static initialisers start threads, and a forked child can hang on what they hold
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_EXIT(
+        {
+            // A hang in the join fails the test instead of blocking it
+            alarm(10);
+            EmuEnvState state;
+            server_open(state);
+            if (!state.gdb.server_thread)
+                std::exit(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            server_close(state);
+            std::exit(0);
+        },
+        testing::ExitedWithCode(0), "");
+}
+#endif

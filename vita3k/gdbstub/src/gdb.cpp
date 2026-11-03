@@ -66,6 +66,8 @@ static void close_socket(socket_t &socket) {
 #ifdef _WIN32
     closesocket(socket);
 #else
+    // Closing alone doesn't wake a thread blocked in accept(), which would hang exit until a client connects
+    shutdown(socket, SHUT_RDWR);
     close(socket);
 #endif
     socket = BAD_SOCK;
