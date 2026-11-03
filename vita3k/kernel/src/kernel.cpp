@@ -188,6 +188,8 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
         // A new thread starts with the holds every thread has
         thread->set_paused(threads_paused);
         thread->set_suspended(threads_suspended);
+        if (process_exiting)
+            thread->remove();
     }
 
     ThreadParams params;
@@ -222,6 +224,7 @@ void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> 
 void KernelState::process_exit() {
     {
         std::lock_guard<std::mutex> lock(mutex);
+        process_exiting = true;
         for (auto &[_, thread] : threads)
             thread->remove();
     }
@@ -294,6 +297,7 @@ void KernelState::deinit(MemState &mem) {
     next_uid = 1;
 
     threads_paused = false;
+    process_exiting = false;
 }
 
 SceKernelModuleInfo *KernelState::find_module_by_addr(Address address) {

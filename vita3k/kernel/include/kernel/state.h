@@ -208,4 +208,6 @@ private:
     std::atomic<SceUID> next_uid{ 1 };
     bool threads_paused = false;
     bool threads_suspended = false;
+    // The process is exiting, so a thread still being created ends as well
+    bool process_exiting = false;
 };
