@@ -1060,6 +1060,7 @@ void VKState::cleanup() {
 
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         frames[i].rendered_fences.clear();
+        frames[i].submitted_index_wrap_generations.clear();
         for (auto &descriptor : frames[i].vert_descriptors)
             release_descriptor_sets(descriptor);
         for (auto &descriptor : frames[i].frag_descriptors)

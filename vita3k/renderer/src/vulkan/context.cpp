@@ -657,7 +657,10 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         state.general_queue.submit(submit_info, fence);
     }
     cmdbuffers_to_submit.clear();
-    state.frame().rendered_fences.push_back(fence);
+    FrameObject &frame = state.frame();
+    frame.rendered_fences.push_back(fence);
+    if (!state.features.enable_memory_mapping)
+        frame.submitted_index_wrap_generations.emplace_back(&index_stream_ring_buffer, index_stream_ring_buffer.current_wrap_generation());
 
     if (state.features.enable_memory_mapping) {
         // send it to the wait queue
@@ -760,6 +763,10 @@ void new_frame(VKContext &context) {
                 return;
             }
         }
+
+        for (const auto &[ring, generation] : frame.submitted_index_wrap_generations)
+            ring->retire_wrap_generation(generation);
+        frame.submitted_index_wrap_generations.clear();
 
         // reset the fences in both case (the wait thread does not do that as they can still be used)
         device.resetFences(frame.rendered_fences);

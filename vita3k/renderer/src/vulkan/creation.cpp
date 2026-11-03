@@ -153,6 +153,12 @@ VKContext::~VKContext() {
     if (gpu_request_wait_thread.joinable())
         gpu_request_wait_thread.join();
 
+    for (auto &frame : state.frames) {
+        std::erase_if(frame.submitted_index_wrap_generations, [this](const auto &entry) {
+            return entry.first == &index_stream_ring_buffer;
+        });
+    }
+
     for (auto pool : visibility_query_pools)
         state.device.destroy(pool);
     visibility_buffers.clear();

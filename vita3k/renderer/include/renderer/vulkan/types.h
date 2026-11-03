@@ -22,6 +22,8 @@
 #include <shader/uniform_block.h>
 #include <vkutil/objects.h>
 
+#include <utility>
+
 struct MemState;
 
 namespace renderer::vulkan {
@@ -102,6 +104,8 @@ struct FrameObject {
     vk::CommandPool prerender_pool;
 
     std::vector<vk::Fence> rendered_fences;
+    // Each submitted generation belongs to its own context's index ring.
+    std::vector<std::pair<vkutil::RingBuffer *, uint64_t>> submitted_index_wrap_generations;
     // equals to context.frame_timestamp when the frame object is used
     uint64_t frame_timestamp;
 
