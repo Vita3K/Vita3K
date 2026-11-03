@@ -691,7 +691,7 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
     return "OK";
 }
 
-static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) {
+static void release_app(EmuEnvState &state) {
     state.kernel.debugger.remove_all_breakpoints(state.mem);
     state.kernel.set_threads_suspended(false);
 
@@ -703,6 +703,10 @@ static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) {
         state.ctrl.scripted_touch = {};
     }
     state.audio.switch_state(false);
+}
+
+static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) {
+    release_app(state);
     LOG_INFO("GDB Server Detached — breakpoints removed, threads resumed.");
     return "OK";
 }
@@ -752,6 +756,17 @@ static std::vector<ThreadStatePtr> list_threads(EmuEnvState &state) {
     for (const auto &[_, thread] : state.kernel.threads)
         threads.push_back(thread);
     return threads;
+}
+
+// A thread inside a kernel call stops when the call returns, which can take until the next continue
+// if the call waits on another thread, like sceGxmDisplayQueueAddEntry does, so the wait is limited.
+// Such a thread runs no guest code.
+static void stop_app(EmuEnvState &state) {
+    state.kernel.set_threads_suspended(true);
+    const auto stop_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
+    for (const ThreadStatePtr &thread : list_threads(state))
+        thread->wait_until_not_running(stop_deadline);
+    state.audio.switch_state(true);
 }
 
 static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
@@ -950,14 +965,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
             }
 
-            // Stop the world. A thread inside a kernel call stops when the call returns, which can
-            // take until the next continue if the call waits on another thread, like
-            // sceGxmDisplayQueueAddEntry does, so the wait is limited. Such a thread runs no guest code.
-            state.kernel.set_threads_suspended(true);
-            const auto stop_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
-            for (const ThreadStatePtr &thread : list_threads(state))
-                thread->wait_until_not_running(stop_deadline);
-            state.audio.switch_state(true);
+            stop_app(state);
 
             state.gdb.current_thread = stopped_id;
             return stop_reply(stopped_id);
@@ -1676,6 +1684,9 @@ static void server_listen(EmuEnvState &state) {
 
         LOG_INFO("GDB Server Received Connection");
 
+        // The app runs until a client attaches, unless it waits for the debugger
+        stop_app(state);
+
         // A reply goes out at once, without waiting for the ack of the '+' sent before it
         const int nodelay = 1;
         setsockopt(state.gdb.client_socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char *>(&nodelay), sizeof(nodelay));
@@ -1694,8 +1705,11 @@ static void server_listen(EmuEnvState &state) {
         state.gdb.vfile_buffers.clear();
         state.gdb.next_vfile_fd = 1;
 
-        if (!state.gdb.server_die)
+        if (!state.gdb.server_die) {
+            // A client that quits without detaching would otherwise leave the app stopped
+            release_app(state);
             LOG_INFO("GDB Server Client Disconnected, waiting for new connection...");
+        }
     }
 
     // The owning thread handles server_close(); doing it here would race
@@ -1717,7 +1731,7 @@ void server_open(EmuEnvState &state) {
 
     LOG_INFO("Starting GDB Server...");
 
-    // The threads wait for the debugger's first continue, which can't come without a server
+    // The threads may wait for the debugger's first continue, which can't come without a server
     const auto fail = [&](const char *reason) {
         LOG_ERROR("GDB Server Failed: {}", reason);
         close_socket(state.gdb.listen_socket);
@@ -1767,7 +1781,10 @@ void server_open(EmuEnvState &state) {
 
     state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
 
-    LOG_WARN("GDB Server is listening on port {}. The app waits for a client to connect and continue.", GDB_SERVER_PORT);
+    if (state.cfg.wait_for_debugger)
+        LOG_WARN("GDB Server is listening on port {}. The app waits for a client to connect and continue.", GDB_SERVER_PORT);
+    else
+        LOG_INFO("GDB Server is listening on port {}", GDB_SERVER_PORT);
 }
 
 void server_close(EmuEnvState &state) {

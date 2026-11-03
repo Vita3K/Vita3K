@@ -697,8 +697,9 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchR
     }
 
     if (emuenv.cfg.gdbstub) {
-        // The threads wait for the debugger's first continue
-        emuenv.kernel.set_threads_suspended(true);
+        // Otherwise the app runs until a debugger attaches
+        if (emuenv.cfg.wait_for_debugger)
+            emuenv.kernel.set_threads_suspended(true);
         server_open(emuenv);
     }
 
