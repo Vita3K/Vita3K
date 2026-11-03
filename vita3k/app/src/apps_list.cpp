@@ -408,9 +408,9 @@ AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id) {
         info.app_savedata = title_id;
         info.app_short_title = title_id;
         info.app_title = title_id;
-        info.app_version = "N/A";
-        info.app_category = "N/A";
-        info.app_parental_level = "N/A";
+        info.app_version = "0.00";
+        info.app_category = "-";
+        info.app_parental_level = "0";
     }
 
     AppEntry app;
