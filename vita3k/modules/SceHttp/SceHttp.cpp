@@ -274,7 +274,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
             // Even if we didnt get the ip, we should send the ip obtained callback
             for (auto &callback : emuenv.netctl.callbacks) {
                 if (callback.pc != 0) {
-                    thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_IPOBTAINED, callback.arg });
+                    thread->call_guest(callback.pc, { SCE_NET_CTL_EVENT_TYPE_IPOBTAINED, callback.arg });
                 }
             }
             // Need to push the connection here so the id exists when "sending" the request
@@ -290,7 +290,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     // We got the ip, send the IPOPBTAINED callback event
     for (auto &callback : emuenv.netctl.callbacks) {
         if (callback.pc != 0) {
-            thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_IPOBTAINED, callback.arg });
+            thread->call_guest(callback.pc, { SCE_NET_CTL_EVENT_TYPE_IPOBTAINED, callback.arg });
         }
     }
 

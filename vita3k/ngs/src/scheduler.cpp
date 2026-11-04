@@ -180,7 +180,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         case PendingType::ReleaseRack:
             release_rack(*op.release_data.state, mem, op.system, op.release_data.rack);
             // run callback (we know it is defined)
-            kern.get_thread(thread_id)->run_callback(op.release_data.callback, { Ptr<void>(op.release_data.rack, mem).address() });
+            kern.get_thread(thread_id)->call_guest(op.release_data.callback, { Ptr<void>(op.release_data.rack, mem).address() });
             break;
         }
 

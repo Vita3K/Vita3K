@@ -185,8 +185,7 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     {
         const std::lock_guard<std::mutex> lock(mutex);
         threads.emplace(thread->id, thread);
-        // A new thread starts with the holds every thread has
-        thread->set_paused(threads_paused);
+        // A new thread starts with the debugger's hold every thread has, and sees the pause too
         thread->set_suspended(threads_suspended);
         if (process_exiting)
             thread->remove();
@@ -237,9 +236,10 @@ void KernelState::set_threads_paused(bool paused) {
     const std::lock_guard<std::mutex> lock(mutex);
     if (threads_paused == paused)
         return;
+    // Set before the threads see it, so a thread that checks its holds meanwhile already sees it
     threads_paused = paused;
     for (auto &[_, thread] : threads)
-        thread->set_paused(paused);
+        thread->pause_changed();
 }
 
 void KernelState::set_threads_suspended(bool suspended) {

@@ -335,7 +335,7 @@ uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sc
         // module_start is always called from new thread
         const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, 0);
 
-        const uint32_t ret = module_thread->run_guest_function(args, argp.cast<void>());
+        const uint32_t ret = module_thread->start_and_wait(args, argp.cast<void>());
         module_thread->remove();
 
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module.path, log_hex(ret));
@@ -359,7 +359,7 @@ uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sce
         // module_stop is always called from new thread
         const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_stop, priority, affinity, stack_size, 0);
 
-        const uint32_t ret = module_thread->run_guest_function(args, argp.cast<void>());
+        const uint32_t ret = module_thread->start_and_wait(args, argp.cast<void>());
         module_thread->remove();
 
         LOG_INFO("Module {} (at \"{}\") module_stop returned {}", module_name, module.path, log_hex(ret));
