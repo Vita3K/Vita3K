@@ -147,6 +147,15 @@ COMMAND(handle_sync_surface_data) {
     if (renderer.current_backend == Backend::OpenGL && static_cast<int>(renderer.res_multiplier * 4.0f) % 4 != 0)
         renderer.disable_surface_sync = true;
 
+    if (renderer.current_backend == Backend::Vulkan && !renderer.disable_surface_sync
+        && !renderer.features.enable_memory_mapping && surface->data) {
+        auto *context = static_cast<vulkan::VKContext *>(render_context);
+        // stop_recording submitted rendering above. Finish the selected surface's
+        // staging copy and guest commit before any completion/notification below.
+        if (!context->state.surface_cache.readback_surface(mem, *surface))
+            LOG_WARN_ONCE("Vulkan unmapped surface readback unavailable for a requested surface");
+    }
+
     if (renderer.disable_surface_sync || renderer.current_backend == Backend::Vulkan) {
         if (helper.cmd->status) {
             complete_command(renderer, helper, 0);

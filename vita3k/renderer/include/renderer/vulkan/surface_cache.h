@@ -224,6 +224,9 @@ public:
     // If non-null, the return value must be sent as a PostSurfaceSyncRequest
     ColorSurfaceCacheInfo *perform_surface_sync();
 
+    // Synchronous fallback for linear byte/RGB565 surfaces without guest mapping.
+    bool readback_surface(MemState &mem, const SceGxmColorSurface &surface);
+
     // Called after the render has been done
     void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);
 

@@ -669,3 +669,50 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 }
 
 #endif
+
+bool write_gpu_readback_rows(MemState &state, Address destination, const uint8_t *source,
+    uint32_t row_bytes, uint32_t height, uint32_t destination_stride) {
+    if (!source || !destination || !row_bytes || !height || row_bytes > destination_stride)
+        return false;
+    const uint64_t length = uint64_t(height - 1) * destination_stride + row_bytes;
+    const uint64_t end = uint64_t(destination) + length;
+    if (length > 64 * 1024 * 1024 || end > UINT32_MAX)
+        return false;
+    // Match allocator/free's generation->protection lock order. No guest mapping
+    // is enabled or changed; open only native host permissions, retaining metadata.
+    const std::lock_guard<std::mutex> generation_lock(state.generation_mutex);
+    const std::lock_guard<std::mutex> protection_lock(state.protect_mutex);
+    if (state.use_page_table || !is_valid_addr_range(state, destination, uint32_t(end)))
+        return false;
+    struct Saved {
+        Address start;
+        uint32_t size;
+        MemPerm perm;
+    };
+    std::vector<Saved> saved;
+    const uint64_t begin_page = align_down(uint64_t(destination), uint64_t(state.host_page_size));
+    const uint64_t end_page = align(end, uint64_t(state.host_page_size));
+    for (const auto &[start, segment] : state.protect_tree) {
+        if (uint64_t(start) < end_page && uint64_t(start) + segment.size > begin_page) {
+            // Only alter the host pages containing our writes. Opening an entire
+            // longer segment could also open a neighbouring, stricter segment.
+            const uint64_t clipped_start = std::max(uint64_t(start), begin_page);
+            const uint64_t clipped_end = std::min(uint64_t(start) + segment.size, end_page);
+            saved.push_back({ Address(clipped_start), uint32_t(clipped_end - clipped_start), segment.perm });
+        }
+    }
+    for (const auto &segment : saved)
+        unprotect_inner(state, segment.start, segment.size);
+    uint8_t *output = state.memory.get() + destination;
+    for (uint32_t y = 0; y < height; ++y)
+        std::memcpy(output + uint64_t(y) * destination_stride, source + uint64_t(y) * row_bytes, row_bytes);
+    // Segments use 4KiB guest pages, while native mprotect may cover 16KiB.
+    // Restore permissive segments first so a shared host page always ends with
+    // its most restrictive overlapping permission, independent of address order.
+    std::sort(saved.begin(), saved.end(), [](const Saved &a, const Saved &b) {
+        return int(a.perm) > int(b.perm);
+    });
+    for (const auto &segment : saved)
+        protect_inner(state, segment.start, segment.size, segment.perm);
+    return true;
+}
