@@ -33,10 +33,8 @@ class DynarmicCPU : public CPUState {
     std::unique_ptr<ArmDynarmicCallback> cb;
     std::shared_ptr<ArmDynarmicCP15> cp15;
 
-    bool halted = false;
+    // A breakpoint stopped the last run, also one in a call that its import made
     bool break_ = false;
-    // The last run or step stopped at an SVC
-    bool svc_called = false;
 
     bool log_mem = false;
     bool log_code = false;

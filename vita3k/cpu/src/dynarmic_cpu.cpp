@@ -90,6 +90,11 @@ public:
 
 static constexpr bool LOG_INVALID_ACCESS = false;
 
+// Why the JIT halts, as the mask Run() and Step() return
+static constexpr Dynarmic::HaltReason HALT_STOP = Dynarmic::HaltReason::UserDefined1;
+static constexpr Dynarmic::HaltReason HALT_RETURN = Dynarmic::HaltReason::UserDefined2;
+static constexpr Dynarmic::HaltReason HALT_IMPORT = Dynarmic::HaltReason::UserDefined8;
+
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
     DynarmicCPU &cpu;
 
@@ -227,15 +232,14 @@ public:
         switch (exception) {
         case Dynarmic::A32::Exception::Breakpoint:
             cpu.break_ = true;
-            cpu.jit->HaltExecution();
+            cpu.jit->HaltExecution(HALT_STOP);
             cpu.set_pc(cpu.is_thumb_mode() ? pc | 1 : pc);
             break;
         case Dynarmic::A32::Exception::NoExecuteFault:
             LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, cpu.thread_id, cpu.save_context().description());
             [[fallthrough]];
         case Dynarmic::A32::Exception::WaitForInterrupt:
-            cpu.halted = true;
-            cpu.jit->HaltExecution();
+            cpu.jit->HaltExecution(HALT_RETURN);
             break;
         case Dynarmic::A32::Exception::PreloadDataWithIntentToWrite:
         case Dynarmic::A32::Exception::PreloadData:
@@ -264,8 +268,7 @@ public:
     }
 
     void CallSVC(uint32_t) override {
-        cpu.svc_called = true;
-        cpu.jit->HaltExecution(Dynarmic::HaltReason::UserDefined8);
+        cpu.jit->HaltExecution(HALT_IMPORT);
     }
 
     void AddTicks(uint64_t ticks) override {}
@@ -311,22 +314,19 @@ std::optional<uint32_t> DynarmicCPU::execute(GuestBoundary &boundary, bool from_
     GuestResume resume = boundary.checkpoint({ .after_kernel_call = from_kernel_call });
     while (resume != GuestResume::leave) {
         const bool stepped = resume == GuestResume::step;
-        svc_called = false;
+        Dynarmic::HaltReason reason;
         if (stepped) {
-            jit->Step();
+            reason = jit->Step();
         } else {
-            halted = false;
             break_ = false;
             // Run until the JIT stops for something other than a step or a cache invalidation
-            Dynarmic::HaltReason reason;
             do {
                 reason = jit->Run();
             } while (reason == Dynarmic::HaltReason::Step || reason == Dynarmic::HaltReason::CacheInvalidation);
         }
-        // The import and the abort handler can run guest code on this CPU, so the stop is read first
-        const bool kernel_call = svc_called;
+        const bool kernel_call = Dynarmic::Has(reason, HALT_IMPORT);
         // A run that halted stopped at the return address, and a step never returns
-        const bool returned = !stepped && halted;
+        const bool returned = !stepped && Dynarmic::Has(reason, HALT_RETURN);
         if (kernel_call) {
             // The import's NID is the word after the SVC
             boundary.call_import(*Ptr<uint32_t>(get_pc() + 4).get(mem));
@@ -367,7 +367,7 @@ bool DynarmicCPU::get_log_mem() {
 }
 
 void DynarmicCPU::request_stop() {
-    jit->HaltExecution();
+    jit->HaltExecution(HALT_STOP);
 }
 
 uint32_t DynarmicCPU::get_reg(uint8_t idx) {
