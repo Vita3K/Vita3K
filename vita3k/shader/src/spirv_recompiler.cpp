@@ -347,6 +347,9 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
         // f_mask is always rgba8
         format = spv::ImageFormat::ImageFormatRgba8;
 
+    if (format == spv::ImageFormat::ImageFormatR8)
+        b.addCapability(spv::CapabilityStorageImageExtendedFormats);
+
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, format);
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
     if (name == "f_mask")
@@ -2218,6 +2221,10 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
 
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return spv::ImageFormat::ImageFormatRg32f;
+
+    // must match the R8 storage of U8 surfaces in both backends
+    case SCE_GXM_COLOR_BASE_FORMAT_U8:
+        return spv::ImageFormat::ImageFormatR8;
 
     default:
         return spv::ImageFormat::ImageFormatRgba8;
