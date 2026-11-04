@@ -77,18 +77,25 @@ public:
         return std::make_unique<T>(item);
     }
 
-    void push(const T &item) {
+    bool push(const T &item) {
         {
             std::unique_lock<std::mutex> mlock(mutex_);
-            while (!aborted && queue_.size() == maxPendingCount_) {
+            while (!aborted && queue_.size() >= maxPendingCount_) {
                 cond_.wait(mlock);
             }
             if (aborted) {
-                return;
+                return false;
             }
             queue_.push(item);
         }
         condempty_.notify_one();
+        return true;
+    }
+
+    bool wait_space() {
+        std::unique_lock<std::mutex> mlock(mutex_);
+        cond_.wait(mlock, [&]() { return aborted || queue_.size() < maxPendingCount_; });
+        return !aborted;
     }
 
     size_t size() {

@@ -2239,16 +2239,21 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
 EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
     TRACY_FUNC(sceGxmDisplayQueueAddEntry, oldBuffer, newBuffer, callbackData);
-    if (!oldBuffer || !newBuffer)
+    if (!emuenv.gxm.params.displayQueueCallback)
+        return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
+    const uint32_t data_size = emuenv.gxm.params.displayQueueCallbackDataSize;
+    if (!oldBuffer || !newBuffer || (!callbackData && data_size != 0))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    const Address address = alloc(emuenv.mem, emuenv.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
-    const Ptr<void> ptr(address);
-    memcpy(ptr.get(emuenv.mem), callbackData.get(emuenv.mem), emuenv.gxm.params.displayQueueCallbackDataSize);
+    // The firmware waits for a free slot before it reserves the sync objects
+    if (!emuenv.gxm.display_queue.wait_space())
+        return 0;
+
+    const Address address = alloc(emuenv.mem, data_size, __FUNCTION__);
+    memcpy(Ptr<void>(address).get(emuenv.mem), callbackData.get(emuenv.mem), data_size);
 
     DisplayFrameInfo *frame = predict_next_image(emuenv, newBuffer.address());
 
-    // Block future rendering by setting values of sync object
     SceGxmSyncObject *oldBufferSync = oldBuffer.get(emuenv.mem);
     SceGxmSyncObject *newBufferSync = newBuffer.get(emuenv.mem);
 
@@ -2266,8 +2271,10 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
         newBufferSync->last_display = ++newBufferSync->timestamp_ahead;
     emuenv.gxm.last_display_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
 
-    // function may be blocking here (expected behavior)
-    emuenv.gxm.display_queue.push(display_callback);
+    if (!emuenv.gxm.display_queue.push(display_callback)) {
+        free(emuenv.mem, address);
+        return 0;
+    }
 
     // TODO: I do this because the sync function does not have access to the display state, but this is not great
     renderer::Context *active_renderer_context = nullptr;
@@ -2281,15 +2288,13 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 
     renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::NewFrame, false, frame, &emuenv.display, active_renderer_context);
 
-    if (emuenv.gxm.params.displayQueueMaxPendingCount == 1)
-        // double buffering, not handled by the queue configuration
-        emuenv.gxm.display_queue.wait_empty();
-
     return 0;
 }
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
     TRACY_FUNC(sceGxmDisplayQueueFinish);
+    if (!emuenv.gxm.params.displayQueueCallback)
+        return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
     emuenv.gxm.display_queue.wait_empty();
 
     return 0;
@@ -2877,12 +2882,13 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
+    if (params->displayQueueCallback && (params->displayQueueMaxPendingCount == 0 || params->displayQueueMaxPendingCount > 16 || params->displayQueueCallbackDataSize == 0)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
     emuenv.gxm.params = *params;
-    // hack, limit the number of frame rendering at the same time to at most 3
-    // also, the last frame won't be in the queue so decrease the count by 1
-    // the case where displayQueueMaxPendingCount is 1 handled in sceGxmDisplayQueueAddEntry
-    const uint32_t max_queue_size = std::max(std::min(params->displayQueueMaxPendingCount, 3U) - 1, 1U);
-    emuenv.gxm.display_queue.maxPendingCount_ = max_queue_size;
+    // A slot stays occupied until its callback returns, like the firmware
+    emuenv.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
 
     const ThreadStatePtr main_thread = emuenv.kernel.get_thread(thread_id);
     const ThreadStatePtr display_queue_thread = emuenv.kernel.create_thread(emuenv.mem, "SceGxmDisplayQueue", emuenv.gxm.params.displayQueueCallback, SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, 0);
