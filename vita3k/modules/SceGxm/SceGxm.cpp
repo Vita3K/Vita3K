@@ -2246,6 +2246,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     // The firmware waits for a free slot before it reserves the sync objects
+    const std::lock_guard<std::mutex> add_guard(emuenv.gxm.display_queue_add_mutex);
     if (!emuenv.gxm.display_queue.wait_space())
         return 0;
 
@@ -2266,12 +2267,16 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
         .frame_predicted = frame != nullptr
     };
 
+    const uint32_t old_last_display = oldBufferSync->last_display;
+    const uint32_t new_last_display = newBufferSync->last_display;
     oldBufferSync->last_display = ++oldBufferSync->timestamp_ahead;
     if (oldBufferSync != newBufferSync)
         newBufferSync->last_display = ++newBufferSync->timestamp_ahead;
     emuenv.gxm.last_display_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
 
     if (!emuenv.gxm.display_queue.push(display_callback)) {
+        oldBufferSync->last_display = old_last_display;
+        newBufferSync->last_display = new_last_display;
         free(emuenv.mem, address);
         return 0;
     }
