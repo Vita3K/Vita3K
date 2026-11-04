@@ -544,8 +544,13 @@ EXPORT(int, sceAppMgrReceiveShellEvent) {
 
 EXPORT(int, sceAppMgrReceiveSystemEvent, SceAppMgrSystemEvent *systemEvent) {
     TRACY_FUNC(sceAppMgrReceiveSystemEvent, systemEvent);
-    systemEvent->systemEvent = SCE_APPMGR_SYSTEMEVENT_ON_RESUME;
-    return UNIMPLEMENTED();
+    if (!systemEvent)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+
+    // An idle poll must not repeatedly invoke the guest's resume handlers.
+    *systemEvent = {};
+    STUBBED("No queued system events");
+    return 0;
 }
 
 EXPORT(int, sceAppMgrSaveDataAddMount) {
