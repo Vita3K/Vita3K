@@ -27,6 +27,7 @@
 #include <renderer/vulkan/types.h>
 
 #include <chrono>
+#include <thread>
 
 struct Config;
 
@@ -111,6 +112,9 @@ struct VKState : public renderer::State {
 
     // queue where we put requests that need to wait for the GPU
     Queue<WaitThreadRequest> request_queue;
+    // the only thread handling request_queue, shared by all the contexts (requests must be handled in order)
+    // only used if memory mapping is enabled
+    std::thread gpu_request_wait_thread;
 
     vkutil::Image default_image;
     vkutil::Buffer default_buffer;
@@ -166,8 +170,16 @@ struct VKState : public renderer::State {
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
 
+    // start the GPU request wait thread if it is not running yet
+    void start_wait_thread(const MemState &mem);
+    // abort the request queue and join the GPU request wait thread
+    void stop_wait_thread();
+
     inline FrameObject &frame() {
         return frames[current_frame_idx];
     }
+
+private:
+    void wait_thread_function(const MemState &mem);
 };
 } // namespace renderer::vulkan

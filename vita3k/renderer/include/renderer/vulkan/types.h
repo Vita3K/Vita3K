@@ -22,6 +22,10 @@
 #include <shader/uniform_block.h>
 #include <vkutil/objects.h>
 
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+
 struct MemState;
 
 namespace renderer::vulkan {
@@ -193,8 +197,17 @@ struct NotificationRequest {
     SceGxmNotification notifications[2];
 };
 
+// frame progress of a context, updated by the GPU request wait thread
+struct FrameWaitState {
+    std::mutex mutex;
+    std::condition_variable condv;
+    uint64_t last_frame_waited = 0;
+};
+
 struct FrameDoneRequest {
     uint64_t frame_timestamp;
+    // shared so that the request stays valid if the context is destroyed before it is handled
+    std::shared_ptr<FrameWaitState> frame_wait;
 };
 
 struct SyncSignalRequest {
@@ -344,10 +357,7 @@ struct VKContext : public renderer::Context {
     bool last_draw_was_framebuffer_fetch;
 
     // only used if memory mapping is enabled
-    std::mutex new_frame_mutex;
-    std::condition_variable new_frame_condv;
-    std::thread gpu_request_wait_thread;
-    uint64_t last_frame_waited = 0;
+    std::shared_ptr<FrameWaitState> frame_wait = std::make_shared<FrameWaitState>();
 
     explicit VKContext(VKState &state, MemState &mem);
     // TODO: properly destroy the context
@@ -363,9 +373,6 @@ struct VKContext : public renderer::Context {
 
     // check (when the render target has macroblock set) if we are drawing to another block
     void check_for_macroblock_change(bool is_draw);
-
-private:
-    void wait_thread_function(const MemState &mem);
 };
 
 struct VKRenderTarget : public renderer::RenderTarget {
