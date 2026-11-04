@@ -59,6 +59,7 @@ struct GxmState {
 
     Queue<DisplayCallback> display_queue;
     std::mutex display_queue_add_mutex;
+    bool display_queue_closed = false;
     SceUID display_queue_thread;
     std::thread display_host_thread;
 
@@ -90,6 +91,7 @@ struct GxmState {
 
         memory_mapped_regions.clear();
         display_queue.reset();
+        display_queue_closed = false;
         params = {};
         display_queue_thread = 0;
         global_timestamp = 1;

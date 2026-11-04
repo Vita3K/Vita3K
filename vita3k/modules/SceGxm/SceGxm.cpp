@@ -2247,6 +2247,8 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 
     // The firmware waits for a free slot before it reserves the sync objects
     const std::lock_guard<std::mutex> add_guard(emuenv.gxm.display_queue_add_mutex);
+    if (emuenv.gxm.display_queue_closed)
+        return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
     if (!emuenv.gxm.display_queue.wait_space())
         return 0;
 
@@ -2904,6 +2906,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
 
     // Reset the queue in case sceGxmTerminate was called earlier
     emuenv.gxm.display_queue.reset();
+    emuenv.gxm.display_queue_closed = false;
     emuenv.gxm.display_host_thread = std::thread(display_entry_thread, std::ref(emuenv));
     emuenv.gxm.notification_region = Ptr<uint32_t>(alloc(emuenv.mem, MiB(1), "SceGxmNotificationRegion"));
     memset(emuenv.gxm.notification_region.get(emuenv.mem), 0, MiB(1));
@@ -4917,6 +4920,10 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 
 EXPORT(int, sceGxmTerminate) {
     TRACY_FUNC(sceGxmTerminate);
+    {
+        const std::lock_guard<std::mutex> add_guard(emuenv.gxm.display_queue_add_mutex);
+        emuenv.gxm.display_queue_closed = true;
+    }
     // Make sure everything is done in SDL side before killing Vita thread
     emuenv.gxm.display_queue.wait_empty();
     gxm::destroy_all_contexts(emuenv, false);
