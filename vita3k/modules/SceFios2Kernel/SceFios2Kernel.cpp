@@ -41,12 +41,16 @@ EXPORT(int, _sceFiosKernelOverlayAdd) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceFiosKernelOverlayAddForProcess, SceUID pid, const void *pOverlay, SceUID *pOutID) {
+EXPORT(int, _sceFiosKernelOverlayAddForProcess, SceUID pid, const SceFiosProcessOverlay *pOverlay, SceUID *pOutID) {
     TRACY_FUNC(_sceFiosKernelOverlayAddForProcess, pid, pOverlay, pOutID);
-    STUBBED("Only returns a new overlay ID, the paths are not remapped");
     if (!pOutID)
         return SCE_FIOS_ERROR_NULL_OUT_ID;
 
+    // paths are not remapped, so only an overlay that maps a path onto itself is accepted
+    if (!pOverlay || strncmp(pOverlay->dst, pOverlay->src, SCE_FIOS_OVERLAY_POINT_MAX) != 0)
+        return UNIMPLEMENTED();
+
+    STUBBED("Identity overlay, nothing to remap");
     const std::lock_guard<std::mutex> guard(emuenv.io.overlay_mutex);
     *pOutID = emuenv.io.next_overlay_id++;
     return 0;
