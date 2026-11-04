@@ -334,7 +334,7 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
     info->callback_ptr = Ptr<void>(reason_ptr);
     info->userdata = user_data;
 
-    thread->run_callback(callback.address(), { callback_info_addr });
+    thread->call_guest(callback.address(), { callback_info_addr });
     thread->cpu->stack_free(sizeof(SceNgsCallbackInfo));
 }
 

@@ -59,9 +59,9 @@ static_assert(sizeof(SceProcEventHandler) == 0x1C, "Size of SceProcEventHandler 
 EXPORT(int, ksceKernelRegisterProcEventHandler, char *name, SceProcEventHandler *handler, Ptr<void> a3) {
     TRACY_FUNC(ksceKernelRegisterProcEventHandler, name, handler, a3);
     if (handler->create)
-        emuenv.kernel.get_thread(thread_id)->run_callback(handler->create.address(), { 1, 0, a3.address() });
+        emuenv.kernel.get_thread(thread_id)->call_guest(handler->create.address(), { 1, 0, a3.address() });
     if (handler->start)
-        emuenv.kernel.get_thread(thread_id)->run_callback(handler->start.address(), { 1, 0, a3.address() });
+        emuenv.kernel.get_thread(thread_id)->call_guest(handler->start.address(), { 1, 0, a3.address() });
     STUBBED("Immediately run create and start callbacks on current thread");
     // Stub: return a unique UID per registration. kubridge registers a process
     // event handler for cleanup on exit, but in the emulator we don't need it.

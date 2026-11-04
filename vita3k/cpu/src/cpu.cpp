@@ -48,6 +48,12 @@ void CPUState::set_pc(uint32_t val) {
     set_reg(15, val);
 }
 
+std::optional<Address> CPUState::take_abort() {
+    if (!abort_pending.exchange(false))
+        return std::nullopt;
+    return abort_fault_addr.load();
+}
+
 void CPUState::place_call(Address fn, std::initializer_list<uint32_t> args) {
     set_pc(fn);
     set_lr(return_pc);

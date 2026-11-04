@@ -33,9 +33,6 @@ class DynarmicCPU : public CPUState {
     std::unique_ptr<ArmDynarmicCallback> cb;
     std::shared_ptr<ArmDynarmicCP15> cp15;
 
-    // A breakpoint stopped the last run, also one in a call that its import made
-    bool break_ = false;
-
     bool log_mem = false;
     bool log_code = false;
     bool cpu_opt;
@@ -45,8 +42,9 @@ class DynarmicCPU : public CPUState {
 public:
     DynarmicCPU(MemState &mem, SceUID thread_id, std::size_t processor_id, bool cpu_opt);
     ~DynarmicCPU() override;
-    std::optional<uint32_t> execute(GuestBoundary &boundary, bool from_kernel_call) override;
+    GuestExit run(RunMode mode) override;
     void request_stop() override;
+    void clear_exclusive() override;
 
     uint32_t get_reg(uint8_t idx) override;
     void set_reg(uint8_t idx, uint32_t val) override;
@@ -69,7 +67,6 @@ public:
     CPUContext save_context() override;
     void load_context(const CPUContext &ctx) override;
 
-    bool hit_breakpoint() override;
     void set_log_code(bool log) override;
     void set_log_mem(bool log) override;
     bool get_log_mem() override;

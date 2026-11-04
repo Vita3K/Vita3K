@@ -49,7 +49,7 @@ EXPORT(int, sceKernelWaitExceptionCBForMono) {
 
 EXPORT(int, sceKernelWaitExceptionForMono) {
     TRACY_FUNC(sceKernelWaitExceptionForMono);
-    STUBBED("Inifinite wait");
-    emuenv.kernel.get_thread(thread_id)->set_suspended(true);
-    return 0;
+    STUBBED("Infinite wait");
+    // No exception ever comes, so the thread waits until it ends
+    return guest_result(emuenv.kernel.get_thread(thread_id)->delay_until(Deadline::max(), false));
 }
