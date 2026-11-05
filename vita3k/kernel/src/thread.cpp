@@ -31,11 +31,6 @@
 #include <memory>
 #include <utility>
 
-// Set in the wait type of a wait that runs callbacks
-constexpr SceUInt32 WAITTYPE_CB_BIT = 0x80000000U;
-// What a thread waiting for a thread signal reports as its wait UID on a Vita, which isn't a UID
-constexpr SceUID SIGNAL_WAIT_ID = 0x00010221;
-
 // The priority a thread created with priority runs at. The default range stands for the game's own.
 static int created_priority(int priority) {
     if (priority > SCE_KERNEL_LOWEST_PRIORITY_USER) {
@@ -45,16 +40,13 @@ static int created_priority(int priority) {
     return priority;
 }
 
-// The size of the kernel's part of a thread's TLS, below the part the guest sees
-constexpr size_t KERNEL_TLS_SIZE = 0x800;
-
 // The registers each run of a thread starts with
 static CPUContext initial_context(Address stack_top) {
     CPUContext ctx;
     // A Vita starts every thread with these in r2 to r12, and some games rely on r9 not being 0
     std::fill(ctx.cpu_registers.begin() + 2, ctx.cpu_registers.begin() + 13, 0xDEADBEEF);
     ctx.set_sp(stack_top);
-    ctx.fpscr = INITIAL_FPSCR;
+    ctx.fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
     return ctx;
 }
 
@@ -62,10 +54,10 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     : id(id)
     , name(name)
     , entry_point(entry_point)
-    , attr(attr | THREAD_ATTR_USER)
+    , attr(attr | SCE_KERNEL_THREAD_ATTR_USER)
     , stack_size(align(stack_size, KiB(4)))
     , stack(alloc_block(mem, this->stack_size, fmt::format("Stack for thread {} (#{})", name, id).c_str()))
-    , tls(alloc_block(mem, KERNEL_TLS_SIZE + kernel.tls_msize, fmt::format("TLS for thread {} (#{})", name, id).c_str()))
+    , tls(alloc_block(mem, SCE_KERNEL_TLS_SIZE + kernel.tls_msize, fmt::format("TLS for thread {} (#{})", name, id).c_str()))
     , cpu(std::move(cpu))
     , init_priority(created_priority(init_priority))
     , init_affinity_mask(affinity_mask)
@@ -74,7 +66,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     , priority(this->init_priority)
     , affinity_mask(affinity_mask) {
     memset(stack.get_ptr<void>().get(mem), 0xcc, this->stack_size);
-    memset(tls.get_ptr<void>().get(mem), 0, KERNEL_TLS_SIZE + kernel.tls_msize);
+    memset(tls.get_ptr<void>().get(mem), 0, SCE_KERNEL_TLS_SIZE + kernel.tls_msize);
 
     tls_slot(TLS_THREAD_ID) = id;
     tls_slot(TLS_SP_TOP) = stack.get() + this->stack_size;
@@ -86,7 +78,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
 
-    const Ptr<uint8_t> user_tls_ptr = tls.get_ptr<uint8_t>() + KERNEL_TLS_SIZE;
+    const Ptr<uint8_t> user_tls_ptr = tls.get_ptr<uint8_t>() + SCE_KERNEL_TLS_SIZE;
     this->cpu->set_tpidruro(user_tls_ptr.address());
     if (kernel.tls_address) {
         assert(kernel.tls_psize <= kernel.tls_msize);
@@ -311,7 +303,7 @@ uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> arg
     int &vfp_exception = tls_slot(TLS_VFP_EXCEPTION);
     const int previous_vfp_exception = vfp_exception;
     if (fresh_vfp_state) {
-        cpu->set_fpscr(INITIAL_FPSCR);
+        cpu->set_fpscr(SCE_KERNEL_THREAD_INITIAL_FPSCR);
         vfp_exception = 0;
     }
 
@@ -405,7 +397,7 @@ WaitResult ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     const Deadline deadline = deadline_from(timeout);
     WaitResult r = SCE_KERNEL_OK;
     while (!take_signal()) {
-        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SIGNAL_WAIT_ID, callbacks }, deadline);
+        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SCE_KERNEL_SIGNAL_WAIT_ID, callbacks }, deadline);
         if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
         if (!r || *r != SCE_KERNEL_OK)
@@ -600,7 +592,7 @@ SceKernelThreadInfo ThreadState::info() {
     const bool ready = status == ThreadStatus::waiting && wait_target.type != 0 && wait_over();
     const WaitTarget reported = ready ? WaitTarget{} : wait_target;
     info.status = ready ? SCE_KERNEL_THREAD_STATUS_READY : std::to_underlying(shown_status());
-    info.waitType = reported.callbacks ? reported.type | WAITTYPE_CB_BIT : reported.type;
+    info.waitType = reported.callbacks ? reported.type | SCE_KERNEL_WAITTYPE_CB_BIT : reported.type;
     info.waitId = reported.id;
     info.exitStatus = returned_value;
     info.fNotifyCallback = callbacks_notified() ? 1 : 0;

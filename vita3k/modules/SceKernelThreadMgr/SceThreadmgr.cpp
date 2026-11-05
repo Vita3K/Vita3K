@@ -586,7 +586,7 @@ static int vm_target(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id, Th
     thread = emuenv.kernel.get_thread(target_id);
     if (!thread)
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
-    if (!(thread->attr & THREAD_ATTR_VM))
+    if (!(thread->attr & SCE_KERNEL_THREAD_ATTR_VM))
         return SCE_KERNEL_ERROR_ILLEGAL_PERMISSION;
     return 0;
 }
@@ -631,7 +631,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
             // Inside a syscall a Vita reports the FPSCR the kernel runs with, and only d8 to d15,
             // which a call keeps. Every other d register reads this NaN.
             constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
-            infoVfp->fpscr = INITIAL_FPSCR;
+            infoVfp->fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
             for (size_t i = 0; i < std::size(infoVfp->reg); i += 2)
                 memcpy(&infoVfp->reg[i], SCRUBBED, sizeof(SCRUBBED));
             // d8 to d15 are s16 to s31
@@ -1340,7 +1340,7 @@ static bool is_user_priority(int priority) {
 }
 
 // The attributes sceKernelCreateThread takes
-constexpr SceUInt32 THREAD_CREATE_ATTRS = THREAD_ATTR_UNKNOWN_2000 | THREAD_ATTR_NOUSE_VFP | THREAD_ATTR_VM | THREAD_ATTR_USER;
+constexpr SceUInt32 THREAD_CREATE_ATTRS = SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 | SCE_KERNEL_THREAD_ATTR_NOUSE_VFP | SCE_KERNEL_THREAD_ATTR_VM | SCE_KERNEL_THREAD_ATTR_USER;
 
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);
