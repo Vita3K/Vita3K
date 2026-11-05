@@ -279,6 +279,9 @@ int main(int argc, char *argv[]) {
         }
         app::AppSessionController session(emuenv);
         const int exit_code = sdl_frontend::run(emuenv, session, AppLaunchRequest{ .app_path = *emuenv.cfg.run_app_path });
+        // Before the paths a client's request can still read go away
+        if (emuenv.gdb.server_thread)
+            server_close(emuenv);
 #ifdef _WIN32
         CoUninitialize();
 #endif

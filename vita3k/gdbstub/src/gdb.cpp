@@ -1776,7 +1776,7 @@ static void server_listen(EmuEnvState &state) {
 void server_open(EmuEnvState &state) {
     if (state.gdb.server_thread) {
         if (!state.gdb.server_die && state.gdb.listen_socket != BAD_SOCK) {
-            LOG_INFO("GDB Server is already listening on port {}", GDB_SERVER_PORT);
+            LOG_INFO("GDB Server is already listening on port {}", state.gdb.port);
             return;
         }
 
@@ -1818,7 +1818,7 @@ void server_open(EmuEnvState &state) {
 
     sockaddr_in socket_address{};
     socket_address.sin_family = AF_INET;
-    socket_address.sin_port = htons(GDB_SERVER_PORT);
+    socket_address.sin_port = htons(state.gdb.port);
 #ifdef _WIN32
     socket_address.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
 #else
@@ -1835,12 +1835,16 @@ void server_open(EmuEnvState &state) {
         return;
     }
 
-    state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
+    {
+        // server_close() on another thread can take it
+        const auto guard = std::lock_guard(state.gdb.server_thread_mutex);
+        state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
+    }
 
     if (state.cfg.wait_for_debugger)
-        LOG_WARN("GDB Server is listening on port {}. The app waits for a client to connect and continue.", GDB_SERVER_PORT);
+        LOG_WARN("GDB Server is listening on port {}. The app waits for a client to connect and continue.", state.gdb.port);
     else
-        LOG_INFO("GDB Server is listening on port {}", GDB_SERVER_PORT);
+        LOG_INFO("GDB Server is listening on port {}", state.gdb.port);
 }
 
 void server_close(EmuEnvState &state) {
