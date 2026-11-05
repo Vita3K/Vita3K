@@ -47,7 +47,8 @@ struct GuestExit {
     };
     Kind kind;
     uint32_t value = 0;
-    // A breakpoint or a finished step, so the debugger holds the thread. A stepped import has it too.
+    // A breakpoint or a step that ran its instruction, so the debugger holds the thread. A stepped
+    // import has it too.
     bool debugger_stop = false;
 };
 
