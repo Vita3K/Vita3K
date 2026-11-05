@@ -51,7 +51,8 @@ struct CPUState {
         single_step,
     };
     // Called by the executor
-    // Runs guest code from the PC until it returns, calls an import or stops, or one instruction
+    // Runs guest code from the PC until it returns, calls an import or stops, or one instruction. A
+    // step that a stop request ends before its instruction stops without debugger_stop.
     virtual GuestExit run(RunMode mode) = 0;
 
     // Called by any thread, also from a signal handler. Takes no lock.

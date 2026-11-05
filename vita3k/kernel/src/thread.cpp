@@ -259,10 +259,20 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         }
         if (exiting())
             return std::nullopt;
-        const bool step = std::exchange(step_requested, false);
+        const bool step = step_requested;
 
         lock.unlock();
         const GuestExit exit = cpu->run(step ? CPUState::RunMode::single_step : CPUState::RunMode::run);
+        if (step) {
+            lock.lock();
+            // A stop request made before the step ends it before its instruction, so the step goes
+            // again after the holds, unless the debugger lets the thread go meanwhile
+            if (exit.kind == GuestExit::Kind::stopped && !exit.debugger_stop)
+                continue;
+            // The step is taken, so a call that a stepped import makes doesn't step too
+            step_requested = false;
+            lock.unlock();
+        }
 
         // In this order, also when the import ended the thread: the import, the exclusive monitor,
         // the abort handler, then the debugger's hold
@@ -626,7 +636,8 @@ void ThreadState::set_suspended(bool suspended) {
 
 bool ThreadState::step() {
     std::unique_lock<std::mutex> lock(mutex);
-    // A pause or a ForVM suspend holds the thread, so it doesn't step
+    // A pause or a ForVM suspend holds the thread, so it doesn't step. One that comes after this
+    // check delays the step until it ends.
     if (kernel.is_threads_paused() || vm_suspend_count > 0)
         return false;
     // A thread with no run, or one that is ending, has no instruction to step, and the wait ends

@@ -327,7 +327,9 @@ GuestExit DynarmicCPU::run(RunMode mode) {
     // A run that halted stopped at the return address, and a step never returns
     if (!step && Dynarmic::Has(reason, HALT_RETURN))
         return { GuestExit::Kind::returned, get_reg(0) };
-    return { GuestExit::Kind::stopped, 0, step || Dynarmic::Has(reason, HALT_BREAKPOINT) };
+    // A breakpoint, or a step that ran its instruction. A step that a pending stop request ended
+    // before its instruction has neither.
+    return { GuestExit::Kind::stopped, 0, Dynarmic::Has(reason, Dynarmic::HaltReason::Step | HALT_BREAKPOINT) };
 }
 
 void DynarmicCPU::clear_exclusive() {
