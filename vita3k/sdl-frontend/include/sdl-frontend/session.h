@@ -19,6 +19,7 @@
 
 #include <emuenv/app_launch_request.h>
 
+#include <chrono>
 #include <functional>
 #include <string>
 
@@ -51,5 +52,9 @@ struct Hooks {
 // following in-process relaunches. Returns the code the app exited with, 0 if the window was closed,
 // or -1 if the app couldn't start.
 int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchRequest launch_request, const Hooks &hooks = {});
+
+// Runs fn on the thread that runs the session, between its events, and waits for it. Returns false
+// if it didn't start within timeout, and then it never runs.
+bool run_on_session_thread(std::function<void()> fn, std::chrono::milliseconds timeout);
 
 } // namespace sdl_frontend
