@@ -60,8 +60,9 @@ struct VirtualKeyboardState {
     float axes[4] = {};
 };
 
-// How long input sent by the debugger lasts. The length starts when the app first reads the input,
-// so input sent while the app is stopped isn't used up before it runs. 0 lasts until it's released.
+// How long input sent by the debugger lasts, in vblanks the app runs (DisplayState::app_vblank_count).
+// The length starts when the app first reads the input, so input sent while the app is stopped isn't
+// used up before it runs, even when something reads it meanwhile. 0 lasts until it's released.
 struct ScriptedLength {
     uint32_t frames = 0;
     uint64_t end_vcount = 0;

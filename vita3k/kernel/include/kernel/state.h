@@ -196,6 +196,7 @@ struct KernelState {
     // Stops every thread for the debugger, and the threads created until it lets them go, or lets
     // them run again
     void set_threads_suspended(bool suspended);
+    bool is_threads_suspended() const { return threads_suspended; }
 
     // Adds handler to the objects and the list under a new UID and returns the UID
     SceUID register_thread_event_handler(ThreadEventHandlerRef handler);
@@ -220,7 +221,7 @@ struct KernelState {
 private:
     std::atomic<uint32_t> next_uid{ 1 };
     std::atomic<bool> threads_paused{ false };
-    bool threads_suspended = false;
+    std::atomic<bool> threads_suspended{ false };
     // The process is exiting, so a thread still being created ends as well
     bool process_exiting = false;
 
