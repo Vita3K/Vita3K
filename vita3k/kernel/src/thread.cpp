@@ -242,13 +242,7 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
 
         // After the start event, which runs as a nested call, so this level's own value is published
         stopped_after_kernel_call = after_kernel_call;
-        if (held()) {
-            parked = true;
-            cv.notify_all();
-            // The holds can change while the thread waits
-            cv.wait(lock, [&] { return !held(); });
-            parked = false;
-        }
+        stop_for_holds(lock);
         if (exiting())
             return std::nullopt;
         const bool step = step_requested;
@@ -438,6 +432,16 @@ void ThreadState::set_ending(Ending how) {
 
 bool ThreadState::held() const {
     return !exiting() && (debugger_hold || vm_suspend_count > 0 || kernel.is_threads_paused());
+}
+
+void ThreadState::stop_for_holds(std::unique_lock<std::mutex> &lock) {
+    if (!held())
+        return;
+    parked = true;
+    cv.notify_all();
+    // The holds can change while the thread waits
+    cv.wait(lock, [&] { return !held(); });
+    parked = false;
 }
 
 int ThreadState::stack_free_size() const {
