@@ -200,6 +200,9 @@ static std::optional<int64_t> run_agent_expression(const BreakpointCondition &co
             const uint64_t ub = *b;
             if ((op >= 0x05 && op <= 0x08) && *b == 0)
                 return std::nullopt;
+            // The signed quotient of the smallest value by -1 doesn't fit
+            if ((op == 0x05 || op == 0x07) && *a == INT64_MIN && *b == -1)
+                return std::nullopt;
             int64_t result = 0;
             switch (op) {
             case 0x02: result = ua + ub; break; // add
