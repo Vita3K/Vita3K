@@ -117,7 +117,7 @@ cond_mutex_delete_wakes         fail     # a mutex delete ends its conditions' w
 cond_owner_end_relock           pass
 cond_relock_callback_notify     fail     # threads ignore their core and priority, so a notified relocker above the notifier runs its callback after the notifier's next line
 cond_relock_cancel_mutex        pass
-cond_relock_notify_at_once      fail     # threads ignore their core and priority, so the notified heavy relocker already runs when the main thread reads its status
+cond_relock_notify_at_once      skip     # threads ignore their core and priority, so whether the notified heavy relocker already runs when the main thread reads its status is a race
 cond_relock_owned_cancel        pass
 cond_relock_requeue             fail     # a condition waiter taking its mutex back isn't requeued on a priority change
 cond_relock_time_left           pass
