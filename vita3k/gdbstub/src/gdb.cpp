@@ -273,7 +273,7 @@ static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
     return "PacketSize=4000;"
            "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
            "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;qXfer:features:read+;"
-           "qXfer:libraries:read+;qXfer:libraries-svr4:read+";
+           "qXfer:libraries:read+;qXfer:libraries-svr4:read+;ConditionalBreakpoints+";
 }
 
 // Register numbers in the target description and in remote packets.
@@ -1073,6 +1073,24 @@ static std::string cmd_get_next_thread(EmuEnvState &state, PacketCommand &comman
     return str;
 }
 
+// The conditions after a Z0 packet's kind, each ";X<length>,<bytecode in hex>"
+static std::vector<BreakpointCondition> parse_breakpoint_conditions(const std::string &content) {
+    std::vector<BreakpointCondition> conditions;
+    for (size_t pos = content.find(";X"); pos != std::string::npos; pos = content.find(";X", pos + 1)) {
+        const size_t comma = content.find(',', pos);
+        if (comma == std::string::npos)
+            break;
+        const uint32_t length = parse_hex(content.substr(pos + 2, comma - pos - 2));
+        if (comma + 1 + length * 2 > content.size())
+            break;
+        BreakpointCondition condition(length);
+        for (uint32_t i = 0; i < length; i++)
+            condition[i] = static_cast<uint8_t>(parse_hex(content.substr(comma + 1 + i * 2, 2)));
+        conditions.push_back(std::move(condition));
+    }
+    return conditions;
+}
+
 static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
 
@@ -1095,7 +1113,8 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
         // kind is 2 for a 16-bit Thumb instruction, 3 for a 32-bit one and 4 for ARM. A 16-bit BKPT
         // over the first halfword stops at a 32-bit Thumb instruction too.
         // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
-        state.kernel.debugger.add_breakpoint(state.mem, align_down(address, 2), kind == 2 || kind == 3);
+        // Conditions run in the stub, so a hit that doesn't stop costs no round trip to GDB
+        state.kernel.debugger.add_breakpoint(state.mem, align_down(address, 2), kind == 2 || kind == 3, parse_breakpoint_conditions(content));
         return "OK";
     }
 
