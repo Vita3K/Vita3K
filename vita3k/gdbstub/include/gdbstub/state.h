@@ -50,6 +50,8 @@ struct GDBState {
     bool winsock_started = false;
 #endif
 
+    // 0 lets the system choose one, for the tests
+    uint16_t port = GDB_SERVER_PORT;
     socket_t listen_socket = BAD_SOCK;
     socket_t client_socket = BAD_SOCK;
 
