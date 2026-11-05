@@ -99,12 +99,7 @@ static overlay::button_states poll_overlay_input(EmuEnvState &emuenv) {
     axes[3] += kb.axes[3];
 
     // Input from the debugger, so a script can work system dialogs too
-    auto &scripted = emuenv.ctrl.scripted_input;
-    if (scripted.length.update(emuenv.display.app_vblank_count.load()))
-        scripted = {};
-    buttons |= scripted.buttons_ext;
-    for (int i = 0; i < 4; i++)
-        axes[i] += scripted.axes[i];
+    emuenv.ctrl.apply_scripted_input(emuenv.display.app_vblank_count.load(), true, true, buttons, axes);
 
     for (const auto &[_, controller] : emuenv.ctrl.controllers) {
         SDL_Gamepad *gp = controller.controller.get();

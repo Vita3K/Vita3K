@@ -204,7 +204,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     state.has_motion_support = found_gyro && found_accel;
 }
 
-static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvState &emuenv) {
+static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, bool app_read, EmuEnvState &emuenv) {
     const auto &kb = emuenv.ctrl.keyboard_state;
     const uint32_t kb_buttons = ext ? kb.buttons_ext : kb.buttons;
 
@@ -214,13 +214,8 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvSta
     axes[2] += kb.axes[2];
     axes[3] += kb.axes[3];
 
-    auto &scripted = emuenv.ctrl.scripted_input;
-    if (scripted.length.update(emuenv.display.app_vblank_count.load()))
-        scripted = {};
-
-    *buttons |= ext ? scripted.buttons_ext : scripted.buttons;
-    for (int i = 0; i < 4; i++)
-        axes[i] += scripted.axes[i];
+    // The cheat codes read the pad every vblank, and would use up a press before the app reads it
+    emuenv.ctrl.apply_scripted_input(emuenv.display.app_vblank_count.load(), app_read, ext, *buttons, axes);
 }
 
 static std::array<ControllerBinding, 13> get_controller_bindings(EmuEnvState &emuenv) {
@@ -311,7 +306,7 @@ static void apply_controller(EmuEnvState &emuenv, uint32_t *buttons, float axes[
     axes[3] += axis_to_axis(SDL_GetGamepadAxis(controller, static_cast<SDL_GamepadAxis>(axis_binds[3])), analog_multiplier);
 }
 
-static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool negative, bool from_ext_function, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
+static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool negative, bool from_ext_function, bool app_read, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
     std::lock_guard<std::mutex> guard(emuenv.ctrl.mutex);
 
     if (port == 0) {
@@ -347,7 +342,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
 
     if (emuenv.cfg.current_config.pstv_mode) {
         if (port == 1) {
-            apply_keyboard(&buttons, axes.data(), is_v2, emuenv);
+            apply_keyboard(&buttons, axes.data(), is_v2, app_read, emuenv);
         }
         for (const auto &[_, controller] : state.controllers) {
             if (controller.port + 1 == port) {
@@ -357,7 +352,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
         }
     } else if (port == 1) {
         // If not in PSTV mode, every controller input is considered as a port 1 input
-        apply_keyboard(&buttons, axes.data(), is_v2, emuenv);
+        apply_keyboard(&buttons, axes.data(), is_v2, app_read, emuenv);
         for (const auto &[_, controller] : state.controllers) {
             apply_controller(emuenv, &buttons, axes.data(), controller.controller.get(), is_v2);
         }
@@ -369,7 +364,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
 SceUInt32 ctrl_peek_buttons(EmuEnvState &emuenv, int port) {
     SceUInt32 buttons = 0;
     SceUInt8 lx, ly, rx, ry;
-    retrieve_ctrl_data(emuenv, port, false, false, false, buttons, lx, ly, rx, ry);
+    retrieve_ctrl_data(emuenv, port, false, false, false, false, buttons, lx, ly, rx, ry);
     return buttons;
 }
 
@@ -402,7 +397,7 @@ int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2
     std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
     uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
     pData->timeStamp = timestamp;
-    retrieve_ctrl_data(emuenv, port, is_v2, negative, from_ext, pData->buttons, pData->lx, pData->ly, pData->rx, pData->ry);
+    retrieve_ctrl_data(emuenv, port, is_v2, negative, from_ext, true, pData->buttons, pData->lx, pData->ly, pData->rx, pData->ry);
 
     for (int i = 1; i < nb_returned_data; i++) {
         memcpy(&pData[i], &pData[0], sizeof(SceCtrlData2));

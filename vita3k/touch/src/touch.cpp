@@ -341,7 +341,9 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
 
     if (port == SCE_TOUCH_PORT_FRONT) {
         const std::lock_guard<std::mutex> guard(emuenv.ctrl.mutex);
-        if (emuenv.ctrl.scripted_touch.active)
+        // The length starts once the touch is in the buffer, so the next vblank doesn't end it
+        // before the app sees it
+        if (emuenv.ctrl.scripted_touch.down)
             emuenv.ctrl.scripted_touch.length.update(emuenv.display.app_vblank_count.load());
     }
 
