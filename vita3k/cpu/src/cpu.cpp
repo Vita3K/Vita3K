@@ -22,6 +22,7 @@
 #include <util/types.h>
 
 #include <algorithm>
+#include <bit>
 #include <memory>
 #include <string>
 
@@ -66,6 +67,15 @@ void CPUState::place_call(Address fn, std::initializer_list<uint32_t> args) {
         std::ranges::copy(args.begin() + 4, args.end(), Ptr<uint32_t>(sp).get(mem));
     }
     set_sp(sp);
+}
+
+void CPUState::write_call_result(const CallResult &result) {
+    if (result.in_s0) {
+        set_float_reg(0, std::bit_cast<float>(result.regs[0]));
+        return;
+    }
+    for (uint8_t i = 0; i < result.count; i++)
+        set_reg(i, result.regs[i]);
 }
 
 uint32_t CPUState::stack_alloc(size_t size) {

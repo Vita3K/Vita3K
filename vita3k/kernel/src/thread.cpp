@@ -264,7 +264,7 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         // the abort handler, then the debugger's hold
         switch (exit.kind) {
         case GuestExit::Kind::import:
-            kernel.call_import(*cpu, exit.value, id);
+            cpu->write_call_result(kernel.call_import(*cpu, exit.value, id));
             cpu->clear_exclusive();
             after_kernel_call = true;
             break;

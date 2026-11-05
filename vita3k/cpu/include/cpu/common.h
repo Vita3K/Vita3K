@@ -52,6 +52,15 @@ struct GuestExit {
     bool debugger_stop = false;
 };
 
+// An import's result, which the kernel writes to the registers when the call returns to guest code
+struct CallResult {
+    // r0 to r3, of which count are written
+    std::array<uint32_t, 4> regs{};
+    uint8_t count = 0;
+    // A float result, in s0 with its bits in regs[0]
+    bool in_s0 = false;
+};
+
 struct CPUContext {
     std::array<uint32_t, 16> cpu_registers{};
     std::array<float, 64> fpu_registers{};

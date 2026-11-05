@@ -76,6 +76,8 @@ struct CPUState {
     // Sets up a call of fn with args: the first four in r0 to r3, the rest on the stack, and the
     // return address in LR
     void place_call(Address fn, std::initializer_list<uint32_t> args);
+    // Writes an import's result to the registers the calling convention returns it in
+    void write_call_result(const CallResult &result);
     uint32_t stack_alloc(size_t size);
     void stack_free(size_t size);
 
