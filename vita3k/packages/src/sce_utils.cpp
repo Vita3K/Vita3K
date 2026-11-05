@@ -1100,7 +1100,11 @@ std::vector<uint8_t> extract_elf_from_self(const std::vector<uint8_t> &self_buff
     const SCE_header *hdr = reinterpret_cast<const SCE_header *>(self_buffer.data());
     const uint64_t elf_off = hdr->header_len;
     const uint64_t elf_sz = hdr->elf_filesize;
-    if (elf_sz == 0 || elf_off + elf_sz > self_buffer.size())
+    // An ELF header at least, without the offset and size wrapping around
+    constexpr uint8_t ELF_MAGIC[] = { 0x7f, 'E', 'L', 'F' };
+    constexpr size_t ELF32_EHDR_SIZE = 52;
+    if (elf_off > self_buffer.size() || elf_sz > self_buffer.size() - elf_off || elf_sz < ELF32_EHDR_SIZE
+        || std::memcmp(self_buffer.data() + elf_off, ELF_MAGIC, sizeof(ELF_MAGIC)) != 0)
         return {};
 
     std::vector<uint8_t> elf(

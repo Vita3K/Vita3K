@@ -365,6 +365,33 @@ static std::string gdb_path_to_vita_path(const std::string &gdb_path) {
     return gdb_path.substr(1, second_slash - 1) + ":" + gdb_path.substr(second_slash + 1);
 }
 
+// A module path as an XML attribute value
+static std::string xml_escape(const std::string &text) {
+    std::string escaped;
+    for (const char c : text) {
+        switch (c) {
+        case '&': escaped += "&amp;"; break;
+        case '<': escaped += "&lt;"; break;
+        case '>': escaped += "&gt;"; break;
+        case '"': escaped += "&quot;"; break;
+        // Defensive: drop any embedded null bytes that would break XML.
+        case '\0': break;
+        default: escaped += c; break;
+        }
+    }
+    return escaped;
+}
+
+// The loaded segments of a module, in ELF order
+static std::vector<size_t> loaded_segments(const KernelModule &module) {
+    std::vector<size_t> indices;
+    for (size_t i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
+        if (module.info.segments[i].size != 0)
+            indices.push_back(i);
+    }
+    return indices;
+}
+
 // Build the library list XML. Used by both the legacy `library-list` and
 // the svr4 variant; gdb dispatches on which qXfer name it requested.
 static std::string build_library_list_xml(EmuEnvState &state, bool svr4) {
@@ -390,29 +417,28 @@ static std::string build_library_list_xml(EmuEnvState &state, bool svr4) {
             // Prefer the real Vita-style path so gdb can vFile:open it and
             // auto-load the .suprx symbols. Fall back to module name for any
             // module loaded without a recorded path.
-            std::string name = !module->vita_path.empty()
-                ? vita_path_to_gdb_path(module->vita_path)
-                : std::string(module->info.module_name);
-            // Defensive: drop any embedded null bytes that would break XML.
-            name.erase(std::remove(name.begin(), name.end(), '\0'), name.end());
+            const std::string name = xml_escape(!module->vita_path.empty()
+                    ? vita_path_to_gdb_path(module->vita_path)
+                    : std::string(module->info.module_name));
+            const std::vector<size_t> segments = loaded_segments(*module);
+            if (segments.empty())
+                continue;
 
             if (svr4) {
-                const uint32_t base = module->info.segments[0].vaddr.address();
+                // How far the module moved from the addresses it was linked at
+                const size_t first = segments.front();
+                const uint32_t displacement = module->info.segments[first].vaddr.address() - module->segment_p_vaddr[first];
                 xml += fmt::format(
                     "<library name=\"{}\" lm=\"0x{:x}\" l_addr=\"0x{:x}\" l_ld=\"0x0\"/>",
-                    name, static_cast<uint32_t>(uid), base);
+                    name, static_cast<uint32_t>(uid), displacement);
             } else {
                 // Emit a <segment> per loadable PT_LOAD in ELF order so gdb
                 // can compute the load offset for each section.
                 // Without this, symbols past segment 0 land at
                 // bogus addresses
                 xml += fmt::format("<library name=\"{}\">", name);
-                for (size_t i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
-                    const auto &seg = module->info.segments[i];
-                    if (seg.size == 0)
-                        continue;
-                    xml += fmt::format("<segment address=\"{:#x}\"/>", seg.vaddr.address());
-                }
+                for (const size_t i : segments)
+                    xml += fmt::format("<segment address=\"{:#x}\"/>", module->info.segments[i].vaddr.address());
                 xml += "</library>";
             }
         }
@@ -1039,12 +1065,14 @@ static std::string cmd_offsets(EmuEnvState &state, PacketCommand &command) {
     // The first loaded module is the main executable (eboot.bin).
     // TextSeg/DataSeg format gives gdb the absolute segment addresses;
     // gdb computes the relocation offsets from the ELF headers internally.
+    // The loaded segments, which a program header that isn't loaded can separate
     const auto &module = state.kernel.loaded_modules.begin()->second;
-    uint32_t text_addr = module->info.segments[0].vaddr.address();
-    uint32_t data_addr = module->info.segments[1].vaddr.address();
-
-    if (data_addr)
-        return fmt::format("TextSeg={:x};DataSeg={:x}", text_addr, data_addr);
+    const std::vector<size_t> segments = loaded_segments(*module);
+    if (segments.empty())
+        return "";
+    const uint32_t text_addr = module->info.segments[segments[0]].vaddr.address();
+    if (segments.size() > 1)
+        return fmt::format("TextSeg={:x};DataSeg={:x}", text_addr, module->info.segments[segments[1]].vaddr.address());
     return fmt::format("TextSeg={:x}", text_addr);
 }
 
