@@ -45,14 +45,18 @@ struct GuestExit {
         returned,
         // Guest code called an import, value is its NID
         import,
-        // A request_stop(), a breakpoint or a finished step
+        // A request_stop(), a breakpoint, a watchpoint or a finished step
         stopped,
     };
     Kind kind;
     uint32_t value = 0;
-    // A breakpoint or a step that ran its instruction, so the debugger holds the thread. A stepped
-    // import has it too.
+    // A breakpoint, a watchpoint or a step that ran its instruction, so the debugger holds the
+    // thread. A stepped import has it too.
     bool debugger_stop = false;
+    // The thread is at a breakpoint instruction, which it didn't run
+    bool breakpoint = false;
+    // An access the thread made hit a watchpoint
+    bool watchpoint = false;
 };
 
 // An import's result, which the kernel writes to the registers when the call returns to guest code
