@@ -125,11 +125,12 @@ struct ThreadState final {
     [[nodiscard]] WaitResult run_callbacks();
     // Wakes this thread from wait().
     void wake();
-    // Shows the thread WAITING while it lives, for a host call that blocks the thread, like an audio
-    // output, and RUNNING after
+    // A host call that blocks the thread inside an export, like an audio output, during which the
+    // thread counts as stopped. It shows WAITING on shown while it lives, or stays RUNNING without
+    // a target.
     class HostWait {
     public:
-        explicit HostWait(ThreadState &thread);
+        explicit HostWait(ThreadState &thread, std::optional<WaitTarget> shown = WaitTarget{});
         ~HostWait();
         HostWait(const HostWait &) = delete;
         HostWait &operator=(const HostWait &) = delete;
@@ -212,7 +213,7 @@ private:
     // Waits with mutex held through lock until nothing holds the thread, parked meanwhile
     void stop_for_holds(std::unique_lock<std::mutex> &lock);
     // Whether the thread may run guest code now, or kernel code that changes its registers
-    bool runs() const { return status == ThreadStatus::running && !parked; }
+    bool runs() const { return status == ThreadStatus::running && !parked && !host_waiting; }
     // Asks the thread to end, keeping a stronger request already made
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
     // Whether a callback of this thread was notified and hasn't run yet
@@ -291,6 +292,8 @@ private:
     bool step_requested = false;
     // The thread waits for its holds before guest code, with its registers still
     bool parked = false;
+    // Blocked in a host wait inside an export
+    bool host_waiting = false;
 
     // Threads blocked in sceKernelWaitThreadEnd on this one, with their own lock, taken after mutex
     std::mutex end_waiters_mutex;

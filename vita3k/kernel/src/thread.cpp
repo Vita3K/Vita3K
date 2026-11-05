@@ -452,16 +452,25 @@ int ThreadState::stack_free_size() const {
     return static_cast<int>(cpu->get_sp() - stack.get());
 }
 
-ThreadState::HostWait::HostWait(ThreadState &thread)
+ThreadState::HostWait::HostWait(ThreadState &thread, std::optional<WaitTarget> shown)
     : thread(thread) {
     const std::lock_guard<std::mutex> lock(thread.mutex);
-    thread.update_status(ThreadStatus::waiting);
+    thread.host_waiting = true;
+    if (shown) {
+        thread.wait_target = *shown;
+        thread.update_status(ThreadStatus::waiting);
+    } else {
+        thread.cv.notify_all();
+    }
 }
 
 ThreadState::HostWait::~HostWait() {
     const std::lock_guard<std::mutex> lock(thread.mutex);
-    // Before the bridge writes the call's result to the registers
-    thread.update_status(ThreadStatus::running);
+    thread.host_waiting = false;
+    if (thread.status == ThreadStatus::waiting) {
+        thread.wait_target = {};
+        thread.update_status(ThreadStatus::running);
+    }
 }
 
 uint64_t ThreadState::next_display_wait(uint64_t next_vblank, int vcount) {
@@ -591,9 +600,8 @@ SceKernelThreadInfo ThreadState::info() {
     info.currentCpuAffinityMask = affinity_mask;
     info.entry = SceKernelThreadEntry(entry_point);
     // A thread whose kernel wait is over is READY until it goes on, and waits on nothing, like on a
-    // Vita, where the waker ends the wait. A host wait, like an audio output, has no target and
-    // stays WAITING.
-    const bool ready = status == ThreadStatus::waiting && wait_target.type != 0 && wait_over();
+    // Vita, where the waker ends the wait. A host wait ends with its host call and stays WAITING.
+    const bool ready = status == ThreadStatus::waiting && !host_waiting && wait_over();
     const WaitTarget reported = ready ? WaitTarget{} : wait_target;
     info.status = ready ? SCE_KERNEL_THREAD_STATUS_READY : std::to_underlying(shown_status());
     info.waitType = reported.callbacks ? reported.type | SCE_KERNEL_WAITTYPE_CB_BIT : reported.type;
