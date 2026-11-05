@@ -256,10 +256,12 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         lock.unlock();
         GuestExit exit = cpu->run(step ? CPUState::RunMode::single_step : CPUState::RunMode::run);
         // A breakpoint whose conditions are false runs the instruction under it and goes on, without
-        // the debugger stopping the app for every hit
-        if (!step && exit.debugger_stop && !kernel.debugger.breakpoint_stops(mem, *cpu)) {
-            exit = kernel.debugger.step_over_breakpoint(mem, *cpu);
-            exit.debugger_stop = false;
+        // the debugger stopping the app for every hit. A step ends after the instruction, and a run
+        // stops only for what the instruction hits.
+        if (exit.breakpoint && !kernel.debugger.breakpoint_stops(mem, *cpu)) {
+            exit = kernel.debugger.step_over_breakpoint(*cpu);
+            if (!step)
+                exit.debugger_stop = exit.breakpoint || exit.watchpoint;
         }
         if (step) {
             lock.lock();
@@ -269,6 +271,7 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
                 continue;
             // The step is taken, so a call that a stepped import makes doesn't step too
             step_requested = false;
+            step_trapped = exit.breakpoint || exit.watchpoint;
             lock.unlock();
         }
 
@@ -654,13 +657,14 @@ void ThreadState::set_suspended(bool suspended) {
     cv.notify_all();
 }
 
-bool ThreadState::step() {
+ThreadState::StepResult ThreadState::step() {
     std::unique_lock<std::mutex> lock(mutex);
     // A pause or a ForVM suspend holds the thread, so it doesn't step. One that comes after this
     // check delays the step until it ends. A thread that hasn't started has nothing to step, and
     // would lose its hold.
     if (kernel.is_threads_paused() || vm_suspend_count > 0 || status == ThreadStatus::dormant)
-        return false;
+        return StepResult::held;
+    step_trapped = false;
     // A thread with no run, or one that is ending, has no instruction to step, and the wait ends
     // once it is dormant or deleted
     step_requested = (status == ThreadStatus::running || status == ThreadStatus::waiting) && !exiting();
@@ -668,7 +672,7 @@ bool ThreadState::step() {
     cv.notify_all();
     // The thread holds for the debugger again after the instruction
     cv.wait(lock, [&] { return (debugger_hold && parked) || status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
-    return true;
+    return step_trapped ? StepResult::trapped : StepResult::stepped;
 }
 
 void ThreadState::wait_until_not_running(std::chrono::steady_clock::time_point deadline) {

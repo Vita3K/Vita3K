@@ -81,40 +81,60 @@ void Debugger::notify_breakpoint(SceUID thread_id) {
 }
 
 void Debugger::add_watch_memory_addr(Address addr, size_t size, WatchType type) {
-    std::lock_guard<std::mutex> lock(mutex);
-    watch_memory_addrs.emplace(addr, WatchMemory{ addr, size, type });
+    const auto lock = std::lock_guard(watch_mutex);
+    watchpoints.push_back({ addr, size, type });
 }
 
-void Debugger::remove_watch_memory_addr(KernelState &state, Address addr) {
-    std::lock_guard<std::mutex> lock(mutex);
-    watch_memory_addrs.erase(addr);
+void Debugger::remove_watch_memory_addr(Address addr, size_t size, WatchType type) {
+    const auto lock = std::lock_guard(watch_mutex);
+    const auto it = std::find_if(watchpoints.begin(), watchpoints.end(), [&](const WatchMemory &watch) {
+        return watch.start == addr && watch.size == size && watch.type == type;
+    });
+    if (it != watchpoints.end())
+        watchpoints.erase(it);
+}
+
+void Debugger::remove_all_watchpoints() {
+    const auto lock = std::lock_guard(watch_mutex);
+    watchpoints.clear();
+    watch_hits.clear();
 }
 
 // TODO use boost icl or interval tree instead if this turns out to be a significant bottleneck
-Address Debugger::get_watch_memory_addr(Address addr) {
-    std::lock_guard<std::mutex> lock(mutex);
-    for (const auto &item : watch_memory_addrs) {
-        if (item.second.start <= addr && addr < item.second.start + item.second.size) {
-            return item.second.start;
+bool Debugger::check_watchpoint(SceUID thread_id, Address addr, size_t size, bool is_write) {
+    const auto lock = std::lock_guard(watch_mutex);
+    for (const WatchMemory &watch : watchpoints) {
+        // Any byte of the access in the watched range
+        if (addr >= watch.start + watch.size || watch.start >= addr + size)
+            continue;
+        if (watch.type == WatchType::ACCESS
+            || (watch.type == WatchType::WRITE && is_write)
+            || (watch.type == WatchType::READ && !is_write)) {
+            watch_hits[thread_id] = watch;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
-Address Debugger::check_watchpoint(Address addr, bool is_write) {
-    for (const auto &item : watch_memory_addrs) {
-        if (item.second.start <= addr && addr < item.second.start + item.second.size) {
-            const auto t = item.second.type;
-            if (t == WatchType::ACCESS
-                || (t == WatchType::WRITE && is_write)
-                || (t == WatchType::READ && !is_write)) {
-                break_watch_addr = item.second.start;
-                break_watch_type = t;
-                return item.second.start;
-            }
-        }
-    }
-    return 0;
+std::optional<WatchMemory> Debugger::take_watch_hit(SceUID thread_id) {
+    const auto lock = std::lock_guard(watch_mutex);
+    const auto it = watch_hits.find(thread_id);
+    if (it == watch_hits.end())
+        return std::nullopt;
+    const WatchMemory hit = it->second;
+    watch_hits.erase(it);
+    return hit;
+}
+
+void Debugger::clear_watch_hits() {
+    const auto lock = std::lock_guard(watch_mutex);
+    watch_hits.clear();
+}
+
+bool Debugger::memory_watched() {
+    const auto lock = std::lock_guard(watch_mutex);
+    return watch_memory || !watchpoints.empty();
 }
 
 // Runs a GDB agent expression for a thread and returns its value, or nothing for an expression
@@ -308,29 +328,32 @@ bool Debugger::breakpoint_stops(MemState &mem, CPUState &cpu) {
     });
 }
 
-GuestExit Debugger::step_over_breakpoint(MemState &mem, CPUState &cpu) {
-    // Other threads miss the breakpoint while the instruction is back
-    const auto lock = std::lock_guard(mutex);
+GuestExit Debugger::step_over_breakpoint(CPUState &cpu) {
     const Address addr = cpu.get_pc() & ~1;
-    const auto it = breakpoints.find(addr);
-    if (it == breakpoints.end())
-        return cpu.run(CPUState::RunMode::single_step);
-    const Breakpoint &bk = it->second;
-    const size_t size = bk.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT);
-    std::memcpy(Ptr<uint8_t>(addr).get(mem), &bk.data, size);
-    parent.invalidate_jit_cache(addr, 4);
+    {
+        const auto lock = std::lock_guard(mutex);
+        const auto it = breakpoints.find(addr);
+        if (it == breakpoints.end())
+            return cpu.run(CPUState::RunMode::single_step);
+        const Breakpoint &bk = it->second;
+        cpu.original_code_size = bk.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT);
+        std::memcpy(cpu.original_code.data(), bk.data, cpu.original_code_size);
+    }
+    // Only this thread's CPU sees the instruction, which the other threads find the breakpoint over
+    cpu.original_code_addr = addr;
+    cpu.invalidate_jit_cache(addr, 4);
     const GuestExit exit = cpu.run(CPUState::RunMode::single_step);
-    std::memcpy(Ptr<uint8_t>(addr).get(mem), bk.thumb_mode ? THUMB_BREAKPOINT : ARM_BREAKPOINT, size);
-    parent.invalidate_jit_cache(addr, 4);
+    cpu.original_code_size = 0;
+    cpu.invalidate_jit_cache(addr, 4);
     return exit;
 }
 
 void Debugger::update_watches() {
-    parent.set_memory_watch(watch_memory);
+    parent.set_memory_watch(memory_watched());
 }
 
 void Debugger::deinit() {
     std::lock_guard<std::mutex> lock(mutex);
     breakpoints.clear();
-    watch_memory_addrs.clear();
+    remove_all_watchpoints();
 }

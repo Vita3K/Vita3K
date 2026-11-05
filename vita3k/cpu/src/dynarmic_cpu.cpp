@@ -94,6 +94,7 @@ static constexpr bool LOG_INVALID_ACCESS = false;
 static constexpr Dynarmic::HaltReason HALT_STOP = Dynarmic::HaltReason::UserDefined1;
 static constexpr Dynarmic::HaltReason HALT_RETURN = Dynarmic::HaltReason::UserDefined2;
 static constexpr Dynarmic::HaltReason HALT_BREAKPOINT = Dynarmic::HaltReason::UserDefined3;
+static constexpr Dynarmic::HaltReason HALT_WATCHPOINT = Dynarmic::HaltReason::UserDefined4;
 static constexpr Dynarmic::HaltReason HALT_IMPORT = Dynarmic::HaltReason::UserDefined8;
 
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
@@ -108,7 +109,16 @@ public:
             LOG_TRACE("Instruction fetch at address 0x{:X}", addr);
         if (addr < KiB(4))
             return std::nullopt;
-        return MemoryRead32(addr);
+        // Not MemoryRead32, an instruction fetch isn't a read for the watchpoints
+        if (invalid_access("read", addr))
+            return 0;
+        uint32_t code = *Ptr<uint32_t>(addr).get(cpu.mem);
+        for (size_t i = 0; i < cpu.original_code_size; i++) {
+            const Address byte_addr = cpu.original_code_addr + i;
+            if (byte_addr - addr < sizeof(code))
+                reinterpret_cast<uint8_t *>(&code)[byte_addr - addr] = cpu.original_code[i];
+        }
+        return code;
     }
 
     static void TraceInstruction(uint64_t self_, uint64_t address, uint64_t is_thumb) {
@@ -153,8 +163,8 @@ public:
         if (cpu.log_mem) {
             if (cpu.log_code)
                 LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
-            if (cpu.check_watchpoint && cpu.check_watchpoint(addr, false)) {
-                cpu.jit->HaltExecution(HALT_BREAKPOINT);
+            if (cpu.check_watchpoint && cpu.check_watchpoint(addr, sizeof(T), false)) {
+                cpu.jit->HaltExecution(HALT_WATCHPOINT);
             }
         }
         return ret;
@@ -184,8 +194,8 @@ public:
         if (cpu.log_mem) {
             if (cpu.log_code)
                 LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
-            if (cpu.check_watchpoint && cpu.check_watchpoint(addr, true)) {
-                cpu.jit->HaltExecution(HALT_BREAKPOINT);
+            if (cpu.check_watchpoint && cpu.check_watchpoint(addr, sizeof(T), true)) {
+                cpu.jit->HaltExecution(HALT_WATCHPOINT);
             }
         }
     }
@@ -213,6 +223,9 @@ public:
         const bool result = Ptr<T>(addr).atomic_compare_and_swap(cpu.mem, value, expected);
         if (cpu.log_mem) {
             LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}", sizeof(T) * 8, addr, value, expected);
+            // A failed exclusive store writes nothing
+            if (result && cpu.check_watchpoint && cpu.check_watchpoint(addr, sizeof(T), true))
+                cpu.jit->HaltExecution(HALT_WATCHPOINT);
         }
         return result;
     }
@@ -329,15 +342,22 @@ GuestExit DynarmicCPU::run(RunMode mode) {
             reason = jit->Run();
         } while (reason == Dynarmic::HaltReason::Step || reason == Dynarmic::HaltReason::CacheInvalidation);
     }
-    // The NID is the word after the SVC. A stepped SVC reports the debugger stop with it.
+    // The NID is the word after the SVC. A stepped SVC reports the debugger stop with it, and so
+    // does a watchpoint an access in the same block hit.
+    const bool watchpoint = Dynarmic::Has(reason, HALT_WATCHPOINT);
     if (Dynarmic::Has(reason, HALT_IMPORT))
-        return { GuestExit::Kind::import, *Ptr<uint32_t>(get_pc() + 4).get(mem), step };
+        return { .kind = GuestExit::Kind::import, .value = *Ptr<uint32_t>(get_pc() + 4).get(mem), .debugger_stop = step || watchpoint, .watchpoint = watchpoint };
     // A run that halted stopped at the return address, and a step never returns
     if (!step && Dynarmic::Has(reason, HALT_RETURN))
         return { GuestExit::Kind::returned, get_reg(0) };
-    // A breakpoint, or a step that ran its instruction. A step that a pending stop request ended
-    // before its instruction has neither.
-    return { GuestExit::Kind::stopped, 0, Dynarmic::Has(reason, Dynarmic::HaltReason::Step | HALT_BREAKPOINT) };
+    // A breakpoint, a watchpoint, or a step that ran its instruction. A step that a pending stop
+    // request ended before its instruction has none.
+    return {
+        .kind = GuestExit::Kind::stopped,
+        .debugger_stop = Dynarmic::Has(reason, Dynarmic::HaltReason::Step | HALT_BREAKPOINT | HALT_WATCHPOINT),
+        .breakpoint = Dynarmic::Has(reason, HALT_BREAKPOINT),
+        .watchpoint = watchpoint,
+    };
 }
 
 void DynarmicCPU::clear_exclusive() {

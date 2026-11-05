@@ -159,9 +159,16 @@ struct ThreadState final {
     // Stops the thread for the debugger the next time it would run guest code, or lets it run again.
     // A pause or a ForVM suspend may still hold it after the debugger lets go.
     void set_suspended(bool suspended);
+    enum class StepResult : uint8_t {
+        // Something else holds the thread, so it didn't step
+        held,
+        stepped,
+        // The thread is at a breakpoint that stops it, or hit a watchpoint
+        trapped,
+    };
     // Lets a thread the debugger stopped run one instruction, then waits until it stops again or is
-    // dormant or deleted. Returns false and doesn't step while something else holds the thread.
-    bool step();
+    // dormant or deleted
+    StepResult step();
     // Waits until the thread doesn't run guest code
     void wait_until_not_running(std::chrono::steady_clock::time_point deadline);
     // Whether the debugger holds the thread and it has stopped. Once the debugger has let every
@@ -291,6 +298,8 @@ private:
     bool debugger_hold = false;
     // The debugger asked for one instruction, which the next run of guest code takes
     bool step_requested = false;
+    // The last step stopped at a breakpoint or hit a watchpoint
+    bool step_trapped = false;
     // The thread waits for its holds before guest code, with its registers still
     bool parked = false;
     // Blocked in a host wait inside an export

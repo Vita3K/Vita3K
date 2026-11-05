@@ -695,6 +695,9 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
 
 static void release_app(EmuEnvState &state) {
     state.kernel.debugger.remove_all_breakpoints(state.mem);
+    // A watchpoint would stop a thread with no debugger to let it go
+    state.kernel.debugger.remove_all_watchpoints();
+    state.kernel.debugger.update_watches();
     state.kernel.set_threads_suspended(false);
 
     state.gdb.current_thread = 0;
@@ -780,11 +783,9 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
     // watch address and type so gdb displays "Hardware watchpoint N"
     // instead of a generic SIGTRAP.
     const auto stop_reply = [&](SceUID tid) -> std::string {
-        Address wp = state.kernel.debugger.break_watch_addr;
-        if (wp) {
-            state.kernel.debugger.break_watch_addr = 0;
+        if (const auto hit = state.kernel.debugger.take_watch_hit(tid)) {
             const char *keyword = "watch";
-            switch (state.kernel.debugger.break_watch_type) {
+            switch (hit->type) {
             case WatchType::READ:
                 keyword = "rwatch";
                 break;
@@ -794,7 +795,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             default:
                 break;
             }
-            return fmt::format("T05{}:{:x};thread:{:x};", keyword, wp, tid);
+            return fmt::format("T05{}:{:x};thread:{:x};", keyword, hit->start, tid);
         }
         return fmt::format("T05thread:{:x};", tid);
     };
@@ -861,9 +862,14 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     break;
 
                 // A thread something else holds can't step, and gdb takes the error as a stop
-                if (!thread->step())
+                const ThreadState::StepResult result = thread->step();
+                if (result == ThreadState::StepResult::held)
                     return "E01";
                 ++steps;
+
+                // A breakpoint in the range stops the thread before its instruction
+                if (result == ThreadState::StepResult::trapped)
+                    break;
 
                 const ThreadStatus status = thread->get_status();
                 if (status == ThreadStatus::dormant || status == ThreadStatus::deleted)
@@ -895,7 +901,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // A thread something else holds can't step, and gdb takes the error as a stop
             // TODO: a step into a call that waits on a thread the debugger holds never returns
-            if (!thread->step())
+            if (thread->step() == ThreadState::StepResult::held)
                 return "E01";
 
             state.gdb.current_thread = thread_id;
@@ -911,7 +917,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // Resume the world. A thread something else holds stays stopped.
             state.kernel.debugger.has_break = false;
-            state.kernel.debugger.break_watch_addr = 0;
+            state.kernel.debugger.clear_watch_hits();
             state.kernel.set_threads_suspended(false);
             state.audio.switch_state(false);
 
@@ -1123,7 +1129,6 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     if (type >= 2 && type <= 4) {
         LOG_INFO("GDB Server New Watchpoint at {} (type={}, len={}).", log_hex(address), type, kind);
         state.kernel.debugger.add_watch_memory_addr(address, kind, static_cast<WatchType>(type));
-        state.kernel.debugger.watch_memory = true;
         state.kernel.debugger.update_watches();
         return "OK";
     }
@@ -1150,7 +1155,8 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
 
     if (type >= 2 && type <= 4) {
         LOG_INFO("GDB Server Removed Watchpoint at {} (type={}).", log_hex(address), type);
-        state.kernel.debugger.remove_watch_memory_addr(state.kernel, address);
+        state.kernel.debugger.remove_watch_memory_addr(address, kind, static_cast<WatchType>(type));
+        state.kernel.debugger.update_watches();
         return "OK";
     }
 
