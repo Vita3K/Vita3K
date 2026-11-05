@@ -25,6 +25,7 @@
 #include <condition_variable>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 struct KernelState;
@@ -51,7 +52,6 @@ struct WatchMemory {
     WatchType type;
 };
 
-using WatchMemoryAddrs = std::map<Address, WatchMemory>;
 using Breakpoints = std::map<Address, Breakpoint>;
 
 struct Debugger {
@@ -66,24 +66,30 @@ struct Debugger {
     bool log_exports = false;
     bool dump_elfs = false;
 
+    // A watchpoint of each type and size can be at the same address
     void add_watch_memory_addr(Address addr, size_t size, WatchType type = WatchType::ACCESS);
-    void remove_watch_memory_addr(KernelState &state, Address addr);
+    void remove_watch_memory_addr(Address addr, size_t size, WatchType type);
+    void remove_all_watchpoints();
     // Adding a breakpoint where there is one replaces its conditions
     void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode, std::vector<BreakpointCondition> conditions = {});
     void remove_breakpoint(MemState &mem, uint32_t addr);
     void remove_all_breakpoints(MemState &mem);
-    Address get_watch_memory_addr(Address addr);
-    // Check if addr triggers a watchpoint for the given access direction.
-    // Returns the watched base address on match, 0 on miss. On match,
-    // also sets break_watch_addr and break_watch_type for the stop reply.
-    Address check_watchpoint(Address addr, bool is_write);
+    // Checks whether a thread's access hits a watchpoint, and keeps the hit for the stop reply
+    bool check_watchpoint(SceUID thread_id, Address addr, size_t size, bool is_write);
+    // The watchpoint a thread hit since the last call or clear_watch_hits(), if any
+    std::optional<WatchMemory> take_watch_hit(SceUID thread_id);
+    void clear_watch_hits();
+    // Whether the CPUs check memory accesses, for watch_memory or a watchpoint
+    bool memory_watched();
+    // Makes the CPUs check memory accesses as memory_watched() says
     void update_watches();
     void deinit();
 
     // Whether the breakpoint a thread hit stops it, which runs its conditions
     bool breakpoint_stops(MemState &mem, CPUState &cpu);
-    // Runs the instruction under the breakpoint at the PC, for a thread the breakpoint doesn't stop
-    GuestExit step_over_breakpoint(MemState &mem, CPUState &cpu);
+    // Runs the instruction under the breakpoint at the PC, for a thread the breakpoint doesn't stop.
+    // The breakpoint stays for the other threads.
+    GuestExit step_over_breakpoint(CPUState &cpu);
 
     // GDB breakpoint notification: signaled from the thread loop when a
     // thread hits a breakpoint and transitions to suspend.
@@ -94,14 +100,12 @@ struct Debugger {
     SceUID break_thread_id = 0;
     std::atomic<bool> has_break{ false };
 
-    // Set by the CPU callback when a watchpoint (not a breakpoint)
-    // triggers. Read by cmd_continue to build the stop reply.
-    Address break_watch_addr = 0;
-    WatchType break_watch_type = WatchType::WRITE;
-
 private:
     std::mutex mutex;
     KernelState &parent;
-    WatchMemoryAddrs watch_memory_addrs;
     Breakpoints breakpoints;
+    // Guest threads check the watchpoints on every access while one is set
+    std::mutex watch_mutex;
+    std::vector<WatchMemory> watchpoints;
+    std::map<SceUID, WatchMemory> watch_hits;
 };
