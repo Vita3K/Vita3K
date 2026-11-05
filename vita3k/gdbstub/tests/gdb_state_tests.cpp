@@ -61,9 +61,12 @@ TEST(gdb_state, server_close_is_safe_when_server_thread_also_closes) {
         {
             for (int i = 0; i < 1000; ++i) {
                 EmuEnvState state;
+                // The thread can take server_thread as soon as it runs
+                std::unique_lock guard(state.gdb.server_thread_mutex);
                 state.gdb.server_thread = std::make_shared<std::thread>([&state] {
                     server_close(state);
                 });
+                guard.unlock();
                 server_close(state);
             }
             std::exit(0);
@@ -81,6 +84,8 @@ TEST(gdb_state, server_close_wakes_server_waiting_for_client) {
             // A hang in the join fails the test instead of blocking it
             alarm(10);
             EmuEnvState state;
+            // Not the port of a Vita3K that may be running
+            state.gdb.port = 0;
             server_open(state);
             if (!state.gdb.server_thread)
                 std::exit(1);
