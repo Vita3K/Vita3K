@@ -681,6 +681,9 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
     const uint32_t length = parse_hex(second);
     const char *data = command.content_start + pos_second + 1;
 
+    // The data after unescaping is as long as the packet says
+    if (pos_second == std::string::npos || content.size() - pos_second - 1 != length)
+        return "E00";
     if (!check_memory_region(address, length, state.mem))
         return "EAA";
 
@@ -975,8 +978,11 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             if (state.gdb.server_die)
                 return "";
 
-            if (did_break) {
-                const ThreadStatePtr stopped = state.kernel.get_thread(stopped_id);
+            // A thread that was deleted after hitting the breakpoint has nothing to report
+            const ThreadStatePtr stopped = did_break ? state.kernel.get_thread(stopped_id) : nullptr;
+            if (did_break && !stopped)
+                stopped_id = started_thread(state);
+            if (stopped) {
                 LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
                 LOG_INFO("PC: {} LR: {}", stopped->cpu->get_pc(), stopped->cpu->get_lr());
                 LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
@@ -1081,16 +1087,17 @@ static std::string cmd_get_next_thread(EmuEnvState &state, PacketCommand &comman
     return str;
 }
 
-// The conditions after a Z0 packet's kind, each ";X<length>,<bytecode in hex>"
-static std::vector<BreakpointCondition> parse_breakpoint_conditions(const std::string &content) {
+// The conditions after a Z0 packet's kind, each ";X<length>,<bytecode in hex>", or nothing for a
+// malformed one
+static std::optional<std::vector<BreakpointCondition>> parse_breakpoint_conditions(const std::string &content) {
     std::vector<BreakpointCondition> conditions;
     for (size_t pos = content.find(";X"); pos != std::string::npos; pos = content.find(";X", pos + 1)) {
         const size_t comma = content.find(',', pos);
         if (comma == std::string::npos)
-            break;
+            return std::nullopt;
         const uint32_t length = parse_hex(content.substr(pos + 2, comma - pos - 2));
-        if (comma + 1 + length * 2 > content.size())
-            break;
+        if (length > (content.size() - comma - 1) / 2)
+            return std::nullopt;
         BreakpointCondition condition(length);
         for (uint32_t i = 0; i < length; i++)
             condition[i] = static_cast<uint8_t>(parse_hex(content.substr(comma + 1 + i * 2, 2)));
@@ -1114,6 +1121,9 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
             LOG_WARN("GDB Server Breakpoint rejected — address {} not mapped.", log_hex(address));
             return "E01";
         }
+        auto conditions = parse_breakpoint_conditions(content);
+        if (!conditions)
+            return "E01";
         LOG_INFO("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
         // GDB sets bit 0 of the address for Thumb breakpoints; the real
         // instruction is 2-byte aligned. Keep the raw address for the
@@ -1122,7 +1132,7 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
         // over the first halfword stops at a 32-bit Thumb instruction too.
         // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
         // Conditions run in the stub, so a hit that doesn't stop costs no round trip to GDB
-        state.kernel.debugger.add_breakpoint(state.mem, align_down(address, 2), kind == 2 || kind == 3, parse_breakpoint_conditions(content));
+        state.kernel.debugger.add_breakpoint(state.mem, align_down(address, 2), kind == 2 || kind == 3, std::move(*conditions));
         return "OK";
     }
 
@@ -1163,39 +1173,12 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     return "";
 }
 
-// GDB's Host I/O (vFile) flag values, from include/gdb/fileio.h.
-// These are the GDB-protocol values, NOT host POSIX values.
+// GDB's Host I/O (vFile) values, from include/gdb/fileio.h, not the host's
 constexpr int GDB_O_RDONLY = 0x0;
-constexpr int GDB_O_WRONLY = 0x1;
-constexpr int GDB_O_RDWR = 0x2;
-constexpr int GDB_O_APPEND = 0x8;
-constexpr int GDB_O_CREAT = 0x200;
-constexpr int GDB_O_TRUNC = 0x400;
-constexpr int GDB_O_EXCL = 0x800;
 
 constexpr int GDB_ENOENT = 2;
 constexpr int GDB_EBADF = 9;
 constexpr int GDB_EINVAL = 22;
-
-static int gdb_flags_to_sce(int gdb_flags) {
-    int sce = 0;
-    const int access = gdb_flags & 0x3;
-    if (access == GDB_O_WRONLY)
-        sce |= SCE_O_WRONLY;
-    else if (access == GDB_O_RDWR)
-        sce |= SCE_O_RDWR;
-    else
-        sce |= SCE_O_RDONLY;
-    if (gdb_flags & GDB_O_APPEND)
-        sce |= SCE_O_APPEND;
-    if (gdb_flags & GDB_O_CREAT)
-        sce |= SCE_O_CREAT;
-    if (gdb_flags & GDB_O_TRUNC)
-        sce |= SCE_O_TRUNC;
-    if (gdb_flags & GDB_O_EXCL)
-        sce |= SCE_O_EXCL;
-    return sce;
-}
 
 static std::string vfile_unhex_path(const std::string &hex) {
     std::string out;
@@ -1264,7 +1247,9 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
         // .suprx". Translate back to the device-prefix form open_file wants.
         const std::string path = gdb_path_to_vita_path(raw_path);
         const int gdb_flags = static_cast<int>(std::stoul(args.substr(c1 + 1, c2 - c1 - 1), nullptr, 16));
-        const int sce_flags = gdb_flags_to_sce(gdb_flags);
+        // Files are only read, and opening one to write could create or truncate it
+        if (gdb_flags != GDB_O_RDONLY)
+            return vfile_error(GDB_EINVAL);
 
         // Step 1: try the loaded-module ELF cache. Only modules loaded
         // with gdbstub on populate elf_bytes, and only those produce
@@ -1285,7 +1270,7 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
         // Step 2: fall back to reading the raw file from the guest fs
         // (lets `remote get` and other arbitrary fetches still work).
         if (!served_from_module) {
-            const SceUID rfd = open_file(state.io, path.c_str(), sce_flags, state.vita_fs_path, "gdbstub");
+            const SceUID rfd = open_file(state.io, path.c_str(), SCE_O_RDONLY, state.vita_fs_path, "gdbstub");
             if (rfd < 0) {
                 LOG_INFO("GDB vFile open failed: '{}' (raw='{}')", path, raw_path);
                 return vfile_error(GDB_ENOENT);
@@ -1659,7 +1644,12 @@ static int64_t server_next(EmuEnvState &state) {
             break;
         }
         case '$': {
-            const size_t end = input.find('#');
+            // The first '#' that isn't escaped, like the one a '}' turns into 0x03
+            size_t end = 1;
+            while (end < input.size() && input[end] != '#')
+                end += input[end] == '}' ? 2 : 1;
+            if (end >= input.size())
+                end = std::string::npos;
             // Wait for the rest of a packet split across reads, up to a limit
             if (end == std::string::npos || input.size() < end + 3) {
                 if (input.size() > MAX_PACKET_SIZE) {
