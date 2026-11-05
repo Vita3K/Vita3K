@@ -184,7 +184,7 @@ void touch_vsync_update(EmuEnvState &emuenv) {
     {
         const std::lock_guard<std::mutex> guard(emuenv.ctrl.mutex);
         auto &scripted = emuenv.ctrl.scripted_touch;
-        if (scripted.length.end_vcount != 0 && scripted.length.update(emuenv.display.vblank_count.load()))
+        if (scripted.length.end_vcount != 0 && scripted.length.update(emuenv.display.app_vblank_count.load()))
             scripted = {};
 
         if (scripted.active && touch.touch_mode[SCE_TOUCH_PORT_FRONT]) {
@@ -342,7 +342,7 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
     if (port == SCE_TOUCH_PORT_FRONT) {
         const std::lock_guard<std::mutex> guard(emuenv.ctrl.mutex);
         if (emuenv.ctrl.scripted_touch.active)
-            emuenv.ctrl.scripted_touch.length.update(emuenv.display.vblank_count.load());
+            emuenv.ctrl.scripted_touch.length.update(emuenv.display.app_vblank_count.load());
     }
 
     int nb_returned_data = 1;

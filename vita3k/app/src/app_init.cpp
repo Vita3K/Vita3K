@@ -100,7 +100,7 @@ static overlay::button_states poll_overlay_input(EmuEnvState &emuenv) {
 
     // Input from the debugger, so a script can work system dialogs too
     auto &scripted = emuenv.ctrl.scripted_input;
-    if (scripted.length.update(emuenv.display.vblank_count.load()))
+    if (scripted.length.update(emuenv.display.app_vblank_count.load()))
         scripted = {};
     buttons |= scripted.buttons_ext;
     for (int i = 0; i < 4; i++)
@@ -649,7 +649,7 @@ void apply_renderer_config(EmuEnvState &emuenv) {
             {
                 std::lock_guard<std::mutex> lock(emuenv.ctrl.mutex);
                 auto &scripted = emuenv.ctrl.scripted_touch;
-                if (scripted.active && scripted.length.update(emuenv.display.vblank_count.load()))
+                if (scripted.active && scripted.length.update(emuenv.display.app_vblank_count.load()))
                     scripted = {};
                 if (scripted.active) {
                     // The touch panel is twice the screen's resolution
