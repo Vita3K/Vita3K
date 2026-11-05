@@ -278,6 +278,11 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         app::AppSessionController session(emuenv);
+        // The frame is read on the session's thread. Gives up before gdb's own 2s timeout.
+        emuenv.gdb.save_frame = [&emuenv](const std::string &path) {
+            bool saved = false;
+            return sdl_frontend::run_on_session_thread([&] { saved = save_screenshot(emuenv, path); }, std::chrono::seconds(1)) && saved;
+        };
         const int exit_code = sdl_frontend::run(emuenv, session, AppLaunchRequest{ .app_path = *emuenv.cfg.run_app_path });
         // Before the paths a client's request can still read go away
         if (emuenv.gdb.server_thread)
