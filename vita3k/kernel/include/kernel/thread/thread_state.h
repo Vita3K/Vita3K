@@ -209,6 +209,8 @@ private:
     // Whether something holds the thread before its guest code: the debugger, the emulator pause or
     // a ForVM suspend
     bool held() const;
+    // Waits with mutex held through lock until nothing holds the thread, parked meanwhile
+    void stop_for_holds(std::unique_lock<std::mutex> &lock);
     // Whether the thread may run guest code now, or kernel code that changes its registers
     bool runs() const { return status == ThreadStatus::running && !parked; }
     // Asks the thread to end, keeping a stronger request already made
