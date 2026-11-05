@@ -28,6 +28,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 typedef std::shared_ptr<SDL_Gamepad> GamepadPtr;
 typedef std::shared_ptr<SDL_Haptic> HapticPtr;
@@ -67,20 +68,27 @@ struct ScriptedLength {
     uint32_t frames = 0;
     uint64_t end_vcount = 0;
 
-    // Returns whether the length is over
-    bool update(uint64_t vcount) {
+    // Returns whether the length is over. Only a read by the app or a dialog starts it.
+    bool update(uint64_t vcount, bool start = true) {
         if (frames == 0)
             return false;
-        if (end_vcount == 0)
+        if (end_vcount == 0) {
+            if (!start)
+                return false;
             end_vcount = vcount + frames;
+        }
         return vcount >= end_vcount;
     }
 };
 
+// The input of one debugger command, which lasts its own length
 struct ScriptedInput {
     uint32_t buttons = 0;
     uint32_t buttons_ext = 0;
-    float axes[4] = {};
+    // The first axis of the stick the command moves, or -1 for none
+    int stick = -1;
+    float x = 0;
+    float y = 0;
     ScriptedLength length;
 };
 
@@ -106,7 +114,7 @@ struct CtrlState {
     uint64_t last_vcount[5] = {}; // sceCtrl ports.
 
     VirtualKeyboardState keyboard_state;
-    ScriptedInput scripted_input;
+    std::vector<ScriptedInput> scripted_inputs;
     ScriptedTouch scripted_touch;
 
     std::atomic<bool> overlay_input_intercepted{ false };
@@ -118,6 +126,18 @@ struct CtrlState {
     };
     OverlayMouseState overlay_mouse;
 
+    // Drops the debugger's input whose length is over and adds the rest. Takes no lock.
+    void apply_scripted_input(uint64_t vcount, bool start, bool ext, uint32_t &buttons, float axes[4]) {
+        std::erase_if(scripted_inputs, [&](ScriptedInput &input) { return input.length.update(vcount, start); });
+        for (const ScriptedInput &input : scripted_inputs) {
+            buttons |= ext ? input.buttons_ext : input.buttons;
+            if (input.stick >= 0) {
+                axes[input.stick] += input.x;
+                axes[input.stick + 1] += input.y;
+            }
+        }
+    }
+
     void reset_runtime() {
         controllers.clear();
         controllers_num = 0;
@@ -127,8 +147,12 @@ struct CtrlState {
         input_mode_ext = SCE_CTRL_MODE_DIGITAL;
         std::fill_n(last_vcount, 5, 0);
         keyboard_state = {};
-        scripted_input = {};
-        scripted_touch = {};
+        {
+            // The gdb stub sends input also while no app runs
+            const std::lock_guard<std::mutex> guard(mutex);
+            scripted_inputs.clear();
+            scripted_touch = {};
+        }
         overlay_input_intercepted.store(false, std::memory_order_relaxed);
         overlay_mouse.x.store(0.f, std::memory_order_relaxed);
         overlay_mouse.y.store(0.f, std::memory_order_relaxed);

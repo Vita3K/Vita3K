@@ -702,8 +702,7 @@ static void release_app(EmuEnvState &state) {
     {
         // Input with a length still runs out, so a script can press a button and detach
         const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
-        if (state.ctrl.scripted_input.length.frames == 0)
-            state.ctrl.scripted_input = {};
+        std::erase_if(state.ctrl.scripted_inputs, [](const ScriptedInput &input) { return input.length.frames == 0; });
         if (state.ctrl.scripted_touch.length.frames == 0)
             state.ctrl.scripted_touch = {};
     }
@@ -1462,13 +1461,11 @@ static std::string run_monitor_command(EmuEnvState &state, const std::string &li
         uint32_t buttons = 0;
         uint32_t buttons_ext = 0;
         uint32_t frames = name == "press" ? MONITOR_DEFAULT_FRAMES : 0;
-        if (!parse_buttons(names, buttons, buttons_ext) || (name == "press" && !read_frames(frames)))
+        // A press of 0 frames would last until released, like a hold
+        if (!parse_buttons(names, buttons, buttons_ext) || (name == "press" && (!read_frames(frames) || frames == 0)))
             return "error: bad arguments, see monitor help";
         const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
-        auto &scripted = state.ctrl.scripted_input;
-        scripted.buttons |= buttons;
-        scripted.buttons_ext |= buttons_ext;
-        scripted.length = { .frames = frames };
+        state.ctrl.scripted_inputs.push_back({ .buttons = buttons, .buttons_ext = buttons_ext, .length = { .frames = frames } });
         return "pressed " + names;
     }
 
@@ -1480,12 +1477,12 @@ static std::string run_monitor_command(EmuEnvState &state, const std::string &li
         args >> side >> x >> y;
         if ((side != "left" && side != "right") || args.fail() || !read_frames(frames))
             return "error: bad arguments, see monitor help";
-        const int axis = side == "left" ? 0 : 2;
+        const int stick = side == "left" ? 0 : 2;
         const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
-        auto &scripted = state.ctrl.scripted_input;
-        scripted.axes[axis] = std::clamp(x, -1.f, 1.f);
-        scripted.axes[axis + 1] = std::clamp(y, -1.f, 1.f);
-        scripted.length = { .frames = frames };
+        auto &inputs = state.ctrl.scripted_inputs;
+        // The stick moves from where an earlier command left it
+        std::erase_if(inputs, [&](const ScriptedInput &input) { return input.stick == stick; });
+        inputs.push_back({ .stick = stick, .x = std::clamp(x, -1.f, 1.f), .y = std::clamp(y, -1.f, 1.f), .length = { .frames = frames } });
         return "moved " + side + " stick";
     }
 
@@ -1507,7 +1504,7 @@ static std::string run_monitor_command(EmuEnvState &state, const std::string &li
 
     if (name == "release") {
         const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
-        state.ctrl.scripted_input = {};
+        state.ctrl.scripted_inputs.clear();
         state.ctrl.scripted_touch = {};
         return "released";
     }
