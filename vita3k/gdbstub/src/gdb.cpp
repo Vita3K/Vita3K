@@ -1141,7 +1141,8 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
-    const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+    // In hex like the rest, the byte count for a watchpoint. It ends at a condition.
+    const uint32_t kind = parse_hex(content.substr(second + 1));
 
     if (type == 0) {
         const uint32_t bp_size = (kind == 2 || kind == 3) ? 2 : 4;
@@ -1181,7 +1182,8 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
-    const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+    // In hex like the rest, the byte count for a watchpoint. It ends at a condition.
+    const uint32_t kind = parse_hex(content.substr(second + 1));
 
     if (type == 0) {
         LOG_INFO("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);

@@ -17,6 +17,8 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <future>
+#include <memory>
 #include <string>
 #include <thread>
 
@@ -61,13 +63,19 @@ TEST(gdb_state, server_close_is_safe_when_server_thread_also_closes) {
         {
             for (int i = 0; i < 1000; ++i) {
                 EmuEnvState state;
+                // Shared, so the promise outlives a set_value() still returning when the wait ends
+                const auto closed = std::make_shared<std::promise<void>>();
+                std::future<void> done = closed->get_future();
                 // The thread can take server_thread as soon as it runs
                 std::unique_lock guard(state.gdb.server_thread_mutex);
-                state.gdb.server_thread = std::make_shared<std::thread>([&state] {
+                state.gdb.server_thread = std::make_shared<std::thread>([&state, closed] {
                     server_close(state);
+                    closed->set_value();
                 });
                 guard.unlock();
                 server_close(state);
+                // The thread detaches itself when it takes server_thread first, and still uses state
+                done.wait();
             }
             std::exit(0);
         },
