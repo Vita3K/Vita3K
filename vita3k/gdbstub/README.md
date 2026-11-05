@@ -91,7 +91,7 @@ GDB only sends commands while the target is stopped, so `stop-after` is what let
 arm-none-eabi-gdb -batch path/to/eboot.elf -ex "target remote localhost:2159" -ex "monitor stop-after 300" -ex continue -ex "monitor press cross" -ex "monitor stop-after 60" -ex continue -ex "monitor screenshot /tmp/frame.png" -ex detach
 ```
 
-The length of an input starts when the app first reads it, so it doesn't run out at a stop. It's still counted in frames of the display, so a stop in the middle of it shortens it. A relative path is relative to the working directory of Vita3K.
+The length of an input starts when the app first reads it and counts only frames the app runs, so it doesn't run out at a stop, even when a thread or a system dialog reads it meanwhile. Detaching releases `hold` and input without a length, but a `press` still runs out, so a script can press a button and detach. A relative path is relative to the working directory of Vita3K.
 
 ## Static Analysis
 

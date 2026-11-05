@@ -215,7 +215,7 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvSta
     axes[3] += kb.axes[3];
 
     auto &scripted = emuenv.ctrl.scripted_input;
-    if (scripted.length.update(emuenv.display.vblank_count.load()))
+    if (scripted.length.update(emuenv.display.app_vblank_count.load()))
         scripted = {};
 
     *buttons |= ext ? scripted.buttons_ext : scripted.buttons;

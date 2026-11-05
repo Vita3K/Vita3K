@@ -700,9 +700,12 @@ static void release_app(EmuEnvState &state) {
     state.gdb.current_thread = 0;
     state.gdb.stop_after_frames = 0;
     {
+        // Input with a length still runs out, so a script can press a button and detach
         const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
-        state.ctrl.scripted_input = {};
-        state.ctrl.scripted_touch = {};
+        if (state.ctrl.scripted_input.length.frames == 0)
+            state.ctrl.scripted_input = {};
+        if (state.ctrl.scripted_touch.length.frames == 0)
+            state.ctrl.scripted_touch = {};
     }
     state.audio.switch_state(false);
 }

@@ -199,6 +199,7 @@ struct KernelState {
     // Stops every thread for the debugger, and the threads created until it lets them go, or lets
     // them run again
     void set_threads_suspended(bool suspended);
+    bool is_threads_suspended() const { return threads_suspended; }
 
     // Kill all guest threads and block until they have exited. Must only be called from a host thread.
     void process_exit();
@@ -214,7 +215,7 @@ struct KernelState {
 private:
     std::atomic<uint32_t> next_uid{ 1 };
     std::atomic<bool> threads_paused{ false };
-    bool threads_suspended = false;
+    std::atomic<bool> threads_suspended{ false };
     // The process is exiting, so a thread still being created ends as well
     bool process_exiting = false;
 };
