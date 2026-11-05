@@ -254,7 +254,13 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         const bool step = step_requested;
 
         lock.unlock();
-        const GuestExit exit = cpu->run(step ? CPUState::RunMode::single_step : CPUState::RunMode::run);
+        GuestExit exit = cpu->run(step ? CPUState::RunMode::single_step : CPUState::RunMode::run);
+        // A breakpoint whose conditions are false runs the instruction under it and goes on, without
+        // the debugger stopping the app for every hit
+        if (!step && exit.debugger_stop && !kernel.debugger.breakpoint_stops(mem, *cpu)) {
+            exit = kernel.debugger.step_over_breakpoint(mem, *cpu);
+            exit.debugger_stop = false;
+        }
         if (step) {
             lock.lock();
             // A stop request made before the step ends it before its instruction, so the step goes
