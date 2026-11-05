@@ -68,7 +68,7 @@ constexpr uint64_t lib_export_key(uint32_t library_nid, uint32_t nid) {
 }
 
 using NotFoundVars = std::map<Address, uint32_t>;
-using CallImportFunc = std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)>;
+using CallImportFunc = std::function<CallResult(CPUState &cpu, uint32_t nid, SceUID thread_id)>;
 
 struct CodecEngineBlock {
     uint32_t size;

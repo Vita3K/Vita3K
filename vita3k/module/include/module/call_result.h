@@ -17,22 +17,22 @@
 
 #pragma once
 
+#include <cpu/common.h>
 #include <mem/ptr.h>
 
 #include <cstdlib>
 
-struct CPUState;
-
-void write_return_value(CPUState &cpu, int32_t ret);
-void write_return_value(CPUState &cpu, int64_t ret);
-void write_return_value(CPUState &cpu, uint32_t ret);
-void write_return_value(CPUState &cpu, uint64_t ret);
-void write_return_value(CPUState &cpu, std::div_t ret);
-void write_return_value(CPUState &cpu, std::lldiv_t ret);
-void write_return_value(CPUState &cpu, bool ret);
-void write_return_value(CPUState &cpu, float ret);
+// The result of an export that returns a value, for the kernel to write to the registers
+CallResult call_result(int32_t ret);
+CallResult call_result(int64_t ret);
+CallResult call_result(uint32_t ret);
+CallResult call_result(uint64_t ret);
+CallResult call_result(std::div_t ret);
+CallResult call_result(std::lldiv_t ret);
+CallResult call_result(bool ret);
+CallResult call_result(float ret);
 
 template <typename Pointee>
-void write_return_value(CPUState &cpu, const Ptr<Pointee> &ret) {
-    write_return_value(cpu, ret.address());
+CallResult call_result(const Ptr<Pointee> &ret) {
+    return call_result(ret.address());
 }
