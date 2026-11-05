@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
+#include <cpu/common.h>
 #include <mem/state.h>
 #include <mem/util.h>
 #include <util/types.h>
@@ -24,12 +25,18 @@
 #include <condition_variable>
 #include <map>
 #include <mutex>
+#include <vector>
 
 struct KernelState;
+
+// A condition from the debugger, as a GDB agent expression
+using BreakpointCondition = std::vector<uint8_t>;
 
 struct Breakpoint {
     bool thumb_mode;
     unsigned char data[4];
+    // The breakpoint stops a thread when one is true, or always when there are none
+    std::vector<BreakpointCondition> conditions;
 };
 
 enum class WatchType : uint8_t {
@@ -61,7 +68,8 @@ struct Debugger {
 
     void add_watch_memory_addr(Address addr, size_t size, WatchType type = WatchType::ACCESS);
     void remove_watch_memory_addr(KernelState &state, Address addr);
-    void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode);
+    // Adding a breakpoint where there is one replaces its conditions
+    void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode, std::vector<BreakpointCondition> conditions = {});
     void remove_breakpoint(MemState &mem, uint32_t addr);
     void remove_all_breakpoints(MemState &mem);
     Address get_watch_memory_addr(Address addr);
@@ -71,6 +79,11 @@ struct Debugger {
     Address check_watchpoint(Address addr, bool is_write);
     void update_watches();
     void deinit();
+
+    // Whether the breakpoint a thread hit stops it, which runs its conditions
+    bool breakpoint_stops(MemState &mem, CPUState &cpu);
+    // Runs the instruction under the breakpoint at the PC, for a thread the breakpoint doesn't stop
+    GuestExit step_over_breakpoint(MemState &mem, CPUState &cpu);
 
     // GDB breakpoint notification: signaled from the thread loop when a
     // thread hits a breakpoint and transitions to suspend.

@@ -63,6 +63,7 @@ Once connected:
 
 - `b main` — set a breakpoint by symbol name
 - `b *0x80004000` — set a breakpoint by address. Without a symbol there, GDB picks ARM or Thumb from the current frame, and a thread stopped in an import stub is in ARM. A 4-byte ARM breakpoint in Thumb code also overwrites the next instruction, and the game crashes. Most game code is Thumb, so run `set arm force-mode thumb` first, or `set arm force-mode arm` for ARM code.
+- `b *0x80004000 if $r0 == 0x81000000` — stop only when a condition is true. GDB sends conditions it can compile, on registers and memory, to the stub, which tests them without stopping the app, so a condition on a busy function is cheap. GDB tests the others itself, at a stop of the app per hit.
 - `watch *(int *)0x81170000` — stop when a value changes
 - `c` — continue execution
 - `si` — step one instruction. A thread that hasn't started can't step, so while `module_start` runs, gdb starts on the thread running it.
@@ -100,7 +101,7 @@ Writing to memory from GDB also invalidates the JIT cache, so a change to code t
 
 ## Supported Features
 
-- Software breakpoints (Thumb and ARM)
+- Software breakpoints (Thumb and ARM), with conditions tested in the stub
 - Data watchpoints
 - Single-step execution
 - Register read/write (r0-r15, cpsr, d0-d31, fpscr, q0-q15)
