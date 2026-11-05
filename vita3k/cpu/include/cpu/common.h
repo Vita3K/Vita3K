@@ -21,6 +21,7 @@
 #include <mem/util.h> // Address.
 
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -66,6 +67,22 @@ struct CPUContext {
     std::array<float, 64> fpu_registers{};
     uint32_t cpsr = 0;
     uint32_t fpscr = 0;
+
+    // The registers as 32-bit words: r0 to r15, cpsr, s0 to s63, then fpscr. A d register is two
+    // words and a q register four.
+    static constexpr uint32_t WORD_CPSR = 16;
+    static constexpr uint32_t WORD_S0 = 17;
+    static constexpr uint32_t WORD_FPSCR = WORD_S0 + 64;
+
+    uint32_t word(uint32_t i) const {
+        if (i < WORD_CPSR)
+            return cpu_registers[i];
+        if (i == WORD_CPSR)
+            return cpsr;
+        if (i < WORD_FPSCR)
+            return std::bit_cast<uint32_t>(fpu_registers[i - WORD_S0]);
+        return fpscr;
+    }
 
     bool thumb() const {
         return cpsr & 0x20;
