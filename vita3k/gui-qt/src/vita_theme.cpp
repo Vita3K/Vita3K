@@ -19,15 +19,12 @@
 #include <gui-qt/vita_theme.h>
 
 #include <util/log.h>
-#include <util/string_utils.h>
 #include <util/vita_theme_utils.h>
+#include <vita_shell/functions.h>
 
 #include <QFile>
 
-#include <pugixml.hpp>
-
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <optional>
 #include <unordered_map>
@@ -35,114 +32,8 @@
 namespace gui {
 namespace {
 
-std::string lowercase_copy(std::string value) {
-    std::ranges::transform(value, value.begin(), [](const unsigned char ch) {
-        return static_cast<char>(std::tolower(ch));
-    });
-    return value;
-}
-
-std::string normalize_locale(std::string locale) {
-    locale = string_utils::trim_copy(locale);
-    std::ranges::replace(locale, '_', '-');
-    return lowercase_copy(std::move(locale));
-}
-
 std::string path_leaf_string(const fs::path &path) {
     return fs_utils::path_to_utf8(path.filename());
-}
-
-std::string child_text(const pugi::xml_node &parent, const char *name) {
-    return string_utils::trim_copy(parent.child(name).text().as_string());
-}
-
-std::string localized_text(const pugi::xml_node &node, const std::string &preferred_locale) {
-    if (!node)
-        return {};
-
-    const std::string normalized_locale = normalize_locale(preferred_locale);
-    const auto try_key = [&node](const std::string &name) -> std::string {
-        return child_text(node, name.c_str());
-    };
-    const auto try_locale = [&try_key](const std::string &name) -> std::string {
-        if (name.empty())
-            return {};
-
-        if (const std::string exact = try_key(name); !exact.empty())
-            return exact;
-
-        return try_key("m_" + name);
-    };
-
-    if (!normalized_locale.empty()) {
-        if (const std::string exact = try_locale(normalized_locale); !exact.empty())
-            return exact;
-
-        if (const auto separator = normalized_locale.find('-'); separator != std::string::npos) {
-            if (const std::string base = try_locale(normalized_locale.substr(0, separator)); !base.empty())
-                return base;
-        }
-    }
-
-    if (const std::string fallback = child_text(node, "m_default"); !fallback.empty())
-        return fallback;
-
-    for (const auto &child : node.children()) {
-        if (child.type() != pugi::node_element)
-            continue;
-        if (const std::string value = string_utils::trim_copy(child.text().as_string()); !value.empty())
-            return value;
-    }
-
-    return {};
-}
-
-fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) {
-    const QString relative_path = gui::utils::sanitize_relative_path_reference(
-        QString::fromStdString(string_utils::trim_copy(asset_value)));
-    if (relative_path.isEmpty())
-        return {};
-
-    return (theme_dir / gui::utils::to_fs_path(relative_path)).lexically_normal();
-}
-
-std::optional<VitaThemeColor> parse_theme_color(std::string raw_value) {
-    raw_value = string_utils::trim_copy(raw_value);
-    if (raw_value.empty())
-        return std::nullopt;
-
-    if (raw_value.front() == '#')
-        raw_value.erase(raw_value.begin());
-    else if (raw_value.starts_with("0x") || raw_value.starts_with("0X"))
-        raw_value.erase(0, 2);
-
-    unsigned long long value = 0;
-    try {
-        value = std::stoull(raw_value, nullptr, 16);
-    } catch (const std::exception &) {
-        try {
-            value = std::stoull(raw_value, nullptr, 10);
-        } catch (const std::exception &) {
-            LOG_WARN("Unable to parse Vita theme color '{}'", raw_value);
-            return std::nullopt;
-        }
-    }
-
-    if (raw_value.size() <= 6 && value <= 0xFFFFFFULL) {
-        return VitaThemeColor{
-            static_cast<std::uint8_t>((value >> 16) & 0xFF),
-            static_cast<std::uint8_t>((value >> 8) & 0xFF),
-            static_cast<std::uint8_t>(value & 0xFF),
-            255,
-        };
-    }
-
-    return VitaThemeColor{
-        static_cast<std::uint8_t>((value >> 16) & 0xFF),
-        static_cast<std::uint8_t>((value >> 8) & 0xFF),
-        static_cast<std::uint8_t>(value & 0xFF),
-        static_cast<std::uint8_t>((value >> 24) & 0xFF),
-    };
 }
 
 double luminance(const VitaThemeColor &color) {
@@ -306,50 +197,63 @@ std::optional<std::string> render_stylesheet_template(
     return rendered;
 }
 
-std::optional<fs::path> existing_asset_path(const fs::path &theme_dir, const std::string &raw_path) {
-    const fs::path resolved = resolve_asset_path(theme_dir, raw_path);
-    return (!resolved.empty() && fs::exists(resolved)) ? std::optional<fs::path>(resolved) : std::nullopt;
+std::optional<VitaThemeColor> to_vita_theme_color(const std::optional<vita_shell::Color> &color) {
+    if (!color)
+        return std::nullopt;
+    return VitaThemeColor{ color->r, color->g, color->b, color->a };
 }
 
-std::vector<pugi::xml_node> collect_background_nodes(const pugi::xml_node &home_node) {
-    std::vector<pugi::xml_node> nodes;
-    const auto bg_parent = home_node.child("m_bgParam");
-    if (!bg_parent)
-        return nodes;
+std::optional<VitaThemeInfo> to_vita_theme_info(vita_shell::ThemeState state) {
+    if (!state.loaded)
+        return std::nullopt;
 
-    for (const auto &child : bg_parent.children()) {
-        if (child.type() != pugi::node_element)
-            continue;
-        if ((std::string_view(child.name()) == "BackgroundParam") || child.child("m_imageFilePath"))
-            nodes.push_back(child);
-        else if (const auto nested = child.child("BackgroundParam"))
-            nodes.push_back(nested);
+    VitaThemeInfo theme;
+    theme.content_id = std::move(state.content_id);
+    theme.title = std::move(state.name);
+    theme.provider = std::move(state.provider);
+    theme.content_version = std::move(state.content_version);
+    theme.theme_id = vita_theme_utils::resolve_theme_id(theme.content_id, path_leaf_string(state.installed_path), theme.title);
+    if (theme.title.empty())
+        theme.title = theme.theme_id;
+    theme.installed_path = std::move(state.installed_path);
+    if (!state.bgm.path.empty())
+        theme.bgm_path = std::move(state.bgm.path);
+    theme.package_thumbnail_path = std::move(state.package_thumbnail_path);
+    theme.installed_size = state.installed_size;
+    theme.updated_time = state.updated_time;
+    theme.palette.information_bar_color = to_vita_theme_color(state.information_bar.bar_color);
+    theme.palette.information_indicator_color = to_vita_theme_color(state.information_bar.indicator_color);
+    theme.palette.notify_background_color = to_vita_theme_color(state.start_notice_background_color);
+    theme.palette.notify_border_color = to_vita_theme_color(state.start_notice_border_color);
+    theme.palette.notify_font_color = to_vita_theme_color(state.start_notice_font_color);
+    theme.palette.date_color = to_vita_theme_color(state.start_date_color);
+
+    int home_index = 0;
+    for (auto &background : state.backgrounds) {
+        theme.background_options.push_back({
+            fmt::format("home-{}", home_index),
+            fmt::format("Home Background {}", home_index + 1),
+            std::move(background.path),
+            VitaThemeBackgroundSource::Home,
+            to_vita_theme_color(background.text_color),
+        });
+        ++home_index;
+    }
+    if (!state.start_screen_background.empty() && fs::exists(state.start_screen_background)) {
+        theme.background_options.push_back({
+            "lockscreen",
+            "Lockscreen",
+            std::move(state.start_screen_background),
+            VitaThemeBackgroundSource::Lockscreen,
+            theme.palette.notify_font_color,
+        });
     }
 
-    return nodes;
-}
-
-void collect_directory_metrics(const fs::path &root, std::uintmax_t &total_size, std::time_t &latest_write_time) {
-    if (!fs::exists(root))
-        return;
-
-    std::error_code error_code;
-    if (const auto root_time = fs::last_write_time(root, error_code); !error_code)
-        latest_write_time = std::max(latest_write_time, fs_utils::to_time_t(root_time));
-
-    fs::recursive_directory_iterator end;
-    for (fs::recursive_directory_iterator it(root, error_code); !error_code && it != end; it.increment(error_code)) {
-        const fs::path current = it->path();
-
-        if (fs::is_regular_file(current, error_code)) {
-            total_size += fs::file_size(current, error_code);
-            error_code.clear();
-        }
-
-        if (const auto write_time = fs::last_write_time(current, error_code); !error_code)
-            latest_write_time = std::max(latest_write_time, fs_utils::to_time_t(write_time));
-        error_code.clear();
+    if (theme.background_options.empty()) {
+        LOG_WARN("Theme '{}' has no usable background assets, skipping", theme.theme_id);
+        return std::nullopt;
     }
+    return theme;
 }
 
 const VitaThemeBackgroundOption *find_background_option(
@@ -728,134 +632,17 @@ std::string build_stylesheet(
 std::optional<VitaThemeInfo> load_vita_theme(
     const fs::path &theme_dir,
     const std::string &preferred_locale) {
-    const fs::path theme_xml_path = theme_dir / "theme.xml";
-    if (!fs::exists(theme_xml_path))
-        return std::nullopt;
-
-    std::vector<char> xml_buffer;
-    if (!fs_utils::read_data(theme_xml_path, xml_buffer)) {
-        LOG_WARN("Failed to read Vita theme metadata from {}", theme_xml_path);
-        return std::nullopt;
-    }
-
-    pugi::xml_document document;
-    const auto parse_result = document.load_buffer(xml_buffer.data(), xml_buffer.size());
-    if (!parse_result) {
-        LOG_WARN("Failed to parse Vita theme metadata from {}: {}", theme_xml_path, parse_result.description());
-        return std::nullopt;
-    }
-
-    const auto theme_root = document.child("theme");
-    if (!theme_root) {
-        LOG_WARN("Theme metadata at {} is missing the root <theme> node", theme_xml_path);
-        return std::nullopt;
-    }
-
-    VitaThemeInfo theme;
-    theme.installed_path = theme_dir;
-    const auto info_node = theme_root.child("InfomationProperty");
-    const auto info_bar_node = theme_root.child("InfomationBarProperty");
-    const auto home_node = theme_root.child("HomeProperty");
-    const auto start_node = theme_root.child("StartScreenProperty");
-
-    theme.content_id = child_text(info_node, "m_contentId");
-    theme.title = localized_text(info_node.child("m_title"), preferred_locale);
-    theme.provider = localized_text(info_node.child("m_provider"), preferred_locale);
-    theme.content_version = child_text(info_node, "m_contentVer");
-    theme.theme_id = vita_theme_utils::resolve_theme_id(theme.content_id, path_leaf_string(theme_dir), theme.title);
-
-    if (theme.title.empty())
-        theme.title = theme.theme_id;
-
-    const std::string package_thumbnail_raw = [&]() {
-        if (const std::string package_image = child_text(info_node, "m_packageImageFilePath"); !package_image.empty())
-            return package_image;
-        return child_text(info_node, "m_previewFilePath");
-    }();
-    if (const auto package_thumbnail = existing_asset_path(theme_dir, package_thumbnail_raw))
-        theme.package_thumbnail_path = *package_thumbnail;
-
-    const std::string bgm_raw_path = child_text(home_node, "m_bgmFilePath");
-    if (const auto bgm_path = existing_asset_path(theme_dir, bgm_raw_path)) {
-        theme.bgm_path = *bgm_path;
-    } else if (!bgm_raw_path.empty()) {
-        LOG_WARN("Skipping missing Vita theme BGM '{}' for theme '{}'", bgm_raw_path, theme.theme_id);
-    }
-
-    theme.palette.information_bar_color = parse_theme_color(child_text(info_bar_node, "m_barColor"));
-    theme.palette.information_indicator_color = parse_theme_color(child_text(info_bar_node, "m_indicatorColor"));
-    theme.palette.notify_background_color = parse_theme_color(child_text(start_node, "m_notifyBgColor"));
-    theme.palette.notify_border_color = parse_theme_color(child_text(start_node, "m_notifyBorderColor"));
-    theme.palette.notify_font_color = parse_theme_color(child_text(start_node, "m_notifyFontColor"));
-    theme.palette.date_color = parse_theme_color(child_text(start_node, "m_dateColor"));
-
-    int home_index = 0;
-    for (const auto &background_node : collect_background_nodes(home_node)) {
-        const std::string raw_path = child_text(background_node, "m_imageFilePath");
-        if (raw_path.empty())
-            continue;
-
-        const auto asset_path = existing_asset_path(theme_dir, raw_path);
-        if (!asset_path) {
-            LOG_WARN("Skipping missing Vita home background '{}' for theme '{}'", raw_path, theme.theme_id);
-            continue;
-        }
-
-        VitaThemeBackgroundOption option;
-        option.id = fmt::format("home-{}", home_index);
-        option.label = fmt::format("Home Background {}", home_index + 1);
-        option.asset_path = *asset_path;
-        option.source = VitaThemeBackgroundSource::Home;
-        option.primary_text_color = parse_theme_color(child_text(background_node, "m_fontColor"));
-        theme.background_options.push_back(std::move(option));
-        ++home_index;
-    }
-
-    const std::string raw_lockscreen_path = child_text(start_node, "m_filePath");
-    if (const auto lockscreen_path = existing_asset_path(theme_dir, raw_lockscreen_path)) {
-        VitaThemeBackgroundOption option;
-        option.id = "lockscreen";
-        option.label = "Lockscreen";
-        option.asset_path = *lockscreen_path;
-        option.source = VitaThemeBackgroundSource::Lockscreen;
-        option.primary_text_color = theme.palette.notify_font_color;
-        theme.background_options.push_back(std::move(option));
-    } else if (!raw_lockscreen_path.empty()) {
-        LOG_WARN("Skipping missing Vita lockscreen background '{}' for theme '{}'", raw_lockscreen_path, theme.theme_id);
-    }
-
-    collect_directory_metrics(theme_dir, theme.installed_size, theme.updated_time);
-
-    if (theme.background_options.empty()) {
-        LOG_WARN("Theme '{}' has no usable background assets, skipping", theme.theme_id);
-        return std::nullopt;
-    }
-
-    return theme;
+    return to_vita_theme_info(vita_shell::load_theme_directory(theme_dir, preferred_locale));
 }
 
 std::vector<VitaThemeInfo> enumerate_installed_vita_themes(
     const fs::path &themes_root,
     const std::string &preferred_locale) {
     std::vector<VitaThemeInfo> themes;
-    if (!fs::exists(themes_root) || !fs::is_directory(themes_root))
-        return themes;
-
-    std::vector<fs::path> theme_paths;
-    for (fs::directory_iterator it(themes_root), end; it != end; ++it) {
-        if (fs::is_directory(it->path()))
-            theme_paths.push_back(it->path());
-    }
-
-    std::ranges::sort(theme_paths, [](const fs::path &lhs, const fs::path &rhs) {
-        return fs_utils::path_to_utf8(lhs.filename()) < fs_utils::path_to_utf8(rhs.filename());
-    });
-
-    for (const auto &theme_path : theme_paths) {
-        if (auto theme = load_vita_theme(theme_path, preferred_locale))
+    for (auto &theme_state : vita_shell::enumerate_themes(themes_root, preferred_locale)) {
+        if (auto theme = to_vita_theme_info(std::move(theme_state)))
             themes.push_back(std::move(*theme));
     }
-
     return themes;
 }
 

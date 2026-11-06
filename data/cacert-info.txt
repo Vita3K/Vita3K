@@ -1,0 +1,26 @@
+Android TLS trust store
+=======================
+
+cacert.pem is the unmodified Mozilla CA certificate bundle distributed by curl:
+https://curl.se/docs/caextract.html
+https://curl.se/ca/cacert.pem
+
+Mozilla certificate data date: 2026-09-25
+Downloaded bundle SHA-256:
+a41b5d356aea97a529fe27e0f7316d2f9d946d75927476cf9cf1b90637d00505
+
+License: Mozilla Public License 2.0 (MPL-2.0).
+The license is available at https://www.mozilla.org/MPL/2.0/ .
+The upstream Mozilla source location is recorded in cacert.pem's header.
+
+The existing Android data asset packaging includes this file automatically.
+net_utils loads data/cacert.pem through SDL's APK-aware asset reader and supplies
+it to libcurl using CURLOPT_CAINFO_BLOB before every transfer, including reused
+sessions after curl_easy_reset. Certificate-chain and hostname verification
+remain enabled. A missing or invalid bundle must fail the request; do not disable
+verification to work around connection failures.
+
+Maintenance: refresh cacert.pem from the HTTPS download URL above before releases
+and when Mozilla updates its trust store. Compare the downloaded file's SHA-256
+with https://curl.se/ca/cacert.pem.sha256 and update the date and digest here.
+Keep the bundle unmodified, including the upstream source notices.

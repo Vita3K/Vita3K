@@ -15,18 +15,25 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "frame_host.h"
-
-#include <sdl-frontend/session.h>
+#include <sdl-frontend/functions.h>
+#include <sdl/frame_host.h>
+#include <sdl/functions.h>
+#include <sdl/sdl_event.h>
+#include <sdl/sdl_title.h>
+#include <sdl/sdl_window.h>
 
 #include <app/functions.h>
 #include <app/session_controller.h>
+#include <app/state.h>
 #include <audio/state.h>
+#include <bgm_player/functions.h>
 #include <config/state.h>
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
+#include <display/state.h>
 #include <emuenv/state.h>
 #include <ime/functions.h>
+#include <io/state.h>
 #include <motion/event_handler.h>
 #include <renderer/state.h>
 #include <touch/functions.h>
@@ -37,15 +44,15 @@
 #include <SDL3/SDL.h>
 
 #include <cstring>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
-
+#include <utility>
 namespace sdl_frontend {
 
-namespace {
-
 // SDL_Quit at the end of a session stops the audio device, so the next session opens a new one
-void reset_session_audio(EmuEnvState &emuenv) {
+static void reset_session_audio(EmuEnvState &emuenv) {
     if (!emuenv.audio.adapter)
         return;
 
@@ -54,7 +61,7 @@ void reset_session_audio(EmuEnvState &emuenv) {
     emuenv.audio.audio_backend.clear();
 }
 
-void update_keyboard(EmuEnvState &emuenv, SDL_Window *window) {
+static void update_keyboard(EmuEnvState &emuenv, SDL_Window *window) {
     const bool active = window && SDL_GetKeyboardFocus() == window && !is_any_ime_active(emuenv);
     int key_count = 0;
     const bool *keys = active ? SDL_GetKeyboardState(&key_count) : nullptr;
@@ -65,7 +72,7 @@ void update_keyboard(EmuEnvState &emuenv, SDL_Window *window) {
     });
 }
 
-void update_mouse_input(EmuEnvState &emuenv, SDL_Window *window) {
+static void update_mouse_input(EmuEnvState &emuenv, SDL_Window *window) {
     auto &touch = emuenv.touch;
     auto &overlay = emuenv.ctrl.overlay_mouse;
     if (!window) {
@@ -114,13 +121,13 @@ void update_mouse_input(EmuEnvState &emuenv, SDL_Window *window) {
 #endif
 }
 
-void notify_ime_changed(const Hooks &hooks) {
+static void notify_ime_changed(const Hooks &hooks) {
     if (hooks.on_ime_changed)
         hooks.on_ime_changed();
 }
 
 // Returns whether the key was for the active IME
-bool handle_ime_keydown(EmuEnvState &emuenv, const Hooks &hooks, const SDL_KeyboardEvent &event) {
+static bool handle_ime_keydown(EmuEnvState &emuenv, const Hooks &hooks, const SDL_KeyboardEvent &event) {
     if (!is_any_ime_active(emuenv))
         return false;
 
@@ -156,7 +163,7 @@ bool handle_ime_keydown(EmuEnvState &emuenv, const Hooks &hooks, const SDL_Keybo
     return true;
 }
 
-void handle_ime_text_editing(EmuEnvState &emuenv, const Hooks &hooks, const char *text) {
+static void handle_ime_text_editing(EmuEnvState &emuenv, const Hooks &hooks, const char *text) {
     if (!is_any_ime_active(emuenv))
         return;
 
@@ -167,7 +174,7 @@ void handle_ime_text_editing(EmuEnvState &emuenv, const Hooks &hooks, const char
     notify_ime_changed(hooks);
 }
 
-void handle_ime_text_input(EmuEnvState &emuenv, const Hooks &hooks, const char *text) {
+static void handle_ime_text_input(EmuEnvState &emuenv, const Hooks &hooks, const char *text) {
     if (!is_any_ime_active(emuenv) || !text || text[0] == '\0')
         return;
 
@@ -188,278 +195,228 @@ void handle_ime_text_input(EmuEnvState &emuenv, const Hooks &hooks, const char *
     notify_ime_changed(hooks);
 }
 
-// Sets the attributes of the OpenGL context the renderer needs. Returns false if SDL refused one.
-bool set_gl_attributes() {
-#ifdef __ANDROID__
-    const bool set = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES)
-        && SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3)
-        && SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-#else
-    const bool set = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE)
-        && SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4)
-        && SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-#endif
-    if (!set || !SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) || !SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0))
-        return false;
-#ifndef NDEBUG
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-#endif
-    return true;
-}
+SessionResult run(EmuEnvState &emuenv, app::AppSessionController &session, SDL_Window &window, AppLaunchRequest launch_request, const Hooks &hooks) {
+    SDL_GLContext gl_context = nullptr;
+    std::unique_ptr<sdl::FrameHost> frame_host;
+    std::optional<AppLaunchRequest> pending_launch_request;
+    app::LaunchRuntimeMetrics runtime_metrics{};
+    SessionResult session_result{};
+    bool window_notified = false;
+    bool active = false;
+    bool finished = false;
 
-} // namespace
+    const auto cleanup_launch = [&](const app::AppSessionStopReason reason) {
+        if (hooks.on_stop)
+            hooks.on_stop();
+        update_mouse_input(emuenv, nullptr);
+        update_keyboard(emuenv, nullptr);
+        session.stop(reason);
+        if (frame_host && gl_context)
+            frame_host->destroy_render_context();
+        reset_session_audio(emuenv);
+        active = false;
+        frame_host.reset();
+    };
 
-int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchRequest launch_request, const Hooks &hooks) {
-    int exit_code = 0;
-    bool relaunch_requested = false;
+    const auto fail_launch = [&]() {
+        session_result.exit_code = -1;
+        cleanup_launch(app::AppSessionStopReason::LaunchFailure);
+        finished = true;
+    };
 
-    do {
-        relaunch_requested = false;
-
-        SDL_Window *window = nullptr;
-        SDL_GLContext gl_context = nullptr;
-        FrameHost frame_host(nullptr, &gl_context);
-        std::optional<AppLaunchRequest> pending_launch_request;
-
-        const auto cleanup_launch = [&](const app::AppSessionStopReason reason) {
-            if (hooks.on_stop)
-                hooks.on_stop();
-            update_mouse_input(emuenv, nullptr);
-            update_keyboard(emuenv, nullptr);
-            session.stop(reason);
-            reset_session_audio(emuenv);
-
-            if (hooks.on_window)
-                hooks.on_window(nullptr);
-            if (window) {
-                SDL_DestroyWindow(window);
-                window = nullptr;
-            }
-
-            SDL_Quit();
-        };
-
-        LOG_INFO("Booting game '{}'", launch_request.app_path);
-
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR | SDL_INIT_CAMERA)) {
-            LOG_ERROR("SDL_Init failed: {}", SDL_GetError());
-            exit_code = -1;
-            cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-            break;
-        }
+    std::function<void(AppLaunchRequest)> start_launch;
+    std::function<void()> finish_current_launch;
+    start_launch = [&](AppLaunchRequest request) {
+        pending_launch_request.reset();
+        runtime_metrics = {};
+        LOG_INFO("Booting game '{}'", request.app_path);
 
         refresh_controllers(emuenv.ctrl, emuenv);
         if (hooks.on_init)
             hooks.on_init();
 
-        if (!session.begin_launch(launch_request, launch_request.reason != AppLaunchReason::LoadExec)) {
-            LOG_ERROR("Could not find app '{}' in apps list.", launch_request.app_path);
-            exit_code = -1;
-            cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-            break;
+        if (!session.begin_launch(request, request.reason != AppLaunchReason::LoadExec)) {
+            LOG_ERROR("Could not find app '{}' in apps list.", request.app_path);
+            fail_launch();
+            return;
         }
         if (hooks.on_launch)
-            hooks.on_launch(launch_request.app_path);
-
-        SDL_WindowFlags window_flags = 0;
-#ifndef __ANDROID__
-        window_flags |= SDL_WINDOW_RESIZABLE;
-#endif
-        if (emuenv.backend_renderer == renderer::Backend::OpenGL) {
-            window_flags |= SDL_WINDOW_OPENGL;
-            if (!set_gl_attributes()) {
-                LOG_ERROR("Failed to configure OpenGL context attributes: {}", SDL_GetError());
-                exit_code = -1;
-                cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-                break;
-            }
-        } else if (emuenv.backend_renderer == renderer::Backend::Vulkan) {
-            window_flags |= SDL_WINDOW_VULKAN;
+            hooks.on_launch(request.app_path);
+        sdl::set_loading_window_title(&window, emuenv);
+        if (hooks.on_window && !window_notified) {
+            hooks.on_window(&window);
+            window_notified = true;
         }
-
-        SDL_PropertiesID window_props = SDL_CreateProperties();
-        if (!window_props) {
-            LOG_ERROR("SDL_CreateProperties failed: {}", SDL_GetError());
-            exit_code = -1;
-            cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-            break;
-        }
-
-        SDL_SetStringProperty(window_props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "Vita3K");
-        SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, 960);
-        SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, 544);
-        SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, window_flags);
-        if (emuenv.backend_renderer == renderer::Backend::OpenGL)
-            SDL_SetBooleanProperty(window_props, SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN, true);
-
-        window = SDL_CreateWindowWithProperties(window_props);
-        SDL_DestroyProperties(window_props);
-        if (!window) {
-            LOG_ERROR("SDL_CreateWindowWithProperties failed: {}", SDL_GetError());
-            exit_code = -1;
-            cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-            break;
-        }
-        if (hooks.on_window)
-            hooks.on_window(window);
-        frame_host = FrameHost(window, &gl_context);
+        frame_host = std::make_unique<sdl::FrameHost>(&window, &gl_context);
 
         if (emuenv.backend_renderer == renderer::Backend::OpenGL) {
-            gl_context = SDL_GL_CreateContext(window);
+            gl_context = SDL_GL_CreateContext(&window);
             if (!gl_context) {
                 LOG_ERROR("Failed to create OpenGL context: {}", SDL_GetError());
-                exit_code = -1;
-                cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-                break;
+                fail_launch();
+                return;
             }
-
-            if (!SDL_GL_MakeCurrent(window, gl_context)) {
+            if (!frame_host->make_current()) {
                 LOG_ERROR("Failed to make OpenGL context current: {}", SDL_GetError());
-                exit_code = -1;
-                cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-                break;
+                fail_launch();
+                return;
             }
-
-            if (!SDL_GL_SetSwapInterval(static_cast<int>(emuenv.cfg.current_config.v_sync)))
+            if (!frame_host->set_vsync(emuenv.cfg.current_config.v_sync))
                 LOG_WARN("Failed to set OpenGL swap interval: {}", SDL_GetError());
         }
 
-        if (!session.initialize_renderer(frame_host)) {
+        if (!session.initialize_renderer(*frame_host)) {
             LOG_ERROR("Failed to initialise renderer.");
-            exit_code = -1;
-            cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-            break;
+            fail_launch();
+            return;
         }
-
         if (!session.initialize_runtime()) {
             LOG_ERROR("Failed late initialisation.");
-            exit_code = -1;
-            cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-            break;
+            fail_launch();
+            return;
         }
-
         if (!session.load_and_run()) {
             LOG_ERROR("Failed to load or start the app session.");
-            exit_code = -1;
-            cleanup_launch(app::AppSessionStopReason::LaunchFailure);
-            break;
+            fail_launch();
+            return;
         }
+
+        const auto user = emuenv.app.user_list.users.find(emuenv.io.user_id);
+        if (user != emuenv.app.user_list.users.end() && user->second.system_music)
+            bgm_player::switch_bgm_state(true);
 
         if (auto request = emuenv.take_app_launch_request())
             pending_launch_request = std::move(request);
+        LOG_INFO("Game started: {} ({})", emuenv.current_app_title, request.app_path);
+        active = true;
+    };
 
-        LOG_INFO("Game started: {} ({})", emuenv.current_app_title, launch_request.app_path);
-        app::LaunchRuntimeMetrics runtime_metrics{};
-
-        bool running = !pending_launch_request.has_value();
-        while (running) {
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                switch (event.type) {
-                case SDL_EVENT_QUIT:
-                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                    running = false;
-                    break;
-
-                case SDL_EVENT_KEY_DOWN:
-                    if (handle_ime_keydown(emuenv, hooks, event.key))
-                        break;
-                    if (!event.key.repeat && SDL_GetKeyboardFocus() == window && !is_any_ime_active(emuenv)
-                        && event.key.scancode != SDL_SCANCODE_UNKNOWN && hooks.on_guide_button) {
-                        const auto &cfg = emuenv.cfg;
-                        if (event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton)
-                            || event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton_alt))
-                            hooks.on_guide_button();
-                    }
-                    break;
-
-                case SDL_EVENT_TEXT_EDITING:
-                    handle_ime_text_editing(emuenv, hooks, event.edit.text);
-                    break;
-
-                case SDL_EVENT_TEXT_INPUT:
-                    handle_ime_text_input(emuenv, hooks, event.text.text);
-                    break;
-
-                case SDL_EVENT_FINGER_DOWN:
-                case SDL_EVENT_FINGER_MOTION:
-                case SDL_EVENT_FINGER_UP:
-                case SDL_EVENT_FINGER_CANCELED: {
-                    handle_touch_event(emuenv.touch, event.tfinger);
-                    auto &mouse = emuenv.ctrl.overlay_mouse;
-                    mouse.x.store(event.tfinger.x * 960.f, std::memory_order_relaxed);
-                    mouse.y.store(event.tfinger.y * 544.f, std::memory_order_relaxed);
-                    mouse.pressed.store(event.type == SDL_EVENT_FINGER_DOWN || event.type == SDL_EVENT_FINGER_MOTION, std::memory_order_relaxed);
-                    break;
-                }
-
-                case SDL_EVENT_GAMEPAD_ADDED:
-                case SDL_EVENT_GAMEPAD_REMOVED:
-                    refresh_controllers(emuenv.ctrl, emuenv);
-                    break;
-
-                case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-                    if (event.gbutton.button == SDL_GAMEPAD_BUTTON_GUIDE && hooks.on_guide_button)
-                        hooks.on_guide_button();
-                    break;
-
-                case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-                case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-                case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
-                    handle_touchpad_event(emuenv.touch, event.gtouchpad);
-                    break;
-
-                case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
-                    handle_motion_event(emuenv, event.gsensor.sensor, event.gsensor);
-                    break;
-                case SDL_EVENT_SENSOR_UPDATE:
-                    handle_motion_event(emuenv, SDL_GetSensorTypeForID(event.sensor.which), event.sensor);
-                    break;
-
-                default:
-                    break;
-                }
-            }
-
-            update_mouse_input(emuenv, window);
-            update_keyboard(emuenv, window);
-
-            if (!pending_launch_request) {
-                if (auto request = emuenv.take_app_launch_request()) {
-                    pending_launch_request = std::move(request);
-                    running = false;
-                }
-            }
-
-            app::update_runtime_metrics(emuenv, runtime_metrics);
-
-            // Stop requested by overlay/ingame OR crashed
-            if (session.stop_requested() || !session.is_running()) {
-                running = false;
-                session.reset_stop_request();
-            }
-
-            if (running)
-                SDL_Delay(16);
-        }
-
-        LOG_INFO("Shutting down game");
-
+    finish_current_launch = [&]() {
         if (pending_launch_request && pending_launch_request->reason == AppLaunchReason::ProcessExit) {
-            exit_code = pending_launch_request->exit_code;
-            LOG_INFO("The app exited with code {}", exit_code);
+            session_result.exit_code = pending_launch_request->exit_code;
+            session_result.app_exited = true;
+            LOG_INFO("The app exited with code {}", session_result.exit_code);
+            pending_launch_request.reset();
+            cleanup_launch(app::AppSessionStopReason::UserRequest);
+            finished = true;
         } else if (pending_launch_request) {
-            launch_request = std::move(*pending_launch_request);
-            relaunch_requested = true;
-            LOG_INFO("Relaunching in-process with self '{}'", launch_request.self_path);
+            auto next_launch = std::move(*pending_launch_request);
+            pending_launch_request.reset();
+            LOG_INFO("Relaunching in-process with self '{}'", next_launch.self_path);
+            cleanup_launch(app::AppSessionStopReason::Relaunch);
+            start_launch(std::move(next_launch));
+        } else {
+            cleanup_launch(app::AppSessionStopReason::UserRequest);
+            finished = true;
+        }
+    };
+
+    start_launch(std::move(launch_request));
+    while (!finished) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+            case SDL_EVENT_DROP_BEGIN:
+            case SDL_EVENT_DROP_FILE:
+            case SDL_EVENT_DROP_TEXT:
+            case SDL_EVENT_DROP_COMPLETE:
+            case SDL_EVENT_DROP_POSITION:
+                sdl::discard_pending_drop_files();
+                continue;
+            default:
+                break;
+            }
+
+            const auto shared_event = sdl::process_event(emuenv, event);
+            if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat
+                && sdl::process_fullscreen_key(emuenv, &window, shared_event.physical_key))
+                sdl::update_viewport(&window, emuenv.cfg.current_config.stretch_the_display_area,
+                    emuenv.cfg.current_config.fullscreen_hd_res_pixel_perfect, emuenv.display.fullscreen.load());
+            if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED)
+                sdl::update_viewport(&window, emuenv.cfg.current_config.stretch_the_display_area,
+                    emuenv.cfg.current_config.fullscreen_hd_res_pixel_perfect, emuenv.display.fullscreen.load());
+            if (!active || finished)
+                continue;
+            if (shared_event.outcome == sdl::EventOutcome::QuitRequested) {
+                session_result.window_closed = true;
+                continue;
+            }
+            switch (event.type) {
+            case SDL_EVENT_KEY_DOWN:
+                if (handle_ime_keydown(emuenv, hooks, event.key))
+                    break;
+                if (!event.key.repeat && SDL_GetKeyboardFocus() == &window && !is_any_ime_active(emuenv)
+                    && event.key.scancode != SDL_SCANCODE_UNKNOWN) {
+                    const auto &cfg = emuenv.cfg;
+                    if (event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton)
+                        || event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton_alt)) {
+                        if (hooks.on_guide_button)
+                            hooks.on_guide_button();
+                        else if (session.is_running())
+                            session.set_pause_reason(app::AppSessionPauseReason::User, !session.is_paused());
+                    }
+                }
+                break;
+            case SDL_EVENT_TEXT_EDITING:
+                handle_ime_text_editing(emuenv, hooks, event.edit.text);
+                break;
+            case SDL_EVENT_TEXT_INPUT:
+                handle_ime_text_input(emuenv, hooks, event.text.text);
+                break;
+            case SDL_EVENT_FINGER_DOWN:
+            case SDL_EVENT_FINGER_MOTION:
+            case SDL_EVENT_FINGER_UP:
+            case SDL_EVENT_FINGER_CANCELED: {
+                auto &mouse = emuenv.ctrl.overlay_mouse;
+                mouse.x.store(event.tfinger.x * 960.f, std::memory_order_relaxed);
+                mouse.y.store(event.tfinger.y * 544.f, std::memory_order_relaxed);
+                mouse.pressed.store(event.type == SDL_EVENT_FINGER_DOWN || event.type == SDL_EVENT_FINGER_MOTION, std::memory_order_relaxed);
+                break;
+            }
+            case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+                if (event.gbutton.button == SDL_GAMEPAD_BUTTON_GUIDE) {
+                    if (hooks.on_guide_button)
+                        hooks.on_guide_button();
+                    else if (session.is_running())
+                        session.set_pause_reason(app::AppSessionPauseReason::User, !session.is_paused());
+                }
+                break;
+            default:
+                break;
+            }
         }
 
-        cleanup_launch(relaunch_requested
-                ? app::AppSessionStopReason::Relaunch
-                : app::AppSessionStopReason::UserRequest);
-    } while (relaunch_requested);
+        if (hooks.on_update)
+            hooks.on_update();
 
-    return exit_code;
+        if (active && !finished) {
+            if (session_result.window_closed) {
+                cleanup_launch(app::AppSessionStopReason::FrontendShutdown);
+                finished = true;
+            } else {
+                update_mouse_input(emuenv, &window);
+                update_keyboard(emuenv, &window);
+                if (!pending_launch_request) {
+                    if (auto request = emuenv.take_app_launch_request())
+                        pending_launch_request = std::move(request);
+                }
+                if (pending_launch_request) {
+                    finish_current_launch();
+                } else {
+                    if (!session.is_paused() && app::update_runtime_metrics(emuenv, runtime_metrics))
+                        sdl::update_runtime_window_title(&window, emuenv);
+                    if (session.stop_requested() || !session.is_running()) {
+                        session.reset_stop_request();
+                        cleanup_launch(app::AppSessionStopReason::UserRequest);
+                        finished = true;
+                    }
+                }
+            }
+        }
+        if (!finished)
+            SDL_Delay(16);
+    }
+    return session_result;
 }
 
 } // namespace sdl_frontend

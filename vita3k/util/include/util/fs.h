@@ -73,6 +73,7 @@ namespace fs_utils {
 fs::path generic_path(const fs::path &path);
 
 std::time_t to_time_t(fs::file_time_type time);
+fs::file_time_type to_file_time(std::time_t time);
 
 fs::path construct_file_name(const fs::path &base_path, const fs::path &folder_path, const fs::path &file_name, const fs::path &extension = "");
 
