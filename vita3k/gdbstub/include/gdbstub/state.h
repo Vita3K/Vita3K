@@ -71,6 +71,9 @@ struct GDBState {
     // Frames the next continue runs for before stopping, 0 for no limit
     uint32_t stop_after_frames = 0;
 
+    // A Ctrl-C that came while the app was stopped, like during a step, stops the next continue
+    bool interrupt_pending = false;
+
     // vFile fd cache. Each open allocates a fresh fd and stores the
     // file's bytes in memory; pread/fstat/close operate on these buffers.
     // Lets us serve decrypted ELFs for Vita modules from KernelModule's
