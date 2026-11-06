@@ -731,6 +731,7 @@ static void release_app(EmuEnvState &state) {
 
     state.gdb.current_thread = 0;
     state.gdb.stop_after_frames = 0;
+    state.gdb.interrupt_pending = false;
     {
         // Input with a length still runs out, so a script can press a button and detach
         const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
@@ -942,6 +943,14 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             if (state.gdb.stop_after_frames != 0) {
                 stop_vcount = state.display.vblank_count.load() + state.gdb.stop_after_frames;
                 state.gdb.stop_after_frames = 0;
+            }
+
+            // The app is still stopped for an interrupt that came before the continue
+            if (state.gdb.interrupt_pending) {
+                state.gdb.interrupt_pending = false;
+                LOG_INFO("GDB interrupt received before the continue (Ctrl-C)");
+                state.gdb.current_thread = started_thread(state);
+                return stop_reply(state.gdb.current_thread);
             }
 
             // Resume the world. A thread something else holds stays stopped.
@@ -1716,6 +1725,13 @@ static int64_t server_next(EmuEnvState &state) {
                 LOG_WARN("GDB Server Invalid Command. {}", input.substr(0, packet_size));
             }
             input.erase(0, packet_size);
+            break;
+        }
+        case '\x03': {
+            // A Ctrl-C during a step, or one that crossed a stop reply. gdb still counts on it to stop the
+            // app, and would otherwise resume forever after the watchpoint hits it ignores.
+            input.erase(0, 1);
+            state.gdb.interrupt_pending = true;
             break;
         }
         default:
