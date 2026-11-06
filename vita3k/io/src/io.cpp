@@ -37,6 +37,7 @@
 #endif
 
 #include <cassert>
+#include <cerrno>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -134,11 +135,13 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
 }
 
 void io_deinit(IOState &io) {
-    io.std_files.clear();
-    io.dir_entries.clear();
-    io.tty_files.clear();
-
-    io.next_fd = 0;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        io.std_files.clear();
+        io.dir_entries.clear();
+        io.tty_files.clear();
+        io.next_fd = 0;
+    }
 
     io.device_paths = {};
     io.addcont.clear();
@@ -317,6 +320,24 @@ fs::path expand_path(IOState &io, const char *path, const fs::path &vita_fs_path
     return device::construct_emulated_path(device, translated_path, vita_fs_path, io.redirect_stdio).string();
 }
 
+static std::shared_ptr<FileStats> find_file(const IOState &io, const SceUID fd) {
+    std::lock_guard lock(io.fd_mutex);
+    const auto file = io.std_files.find(fd);
+    return file == io.std_files.end() ? nullptr : file->second;
+}
+
+static int host_open_error(const int error) {
+    switch (error) {
+    case ENOENT: return SCE_ERROR_ERRNO_ENOENT;
+    case EACCES: return SCE_ERROR_ERRNO_EACCES;
+    case EMFILE: return SCE_ERROR_ERRNO_EMFILE;
+    case EEXIST: return SCE_ERROR_ERRNO_EEXIST;
+    case ENOMEM: return SCE_ERROR_ERRNO_ENOMEM;
+    case ENOSPC: return SCE_ERROR_ERRNO_ENOSPC;
+    default: return SCE_ERROR_ERRNO_EIO;
+    }
+}
+
 SceUID open_file(IOState &io, const char *path, const int flags, const fs::path &vita_fs_path, const char *export_name) {
     auto device = device::get_device(path);
     auto device_for_icase = device;
@@ -334,8 +355,12 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
         if (flags & SCE_O_WRONLY)
             tty_type |= TTY_OUT;
 
-        const auto fd = io.next_fd++;
-        io.tty_files.emplace(fd, tty_type);
+        SceUID fd;
+        {
+            std::lock_guard lock(io.fd_mutex);
+            fd = io.next_fd++;
+            io.tty_files.emplace(fd, tty_type);
+        }
 
         LOG_TRACE_IF(log_file_op, "{}: Opening terminal {}:", export_name, device);
         return fd;
@@ -387,9 +412,20 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
 
     const auto normalized_path = device::construct_normalized_path(device, translated_path);
 
-    FileStats f{ path, normalized_path, system_path, flags };
-    const auto fd = io.next_fd++;
-    io.std_files.emplace(fd, f);
+    auto stream = create_file(system_path, flags);
+    if (!stream) {
+        const int error = errno;
+        LOG_ERROR("Failed to open file {} (target path: {}), host errno {}", system_path, path, error);
+        return IO_ERROR(host_open_error(error));
+    }
+
+    auto file = std::make_shared<FileStats>(path, normalized_path, system_path, flags, std::move(stream));
+    SceUID fd;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        fd = io.next_fd++;
+        io.std_files.emplace(fd, std::move(file));
+    }
 
     LOG_TRACE_IF(log_file_op, "{}: Opening file {} ({}), fd: {}", export_name, path, normalized_path, log_hex(fd));
     return fd;
@@ -399,16 +435,28 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
     assert(data != nullptr);
     assert(size >= 0);
 
-    const auto file = io.std_files.find(fd);
-    if (file != io.std_files.end()) {
-        const auto read = file->second.read(data, 1, size);
+    const auto file = find_file(io, fd);
+    if (file) {
+        std::lock_guard lock(file->mutex);
+        if (file->closed)
+            return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+        const auto read = file->read(data, 1, size);
         LOG_TRACE_IF(log_file_op && log_file_read, "{}: Reading {} bytes of fd {}", export_name, read, log_hex(fd));
         return static_cast<int>(read);
     }
 
-    const auto tty_file = io.tty_files.find(fd);
-    if (tty_file != io.tty_files.end()) {
-        if (tty_file->second == TTY_IN) {
+    TtyType tty_type = TTY_UNKNOWN;
+    bool tty_found = false;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        const auto tty_file = io.tty_files.find(fd);
+        if (tty_file != io.tty_files.end()) {
+            tty_found = true;
+            tty_type = tty_file->second;
+        }
+    }
+    if (tty_found) {
+        if (tty_type == TTY_IN) {
             std::cin.read(static_cast<char *>(data), size);
             LOG_TRACE_IF(log_file_op && log_file_read, "{}: Reading terminal fd: {}, size: {}", export_name, log_hex(fd), size);
             return size;
@@ -428,9 +476,18 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     }
 
-    const auto tty_file = io.tty_files.find(fd);
-    if (tty_file != io.tty_files.end()) {
-        if (tty_file->second & TTY_OUT) {
+    TtyType tty_type = TTY_UNKNOWN;
+    bool tty_found = false;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        const auto tty_file = io.tty_files.find(fd);
+        if (tty_file != io.tty_files.end()) {
+            tty_found = true;
+            tty_type = tty_file->second;
+        }
+    }
+    if (tty_found) {
+        if (tty_type & TTY_OUT) {
             std::string s(static_cast<char const *>(data), size);
 
             // trim newline
@@ -447,16 +504,19 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
         return IO_ERROR_UNK();
     }
 
-    const auto file = io.std_files.find(fd);
-    if (file == io.std_files.end())
+    const auto file = find_file(io, fd);
+    if (!file)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
-    if (!fs::is_directory(file->second.get_system_location().parent_path())) {
+    if (!fs::is_directory(file->get_system_location().parent_path())) {
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT); // TODO: Is it the right error code?
     }
 
-    if (file->second.can_write_file()) {
-        const auto written = file->second.write(data, 1, size);
+    if (file->can_write_file()) {
+        std::lock_guard lock(file->mutex);
+        if (file->closed)
+            return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+        const auto written = file->write(data, 1, size);
         LOG_TRACE_IF(log_file_op, "{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
         return static_cast<int>(written);
     }
@@ -468,10 +528,13 @@ int truncate_file(const SceUID fd, unsigned long long length, const IOState &io,
     if (fd < 0)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
-    const auto file = io.std_files.find(fd);
-    if (file == io.std_files.end())
+    const auto file = find_file(io, fd);
+    if (!file)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
-    auto trunc = file->second.truncate(length);
+    std::lock_guard lock(file->mutex);
+    if (file->closed)
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    auto trunc = file->truncate(length);
     LOG_TRACE_IF(log_file_op, "{}: Truncating fd: {}, to size: {}", export_name, log_hex(fd), length);
     return trunc;
 }
@@ -483,10 +546,13 @@ SceOff seek_file(const SceUID fd, const SceOff offset, const SceIoSeekMode whenc
     if (fd < 0)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
-    const auto file = io.std_files.find(fd);
-    if (file == io.std_files.end())
+    const auto file = find_file(io, fd);
+    if (!file)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
-    if (!file->second.seek(offset, whence))
+    std::lock_guard lock(file->mutex);
+    if (file->closed)
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    if (!file->seek(offset, whence))
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
     const auto log_mode = [](const SceIoSeekMode whence) -> const char * {
@@ -500,20 +566,23 @@ SceOff seek_file(const SceUID fd, const SceOff offset, const SceIoSeekMode whenc
     };
 
     LOG_TRACE_IF(log_file_op && log_file_seek, "{}: Seeking fd: {}, offset: {}, whence: {}", export_name, log_hex(fd), log_hex(offset), log_mode(whence));
-    return file->second.tell();
+    return file->tell();
 }
 
 SceOff tell_file(IOState &io, const SceUID fd, const char *export_name) {
     if (fd < 0)
         return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
 
-    const auto std_file = io.std_files.find(fd);
+    const auto std_file = find_file(io, fd);
 
-    if (std_file == io.std_files.end()) {
+    if (!std_file) {
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     }
 
-    return std_file->second.tell();
+    std::lock_guard lock(std_file->mutex);
+    if (std_file->closed)
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    return std_file->tell();
 }
 
 int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name, const SceUID fd) {
@@ -558,14 +627,17 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &v
         }
         LOG_TRACE_IF(log_file_op && log_file_stat, "{}: Statting file: {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
     } else { // We have previously opened and defined the location
-        const auto fd_file = io.std_files.find(fd);
-        if (fd_file == io.std_files.end())
+        const auto fd_file = find_file(io, fd);
+        if (!fd_file)
             return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
-        file_path = fd_file->second.get_system_location();
+        std::lock_guard lock(fd_file->mutex);
+        if (fd_file->closed)
+            return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+        file_path = fd_file->get_system_location();
         LOG_TRACE_IF(log_file_op && log_file_stat, "{}: Statting fd: {}", export_name, log_hex(fd));
 
-        statp->st_attr = fd_file->second.get_file_mode();
+        statp->st_attr = fd_file->get_file_mode();
     }
 
     std::uint64_t last_access_time_ticks;
@@ -616,12 +688,10 @@ int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const fs::pa
     assert(statp != nullptr);
     memset(statp, '\0', sizeof(SceIoStat));
 
-    const auto std_file = io.std_files.find(fd);
-    if (std_file == io.std_files.end()) {
+    if (fd == invalid_fd)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
-    }
 
-    return stat_file(io, std_file->second.get_vita_loc(), statp, vita_fs_path, export_name, fd);
+    return stat_file(io, nullptr, statp, vita_fs_path, export_name, fd);
 }
 
 int close_file(IOState &io, const SceUID fd, const char *export_name) {
@@ -630,8 +700,22 @@ int close_file(IOState &io, const SceUID fd, const char *export_name) {
 
     LOG_TRACE_IF(log_file_op, "{}: Closing file fd: {}", export_name, log_hex(fd));
 
-    io.tty_files.erase(fd);
-    io.std_files.erase(fd);
+    StdFiles::node_type file;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        io.tty_files.erase(fd);
+        file = io.std_files.extract(fd);
+    }
+
+    if (!file.empty()) {
+        const auto &opened_file = file.mapped();
+        std::lock_guard lock(opened_file->mutex);
+        opened_file->closed = true;
+        if (opened_file->close() != 0) {
+            LOG_ERROR("Failed to close file fd {}: host errno {}", log_hex(fd), errno);
+            return IO_ERROR(SCE_ERROR_ERRNO_EIO);
+        }
+    }
 
     return 0;
 }
@@ -746,9 +830,13 @@ SceUID open_dir(IOState &io, const char *path, const fs::path &vita_fs_path, con
     }
 
     const auto normalized = device::construct_normalized_path(device, translated_path);
-    const DirStats d{ path, normalized, dir_path, opened };
-    const auto fd = io.next_fd++;
-    io.dir_entries.emplace(fd, d);
+    auto dir = std::make_shared<DirStats>(path, normalized, dir_path, opened);
+    SceUID fd;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        fd = io.next_fd++;
+        io.dir_entries.emplace(fd, std::move(dir));
+    }
 
     LOG_TRACE_IF(log_file_op, "{}: Opening dir {} ({}), fd: {}", export_name, path, normalized, log_hex(fd));
 
@@ -760,33 +848,34 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const fs::path 
 
     memset(dent->d_name, '\0', sizeof(dent->d_name));
 
-    const auto dir = io.dir_entries.find(fd);
-
-    if (dir != io.dir_entries.end()) {
-        // Refuse any fd that is not explicitly a directory
-        if (!dir->second.is_directory())
-            return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
-
-        const auto d = dir->second.get_dir_ptr();
-        if (!d)
-            return 0;
-
-        const auto d_name_utf8 = get_file_in_dir(d);
-        strncpy(dent->d_name, d_name_utf8.c_str(), sizeof(dent->d_name));
-
-        if (d_name_utf8 != "." && d_name_utf8 != "..") {
-            const auto file_path = std::string(dir->second.get_vita_loc()) + '/' + d_name_utf8;
-
-            LOG_TRACE_IF(log_file_op, "{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));
-            if (stat_file(io, file_path.c_str(), &dent->d_stat, vita_fs_path, export_name) < 0)
-                return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
-            else
-                return 1; // move to the next file
-        }
-        return read_dir(io, fd, dent, vita_fs_path, export_name);
+    std::shared_ptr<DirStats> dir;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        const auto entry = io.dir_entries.find(fd);
+        if (entry != io.dir_entries.end())
+            dir = entry->second;
     }
+    // Refuse any fd that is not explicitly a directory
+    if (!dir || !dir->is_directory())
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
-    return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    std::string d_name_utf8;
+    {
+        std::lock_guard lock(dir->mutex);
+        do {
+            const auto d = dir->get_dir_ptr();
+            if (!d)
+                return 0;
+            d_name_utf8 = get_file_in_dir(d);
+        } while (d_name_utf8 == "." || d_name_utf8 == "..");
+    }
+    dent->d_name[d_name_utf8.copy(dent->d_name, sizeof(dent->d_name) - 1)] = '\0';
+    const auto file_path = std::string(dir->get_vita_loc()) + '/' + d_name_utf8;
+
+    LOG_TRACE_IF(log_file_op, "{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));
+    if (stat_file(io, file_path.c_str(), &dent->d_stat, vita_fs_path, export_name) < 0)
+        return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
+    return 1; // move to the next file
 }
 
 bool copy_path(const fs::path &src_path, const fs::path &vita_fs_path, const std::string &app_title_id, const std::string &app_category) {
@@ -837,11 +926,15 @@ int close_dir(IOState &io, const SceUID fd, const char *export_name) {
     if (fd < 0)
         return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
 
-    const auto erased_entries = io.dir_entries.erase(fd);
+    DirEntries::node_type dir;
+    {
+        std::lock_guard lock(io.fd_mutex);
+        dir = io.dir_entries.extract(fd);
+    }
 
     LOG_TRACE_IF(log_file_op, "{}: Closing dir fd: {}", export_name, log_hex(fd));
 
-    if (erased_entries == 0)
+    if (dir.empty())
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
     return 0;
