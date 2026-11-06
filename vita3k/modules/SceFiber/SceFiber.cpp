@@ -280,7 +280,9 @@ struct SceFiberInfo {
     SceUInt32 sizeContext;
     char name[32];
     SceUInt32 sizeContextMargin;
+    SceUInt32 padding[79];
 };
+static_assert(sizeof(SceFiberInfo) == 0x170);
 
 EXPORT(int, sceFiberGetInfo, SceFiber *fiber, SceFiberInfo *fiberInfo) {
     TRACY_FUNC(sceFiberGetInfo, fiber, fiberInfo);

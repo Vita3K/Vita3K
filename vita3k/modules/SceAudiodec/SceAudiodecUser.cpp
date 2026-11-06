@@ -112,7 +112,7 @@ constexpr uint32_t SCE_AUDIODEC_AT9_MAX_ES_SIZE = 1024;
 constexpr uint32_t SCE_AUDIODEC_MP3_MAX_ES_SIZE = 1441;
 // max size is 1792 for AAC ES if adts is enabled
 constexpr uint32_t SCE_AUDIODEC_AAC_MAX_ES_SIZE = 1536;
-constexpr uint32_t SCE_AUDIODEC_CELP_MAX_ES_SIZE = 27;
+constexpr uint32_t SCE_AUDIODEC_CELP_MAX_ES_SIZE = 24;
 
 // this value is multiplied by 2 if sbr is enabled
 constexpr uint32_t SCE_AUDIODEC_AAC_MAX_PCM_SIZE = KiB(2);

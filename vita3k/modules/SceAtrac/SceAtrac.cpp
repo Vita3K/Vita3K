@@ -24,11 +24,19 @@
 TRACY_MODULE_NAME(SceAtrac);
 
 #define SCE_ATRAC_ALIGNMENT_SIZE 0x100U
+#define SCE_ATRAC_ROUND_UP(size) (((size) + SCE_ATRAC_ALIGNMENT_SIZE - 1) & ~(SCE_ATRAC_ALIGNMENT_SIZE - 1))
 #define SCE_ATRAC_TYPE_AT9 0x2003U
 #define SCE_ATRAC_AT9_MAX_TOTAL_CH 16
 #define SCE_ATRAC_WORD_LENGTH_16BITS 16
+#define SCE_ATRAC_AT9_MAX_CH_IN_DECODER 2
+#define SCE_ATRAC_AT9_MAX_FRAME_SAMPLES 256
+#define SCE_ATRAC_MAX_OUTPUT_SAMPLES 2048
+#define SCE_ATRAC_AT9_MAX_OUTPUT_FRAMES 8
+#define SCE_ATRAC_AT9_MIN_LOOP_SAMPLES 3072
+#define SCE_ATRAC_INFINITE_LOOP_NUM -1
+#define SCE_ATRAC_INFINITE_SAMPLES -1
 
-enum {
+enum SceAtracErrorCode : uint32_t {
     SCE_ATRAC_ERROR_INVALID_POINTER = 0x80630000,
     SCE_ATRAC_ERROR_INVALID_SIZE = 0x80630001,
     SCE_ATRAC_ERROR_INVALID_WORD_LENGTH = 0x80630002,
@@ -57,11 +65,25 @@ enum {
     SCE_ATRAC_ERROR_INVALID_LOOP_NUM = 0x80630030
 };
 
+enum SceAtracDecoderStatus {
+    SCE_ATRAC_DECODER_STATUS_ALL_DATA_WAS_DECODED = 0x00000001,
+    SCE_ATRAC_DECODER_STATUS_ALL_DATA_IS_ON_MEMORY = 0x00000002,
+    SCE_ATRAC_DECODER_STATUS_NONLOOP_PART_IS_ON_MEMORY = 0x00000004,
+    SCE_ATRAC_DECODER_STATUS_LOOP_PART_IS_ON_MEMORY = 0x00000008
+};
+
+enum SceAtracLoopStatus {
+    SCE_ATRAC_LOOP_STATUS_NON_LOOP = 0,
+    SCE_ATRAC_LOOP_STATUS_FOR_RESET_ENABLE = 1,
+    SCE_ATRAC_LOOP_STATUS_NOT_RESETABLE_PART = 2
+};
+
 struct SceAtracDecoderGroup {
     SceUInt32 size;
     SceUInt32 wordLength;
     SceUInt32 totalCh;
 };
+static_assert(sizeof(SceAtracDecoderGroup) == 0xC);
 
 struct SceAtracContentInfo {
     SceUInt32 size;
@@ -78,6 +100,7 @@ struct SceAtracContentInfo {
     SceUInt32 loopBlockOffset;
     SceUInt32 loopBlockSize;
 };
+static_assert(sizeof(SceAtracContentInfo) == 0x34);
 
 struct SceAtracStreamInfo {
     SceUInt32 size;
@@ -85,6 +108,7 @@ struct SceAtracStreamInfo {
     SceUInt32 readPosition;
     SceUInt32 writableSize;
 };
+static_assert(sizeof(SceAtracStreamInfo) == 0x10);
 
 EXPORT(SceInt32, sceAtracAddStreamData, SceInt32 atracHandle, SceUInt32 addSize) {
     TRACY_FUNC(sceAtracAddStreamData, atracHandle, addSize);
@@ -184,7 +208,7 @@ EXPORT(SceInt32, sceAtracGetDecoderGroupInfo, SceUInt32 atracType, SceAtracDecod
     }
 
     if (createdDecoder->size != sizeof(SceAtracDecoderGroup) || availableDecoder->size != sizeof(SceAtracDecoderGroup)) {
-        return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_ATRAC_ERROR_INVALID_SIZE);
     }
 
     if (atracType != SCE_ATRAC_TYPE_AT9) {

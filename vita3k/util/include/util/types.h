@@ -192,8 +192,9 @@ typedef union SceUnion32 {
     unsigned char uc[4];
     char c[4];
     float f;
-    void *p;
+    SceUIntPtr p;
 } SceUnion32;
+static_assert(sizeof(SceUnion32) == 4);
 
 typedef union SceUnion64 {
     SceULong64 ull;
