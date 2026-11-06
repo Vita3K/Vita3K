@@ -476,9 +476,10 @@ struct SceSaveDataDialogParam {
 
 struct SceSaveDataDialogSlotInfo {
     SceUInt32 isExist;
-    SceAppUtilSaveDataSlotParam *slotParam;
+    Ptr<SceAppUtilSaveDataSlotParam> slotParam;
     SceChar8 reserved[32];
 };
+static_assert(sizeof(SceSaveDataDialogSlotInfo) == 0x28);
 
 struct SceSaveDataDialogResult {
     SceInt32 mode;

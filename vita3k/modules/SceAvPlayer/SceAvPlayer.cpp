@@ -172,7 +172,10 @@ struct SceAvPlayerStreamInfo {
     MediaType stream_type;
     uint32_t unknown;
     SceAvPlayerStreamDetails stream_details;
+    uint64_t duration;
+    uint64_t start_time;
 };
+static_assert(sizeof(SceAvPlayerStreamInfo) == 0x28);
 
 enum SceAvPlayerErrorCode : uint32_t {
     SCE_AVPLAYER_ERROR_ILLEGAL_ADDR = 0x806a0001,
