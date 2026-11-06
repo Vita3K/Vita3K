@@ -18,7 +18,11 @@
 #pragma once
 
 constexpr int SCE_ERROR_ERRNO_ENOENT = 0x80010002; // Associated file or directory does not exist
+constexpr int SCE_ERROR_ERRNO_EIO = 0x80010005; // Input/output error
+constexpr int SCE_ERROR_ERRNO_ENOMEM = 0x8001000C; // Not enough memory
+constexpr int SCE_ERROR_ERRNO_EACCES = 0x8001000D; // Permission denied
 constexpr int SCE_ERROR_ERRNO_EEXIST = 0x80010011; // File exists
 constexpr int SCE_ERROR_ERRNO_EMFILE = 0x80010018; // Too many files are open
+constexpr int SCE_ERROR_ERRNO_ENOSPC = 0x8001001C; // No space left on device
 constexpr int SCE_ERROR_ERRNO_EBADFD = 0x80010051; // File descriptor is invalid for this operation
 constexpr int SCE_ERROR_ERRNO_EOPNOTSUPP = 0x8001005F; // Operation not supported

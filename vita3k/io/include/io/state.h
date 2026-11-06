@@ -22,19 +22,22 @@
 #include <io/util.h>
 
 #include <map>
+#include <mutex>
 #include <unordered_map>
 
 // Class for all needed information to access files on Vita3K.
 class FileStats : public VitaStats {
-    // Shared file pointer
+    // Host file pointer
     FilePtr wrapped_file;
 
 public:
+    std::mutex mutex;
+    bool closed = false;
+
     // Constructor used for files
     // Based on https://codereview.stackexchange.com/questions/4679/
-    explicit FileStats(const char *vita, const std::string &t, const fs::path &file, const int open) {
-        wrapped_file = create_shared_file(file, open);
-
+    explicit FileStats(const char *vita, const std::string &t, const fs::path &file, const int open, FilePtr stream)
+        : wrapped_file(std::move(stream)) {
         file_info.vita_loc = vita;
         file_info.translated = t;
         file_info.sys_loc = file;
@@ -60,6 +63,11 @@ public:
         return wrapped_file.get();
     }
 
+    int close() {
+        FILE *const stream = wrapped_file.release();
+        return stream ? std::fclose(stream) : 0;
+    }
+
     // File functions
     SceOff read(void *input_data, int element_size, SceSize element_count) const;
     SceOff write(const void *data, SceSize size, int count) const;
@@ -74,6 +82,8 @@ class DirStats : public VitaStats {
     DirPtr dir_ptr;
 
 public:
+    std::mutex mutex;
+
     DirStats(const char *vita, const std::string &t, const fs::path &file, DirPtr ptr) {
         dir_ptr = std::move(ptr);
 
@@ -95,8 +105,8 @@ public:
 };
 
 using TtyFiles = std::map<SceUID, TtyType>;
-using StdFiles = std::map<SceUID, FileStats>;
-using DirEntries = std::map<SceUID, DirStats>;
+using StdFiles = std::map<SceUID, std::shared_ptr<FileStats>>;
+using DirEntries = std::map<SceUID, std::shared_ptr<DirStats>>;
 
 struct IOState {
     struct DevicePaths {
@@ -117,6 +127,7 @@ struct IOState {
 
     bool redirect_stdio;
 
+    mutable std::mutex fd_mutex;
     SceUID next_fd = 0;
     TtyFiles tty_files;
     StdFiles std_files;
