@@ -139,6 +139,7 @@ target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}
 
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" OFF)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" OFF)
+option(BUILD_TESTING "Build tests" OFF)
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 
 if(USE_DISCORD_RICH_PRESENCE)
