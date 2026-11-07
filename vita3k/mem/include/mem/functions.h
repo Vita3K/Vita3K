@@ -68,3 +68,8 @@ Address try_alloc_at(MemState &state, Address address, uint32_t size, const char
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);
 const char *mem_name(Address address, MemState &state);
+
+// Commit completed GPU rows without firing CPU-write invalidation callbacks.
+// Preserves all existing protected segments and row padding; contiguous guest view only.
+bool write_gpu_readback_rows(MemState &state, Address destination, const uint8_t *source,
+    uint32_t row_bytes, uint32_t height, uint32_t destination_stride);
