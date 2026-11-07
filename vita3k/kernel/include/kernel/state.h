@@ -39,6 +39,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <vector>
 
 struct ThreadState;
@@ -50,6 +51,16 @@ struct KernelModule {
     SceKernelModuleInfo info;
     Ptr<const uint8_t> info_segment_address;
     uint32_t info_offset;
+    // ELF p_vaddr per segment, kept for gdb qOffsets computation.
+    uint32_t segment_p_vaddr[MODULE_INFO_NUM_SEGMENTS] = {};
+    // Vita-style source path (e.g. "vs0:sys/external/libc.suprx"), used by
+    // the gdb stub so clients can fetch module files via vFile and
+    // auto-load symbols.
+    std::string vita_path;
+    // Decrypted inner ELF bytes, extracted at module load time. Populated
+    // only when the gdb stub is enabled. Used by vFile to serve a parseable
+    // ELF instead of the SCE-wrapped on-disk SELF.
+    std::vector<uint8_t> elf_bytes;
 };
 using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 
@@ -191,6 +202,7 @@ struct KernelState {
     // Stops every thread for the debugger, and the threads created until it lets them go, or lets
     // them run again
     void set_threads_suspended(bool suspended);
+    bool is_threads_suspended() const { return threads_suspended; }
 
     // Kill all guest threads and block until they have exited. Must only be called from a host thread.
     void process_exit();
@@ -206,7 +218,7 @@ struct KernelState {
 private:
     std::atomic<SceUID> next_uid{ 1 };
     std::atomic<bool> threads_paused{ false };
-    bool threads_suspended = false;
+    std::atomic<bool> threads_suspended{ false };
     // The process is exiting, so a thread still being created ends as well
     bool process_exiting = false;
 };

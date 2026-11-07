@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 
 // Vita3K emulator project
@@ -17,13 +18,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <audio/state.h>
+#include <config/state.h>
+#include <ctrl/state.h>
+#include <display/state.h>
 #include <emuenv/state.h>
+#include <util/align.h>
 #include <util/log.h>
 
 #include <gdbstub/functions.h>
 #include <gdbstub/state.h>
 
 #include <cpu/state.h>
+#include <io/functions.h>
 
 #include <bit>
 #include <cerrno>
@@ -32,6 +39,7 @@
 #include <mem/state.h>
 #include <optional>
 #include <sstream>
+#include <vector>
 
 // Sockets
 #ifdef _WIN32
@@ -45,23 +53,66 @@
 #include <unistd.h>
 #endif
 
-#define LOG_GDB_LEVEL 0
-
-#if LOG_GDB_LEVEL >= 1
-#define LOG_GDB LOG_INFO
-#else
-#define LOG_GDB(a, ...)
-#endif
-
-#if LOG_GDB_LEVEL >= 2
-#define LOG_GDB_DEBUG LOG_INFO
-#else
-#define LOG_GDB_DEBUG(a, ...)
-#endif
+// Opt-in packet trace, gated by its own config bool so it can be toggled
+// without touching the global log level.
+#define LOG_GDB_PACKET(state, ...) LOG_INFO_IF((state).cfg.log_gdb_packets, __VA_ARGS__)
 
 // Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
 
-typedef char PacketData[1200];
+static void close_socket(socket_t &socket) {
+    if (socket == BAD_SOCK)
+        return;
+
+#ifdef _WIN32
+    closesocket(socket);
+#else
+    // Closing alone doesn't wake a thread blocked in accept(), which would hang exit until a client connects
+    shutdown(socket, SHUT_RDWR);
+    close(socket);
+#endif
+    socket = BAD_SOCK;
+}
+
+static void close_gdb_sockets(GDBState &gdb) {
+    close_socket(gdb.client_socket);
+    close_socket(gdb.listen_socket);
+}
+
+static void cleanup_gdb_platform(GDBState &gdb) {
+#ifdef _WIN32
+    if (gdb.winsock_started) {
+        WSACleanup();
+        gdb.winsock_started = false;
+    }
+#endif
+}
+
+static void join_server_thread(GDBState &gdb) {
+    std::shared_ptr<std::thread> server_thread;
+    {
+        const auto guard = std::lock_guard(gdb.server_thread_mutex);
+        server_thread = std::move(gdb.server_thread);
+    }
+
+    if (!server_thread || !server_thread->joinable())
+        return;
+
+    if (server_thread->get_id() == std::this_thread::get_id()) {
+        server_thread->detach();
+    } else {
+        server_thread->join();
+    }
+}
+
+GDBState::~GDBState() {
+    server_die = true;
+    close_gdb_sockets(*this);
+    join_server_thread(*this);
+    cleanup_gdb_platform(*this);
+}
+
+// Must match the PacketSize advertised in qSupported.
+typedef char PacketData[16384];
 
 // The longest packet the stub waits for before it drops it
 constexpr size_t MAX_PACKET_SIZE = 16384;
@@ -72,7 +123,10 @@ struct PacketCommand {
 
     int64_t begin_index = -1;
     int64_t end_index = -1;
+    // Decoded (post-unescape) length, which is what handlers see.
     int64_t content_length = -1;
+    // On-wire length between '$' and '#', needed to advance past the packet.
+    int64_t raw_length = -1;
 
     char *content_start{};
     char *checksum_start{};
@@ -125,35 +179,69 @@ static uint8_t make_checksum(const char *data, int64_t length) {
     return static_cast<uint8_t>(sum % 256);
 }
 
+// Parse a single RSP packet of the form `$<body>#cc`, where `<body>` may
+// contain `}`-escaped bytes (`}` + (byte ^ 0x20)) for any of the four
+// framing bytes $, #, }, *. Decodes escapes in place so handlers see the
+// literal bytes gdb intended to send.
 static PacketCommand parse_command(char *data, int64_t length) {
     PacketCommand command = {};
 
     command.data = data;
     command.length = length;
 
-    // TODO: Use std::find() to find packet begin and end.
-    if (length > 1)
-        command.begin_index = 1;
-    for (int64_t a = 0; a < length; a++) {
-        if (data[a] == '#')
-            command.end_index = a;
-    }
-
-    command.is_valid = command.begin_index != -1 && command.end_index != -1
-        && command.end_index > command.begin_index && command.end_index + 2 < length;
-    if (!command.is_valid)
+    // Minimum valid packet is "$#cc" (4 bytes), and must start with '$'.
+    if (length < 4 || data[0] != '$')
         return command;
 
-    command.content_start = command.data + command.begin_index;
-    command.content_length = command.end_index - command.begin_index;
+    command.begin_index = 1;
+    command.content_start = data + 1;
 
-    command.checksum_start = command.data + command.end_index + 1;
+    // Walk forward looking for an unescaped '#'. A '}' byte consumes the
+    // following byte as part of an escape sequence.
+    int64_t i = 1;
+    while (i < length) {
+        if (data[i] == '}') {
+            if (i + 1 >= length)
+                return command; // truncated inside an escape
+            i += 2;
+            continue;
+        }
+        if (data[i] == '#')
+            break;
+        ++i;
+    }
+    if (i >= length || data[i] != '#')
+        return command;
+
+    command.end_index = i;
+    command.raw_length = i - command.begin_index;
+
+    // Need two hex checksum chars after '#'.
+    if (i + 2 >= length)
+        return command;
+
+    command.checksum_start = data + i + 1;
     command.checksum = static_cast<uint8_t>(parse_hex(std::string(command.checksum_start, 2)));
 
-    command.is_valid = make_checksum(command.content_start, command.content_length) == command.checksum;
-    if (!command.is_valid)
+    // Checksum is computed over the on-wire (still-escaped) body bytes.
+    if (make_checksum(command.content_start, command.raw_length) != command.checksum)
         return command;
 
+    // Unescape in place: dst always trails src, so this is safe.
+    char *src = command.content_start;
+    const char *const src_end = data + i;
+    char *dst = command.content_start;
+    while (src < src_end) {
+        if (*src == '}' && (src + 1) < src_end) {
+            *dst++ = static_cast<char>(static_cast<uint8_t>(*(src + 1)) ^ 0x20);
+            src += 2;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    command.content_length = dst - command.content_start;
+
+    command.is_valid = true;
     return command;
 }
 
@@ -182,8 +270,10 @@ static int64_t server_ack(GDBState &state, char ack = '+') {
 }
 
 static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
-    return "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
-           "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;qXfer:features:read+";
+    return "PacketSize=4000;"
+           "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
+           "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;qXfer:features:read+;"
+           "qXfer:libraries:read+;qXfer:libraries-svr4:read+;ConditionalBreakpoints+";
 }
 
 // Register numbers in the target description and in remote packets.
@@ -229,20 +319,143 @@ static std::string make_target_xml() {
 
 static const std::string TARGET_XML = make_target_xml();
 
-// qXfer:features:read:target.xml:OFFSET,LENGTH returns the part of TARGET_XML gdb asks for, with m
-// before it while more follows and l before the last part
-static std::string cmd_target_xml(EmuEnvState &state, PacketCommand &command) {
-    const std::string content = content_string(command);
-    const size_t comma = content.find(',');
-    const size_t colon = content.rfind(':', comma);
-    if (colon == std::string::npos || comma == std::string::npos)
+// Shared chunking logic for qXfer:*:read packets. Validates the prefix,
+// parses "<offset>,<length>", and returns the appropriate "m<chunk>"
+// (more) / "l<chunk>" (last) / "l" (eof) reply.
+static std::string xfer_chunk_reply(const std::string &content, const std::string &prefix, const std::string &xml) {
+    if (content.substr(0, prefix.size()) != prefix)
         return "E00";
-    const size_t offset = parse_hex(content.substr(colon + 1, comma - colon - 1));
-    const size_t length = parse_hex(content.substr(comma + 1));
-    if (offset >= TARGET_XML.size())
+
+    const std::string params = content.substr(prefix.size());
+    const size_t comma = params.find(',');
+    const uint32_t offset = parse_hex(params.substr(0, comma));
+    const uint32_t length = parse_hex(params.substr(comma + 1));
+
+    if (offset >= xml.size())
         return "l";
-    const std::string part = TARGET_XML.substr(offset, length);
-    return (offset + part.size() < TARGET_XML.size() ? "m" : "l") + part;
+    const std::string part = xml.substr(offset, length);
+    return (offset + part.size() < xml.size() ? "m" : "l") + part;
+}
+
+static std::string cmd_target_xml(EmuEnvState &state, PacketCommand &command) {
+    return xfer_chunk_reply(content_string(command), "qXfer:features:read:target.xml:", TARGET_XML);
+}
+
+// Convert a Vita path like "vs0:sys/external/libc.suprx" into a slash-only
+// form like "/vs0/sys/external/libc.suprx". gdb's BFD layer parses the
+// colon in "device:" as a filename/section separator and refuses to open
+// such paths, so we hand it a colon-free synthetic path in the library
+// list and translate back on the vFile side.
+static std::string vita_path_to_gdb_path(const std::string &vita) {
+    const size_t colon = vita.find(':');
+    if (colon == std::string::npos)
+        return vita;
+    return "/" + vita.substr(0, colon) + "/" + vita.substr(colon + 1);
+}
+
+// Inverse of the above: accept either a real Vita path ("ux0:/foo") or
+// the slash-only synthetic form ("/ux0/foo") and return what `open_file`
+// expects. Pass-through if the input doesn't match the synthetic shape.
+static std::string gdb_path_to_vita_path(const std::string &gdb_path) {
+    if (gdb_path.empty() || gdb_path[0] != '/')
+        return gdb_path;
+    const size_t second_slash = gdb_path.find('/', 1);
+    if (second_slash == std::string::npos)
+        return gdb_path;
+    return gdb_path.substr(1, second_slash - 1) + ":" + gdb_path.substr(second_slash + 1);
+}
+
+// A module path as an XML attribute value
+static std::string xml_escape(const std::string &text) {
+    std::string escaped;
+    for (const char c : text) {
+        switch (c) {
+        case '&': escaped += "&amp;"; break;
+        case '<': escaped += "&lt;"; break;
+        case '>': escaped += "&gt;"; break;
+        case '"': escaped += "&quot;"; break;
+        // Defensive: drop any embedded null bytes that would break XML.
+        case '\0': break;
+        default: escaped += c; break;
+        }
+    }
+    return escaped;
+}
+
+// The loaded segments of a module, in ELF order
+static std::vector<size_t> loaded_segments(const KernelModule &module) {
+    std::vector<size_t> indices;
+    for (size_t i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
+        if (module.info.segments[i].size != 0)
+            indices.push_back(i);
+    }
+    return indices;
+}
+
+// Build the library list XML. Used by both the legacy `library-list` and
+// the svr4 variant; gdb dispatches on which qXfer name it requested.
+static std::string build_library_list_xml(EmuEnvState &state, bool svr4) {
+    std::string xml;
+    if (svr4)
+        xml = "<library-list-svr4 version=\"1.0\">";
+    else
+        xml = "<library-list>";
+
+    {
+        const auto guard = std::lock_guard(state.kernel.mutex);
+        // Skip the main module — qOffsets already tells gdb its load address.
+        bool first = true;
+        for (const auto &[uid, module] : state.kernel.loaded_modules) {
+            if (first) {
+                first = false;
+                continue;
+            }
+            // A module from the boot image has no file of its own, and gdb stops loading
+            // symbols with an error when it can't open one
+            if (module->elf_bytes.empty())
+                continue;
+            // Prefer the real Vita-style path so gdb can vFile:open it and
+            // auto-load the .suprx symbols. Fall back to module name for any
+            // module loaded without a recorded path.
+            const std::string name = xml_escape(!module->vita_path.empty()
+                    ? vita_path_to_gdb_path(module->vita_path)
+                    : std::string(module->info.module_name));
+            const std::vector<size_t> segments = loaded_segments(*module);
+            if (segments.empty())
+                continue;
+
+            if (svr4) {
+                // How far the module moved from the addresses it was linked at
+                const size_t first = segments.front();
+                const uint32_t displacement = module->info.segments[first].vaddr.address() - module->segment_p_vaddr[first];
+                xml += fmt::format(
+                    "<library name=\"{}\" lm=\"0x{:x}\" l_addr=\"0x{:x}\" l_ld=\"0x0\"/>",
+                    name, static_cast<uint32_t>(uid), displacement);
+            } else {
+                // Emit a <segment> per loadable PT_LOAD in ELF order so gdb
+                // can compute the load offset for each section.
+                // Without this, symbols past segment 0 land at
+                // bogus addresses
+                xml += fmt::format("<library name=\"{}\">", name);
+                for (const size_t i : segments)
+                    xml += fmt::format("<segment address=\"{:#x}\"/>", module->info.segments[i].vaddr.address());
+                xml += "</library>";
+            }
+        }
+    }
+
+    xml += svr4 ? "</library-list-svr4>" : "</library-list>";
+    return xml;
+}
+
+static std::string cmd_xfer_libraries(EmuEnvState &state, PacketCommand &command) {
+    return xfer_chunk_reply(content_string(command),
+        "qXfer:libraries:read::", build_library_list_xml(state, false));
+}
+
+static std::string cmd_xfer_libraries_svr4(EmuEnvState &state, PacketCommand &command) {
+    return xfer_chunk_reply(content_string(command),
+        "qXfer:libraries-svr4:read::", build_library_list_xml(state, true));
 }
 
 static std::string cmd_reply_empty(EmuEnvState &state, PacketCommand &command) {
@@ -266,14 +479,14 @@ static std::string cmd_set_current_thread(EmuEnvState &state, PacketCommand &com
 
     switch (command.content_start[1]) {
     case 'c':
-        LOG_GDB("GDB Server Deprecated Continue Option 'c'");
+        LOG_GDB_PACKET(state, "GDB Server Deprecated Continue Option 'c'");
         // state.gdb.current_continue_thread = select_thread(state, thread_id);
         break;
     case 'g':
         state.gdb.current_thread = select_thread(state, thread_id);
         break;
     default:
-        LOG_GDB("GDB Server Unknown Set Current Thread OP. {}", command.content_start[1]);
+        LOG_WARN("GDB Server Unknown Set Current Thread OP. {}", command.content_start[1]);
         break;
     }
 
@@ -312,7 +525,7 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
         return;
     }
 
-    LOG_GDB("GDB Server Modified Invalid Register {}", reg);
+    LOG_WARN("GDB Server Modified Invalid Register {}", reg);
 }
 
 // How many 32-bit words a register has in p and P packets
@@ -388,7 +601,7 @@ static std::string cmd_read_register(EmuEnvState &state, PacketCommand &command)
     const uint32_t reg = parse_hex(content.substr(1));
     const std::optional<uint32_t> first = reg_first_word(reg);
     if (!first) {
-        LOG_GDB("GDB Server Queried Invalid Register {}", reg);
+        LOG_WARN("GDB Server Queried Invalid Register {}", reg);
         return be_hex(0);
     }
     // A double register is two words and a quad register four, the low one first
@@ -477,12 +690,12 @@ static std::string cmd_write_memory(EmuEnvState &state, PacketCommand &command) 
     for (uint32_t a = 0; a < length; a++) {
         *Ptr<uint8_t>(address + a).get(state.mem) = static_cast<uint8_t>(parse_hex(hex_data.substr(a * 2, 2)));
     }
+    // The write may be to code the JIT already compiled
+    state.kernel.invalidate_jit_cache(address, length);
 
     return "OK";
 }
 
-// server_next() might not be able to tell the difference between the end of the packet ($) and 0x24 ($).
-// Thus, cmd_write_binary is disabled.
 static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
     const size_t pos_first = content.find(',');
@@ -494,17 +707,46 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
     const uint32_t length = parse_hex(second);
     const char *data = command.content_start + pos_second + 1;
 
+    // The data after unescaping is as long as the packet says
+    if (pos_second == std::string::npos || content.size() - pos_second - 1 != length)
+        return "E00";
     if (!check_memory_region(address, length, state.mem))
         return "EAA";
 
     for (uint32_t a = 0; a < length; a++) {
         *Ptr<uint8_t>(address + a).get(state.mem) = data[a];
     }
+    // The write may be to code the JIT already compiled
+    state.kernel.invalidate_jit_cache(address, length);
 
     return "OK";
 }
 
-static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) { return "OK"; }
+static void release_app(EmuEnvState &state) {
+    state.kernel.debugger.remove_all_breakpoints(state.mem);
+    // A watchpoint would stop a thread with no debugger to let it go
+    state.kernel.debugger.remove_all_watchpoints();
+    state.kernel.debugger.update_watches();
+    state.kernel.set_threads_suspended(false);
+
+    state.gdb.current_thread = 0;
+    state.gdb.stop_after_frames = 0;
+    state.gdb.interrupt_pending = false;
+    {
+        // Input with a length still runs out, so a script can press a button and detach
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        std::erase_if(state.ctrl.scripted_inputs, [](const ScriptedInput &input) { return input.length.frames == 0; });
+        if (state.ctrl.scripted_touch.length.frames == 0)
+            state.ctrl.scripted_touch = {};
+    }
+    state.audio.switch_state(false);
+}
+
+static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) {
+    release_app(state);
+    LOG_INFO("GDB Server Detached — breakpoints removed, threads resumed.");
+    return "OK";
+}
 
 static std::string log_stack_traceback(EmuEnvState &state, CPUState &cpu) {
     std::string str;
@@ -519,9 +761,30 @@ static std::string log_stack_traceback(EmuEnvState &state, CPUState &cpu) {
     return str;
 }
 
-// The stop reply for a thread that stopped on a trap
-static std::string stop_reply(SceUID thread_id) {
-    return "T05thread:" + to_hex(thread_id) + ";";
+// The thread to report for a stop no thread asked for. While module_start runs, the main thread
+// exists but hasn't started, and gdb can't step it.
+static SceUID started_thread(EmuEnvState &state) {
+    const auto guard = std::lock_guard(state.kernel.mutex);
+    const auto started = [](const ThreadStatePtr &thread) {
+        const ThreadStatus status = thread->get_status();
+        return status != ThreadStatus::dormant && status != ThreadStatus::deleted;
+    };
+    const auto &threads = state.kernel.threads;
+    if (const auto it = threads.find(state.gdb.current_thread); it != threads.end() && started(it->second))
+        return it->first;
+    SceUID chosen = 0;
+    for (const auto &[uid, thread] : threads) {
+        if (!started(thread))
+            continue;
+        // The main thread has the title ID for a name
+        if (thread->name == state.io.title_id)
+            return uid;
+        if (chosen == 0)
+            chosen = uid;
+    }
+    if (chosen == 0 && !threads.empty())
+        chosen = threads.begin()->first;
+    return chosen;
 }
 
 static std::vector<ThreadStatePtr> list_threads(EmuEnvState &state) {
@@ -532,9 +795,40 @@ static std::vector<ThreadStatePtr> list_threads(EmuEnvState &state) {
     return threads;
 }
 
+// A thread inside a kernel call stops when the call returns, which can take until the next continue
+// if the call waits on another thread, like sceGxmDisplayQueueAddEntry does, so the wait is limited.
+// Such a thread runs no guest code.
+static void stop_app(EmuEnvState &state) {
+    state.kernel.set_threads_suspended(true);
+    const auto stop_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
+    for (const ThreadStatePtr &thread : list_threads(state))
+        thread->wait_until_not_running(stop_deadline);
+    state.audio.switch_state(true);
+}
+
 static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
-    constexpr auto watch_delay = std::chrono::milliseconds(100);
+
+    // Build a T05 stop reply. If a watchpoint triggered, include the
+    // watch address and type so gdb displays "Hardware watchpoint N"
+    // instead of a generic SIGTRAP.
+    const auto stop_reply = [&](SceUID tid) -> std::string {
+        if (const auto hit = state.kernel.debugger.take_watch_hit(tid)) {
+            const char *keyword = "watch";
+            switch (hit->type) {
+            case WatchType::READ:
+                keyword = "rwatch";
+                break;
+            case WatchType::ACCESS:
+                keyword = "awatch";
+                break;
+            default:
+                break;
+            }
+            return fmt::format("T05{}:{:x};thread:{:x};", keyword, hit->start, tid);
+        }
+        return fmt::format("T05thread:{:x};", tid);
+    };
 
     uint64_t index = 5;
     uint64_t next = 0;
@@ -543,7 +837,87 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         std::string text = content.substr(index + 1, next - index - 1);
 
         const char cmd = text[0];
+
+        // Poll the client socket (non-blocking) for a Ctrl-C interrupt
+        // byte. Returns true if one was consumed. Keeps long range
+        // steps interruptible.
+        const auto poll_ctrl_c = [&]() {
+            fd_set read_set;
+            timeval tv = { 0, 0 };
+            FD_ZERO(&read_set);
+            FD_SET(state.gdb.client_socket, &read_set);
+            if (select(state.gdb.client_socket + 1, &read_set, nullptr, nullptr, &tv) <= 0)
+                return false;
+            char byte = 0;
+            if (recv(state.gdb.client_socket, &byte, 1, MSG_PEEK) == 1 && byte == '\x03') {
+                recv(state.gdb.client_socket, &byte, 1, 0);
+                return true;
+            }
+            return false;
+        };
+
         switch (cmd) {
+        case 'r': {
+            // Server-side range stepping: single-step the thread until PC
+            // leaves [start, end). gdb would otherwise send one vCont;r per
+            // instruction (a round trip per insn for every source-line
+            // `next`), which is painfully slow over even a local socket.
+            const size_t comma = text.find(',');
+            if (comma == std::string::npos) {
+                LOG_WARN("Malformed vCont;r packet: {}", text);
+                break;
+            }
+            const size_t thread_delim = text.find(':', comma + 1);
+            const uint32_t range_start = parse_hex(text.substr(1, comma - 1));
+            const size_t end_len = thread_delim == std::string::npos
+                ? std::string::npos
+                : thread_delim - comma - 1;
+            const uint32_t range_end = parse_hex(text.substr(comma + 1, end_len));
+
+            // The action names the thread to step, else it's the current one
+            SceUID thread_id = thread_delim == std::string::npos ? 0 : static_cast<SceUID>(parse_hex(text.substr(thread_delim + 1)));
+            if (thread_id <= 0)
+                thread_id = state.gdb.current_thread;
+            const ThreadStatePtr thread = state.kernel.get_thread(thread_id);
+            if (!thread)
+                return "E00";
+
+            // Poll the socket periodically so the user can still Ctrl-C
+            // out of a pathological in-range loop.
+            constexpr int CTRLC_POLL_INTERVAL = 1024;
+            int steps = 0;
+            while (!state.gdb.server_die) {
+                const uint32_t pc = thread->cpu->get_pc();
+                if (pc < range_start || pc >= range_end)
+                    break;
+
+                // A thread something else holds can't step, and gdb takes the error as a stop
+                const ThreadState::StepResult result = thread->step();
+                if (result == ThreadState::StepResult::held)
+                    return "E01";
+                ++steps;
+
+                // A breakpoint in the range stops the thread before its instruction
+                if (result == ThreadState::StepResult::trapped)
+                    break;
+
+                const ThreadStatus status = thread->get_status();
+                if (status == ThreadStatus::dormant || status == ThreadStatus::deleted)
+                    break;
+                if (state.kernel.debugger.has_break.exchange(false))
+                    break;
+                if ((steps % CTRLC_POLL_INTERVAL) == 0 && poll_ctrl_c()) {
+                    LOG_INFO("GDB interrupt received during range step (Ctrl-C)");
+                    break;
+                }
+            }
+
+            if (state.gdb.server_die)
+                return "";
+
+            state.gdb.current_thread = thread_id;
+            return stop_reply(thread_id);
+        }
         case 's':
         case 'S': {
             // The action names the thread to step, else it's the current one
@@ -557,7 +931,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // A thread something else holds can't step, and gdb takes the error as a stop
             // TODO: a step into a call that waits on a thread the debugger holds never returns
-            if (!thread->step())
+            if (thread->step() == ThreadState::StepResult::held)
                 return "E01";
 
             state.gdb.current_thread = thread_id;
@@ -565,42 +939,97 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         }
         case 'c':
         case 'C': {
-            // Resume the world. A thread something else holds stays stopped.
-            state.kernel.set_threads_suspended(false);
-
-            // Wait until some thread hits a breakpoint
-            ThreadStatePtr stopped;
-            while (!stopped) {
-                auto lock = std::unique_lock(state.kernel.mutex);
-
-                if (state.gdb.server_die)
-                    return "";
-                for (const auto &[_, thread] : state.kernel.threads) {
-                    if (thread->stopped_at_breakpoint()) {
-                        stopped = thread;
-                        break;
-                    }
-                }
-
-                lock.unlock();
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
+            uint64_t stop_vcount = 0;
+            if (state.gdb.stop_after_frames != 0) {
+                stop_vcount = state.display.vblank_count.load() + state.gdb.stop_after_frames;
+                state.gdb.stop_after_frames = 0;
             }
 
-            LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
-            LOG_INFO("PC: {} LR: {}", stopped->cpu->get_pc(), stopped->cpu->get_lr());
-            LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
+            // The app is still stopped for an interrupt that came before the continue
+            if (state.gdb.interrupt_pending) {
+                state.gdb.interrupt_pending = false;
+                LOG_INFO("GDB interrupt received before the continue (Ctrl-C)");
+                state.gdb.current_thread = started_thread(state);
+                return stop_reply(state.gdb.current_thread);
+            }
 
-            // Stop the world. A thread inside a kernel call stops when the call returns.
-            state.kernel.set_threads_suspended(true);
-            for (const ThreadStatePtr &thread : list_threads(state))
-                thread->wait_until_not_running();
+            // Resume the world. A thread something else holds stays stopped.
+            state.kernel.debugger.has_break = false;
+            state.kernel.debugger.clear_watch_hits();
+            state.kernel.set_threads_suspended(false);
+            state.audio.switch_state(false);
 
-            state.gdb.current_thread = stopped->id;
-            return stop_reply(stopped->id);
+            // Wait for a breakpoint hit (condvar) or a Ctrl-C interrupt
+            // (\x03 byte on the socket). The condvar fires instantly on
+            // breakpoint; the timeout is only for the frame limit and the interrupt poll.
+            const auto poll_interval = std::chrono::milliseconds(stop_vcount != 0 ? 5 : 100);
+            SceUID stopped_id = 0;
+            bool did_break = false;
+            bool interrupted = false;
+            while (!did_break && !interrupted && !state.gdb.server_die) {
+                {
+                    std::unique_lock<std::mutex> bk_lock(state.kernel.debugger.break_mutex);
+                    state.kernel.debugger.break_cv.wait_for(bk_lock, poll_interval, [&]() {
+                        return state.kernel.debugger.has_break.load() || state.gdb.server_die;
+                    });
+                }
+
+                if (state.kernel.debugger.has_break.load()) {
+                    stopped_id = state.kernel.debugger.break_thread_id;
+                    state.kernel.debugger.has_break = false;
+                    did_break = true;
+                }
+
+                if (!did_break && stop_vcount != 0 && state.display.vblank_count.load() >= stop_vcount) {
+                    interrupted = true;
+                    stopped_id = started_thread(state);
+                }
+
+                // Check for gdb interrupt (Ctrl-C sends raw \x03).
+                if (!did_break && !interrupted) {
+                    fd_set read_set;
+                    timeval tv = { 0, 0 };
+                    FD_ZERO(&read_set);
+                    FD_SET(state.gdb.client_socket, &read_set);
+                    if (select(state.gdb.client_socket + 1, &read_set, nullptr, nullptr, &tv) > 0) {
+                        char byte;
+                        const auto peeked = recv(state.gdb.client_socket, &byte, 1, MSG_PEEK);
+                        if (peeked == 1 && byte == '\x03') {
+                            recv(state.gdb.client_socket, &byte, 1, 0);
+                            interrupted = true;
+                            LOG_INFO("GDB interrupt received (Ctrl-C)");
+                            stopped_id = started_thread(state);
+                        } else if (peeked <= 0) {
+                            // The client is gone. Stop like an interrupt; the next read sees the
+                            // closed connection and resumes the app.
+                            interrupted = true;
+                            LOG_INFO("GDB client disconnected during continue");
+                            stopped_id = started_thread(state);
+                        }
+                    }
+                }
+            }
+
+            if (state.gdb.server_die)
+                return "";
+
+            // A thread that was deleted after hitting the breakpoint has nothing to report
+            const ThreadStatePtr stopped = did_break ? state.kernel.get_thread(stopped_id) : nullptr;
+            if (did_break && !stopped)
+                stopped_id = started_thread(state);
+            if (stopped) {
+                LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
+                LOG_INFO("PC: {} LR: {}", stopped->cpu->get_pc(), stopped->cpu->get_lr());
+                LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
+            }
+
+            stop_app(state);
+
+            state.gdb.current_thread = stopped_id;
+            return stop_reply(stopped_id);
         }
         default:
-            LOG_GDB("Unsupported vCont command '{}'", cmd);
+            LOG_WARN("Unsupported vCont command '{}'", cmd);
             break;
         }
 
@@ -637,13 +1066,41 @@ static std::string cmd_die(EmuEnvState &state, PacketCommand &command) {
 
 static std::string cmd_attached(EmuEnvState &state, PacketCommand &command) { return "1"; }
 
+static std::string cmd_offsets(EmuEnvState &state, PacketCommand &command) {
+    const auto guard = std::lock_guard(state.kernel.mutex);
+    if (state.kernel.loaded_modules.empty())
+        return "";
+
+    // The first loaded module is the main executable (eboot.bin).
+    // TextSeg/DataSeg format gives gdb the absolute segment addresses;
+    // gdb computes the relocation offsets from the ELF headers internally.
+    // The loaded segments, which a program header that isn't loaded can separate
+    const auto &module = state.kernel.loaded_modules.begin()->second;
+    const std::vector<size_t> segments = loaded_segments(*module);
+    if (segments.empty())
+        return "";
+    const uint32_t text_addr = module->info.segments[segments[0]].vaddr.address();
+    if (segments.size() > 1)
+        return fmt::format("TextSeg={:x};DataSeg={:x}", text_addr, module->info.segments[segments[1]].vaddr.address());
+    return fmt::format("TextSeg={:x}", text_addr);
+}
+
 static std::string cmd_thread_status(EmuEnvState &state, PacketCommand &command) { return "T0"; }
 
-static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) { return "S05"; }
+static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) {
+    const SceUID chosen = started_thread(state);
+    if (chosen == 0)
+        return "S05";
+    state.gdb.current_thread = chosen;
+    return fmt::format("T05thread:{:x};", chosen);
+}
 
 static std::string cmd_get_first_thread(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
     state.gdb.thread_info_index = 0;
+
+    if (state.kernel.threads.empty())
+        return "l";
 
     return 'm' + to_hex(state.kernel.threads.begin()->first);
 }
@@ -652,8 +1109,9 @@ static std::string cmd_get_next_thread(EmuEnvState &state, PacketCommand &comman
     const auto guard = std::lock_guard(state.kernel.mutex);
     std::string str;
 
+    // Threads can exit between the packets, leaving the index past the end
     ++state.gdb.thread_info_index;
-    if (state.gdb.thread_info_index == state.kernel.threads.size()) {
+    if (state.gdb.thread_info_index >= state.kernel.threads.size()) {
         str += 'l';
     } else {
         auto iter = state.kernel.threads.begin();
@@ -666,6 +1124,25 @@ static std::string cmd_get_next_thread(EmuEnvState &state, PacketCommand &comman
     return str;
 }
 
+// The conditions after a Z0 packet's kind, each ";X<length>,<bytecode in hex>", or nothing for a
+// malformed one
+static std::optional<std::vector<BreakpointCondition>> parse_breakpoint_conditions(const std::string &content) {
+    std::vector<BreakpointCondition> conditions;
+    for (size_t pos = content.find(";X"); pos != std::string::npos; pos = content.find(";X", pos + 1)) {
+        const size_t comma = content.find(',', pos);
+        if (comma == std::string::npos)
+            return std::nullopt;
+        const uint32_t length = parse_hex(content.substr(pos + 2, comma - pos - 2));
+        if (length > (content.size() - comma - 1) / 2)
+            return std::nullopt;
+        BreakpointCondition condition(length);
+        for (uint32_t i = 0; i < length; i++)
+            condition[i] = static_cast<uint8_t>(parse_hex(content.substr(comma + 1 + i * 2, 2)));
+        conditions.push_back(std::move(condition));
+    }
+    return conditions;
+}
+
 static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
 
@@ -673,16 +1150,38 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
-    const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+    // In hex like the rest, the byte count for a watchpoint. It ends at a condition.
+    const uint32_t kind = parse_hex(content.substr(second + 1));
 
-    LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+    if (type == 0) {
+        const uint32_t bp_size = (kind == 2 || kind == 3) ? 2 : 4;
+        if (!check_memory_region(address, bp_size, state.mem)) {
+            LOG_WARN("GDB Server Breakpoint rejected — address {} not mapped.", log_hex(address));
+            return "E01";
+        }
+        auto conditions = parse_breakpoint_conditions(content);
+        if (!conditions)
+            return "E01";
+        LOG_INFO("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+        // GDB sets bit 0 of the address for Thumb breakpoints; the real
+        // instruction is 2-byte aligned. Keep the raw address for the
+        // mapping check and log, but strip the Thumb bit before recording.
+        // kind is 2 for a 16-bit Thumb instruction, 3 for a 32-bit one and 4 for ARM. A 16-bit BKPT
+        // over the first halfword stops at a 32-bit Thumb instruction too.
+        // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
+        // Conditions run in the stub, so a hit that doesn't stop costs no round trip to GDB
+        state.kernel.debugger.add_breakpoint(state.mem, align_down(address, 2), kind == 2 || kind == 3, std::move(*conditions));
+        return "OK";
+    }
 
-    // kind is 2 for a 16-bit Thumb instruction, 3 for a 32-bit one and 4 for ARM. A 16-bit BKPT
-    // over the first halfword stops at a 32-bit Thumb instruction too.
-    // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
-    state.kernel.debugger.add_breakpoint(state.mem, address, kind == 2 || kind == 3);
+    if (type >= 2 && type <= 4) {
+        LOG_INFO("GDB Server New Watchpoint at {} (type={}, len={}).", log_hex(address), type, kind);
+        state.kernel.debugger.add_watch_memory_addr(address, kind, static_cast<WatchType>(type));
+        state.kernel.debugger.update_watches();
+        return "OK";
+    }
 
-    return "OK";
+    return "";
 }
 
 static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &command) {
@@ -692,22 +1191,388 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
-    const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+    // In hex like the rest, the byte count for a watchpoint. It ends at a condition.
+    const uint32_t kind = parse_hex(content.substr(second + 1));
 
-    LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    state.kernel.debugger.remove_breakpoint(state.mem, address);
+    if (type == 0) {
+        LOG_INFO("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+        // Mirror cmd_add_breakpoint: strip the GDB Thumb-state bit so the
+        // lookup key matches the address used at insertion.
+        state.kernel.debugger.remove_breakpoint(state.mem, align_down(address, 2));
+        return "OK";
+    }
 
-    return "OK";
+    if (type >= 2 && type <= 4) {
+        LOG_INFO("GDB Server Removed Watchpoint at {} (type={}).", log_hex(address), type);
+        state.kernel.debugger.remove_watch_memory_addr(address, kind, static_cast<WatchType>(type));
+        state.kernel.debugger.update_watches();
+        return "OK";
+    }
+
+    return "";
+}
+
+// GDB's Host I/O (vFile) values, from include/gdb/fileio.h, not the host's
+constexpr int GDB_O_RDONLY = 0x0;
+
+constexpr int GDB_ENOENT = 2;
+constexpr int GDB_EBADF = 9;
+constexpr int GDB_EINVAL = 22;
+
+static std::string vfile_unhex_path(const std::string &hex) {
+    std::string out;
+    out.reserve(hex.size() / 2);
+    for (size_t i = 0; i + 1 < hex.size(); i += 2) {
+        const unsigned v = static_cast<unsigned>(std::stoul(hex.substr(i, 2), nullptr, 16));
+        out.push_back(static_cast<char>(v));
+    }
+    return out;
+}
+
+// Escape the four RSP framing bytes ($, #, }, *) in a binary attachment.
+// Null bytes pass through unchanged — callers must use the length-taking
+// server_reply path so they aren't truncated by strlen.
+static std::string vfile_escape_binary(const char *data, size_t len) {
+    std::string out;
+    out.reserve(len);
+    for (size_t i = 0; i < len; i++) {
+        const unsigned char c = static_cast<unsigned char>(data[i]);
+        if (c == '$' || c == '#' || c == '}' || c == '*') {
+            out.push_back('}');
+            out.push_back(static_cast<char>(c ^ 0x20));
+        } else {
+            out.push_back(static_cast<char>(c));
+        }
+    }
+    return out;
+}
+
+static std::string vfile_error(int err) {
+    return fmt::format("F-1,{:x}", err);
+}
+
+static void vfile_put32_be(char *dst, uint32_t v) {
+    dst[0] = static_cast<char>((v >> 24) & 0xff);
+    dst[1] = static_cast<char>((v >> 16) & 0xff);
+    dst[2] = static_cast<char>((v >> 8) & 0xff);
+    dst[3] = static_cast<char>(v & 0xff);
+}
+
+static void vfile_put64_be(char *dst, uint64_t v) {
+    for (int i = 0; i < 8; i++)
+        dst[i] = static_cast<char>((v >> (56 - 8 * i)) & 0xff);
+}
+
+static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
+    const std::string content = content_string(command);
+    // strip "vFile:" prefix
+    const std::string sub = content.substr(6);
+
+    // setfs:<pid>  — we only have one filesystem, accept any pid as success.
+    if (sub.compare(0, 6, "setfs:") == 0) {
+        return "F0";
+    }
+
+    // open:<pathname-hex>,<flags-hex>,<mode-hex>
+    if (sub.compare(0, 5, "open:") == 0) {
+        const std::string args = sub.substr(5);
+        const size_t c1 = args.find(',');
+        const size_t c2 = args.find(',', c1 + 1);
+        if (c1 == std::string::npos || c2 == std::string::npos)
+            return vfile_error(GDB_EINVAL);
+        const std::string raw_path = vfile_unhex_path(args.substr(0, c1));
+        // gdb's BFD layer can't tolerate ':' in remote filenames, so the
+        // library list emits "/vs0/.../foo.suprx" instead of "vs0:.../foo
+        // .suprx". Translate back to the device-prefix form open_file wants.
+        const std::string path = gdb_path_to_vita_path(raw_path);
+        const int gdb_flags = static_cast<int>(std::stoul(args.substr(c1 + 1, c2 - c1 - 1), nullptr, 16));
+        // Files are only read, and opening one to write could create or truncate it
+        if (gdb_flags != GDB_O_RDONLY)
+            return vfile_error(GDB_EINVAL);
+
+        // Step 1: try the loaded-module ELF cache. Only modules loaded
+        // with gdbstub on populate elf_bytes, and only those produce
+        // BFD-parseable ELFs (rather than encrypted SELF blobs).
+        std::vector<uint8_t> buffer;
+        bool served_from_module = false;
+        {
+            const auto guard = std::lock_guard(state.kernel.mutex);
+            for (const auto &[uid, module] : state.kernel.loaded_modules) {
+                if (!module->elf_bytes.empty() && module->vita_path == path) {
+                    buffer = module->elf_bytes;
+                    served_from_module = true;
+                    break;
+                }
+            }
+        }
+
+        // Step 2: fall back to reading the raw file from the guest fs
+        // (lets `remote get` and other arbitrary fetches still work).
+        if (!served_from_module) {
+            const SceUID rfd = open_file(state.io, path.c_str(), SCE_O_RDONLY, state.vita_fs_path, "gdbstub");
+            if (rfd < 0) {
+                LOG_INFO("GDB vFile open failed: '{}' (raw='{}')", path, raw_path);
+                return vfile_error(GDB_ENOENT);
+            }
+            // Slurp the whole file. seek to end to find size, then read.
+            const SceOff end = seek_file(rfd, 0, SCE_SEEK_END, state.io, "gdbstub");
+            seek_file(rfd, 0, SCE_SEEK_SET, state.io, "gdbstub");
+            if (end > 0) {
+                buffer.resize(static_cast<size_t>(end));
+                const int got = read_file(buffer.data(), state.io, rfd, static_cast<SceSize>(end), "gdbstub");
+                if (got < 0) {
+                    close_file(state.io, rfd, "gdbstub");
+                    return vfile_error(GDB_EBADF);
+                }
+                buffer.resize(static_cast<size_t>(got));
+            }
+            close_file(state.io, rfd, "gdbstub");
+        }
+
+        const int fd = state.gdb.next_vfile_fd++;
+        state.gdb.vfile_buffers[fd] = std::move(buffer);
+        LOG_INFO("GDB vFile opened: '{}' fd={} ({} bytes, {})", path, fd,
+            state.gdb.vfile_buffers[fd].size(),
+            served_from_module ? "decrypted module ELF" : "raw file");
+        return fmt::format("F{:x}", fd);
+    }
+
+    // close:<fd-hex>
+    if (sub.compare(0, 6, "close:") == 0) {
+        const int fd = static_cast<int>(std::stoul(sub.substr(6), nullptr, 16));
+        if (state.gdb.vfile_buffers.erase(fd) == 0)
+            return vfile_error(GDB_EBADF);
+        return "F0";
+    }
+
+    // pread:<fd-hex>,<count-hex>,<offset-hex>
+    if (sub.compare(0, 6, "pread:") == 0) {
+        const std::string args = sub.substr(6);
+        const size_t c1 = args.find(',');
+        const size_t c2 = args.find(',', c1 + 1);
+        if (c1 == std::string::npos || c2 == std::string::npos)
+            return vfile_error(GDB_EINVAL);
+        const int fd = static_cast<int>(std::stoul(args.substr(0, c1), nullptr, 16));
+        uint32_t count = static_cast<uint32_t>(std::stoul(args.substr(c1 + 1, c2 - c1 - 1), nullptr, 16));
+        const uint64_t offset = std::stoull(args.substr(c2 + 1), nullptr, 16);
+
+        const auto it = state.gdb.vfile_buffers.find(fd);
+        if (it == state.gdb.vfile_buffers.end())
+            return vfile_error(GDB_EBADF);
+        const std::vector<uint8_t> &buf = it->second;
+
+        // Cap to fit in PacketData (16384) with reply header + worst-case
+        // 2x binary escape expansion.
+        constexpr uint32_t MAX_PREAD = 8000;
+        if (count > MAX_PREAD)
+            count = MAX_PREAD;
+
+        if (offset >= buf.size())
+            return "F0;"; // EOF
+        const uint64_t avail = buf.size() - offset;
+        const uint32_t n = count < avail ? count : static_cast<uint32_t>(avail);
+
+        return fmt::format("F{:x};", n)
+            + vfile_escape_binary(reinterpret_cast<const char *>(buf.data() + offset), n);
+    }
+
+    // fstat:<fd-hex>
+    if (sub.compare(0, 6, "fstat:") == 0) {
+        const int fd = static_cast<int>(std::stoul(sub.substr(6), nullptr, 16));
+        const auto it = state.gdb.vfile_buffers.find(fd);
+        if (it == state.gdb.vfile_buffers.end())
+            return vfile_error(GDB_EBADF);
+        const uint64_t size = it->second.size();
+
+        // GDB's struct stat is a fixed 64-byte big-endian layout.
+        // See "struct stat" in the gdb manual, Host I/O Packets section.
+        char st[64] = {};
+        vfile_put32_be(st + 0, 0); // dev
+        vfile_put32_be(st + 4, 0); // ino
+        vfile_put32_be(st + 8, 0100644); // mode: regular file, rw-r--r--
+        vfile_put32_be(st + 12, 1); // nlink
+        vfile_put32_be(st + 16, 0); // uid
+        vfile_put32_be(st + 20, 0); // gid
+        vfile_put32_be(st + 24, 0); // rdev
+        vfile_put64_be(st + 28, size); // size
+        vfile_put64_be(st + 36, 4096); // blksize
+        vfile_put64_be(st + 44, (size + 511) / 512); // blocks
+        vfile_put32_be(st + 52, 0); // atime
+        vfile_put32_be(st + 56, 0); // mtime
+        vfile_put32_be(st + 60, 0); // ctime
+
+        return fmt::format("F{:x};", 64) + vfile_escape_binary(st, 64);
+    }
+
+    LOG_GDB_PACKET(state, "GDB Server: Unimplemented vFile op. {}", content);
+    return "";
+}
+
+struct MonitorButton {
+    std::string_view name;
+    uint32_t buttons;
+    uint32_t buttons_ext;
+};
+
+// sceCtrlRead and sceCtrlReadBufferPositive2 report the shoulder buttons differently
+constexpr MonitorButton MONITOR_BUTTONS[] = {
+    { "select", SCE_CTRL_SELECT, SCE_CTRL_SELECT },
+    { "start", SCE_CTRL_START, SCE_CTRL_START },
+    { "up", SCE_CTRL_UP, SCE_CTRL_UP },
+    { "right", SCE_CTRL_RIGHT, SCE_CTRL_RIGHT },
+    { "down", SCE_CTRL_DOWN, SCE_CTRL_DOWN },
+    { "left", SCE_CTRL_LEFT, SCE_CTRL_LEFT },
+    { "triangle", SCE_CTRL_TRIANGLE, SCE_CTRL_TRIANGLE },
+    { "circle", SCE_CTRL_CIRCLE, SCE_CTRL_CIRCLE },
+    { "cross", SCE_CTRL_CROSS, SCE_CTRL_CROSS },
+    { "square", SCE_CTRL_SQUARE, SCE_CTRL_SQUARE },
+    { "l1", SCE_CTRL_L, SCE_CTRL_L1 },
+    { "r1", SCE_CTRL_R, SCE_CTRL_R1 },
+    { "l2", 0, SCE_CTRL_L2 },
+    { "r2", 0, SCE_CTRL_R2 },
+    { "l3", 0, SCE_CTRL_L3 },
+    { "r3", 0, SCE_CTRL_R3 },
+};
+
+constexpr uint32_t MONITOR_DEFAULT_FRAMES = 6;
+
+static const char *const MONITOR_HELP = R"(screenshot <path>                  save the current frame as a PNG
+press <button>[+<button>] [frames] press buttons, for 6 frames by default
+hold <button>[+<button>]           press buttons until released
+stick <left|right> <x> <y> [frames] move a stick, -1 to 1, until released by default
+touch <x> <y> [frames]             touch the front screen at a point in 960x544, until released by default
+release                            release all input
+stop-after <frames>                stop the next continue after this many frames
+Lengths start when the app reads the input. Buttons: select start up right down left triangle
+circle cross square l1 r1 l2 r2 l3 r3)";
+
+static bool parse_buttons(const std::string &names, uint32_t &buttons, uint32_t &buttons_ext) {
+    std::istringstream stream(names);
+    std::string name;
+    while (std::getline(stream, name, '+')) {
+        const auto button = std::find_if(std::begin(MONITOR_BUTTONS), std::end(MONITOR_BUTTONS), [&](const MonitorButton &entry) {
+            return entry.name == name;
+        });
+        if (button == std::end(MONITOR_BUTTONS))
+            return false;
+        buttons |= button->buttons;
+        buttons_ext |= button->buttons_ext;
+    }
+    return !names.empty();
+}
+
+static std::string run_monitor_command(EmuEnvState &state, const std::string &line) {
+    std::istringstream args(line);
+    std::string name;
+    args >> name;
+
+    // An optional trailing length. Fails on anything but a number or the end of the line.
+    const auto read_frames = [&](uint32_t &frames) {
+        args >> std::ws;
+        return args.eof() || (args >> frames && !args.fail());
+    };
+
+    if (name.empty() || name == "help")
+        return MONITOR_HELP;
+
+    if (name == "screenshot") {
+        std::string path;
+        std::getline(args >> std::ws, path);
+        if (path.empty())
+            return "usage: screenshot <path>";
+        if (!state.gdb.save_frame || !state.gdb.save_frame(path))
+            return "error: no frame could be saved";
+        return "saved " + path;
+    }
+
+    if (name == "press" || name == "hold") {
+        std::string names;
+        args >> names;
+        uint32_t buttons = 0;
+        uint32_t buttons_ext = 0;
+        uint32_t frames = name == "press" ? MONITOR_DEFAULT_FRAMES : 0;
+        // A press of 0 frames would last until released, like a hold
+        if (!parse_buttons(names, buttons, buttons_ext) || (name == "press" && (!read_frames(frames) || frames == 0)))
+            return "error: bad arguments, see monitor help";
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        state.ctrl.scripted_inputs.push_back({ .buttons = buttons, .buttons_ext = buttons_ext, .length = { .frames = frames } });
+        return "pressed " + names;
+    }
+
+    if (name == "stick") {
+        std::string side;
+        float x = 0;
+        float y = 0;
+        uint32_t frames = 0;
+        args >> side >> x >> y;
+        if ((side != "left" && side != "right") || args.fail() || !read_frames(frames))
+            return "error: bad arguments, see monitor help";
+        const int stick = side == "left" ? 0 : 2;
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        auto &inputs = state.ctrl.scripted_inputs;
+        // The stick moves from where an earlier command left it
+        std::erase_if(inputs, [&](const ScriptedInput &input) { return input.stick == stick; });
+        inputs.push_back({ .stick = stick, .x = std::clamp(x, -1.f, 1.f), .y = std::clamp(y, -1.f, 1.f), .length = { .frames = frames } });
+        return "moved " + side + " stick";
+    }
+
+    if (name == "touch") {
+        uint32_t x = 0;
+        uint32_t y = 0;
+        uint32_t frames = 0;
+        args >> x >> y;
+        if (args.fail() || x >= 960 || y >= 544 || !read_frames(frames))
+            return "error: bad arguments, see monitor help";
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        auto &scripted = state.ctrl.scripted_touch;
+        scripted.active = true;
+        scripted.x = static_cast<uint16_t>(x * 2);
+        scripted.y = static_cast<uint16_t>(y * 2);
+        scripted.length = { .frames = frames };
+        return "touching";
+    }
+
+    if (name == "release") {
+        const std::lock_guard<std::mutex> guard(state.ctrl.mutex);
+        state.ctrl.scripted_inputs.clear();
+        state.ctrl.scripted_touch = {};
+        return "released";
+    }
+
+    if (name == "stop-after") {
+        uint32_t frames = 0;
+        if (!(args >> frames))
+            return "error: bad arguments, see monitor help";
+        state.gdb.stop_after_frames = frames;
+        return "stopping after " + std::to_string(frames) + " frames";
+    }
+
+    return "unknown command, see monitor help";
+}
+
+static std::string cmd_monitor(EmuEnvState &state, PacketCommand &command) {
+    const std::string content = content_string(command);
+    constexpr size_t PREFIX_LENGTH = sizeof("qRcmd,") - 1;
+
+    std::string line;
+    for (size_t i = PREFIX_LENGTH; i + 1 < content.size(); i += 2)
+        line.push_back(static_cast<char>(parse_hex(content.substr(i, 2))));
+
+    const std::string output = run_monitor_command(state, line) + "\n";
+    std::string reply;
+    for (const char c : output)
+        fmt::format_to(std::back_inserter(reply), "{:02x}", static_cast<uint8_t>(c));
+    return reply;
 }
 
 static std::string cmd_deprecated(EmuEnvState &state, PacketCommand &command) {
-    LOG_GDB("GDB Server: Deprecated Packet. {}", content_string(command));
+    LOG_GDB_PACKET(state, "GDB Server: Deprecated Packet. {}", content_string(command));
 
     return "";
 }
 
 static std::string cmd_unimplemented(EmuEnvState &state, PacketCommand &command) {
-    LOG_GDB("GDB Server: Unimplemented Packet. {}", content_string(command));
+    LOG_GDB_PACKET(state, "GDB Server: Unimplemented Packet. {}", content_string(command));
 
     return "";
 }
@@ -732,20 +1597,25 @@ const static PacketFunctionBundle functions[] = {
     { "G", cmd_write_registers },
     { "m", cmd_read_memory },
     { "M", cmd_write_memory },
-    { "X", cmd_unimplemented }, // change cmd_unimplemented to cmd_write_binary to enable binary downloading
+    { "X", cmd_write_binary },
 
     // Query Packets
+    { "qXfer:libraries-svr4:read:", cmd_xfer_libraries_svr4 },
+    { "qXfer:libraries:read:", cmd_xfer_libraries },
     { "qfThreadInfo", cmd_get_first_thread },
     { "qsThreadInfo", cmd_get_next_thread },
     { "qSupported", cmd_supported },
     { "qXfer:features:read:target.xml:", cmd_target_xml },
+    { "qOffsets", cmd_offsets },
     { "qAttached", cmd_attached },
     { "qTStatus", cmd_thread_status },
     { "qC", cmd_get_current_thread },
+    { "qRcmd,", cmd_monitor },
     { "q", cmd_unimplemented },
     { "Q", cmd_unimplemented },
 
     // Shutdown
+    { "D", cmd_detach },
     { "d", cmd_unimplemented },
     { "r", cmd_unimplemented },
     { "R", cmd_unimplemented },
@@ -756,6 +1626,7 @@ const static PacketFunctionBundle functions[] = {
     { "vCont", cmd_continue },
     { "vKill", cmd_kill },
     { "vMustReplyEmpty", cmd_reply_empty },
+    { "vFile:", cmd_vfile },
     { "v", cmd_unimplemented },
 
     // Breakpoints
@@ -794,7 +1665,7 @@ static int64_t server_next(EmuEnvState &state) {
 
     const int64_t length = recv(state.gdb.client_socket, buffer, sizeof(buffer), 0);
     if (length <= 0) {
-        LOG_GDB("GDB Server Connection Closed");
+        LOG_INFO("GDB Server Connection Closed");
         return -1;
     }
     state.gdb.input_buffer.append(buffer, static_cast<size_t>(length));
@@ -807,16 +1678,21 @@ static int64_t server_next(EmuEnvState &state) {
         }
         case '-': {
             input.erase(0, 1);
-            LOG_GDB("GDB Server Transmission Error");
-            server_reply(state.gdb, state.gdb.last_reply.c_str());
+            LOG_WARN("GDB Server Transmission Error");
+            server_reply(state.gdb, state.gdb.last_reply.data(), state.gdb.last_reply.size());
             break;
         }
         case '$': {
-            const size_t end = input.find('#');
+            // The first '#' that isn't escaped, like the one a '}' turns into 0x03
+            size_t end = 1;
+            while (end < input.size() && input[end] != '#')
+                end += input[end] == '}' ? 2 : 1;
+            if (end >= input.size())
+                end = std::string::npos;
             // Wait for the rest of a packet split across reads, up to a limit
             if (end == std::string::npos || input.size() < end + 3) {
                 if (input.size() > MAX_PACKET_SIZE) {
-                    LOG_GDB("GDB Server Packet Too Long");
+                    LOG_WARN("GDB Server Packet Too Long");
                     input.clear();
                     server_ack(state.gdb, '-');
                 }
@@ -830,25 +1706,32 @@ static int64_t server_next(EmuEnvState &state) {
                 for (const auto &function : functions) {
                     if (command_begins_with(command, function.name)) {
                         found_command = true;
-                        LOG_GDB("GDB Server Recognized Command as {}. {}", function.name,
+                        LOG_GDB_PACKET(state, "GDB Server Recognized Command as {}. {}", function.name,
                             std::string(command.content_start, command.content_length));
                         state.gdb.last_reply = function.function(state, command);
                         if (state.gdb.server_die)
                             break;
-                        server_reply(state.gdb, state.gdb.last_reply.c_str());
+                        server_reply(state.gdb, state.gdb.last_reply.data(), state.gdb.last_reply.size());
                         break;
                     }
                 }
                 if (!found_command) {
-                    LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
+                    LOG_GDB_PACKET(state, "GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
                     state.gdb.last_reply = "";
-                    server_reply(state.gdb, state.gdb.last_reply.c_str());
+                    server_reply(state.gdb, state.gdb.last_reply.data(), state.gdb.last_reply.size());
                 }
             } else {
                 server_ack(state.gdb, '-');
-                LOG_GDB("GDB Server Invalid Command. {}", input.substr(0, packet_size));
+                LOG_WARN("GDB Server Invalid Command. {}", input.substr(0, packet_size));
             }
             input.erase(0, packet_size);
+            break;
+        }
+        case '\x03': {
+            // A Ctrl-C during a step, or one that crossed a stop reply. gdb still counts on it to stop the
+            // app, and would otherwise resume forever after the watchpoint hits it ignores.
+            input.erase(0, 1);
+            state.gdb.interrupt_pending = true;
             break;
         }
         default:
@@ -863,43 +1746,85 @@ static int64_t server_next(EmuEnvState &state) {
 }
 
 static void server_listen(EmuEnvState &state) {
-    state.gdb.client_socket = accept(state.gdb.listen_socket, nullptr, nullptr);
-    state.gdb.input_buffer.clear();
+    while (!state.gdb.server_die) {
+        state.gdb.client_socket = accept(state.gdb.listen_socket, nullptr, nullptr);
+        state.gdb.input_buffer.clear();
 
-    if (state.gdb.client_socket == -1) {
-        LOG_GDB("GDB Server Failed: Could not accept socket.");
-        return;
+        if (state.gdb.client_socket == -1) {
+            if (!state.gdb.server_die)
+                LOG_ERROR("GDB Server Failed: Could not accept socket.");
+            break;
+        }
+
+        LOG_INFO("GDB Server Received Connection");
+
+        // The app runs until a client attaches, unless it waits for the debugger
+        stop_app(state);
+
+        // A reply goes out at once, without waiting for the ack of the '+' sent before it
+        const int nodelay = 1;
+        setsockopt(state.gdb.client_socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char *>(&nodelay), sizeof(nodelay));
+
+        int64_t status;
+        do {
+            status = server_next(state);
+        } while (status >= 0 && !state.gdb.server_die);
+
+#ifdef _WIN32
+        closesocket(state.gdb.client_socket);
+#else
+        close(state.gdb.client_socket);
+#endif
+        state.gdb.client_socket = BAD_SOCK;
+        state.gdb.vfile_buffers.clear();
+        state.gdb.next_vfile_fd = 1;
+
+        if (!state.gdb.server_die) {
+            // A client that quits without detaching would otherwise leave the app stopped
+            release_app(state);
+            LOG_INFO("GDB Server Client Disconnected, waiting for new connection...");
+        }
     }
 
-    LOG_INFO("GDB Server Received Connection");
-
-    // A reply goes out at once, without waiting for the ack of the '+' sent before it
-    const int nodelay = 1;
-    setsockopt(state.gdb.client_socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char *>(&nodelay), sizeof(nodelay));
-
-    int64_t status;
-
-    do {
-        status = server_next(state);
-    } while (status >= 0 && !state.gdb.server_die);
-
-    server_close(state);
+    // The owning thread handles server_close(); doing it here would race
+    // join/detach against process shutdown.
+    close_socket(state.gdb.listen_socket);
 }
 
 void server_open(EmuEnvState &state) {
-    LOG_GDB("Starting GDB Server...");
+    if (state.gdb.server_thread) {
+        if (!state.gdb.server_die && state.gdb.listen_socket != BAD_SOCK) {
+            LOG_INFO("GDB Server is already listening on port {}", state.gdb.port);
+            return;
+        }
+
+        join_server_thread(state.gdb);
+    }
+
+    state.gdb.server_die = false;
+
+    LOG_INFO("Starting GDB Server...");
+
+    // The threads may wait for the debugger's first continue, which can't come without a server
+    const auto fail = [&](const char *reason) {
+        LOG_ERROR("GDB Server Failed: {}", reason);
+        close_socket(state.gdb.listen_socket);
+        cleanup_gdb_platform(state.gdb);
+        state.kernel.set_threads_suspended(false);
+    };
 
 #ifdef _WIN32
     int32_t err = WSAStartup(MAKEWORD(2, 2), &state.gdb.wsaData);
     if (err) {
-        LOG_ERROR("GDB Server Failed: Could not start WSA service.");
+        fail("Could not start WSA service.");
         return;
     }
+    state.gdb.winsock_started = true;
 #endif
 
     state.gdb.listen_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (state.gdb.listen_socket == -1) {
-        LOG_ERROR("GDB Server Failed: Could not create socket.");
+        fail("Could not create socket.");
         return;
     }
 
@@ -911,7 +1836,7 @@ void server_open(EmuEnvState &state) {
 
     sockaddr_in socket_address{};
     socket_address.sin_family = AF_INET;
-    socket_address.sin_port = htons(GDB_SERVER_PORT);
+    socket_address.sin_port = htons(state.gdb.port);
 #ifdef _WIN32
     socket_address.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
 #else
@@ -919,29 +1844,30 @@ void server_open(EmuEnvState &state) {
 #endif
 
     if (bind(state.gdb.listen_socket, (sockaddr *)&socket_address, sizeof(socket_address)) == -1) {
-        LOG_ERROR("GDB Server Failed: Could not bind socket.");
+        fail("Could not bind socket.");
         return;
     }
 
     if (listen(state.gdb.listen_socket, 1) == -1) {
-        LOG_ERROR("GDB Server Failed: Could not listen on socket.");
+        fail("Could not listen on socket.");
         return;
     }
 
-    state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
+    {
+        // server_close() on another thread can take it
+        const auto guard = std::lock_guard(state.gdb.server_thread_mutex);
+        state.gdb.server_thread = std::make_shared<std::thread>(server_listen, std::ref(state));
+    }
 
-    LOG_INFO("GDB Server is listening on port {}", GDB_SERVER_PORT);
+    if (state.cfg.wait_for_debugger)
+        LOG_WARN("GDB Server is listening on port {}. The app waits for a client to connect and continue.", state.gdb.port);
+    else
+        LOG_INFO("GDB Server is listening on port {}", state.gdb.port);
 }
 
 void server_close(EmuEnvState &state) {
-#ifdef _WIN32
-    closesocket(state.gdb.listen_socket);
-    WSACleanup();
-#else
-    close(state.gdb.listen_socket);
-#endif
-
     state.gdb.server_die = true;
-    if (state.gdb.server_thread && state.gdb.server_thread->get_id() != std::this_thread::get_id())
-        state.gdb.server_thread->join();
+    close_gdb_sockets(state.gdb);
+    join_server_thread(state.gdb);
+    cleanup_gdb_platform(state.gdb);
 }

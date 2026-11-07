@@ -179,7 +179,10 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     // A guest function the kernel calls returns to the halt instruction, in Thumb mode
     cpu->return_pc = halt_instruction.get() | 1;
     cpu->set_log_code(debugger.watch_code);
-    cpu->set_log_mem(debugger.watch_memory);
+    cpu->set_log_mem(debugger.memory_watched());
+    cpu->check_watchpoint = [this, id](Address addr, size_t size, bool is_write) {
+        return debugger.check_watchpoint(id, addr, size, is_write);
+    };
     ThreadStatePtr thread = std::make_shared<ThreadState>(id, *this, mem, std::move(cpu), name, entry_point.address(), init_priority, affinity_mask, stack_size, attr);
 
     {

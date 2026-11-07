@@ -23,6 +23,7 @@
 #include <util/types.h>
 
 #include <atomic>
+#include <functional>
 #include <initializer_list>
 #include <optional>
 #include <string>
@@ -38,6 +39,16 @@ struct CPUState {
 
     // Return address place_call() writes to LR. Execution stops there.
     Address return_pc = 0;
+
+    // GDB data-watchpoint hook, set by the kernel to forward into Debugger::check_watchpoint from
+    // the Dynarmic memory callbacks. Returns whether the access hits a watchpoint.
+    std::function<bool(Address addr, size_t size, bool is_write)> check_watchpoint;
+
+    // Code this CPU runs in place of what guest memory has, so a thread can step over a
+    // breakpoint while the other threads still stop at it. Set by the executor.
+    Address original_code_addr = 0;
+    std::array<uint8_t, 4> original_code{};
+    size_t original_code_size = 0;
 
     // Set by the kubridge fault handler from a signal, read by the CPU after it halts
     std::atomic<bool> abort_pending{ false };

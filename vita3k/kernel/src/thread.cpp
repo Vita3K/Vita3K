@@ -84,6 +84,12 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
         assert(kernel.tls_psize <= kernel.tls_msize);
         memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
+
+    // Seed PC and SP on the CPU so tools (gdbstub) that inspect the
+    // thread between create and start see its real entry point rather
+    // than zeros. start() reloads the full context and overwrites these.
+    this->cpu->set_pc(entry_point);
+    this->cpu->set_sp(stack.get() + this->stack_size);
 }
 
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
@@ -248,7 +254,15 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         const bool step = step_requested;
 
         lock.unlock();
-        const GuestExit exit = cpu->run(step ? CPUState::RunMode::single_step : CPUState::RunMode::run);
+        GuestExit exit = cpu->run(step ? CPUState::RunMode::single_step : CPUState::RunMode::run);
+        // A breakpoint whose conditions are false runs the instruction under it and goes on, without
+        // the debugger stopping the app for every hit. A step ends after the instruction, and a run
+        // stops only for what the instruction hits.
+        if (exit.breakpoint && !kernel.debugger.breakpoint_stops(mem, *cpu)) {
+            exit = kernel.debugger.step_over_breakpoint(*cpu);
+            if (!step)
+                exit.debugger_stop = exit.breakpoint || exit.watchpoint;
+        }
         if (step) {
             lock.lock();
             // A stop request made before the step ends it before its instruction, so the step goes
@@ -257,6 +271,7 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
                 continue;
             // The step is taken, so a call that a stepped import makes doesn't step too
             step_requested = false;
+            step_trapped = exit.breakpoint || exit.watchpoint;
             lock.unlock();
         }
 
@@ -278,8 +293,12 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         if (const std::optional<Address> fault = cpu->take_abort())
             dispatch_abort(*fault);
         lock.lock();
-        if (exit.debugger_stop)
+        if (exit.debugger_stop) {
             debugger_hold = true;
+            // A step's end isn't a breakpoint
+            if (!step)
+                kernel.debugger.notify_breakpoint(id);
+        }
         if (exit.kind == GuestExit::Kind::returned)
             return exit.value;
         // A thread that doesn't run here anymore parks again at the top
@@ -638,12 +657,14 @@ void ThreadState::set_suspended(bool suspended) {
     cv.notify_all();
 }
 
-bool ThreadState::step() {
+ThreadState::StepResult ThreadState::step() {
     std::unique_lock<std::mutex> lock(mutex);
     // A pause or a ForVM suspend holds the thread, so it doesn't step. One that comes after this
-    // check delays the step until it ends.
-    if (kernel.is_threads_paused() || vm_suspend_count > 0)
-        return false;
+    // check delays the step until it ends. A thread that hasn't started has nothing to step, and
+    // would lose its hold.
+    if (kernel.is_threads_paused() || vm_suspend_count > 0 || status == ThreadStatus::dormant)
+        return StepResult::held;
+    step_trapped = false;
     // A thread with no run, or one that is ending, has no instruction to step, and the wait ends
     // once it is dormant or deleted
     step_requested = (status == ThreadStatus::running || status == ThreadStatus::waiting) && !exiting();
@@ -651,12 +672,12 @@ bool ThreadState::step() {
     cv.notify_all();
     // The thread holds for the debugger again after the instruction
     cv.wait(lock, [&] { return (debugger_hold && parked) || status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
-    return true;
+    return step_trapped ? StepResult::trapped : StepResult::stepped;
 }
 
-void ThreadState::wait_until_not_running() {
+void ThreadState::wait_until_not_running(std::chrono::steady_clock::time_point deadline) {
     std::unique_lock<std::mutex> lock(mutex);
-    cv.wait(lock, [&] { return !runs(); });
+    cv.wait_until(lock, deadline, [&] { return !runs(); });
 }
 
 bool ThreadState::stopped_at_breakpoint() const {

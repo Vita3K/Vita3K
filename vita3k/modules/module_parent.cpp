@@ -207,8 +207,8 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         const auto module_name = fs::path(module_path).stem().string();
         if (!is_lle_module(module_name, emuenv)) {
             LOG_INFO("Module {} is HLE. Skipping load.", module_name);
+            // make_shared zeroes the module info, and a memset would break its strings
             const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
-            memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
 
             auto *sceKernelModuleInfo = &kernelModuleInfo->info;
             sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
@@ -300,7 +300,18 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    return load_module_data(module_buffer.data());
+    const SceUID module_id = load_module_data(module_buffer.data());
+    // Cache the inner decrypted ELF so the gdb stub can serve a
+    // BFD-parseable image via vFile. Gated on gdbstub so non-gdb
+    // runs don't pay the per-module memory overhead.
+    if (module_id >= 0 && emuenv.cfg.gdbstub) {
+        std::vector<uint8_t> elf = extract_elf_from_self(module_buffer);
+        // The gdb stub reads it under the lock
+        const auto guard = std::lock_guard(emuenv.kernel.mutex);
+        if (const auto it = emuenv.kernel.loaded_modules.find(module_id); it != emuenv.kernel.loaded_modules.end())
+            it->second->elf_bytes = std::move(elf);
+    }
+    return module_id;
 }
 
 int unload_module(EmuEnvState &emuenv, SceUID module_id) {

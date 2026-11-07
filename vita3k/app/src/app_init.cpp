@@ -62,8 +62,6 @@
 #include <app/discord.h>
 #endif
 
-#include <gdbstub/functions.h>
-
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_gamepad.h>
 
@@ -99,6 +97,9 @@ static overlay::button_states poll_overlay_input(EmuEnvState &emuenv) {
     axes[1] += kb.axes[1];
     axes[2] += kb.axes[2];
     axes[3] += kb.axes[3];
+
+    // Input from the debugger, so a script can work system dialogs too
+    emuenv.ctrl.apply_scripted_input(emuenv.display.app_vblank_count.load(), true, true, buttons, axes);
 
     for (const auto &[_, controller] : emuenv.ctrl.controllers) {
         SDL_Gamepad *gp = controller.controller.get();
@@ -639,8 +640,22 @@ void apply_renderer_config(EmuEnvState &emuenv) {
             }
         },
         [&emuenv]() -> overlay::overlay_touch_state {
-            auto &mouse = emuenv.ctrl.overlay_mouse;
             overlay::overlay_touch_state state;
+            {
+                std::lock_guard<std::mutex> lock(emuenv.ctrl.mutex);
+                auto &scripted = emuenv.ctrl.scripted_touch;
+                if (scripted.active && scripted.length.update(emuenv.display.app_vblank_count.load()))
+                    scripted = {};
+                if (scripted.active) {
+                    // The touch panel is twice the screen's resolution
+                    state.x = scripted.x / 2.f;
+                    state.y = scripted.y / 2.f;
+                    state.pressed = true;
+                    return state;
+                }
+            }
+
+            auto &mouse = emuenv.ctrl.overlay_mouse;
             state.x = mouse.x.load(std::memory_order_relaxed);
             state.y = mouse.y.load(std::memory_order_relaxed);
             state.pressed = mouse.pressed.load(std::memory_order_relaxed);
@@ -787,12 +802,6 @@ SettingsCommitResult delete_custom_settings(EmuEnvState &emuenv, const std::stri
     desired_cfg = emuenv.cfg;
     config::set_current_config(desired_cfg, emuenv.config_path, {});
     return commit_settings(emuenv, desired_cfg, {});
-}
-
-// need to remove this function completely, waiting for gdb refactor
-void destroy(EmuEnvState &emuenv) {
-    if (emuenv.cfg.gdbstub)
-        server_close(emuenv);
 }
 
 } // namespace app

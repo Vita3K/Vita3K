@@ -59,6 +59,7 @@
 #include <config/version.h>
 #include <ctrl/functions.h>
 #include <display/state.h>
+#include <gdbstub/state.h>
 #include <gxm/state.h>
 #include <interface.h>
 #include <io/state.h>
@@ -109,6 +110,8 @@
 #include <QWidgetAction>
 #include <QtResource>
 
+#include <chrono>
+#include <future>
 #include <optional>
 
 #if defined(HAVE_X11) || defined(HAVE_WAYLAND)
@@ -160,6 +163,22 @@ MainWindow::MainWindow(EmuEnvState &emuenv,
     , m_gui_settings(std::move(gui_settings))
     , m_persistent_settings(std::move(persistent_settings))
     , m_admin_privileged(admin_privileged) {
+    // The main thread is busy until the app's first continue. Gives up before gdb's own 2s timeout.
+    emuenv.gdb.save_frame = [this](const std::string &path) {
+        auto saved = std::make_shared<std::promise<bool>>();
+        auto result = saved->get_future();
+        // Taken by the main thread to save the frame, or here to drop a request that didn't start in
+        // time, which would save a later frame
+        auto claimed = std::make_shared<std::atomic<bool>>(false);
+        QMetaObject::invokeMethod(
+            this, [this, saved, claimed, path]() {
+                if (!claimed->exchange(true))
+                    saved->set_value(save_screenshot(this->emuenv, path)); }, Qt::QueuedConnection);
+        if (result.wait_for(std::chrono::seconds(1)) == std::future_status::ready)
+            return result.get();
+        return claimed->exchange(true) && result.get();
+    };
+
     initialize();
 }
 
