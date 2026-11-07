@@ -26,6 +26,8 @@
 #include <vulkan/vulkan_format_traits.hpp>
 
 #include <array>
+#include <chrono>
+#include <thread>
 #include <util/align.h>
 #include <util/log.h>
 #include <util/vector_utils.h>
@@ -269,6 +271,12 @@ void VKSurfaceCache::cleanup() {
 
         info.texture.destroy();
     }
+
+    // Requests dropped by the aborted wait thread may still reference these readbacks,
+    // so destroy the buffers explicitly: the allocator is destroyed right after this
+    for (auto &readback : stencil_readback_pool)
+        readback->buffer.destroy();
+    stencil_readback_pool.clear();
 
     color_address_lookup.clear();
     depth_address_lookup.clear();
@@ -1490,7 +1498,16 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
     }
 }
 
-std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync(const SceGxmDepthStencilSurface &surface, vk::CommandBuffer cmd_buffer) {
+// The wait thread reads the readback buffers without any VMA call (the allocator is externally
+// synchronized), so they must be host coherent. Every Vulkan implementation has such a memory type.
+static constexpr vma::AllocationCreateInfo vma_readback_alloc = {
+    .flags = vma::AllocationCreateFlagBits::eHostAccessRandom | vma::AllocationCreateFlagBits::eMapped,
+    .usage = vma::MemoryUsage::eAuto,
+    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+};
+
+std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync(const SceGxmDepthStencilSurface &surface, uint32_t target_width,
+    uint32_t target_height, vk::CommandBuffer cmd_buffer) {
     // Some games read the stencil back from memory after rendering
     // (e.g. Metal Max Xeno decides target visibility from S8D24 stencil values).
     // Only surfaces the game explicitly asked to store are synced.
@@ -1525,8 +1542,10 @@ std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync
         return nullptr;
     }
 
-    const uint32_t width = std::min<uint32_t>(info->memory_width, info->texture.width);
-    const uint32_t height = std::min<uint32_t>(info->memory_height, info->texture.height);
+    // Only the render target area was rendered by this scene: the rest of the cached image may be
+    // stale or uninitialized and must not overwrite guest memory
+    const uint32_t width = std::min<uint32_t>({ static_cast<uint32_t>(info->memory_width), info->texture.width, target_width });
+    const uint32_t height = std::min<uint32_t>({ static_cast<uint32_t>(info->memory_height), info->texture.height, target_height });
     const uint32_t stride = info->stride_samples;
     if (width == 0 || height == 0 || width > stride)
         return nullptr;
@@ -1539,19 +1558,28 @@ std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync
     // Reuse a buffer the wait thread has released (only the pool still references it).
     // A use count read while the wait thread drops its reference can only be too high,
     // which merely makes us skip that buffer.
-    std::shared_ptr<DepthStencilReadback> readback;
-    for (const auto &candidate : stencil_readback_pool) {
-        if (candidate.use_count() == 1) {
-            readback = candidate;
-            break;
+    const auto find_released = [&]() -> std::shared_ptr<DepthStencilReadback> {
+        for (const auto &candidate : stencil_readback_pool) {
+            if (candidate.use_count() == 1)
+                return candidate;
         }
-    }
+        return nullptr;
+    };
+    std::shared_ptr<DepthStencilReadback> readback = find_released();
+    if (!readback && stencil_readback_pool.size() < max_stencil_readbacks)
+        readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
     if (!readback) {
-        if (stencil_readback_pool.size() >= max_stencil_readbacks) {
-            LOG_WARN_ONCE("All depth-stencil write-back buffers are in flight, skipping a write-back");
+        // All buffers are in flight. Their requests were queued after earlier submits, so the wait
+        // thread releases one as soon as the GPU is done: wait rather than lose a write-back.
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+        while (!readback && !state.request_queue.is_aborted() && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+            readback = find_released();
+        }
+        if (!readback) {
+            LOG_WARN_ONCE("No depth-stencil write-back buffer was released in time, skipping a write-back");
             return nullptr;
         }
-        readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
     }
 
     const vk::DeviceSize required_size = static_cast<vk::DeviceSize>(width) * height;
@@ -1559,7 +1587,7 @@ std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync
         // released buffers are destroyed on this thread once the frame is done
         state.frame().destroy_queue.add_buffer(readback->buffer);
         readback->buffer = vkutil::Buffer(required_size);
-        readback->buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+        readback->buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vma_readback_alloc);
     }
     readback->data = data;
     readback->width = width;

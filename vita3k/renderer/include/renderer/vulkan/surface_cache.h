@@ -245,9 +245,10 @@ public:
     // Called after the render has been done
     void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);
 
-    // Record a copy of the stencil of a force-stored depth-stencil surface.
-    // If non-null, the return value must be sent as a DepthStencilSyncRequest
-    std::shared_ptr<DepthStencilReadback> perform_depth_stencil_sync(const SceGxmDepthStencilSurface &surface, vk::CommandBuffer cmd_buffer);
+    // Record a copy of the stencil of a force-stored depth-stencil surface, limited to the
+    // render target extent. If non-null, the return value must be sent as a DepthStencilSyncRequest
+    std::shared_ptr<DepthStencilReadback> perform_depth_stencil_sync(const SceGxmDepthStencilSurface &surface, uint32_t target_width,
+        uint32_t target_height, vk::CommandBuffer cmd_buffer);
 
     // Called after the render has been done
     static void perform_post_depth_stencil_sync(const MemState &mem, const DepthStencilReadback &readback);
