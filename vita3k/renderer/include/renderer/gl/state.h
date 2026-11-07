@@ -26,10 +26,32 @@
 #include "types.h"
 
 #include <chrono>
+#include <deque>
 #include <string_view>
 #include <vector>
 
 namespace renderer::gl {
+
+struct PendingReadback {
+    GLuint pbo;
+    size_t capacity;
+    size_t size;
+    GLsync fence;
+    SceGxmColorSurface surface;
+    uint32_t width;
+    uint32_t height;
+    bool use_temp;
+    Address begin;
+    Address end;
+    SceGxmNotification vertex_notification;
+    SceGxmNotification fragment_notification;
+};
+
+struct ReadbackBuffer {
+    GLuint pbo;
+    size_t capacity;
+};
+
 struct GLState : public renderer::State {
     ShaderCache fragment_shader_cache;
     ShaderCache vertex_shader_cache;
@@ -42,6 +64,10 @@ struct GLState : public renderer::State {
     OverlayRenderer overlay_renderer;
 
     bool context_is_current = false;
+
+    std::deque<PendingReadback> pending_readbacks;
+    std::vector<ReadbackBuffer> free_readback_buffers;
+    std::vector<uint8_t> readback_scratch;
 
     bool init() override;
     void cleanup() override;
@@ -67,6 +93,12 @@ struct GLState : public renderer::State {
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
+
+    bool has_pending_readbacks() const override {
+        return !pending_readbacks.empty();
+    }
+    void complete_readbacks(MemState &mem, bool wait) override;
+    void complete_readbacks_overlapping(MemState &mem, Address begin, Address end) override;
 };
 
 } // namespace renderer::gl
