@@ -80,6 +80,28 @@ add_subdirectory(libfat16)
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
+add_library(7zip STATIC
+	7zip/C/7zAlloc.c
+	7zip/C/7zArcIn.c
+	7zip/C/7zBuf.c
+	7zip/C/7zCrc.c
+	7zip/C/7zCrcOpt.c
+	7zip/C/7zDec.c
+	7zip/C/7zStream.c
+	7zip/C/Bcj2.c
+	7zip/C/Bra.c
+	7zip/C/Bra86.c
+	7zip/C/BraIA64.c
+	7zip/C/CpuArch.c
+	7zip/C/Delta.c
+	7zip/C/Lzma2Dec.c
+	7zip/C/LzmaDec.c
+	7zip/C/Ppmd7.c
+	7zip/C/Ppmd7Dec.c
+)
+target_include_directories(7zip PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/7zip/C")
+target_compile_definitions(7zip PRIVATE Z7_ST)
+
 add_subdirectory(sdl)
 
 # Cubeb setup, from https://github.com/RPCS3/rpcs3/blob/master/3rdparty/cubeb/CMakeLists.txt
