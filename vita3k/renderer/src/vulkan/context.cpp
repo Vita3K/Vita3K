@@ -110,6 +110,12 @@ void VKState::wait_thread_function(const MemState &mem) {
 
                            surface_cache.perform_post_surface_sync(mem, request.cache_info);
                        },
+                       [&](DepthStencilSyncRequest &request) {
+                           wait_for_fences();
+
+                           if (request.readback)
+                               VKSurfaceCache::perform_post_depth_stencil_sync(mem, *request.readback);
+                       },
                        [&](SyncSignalRequest &request) {
                            wait_for_fences();
 
@@ -623,8 +629,13 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     resolve_visibility_queries();
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
+    std::shared_ptr<DepthStencilReadback> ds_readback;
     if (state.features.enable_memory_mapping && !state.disable_surface_sync && submit)
         surface_info = state.surface_cache.perform_surface_sync();
+    // Unlike color surface sync, this is not a speed hack target: it only runs when
+    // the game explicitly forces the depth-stencil store, and only copies the stencil.
+    if (state.features.enable_memory_mapping && submit)
+        ds_readback = state.surface_cache.perform_depth_stencil_sync(record.depth_stencil_surface, render_cmd);
 
     prerender_cmd.end();
     render_cmd.end();
@@ -676,6 +687,9 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         if (surface_info && surface_info->need_post_surface_sync) {
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
+
+        if (ds_readback)
+            state.request_queue.push(DepthStencilSyncRequest{ std::move(ds_readback) });
 
         if (notif1.address || notif2.address) {
             // notifications last
