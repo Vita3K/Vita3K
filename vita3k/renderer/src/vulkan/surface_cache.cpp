@@ -1490,6 +1490,152 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
     }
 }
 
+std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync(const SceGxmDepthStencilSurface &surface, vk::CommandBuffer cmd_buffer) {
+    // Some games read the stencil back from memory after rendering
+    // (e.g. Metal Max Xeno decides target visibility from S8D24 stencil values).
+    // Only surfaces the game explicitly asked to store are synced.
+    if (!state.features.enable_memory_mapping || !surface.force_store || surface.disabled())
+        return nullptr;
+
+    const SceGxmDepthStencilFormat format = surface.get_format();
+    if (format != SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24 && format != SCE_GXM_DEPTH_STENCIL_FORMAT_S8)
+        return nullptr;
+    if (state.deep_stencil_use == vk::Format::eD16Unorm)
+        return nullptr;
+
+    DepthStencilSurfaceCacheInfo *info = nullptr;
+    if (surface.depth_data) {
+        auto it = depth_address_lookup.find(surface.depth_data.address());
+        if (it != depth_address_lookup.end())
+            info = it->second;
+    } else if (surface.stencil_data) {
+        auto it = stencil_address_lookup.find(surface.stencil_data.address());
+        if (it != stencil_address_lookup.end())
+            info = it->second;
+    }
+    if (!info || !info->texture.image)
+        return nullptr;
+
+    if (info->tiling != SurfaceTiling::Linear || info->multisample_mode != SCE_GXM_MULTISAMPLE_NONE) {
+        LOG_WARN_ONCE("Depth-stencil write-back is only implemented for linear, non-MSAA surfaces");
+        return nullptr;
+    }
+    if (state.res_multiplier != 1.0f) {
+        LOG_WARN_ONCE("Depth-stencil write-back is not implemented with a resolution multiplier");
+        return nullptr;
+    }
+
+    const uint32_t width = std::min<uint32_t>(info->memory_width, info->texture.width);
+    const uint32_t height = std::min<uint32_t>(info->memory_height, info->texture.height);
+    const uint32_t stride = info->stride_samples;
+    if (width == 0 || height == 0 || width > stride)
+        return nullptr;
+
+    // S8D24 keeps the stencil in the depth plane, S8 has its own plane
+    const Address data = format == SCE_GXM_DEPTH_STENCIL_FORMAT_S8 ? surface.stencil_data.address() : surface.depth_data.address();
+    if (!data)
+        return nullptr;
+
+    // Reuse a buffer the wait thread has released (only the pool still references it).
+    // A use count read while the wait thread drops its reference can only be too high,
+    // which merely makes us skip that buffer.
+    std::shared_ptr<DepthStencilReadback> readback;
+    for (const auto &candidate : stencil_readback_pool) {
+        if (candidate.use_count() == 1) {
+            readback = candidate;
+            break;
+        }
+    }
+    if (!readback) {
+        if (stencil_readback_pool.size() >= max_stencil_readbacks) {
+            LOG_WARN_ONCE("All depth-stencil write-back buffers are in flight, skipping a write-back");
+            return nullptr;
+        }
+        readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
+    }
+
+    const vk::DeviceSize required_size = static_cast<vk::DeviceSize>(width) * height;
+    if (!readback->buffer.buffer || readback->buffer.size < required_size) {
+        // released buffers are destroyed on this thread once the frame is done
+        state.frame().destroy_queue.add_buffer(readback->buffer);
+        readback->buffer = vkutil::Buffer(required_size);
+        readback->buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+    }
+    readback->data = data;
+    readback->width = width;
+    readback->height = height;
+    readback->stride_samples = stride;
+    readback->format = format;
+
+    // The render pass leaves the depth-stencil in DepthStencilReadOnlyOptimal
+    vk::ImageMemoryBarrier to_transfer{
+        .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+        .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+        .oldLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+        .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = info->texture.image,
+        .subresourceRange = vkutil::ds_subresource_range
+    };
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
+        vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, to_transfer);
+
+    vk::BufferImageCopy copy{
+        .bufferOffset = 0,
+        .bufferRowLength = width,
+        .bufferImageHeight = height,
+        .imageSubresource = { vk::ImageAspectFlagBits::eStencil, 0, 0, 1 },
+        .imageOffset = { 0, 0, 0 },
+        .imageExtent = { width, height, 1 }
+    };
+    cmd_buffer.copyImageToBuffer(info->texture.image, vk::ImageLayout::eTransferSrcOptimal, readback->buffer.buffer, copy);
+
+    vk::ImageMemoryBarrier to_attachment{
+        .srcAccessMask = vk::AccessFlagBits::eTransferRead,
+        .dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eShaderRead,
+        .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
+        .newLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = info->texture.image,
+        .subresourceRange = vkutil::ds_subresource_range
+    };
+    const vk::MemoryBarrier to_host{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eHostRead
+    };
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+        vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eHost,
+        {}, to_host, {}, to_attachment);
+
+    static bool announced = false;
+    if (!announced) {
+        announced = true;
+        LOG_INFO("Depth-stencil write-back active (stencil {}x{}, stride {})", width, height, stride);
+    }
+    return readback;
+}
+
+void VKSurfaceCache::perform_post_depth_stencil_sync(const MemState &mem, const DepthStencilReadback &readback) {
+    const uint8_t *src = static_cast<const uint8_t *>(readback.buffer.mapped_data);
+    if (!src || !readback.data)
+        return;
+
+    const bool stencil_only = readback.format == SCE_GXM_DEPTH_STENCIL_FORMAT_S8;
+    const uint32_t bytes_per_sample = stencil_only ? 1 : 4;
+    // S8D24: the stencil is the most significant byte of each 32-bit sample
+    const uint32_t stencil_byte = stencil_only ? 0 : 3;
+
+    uint8_t *dst = Ptr<uint8_t>(readback.data).get(mem);
+    for (uint32_t y = 0; y < readback.height; y++) {
+        const uint8_t *src_row = src + static_cast<size_t>(y) * readback.width;
+        uint8_t *dst_row = dst + static_cast<size_t>(y) * readback.stride_samples * bytes_per_sample + stencil_byte;
+        for (uint32_t x = 0; x < readback.width; x++)
+            dst_row[x * bytes_per_sample] = src_row[x];
+    }
+}
+
 void VKSurfaceCache::destroy_associated_framebuffers(const VKRenderTarget *render_target) {
     if (!render_target)
         return;
@@ -1510,6 +1656,14 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
     if (info.data.address() + info.total_bytes <= address.address())
         // they do not overlap
         return nullptr;
+
+    // A presented surface holds the final image of a frame and some games copy it with the CPU
+    // (e.g. METAL MAX Xeno takes a screenshot of the display buffer for scene transitions).
+    // The read trap only schedules a sync for the next render, so a one-shot read would see
+    // stale memory: keep presented surfaces synced while surface sync is enabled.
+    if (state.features.enable_memory_mapping && !state.disable_surface_sync && info.need_surface_sync
+        && info.tiling == SurfaceTiling::Linear && format_support_surface_sync(info.format))
+        *info.need_surface_sync = true;
 
     if (info.stride_bytes == pitch * 4) {
         // In assumption the format is RGBA8
