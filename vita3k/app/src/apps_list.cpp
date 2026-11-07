@@ -271,27 +271,35 @@ static SharedAppDataUsage find_shared_app_data(
             }
 
             if (is_app_directory) {
-                vfs::FileBuffer param;
-                if (!vfs::read_app_file(param, emuenv.vita_fs_path, other_app_path, "sce_sys/param.sfo")) {
-                    LOG_WARN("Unable to read '{}'; preserving addcont and savedata because ownership cannot be verified.",
-                        it->path() / "sce_sys/param.sfo");
+                const auto param_path = it->path() / "sce_sys/param.sfo";
+                const bool has_param = fs::exists(param_path, err);
+                if (err) {
+                    LOG_WARN("Unable to inspect '{}': {}; preserving app data.", param_path, err.message());
                     return {};
                 }
+                if (has_param) {
+                    vfs::FileBuffer param;
+                    if (!vfs::read_app_file(param, emuenv.vita_fs_path, other_app_path, "sce_sys/param.sfo")) {
+                        LOG_WARN("Unable to read '{}'; preserving addcont and savedata because ownership cannot be verified.",
+                            param_path);
+                        return {};
+                    }
 
-                sfo::SfoAppInfo other_info;
-                if (!sfo::get_param_info(other_info, param, emuenv.cfg.sys_lang)) {
-                    LOG_WARN("Malformed param.sfo in '{}', preserving app data.", it->path());
-                    return {};
-                }
-                if (!is_safe_app_data_id(other_info.app_addcont) || !is_safe_app_data_id(other_info.app_savedata)) {
-                    LOG_WARN("Invalid addcont or savedata metadata in '{}'; preserving app data.", it->path());
-                    return {};
-                }
+                    sfo::SfoAppInfo other_info;
+                    if (!sfo::get_param_info(other_info, param, emuenv.cfg.sys_lang)) {
+                        LOG_WARN("Malformed param.sfo in '{}', preserving app data.", it->path());
+                        return {};
+                    }
+                    if (!is_safe_app_data_id(other_info.app_addcont) || !is_safe_app_data_id(other_info.app_savedata)) {
+                        LOG_WARN("Invalid addcont or savedata metadata in '{}'; preserving app data.", it->path());
+                        return {};
+                    }
 
-                usage.addcont = usage.addcont
-                    || string_utils::toupper(other_info.app_addcont) == string_utils::toupper(addcont_id);
-                usage.savedata = usage.savedata
-                    || string_utils::toupper(other_info.app_savedata) == string_utils::toupper(savedata_id);
+                    usage.addcont = usage.addcont
+                        || string_utils::toupper(other_info.app_addcont) == string_utils::toupper(addcont_id);
+                    usage.savedata = usage.savedata
+                        || string_utils::toupper(other_info.app_savedata) == string_utils::toupper(savedata_id);
+                }
             }
         }
 

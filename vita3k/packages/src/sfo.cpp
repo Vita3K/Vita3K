@@ -129,15 +129,25 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
 
     parsed.entries.resize(parsed.header.tables_entries + 1);
 
+    std::vector<uint32_t> data_offsets;
+    data_offsets.reserve(parsed.header.tables_entries);
     for (uint32_t i = 0; i < parsed.header.tables_entries; i++) {
         std::memcpy(&parsed.entries[i].entry,
             content.data() + sizeof(SfoHeader) + static_cast<size_t>(i) * sizeof(SfoIndexTableEntry),
             sizeof(SfoIndexTableEntry));
+        data_offsets.push_back(parsed.entries[i].entry.data_offset);
     }
+    std::ranges::sort(data_offsets);
 
     parsed.entries[parsed.header.tables_entries].entry.key_offset = parsed.header.data_table_start - parsed.header.key_table_start;
 
     const size_t data_table_size = content.size() - parsed.header.data_table_start;
+    const auto string_capacity = [&](const SfoIndexTableEntry &entry) {
+        const size_t data_offset = entry.data_offset;
+        const auto next = std::upper_bound(data_offsets.begin(), data_offsets.end(), entry.data_offset);
+        const size_t next_offset = next == data_offsets.end() ? data_table_size : *next;
+        return std::min({ static_cast<size_t>(entry.data_max_len), data_table_size - data_offset, next_offset - data_offset });
+    };
     for (uint32_t i = 0; i < parsed.header.tables_entries; i++) {
         const auto &entry = parsed.entries[i].entry;
         const auto next_key_offset = parsed.entries[i + 1].entry.key_offset;
@@ -163,10 +173,12 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
         case SfoDataFormat::ASCII:
         case SfoDataFormat::UTF8:
             break;
-        case SfoDataFormat::UTF8_NULL:
-            if (!data_size || data_begin[data_size - 1] != 0)
+        case SfoDataFormat::UTF8_NULL: {
+            const auto capacity = string_capacity(entry);
+            if (std::find(data_begin, data_begin + capacity, 0) == data_begin + capacity)
                 return false;
             break;
+        }
         default:
             return false;
         }
@@ -210,10 +222,13 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
             // Interpret the data as a raw string (may not be null-terminated)
             parsed.entries[i].data.second = std::string(data.begin(), data.end());
             break;
-        case SfoDataFormat::UTF8_NULL:
-            // Interpret the data as a null-terminated UTF-8 string (exclude the null byte)
-            parsed.entries[i].data.second = std::string(data.begin(), data.end() - 1);
+        case SfoDataFormat::UTF8_NULL: {
+            // Some SFOs understate the string length; its terminator is still within the entry's capacity.
+            const auto capacity = string_capacity(parsed.entries[i].entry);
+            const auto data_end = std::find(data_begin, data_begin + capacity, '\0');
+            parsed.entries[i].data.second.assign(data_begin, data_end);
             break;
+        }
         default:
             // Unknown or unsupported data format
             return false;
