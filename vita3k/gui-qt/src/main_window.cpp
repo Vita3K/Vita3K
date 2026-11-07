@@ -1053,7 +1053,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         this, [this]() { toggle_texture_replacement(emuenv); });
 
     connect(m_kb_filter, &CtrlKeyboardFilter::screenshot_requested,
-        this, [this]() { take_screenshot(emuenv); });
+        this, [this]() { request_screenshot(emuenv); });
 
     connect(m_kb_filter, &CtrlKeyboardFilter::exit_requested,
         m_game_window, &QWindow::close, Qt::QueuedConnection);
