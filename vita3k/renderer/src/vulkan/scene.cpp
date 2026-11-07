@@ -250,7 +250,9 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
 }
 
 // vertex count is only used with double buffer mapping
-static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t instance_count, uint32_t max_index) {
+// base_index: smallest index of the draw when its indices were rebased on it (copy path only): per-vertex
+// streams then start at that vertex instead of vertex 0.
+static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t instance_count, uint32_t max_index, uint32_t base_index = 0) {
     GxmRecordState &state = context.record;
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     VertexProgram *vkvert = vertex_program.renderer_data.get();
@@ -299,6 +301,11 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
             } else {
                 const uint8_t *stream = state.vertex_streams[i].data.get(mem);
                 uint32_t stream_size = state.vertex_streams[i].size;
+                if (base_index != 0 && !gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(vertex_program.streams[i].indexSource))) {
+                    const uint32_t skip = std::min<uint32_t>(base_index * vertex_program.streams[i].stride, stream_size);
+                    stream += skip;
+                    stream_size -= skip;
+                }
 #ifdef __APPLE__
                 // Vulkan allows any stride, but Metal only allows multiples of 4.
                 const bool restride = vertex_program.streams[i].stride % 4 != 0;
@@ -307,6 +314,8 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
                 }
 #endif
                 context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, stream_size, stream);
+                // the ring may have been replaced by a larger buffer (RingBuffer::grow)
+                context.vertex_stream_buffers[i] = context.vertex_stream_ring_buffer.handle();
                 context.vertex_stream_offsets[i] = context.vertex_stream_ring_buffer.data_offset;
 
 #ifdef __APPLE__
@@ -576,12 +585,45 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else if (!ordered_indices) {
         const size_t index_buffer_size = index_size * count;
-        context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
+        // Copy only the vertex range the draw uses: rebase the indices on the smallest one, so the vertex
+        // streams are copied from that vertex instead of vertex 0. A draw using a few vertices at the end of a
+        // large buffer otherwise copies the whole buffer, and the ring wraps over data not yet consumed.
+        uint32_t min_index = UINT32_MAX;
+        if (format == SCE_GXM_INDEX_FORMAT_U16) {
+            const uint16_t *data = static_cast<const uint16_t *>(indices_ptr);
+            for (size_t i = 0; i < count; i++)
+                min_index = std::min<uint32_t>(min_index, data[i]);
+        } else {
+            const uint32_t *data = static_cast<const uint32_t *>(indices_ptr);
+            for (size_t i = 0; i < count; i++)
+                min_index = std::min<uint32_t>(min_index, data[i]);
+        }
+        if (count == 0 || instance_count > 1)
+            min_index = 0;
+        if (min_index == 0) {
+            context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
+        } else {
+            context.rebased_indices.resize(index_buffer_size);
+            if (format == SCE_GXM_INDEX_FORMAT_U16) {
+                const uint16_t *data = static_cast<const uint16_t *>(indices_ptr);
+                uint16_t *out = reinterpret_cast<uint16_t *>(context.rebased_indices.data());
+                for (size_t i = 0; i < count; i++)
+                    out[i] = static_cast<uint16_t>(data[i] - min_index);
+            } else {
+                const uint32_t *data = static_cast<const uint32_t *>(indices_ptr);
+                uint32_t *out = reinterpret_cast<uint32_t *>(context.rebased_indices.data());
+                for (size_t i = 0; i < count; i++)
+                    out[i] = data[i] - min_index;
+            }
+            context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, context.rebased_indices.data());
+        }
         context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+        bind_vertex_streams(context, mem, instance_count, max_index, min_index);
     }
 
-    // bind the vertex streams
-    bind_vertex_streams(context, mem, instance_count, max_index);
+    // bind the vertex streams (the copy path above already did)
+    if (use_memory_mapping)
+        bind_vertex_streams(context, mem, instance_count, max_index);
 
     if (ordered_fetch) {
         if (ordered_indices) {

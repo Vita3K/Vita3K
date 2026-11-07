@@ -187,9 +187,7 @@ void Buffer::init_buffer(vk::BufferUsageFlags usage_flags, const vma::Allocation
     mapped_data = alloc_info.pMappedData;
 }
 
-RingBuffer::RingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
-    : usage(usage)
-    , capacity(capacity) {
+static uint32_t padded_ring_capacity(vk::BufferUsageFlags usage, const size_t capacity) {
     uint32_t buffer_capacity = capacity;
     if (usage & vk::BufferUsageFlagBits::eStorageBuffer)
         // TODO: put max size of a gxm uniform buffer
@@ -201,19 +199,42 @@ RingBuffer::RingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
         // the descriptor set for the uniform buffers specify the max possible size while we only allocate
         // the actual size, this prevents validation errors
         buffer_capacity += 512;
+    return buffer_capacity;
+}
 
-    buffer = Buffer(buffer_capacity);
+RingBuffer::RingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
+    : usage(usage)
+    , capacity(capacity) {
+    buffer = Buffer(padded_ring_capacity(usage, capacity));
 }
 
 void RingBuffer::allocate(const uint32_t data_size) {
-    if (cursor + data_size > capacity)
-        cursor = 0;
+    const auto place = [&]() {
+        uint64_t start = head;
+        // an allocation never straddles the end of the buffer: skip to the next lap
+        if ((start - base) % capacity + data_size > capacity)
+            start += capacity - (start - base) % capacity;
+        return start;
+    };
+    uint64_t start = place();
+    while (start + data_size - tail > capacity) {
+        if (!make_room || !make_room()) {
+            if (grow(data_size)) {
+                start = place();
+                continue;
+            }
+            // the work not yet submitted alone fills the ring: nothing can be waited for
+            static std::atomic<int> overflows{ 0 };
+            if (overflows.fetch_add(1) < 20)
+                LOG_ERROR("Ring buffer {} overflow: {} bytes requested, {} of {} still used by work not submitted yet", name, data_size, head - tail, capacity);
+            tail = start + data_size - capacity;
+            break;
+        }
+        start = place();
+    }
 
-    data_offset = cursor;
-
-    cursor += data_size;
-
-    cursor = align(cursor, alignment);
+    data_offset = static_cast<uint32_t>((start - base) % capacity);
+    head = align(start + data_size, alignment);
 }
 
 void HostRingBuffer::create() {
@@ -222,7 +243,25 @@ void HostRingBuffer::create() {
     vk::MemoryPropertyFlags memory_properties = allocator.getAllocationMemoryProperties(buffer.allocation);
     is_coherent = static_cast<bool>(memory_properties & vk::MemoryPropertyFlagBits::eHostCoherent);
 
-    cursor = 0;
+    head = tail = 0;
+}
+
+bool HostRingBuffer::grow(const uint32_t needed) {
+    if (capacity >= max_capacity)
+        return false;
+    uint32_t new_capacity = capacity;
+    while (new_capacity < max_capacity && new_capacity < 2 * static_cast<uint64_t>(needed) + capacity)
+        new_capacity = static_cast<uint32_t>(std::min<uint64_t>(static_cast<uint64_t>(new_capacity) * 2, max_capacity));
+    // everything allocated so far stays in the old buffer until its work has completed
+    base = align(head, alignment);
+    head = tail = base;
+    retired.emplace_back(std::move(buffer), base);
+    capacity = new_capacity;
+    buffer = Buffer(padded_ring_capacity(usage, capacity));
+    create();
+    head = tail = base;
+    LOG_INFO("Ring buffer {} grown to {} MiB", name, capacity >> 20);
+    return true;
 }
 
 void HostRingBuffer::copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset) {
@@ -236,7 +275,7 @@ void LocalRingBuffer::create() {
     // the auto_alloc default behavior should give us memory on the gpu
     // UpdateBuffer needs the buffer to have TransferDst specified
     buffer.init_buffer(usage | vk::BufferUsageFlagBits::eTransferDst);
-    cursor = 0;
+    head = tail = 0;
 }
 
 void LocalRingBuffer::copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset) {

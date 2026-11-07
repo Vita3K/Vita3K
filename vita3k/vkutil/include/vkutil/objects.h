@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <vkutil/vkutil.h>
 
 #include <bit>
@@ -90,18 +92,47 @@ struct Buffer {
 
 // structure that holds contiguous data
 // if the end is reached, it starts back at the beginning
+// Ring heap in the style of RPCS3's data_heap: [tail, head) (monotonic byte counters) may still be read
+// by submitted or not yet submitted GPU work. The owner records head with every submission and moves
+// tail forward once that submission's fence has signaled; when an allocation does not fit, allocate()
+// calls make_room() (wait for the oldest pending submission) until it does.
 class RingBuffer {
 protected:
     vkutil::Buffer buffer;
     vk::BufferUsageFlags usage;
 
-    uint32_t cursor = ~0;
+    uint64_t head = 0;
+    uint64_t tail = 0;
+    // head when the current buffer was created (offsets are relative to it, see grow)
+    uint64_t base = 0;
     uint32_t capacity;
+    // buffers replaced by grow(), kept until the work recorded before the replacement has completed
+    std::vector<std::pair<vkutil::Buffer, uint64_t>> retired;
+
+    // Replace the buffer with a larger empty one (data in flight stays in the retired buffer).
+    virtual bool grow(const uint32_t needed) {
+        return false;
+    }
 
 public:
     // any buffer alignment on vulkan is at most 256 on 99% of instances
     uint32_t alignment = 256;
     uint32_t data_offset = 0;
+    const char *name = "ring";
+    // Waits for the oldest pending submission and releases its data; false when nothing is pending.
+    std::function<bool()> make_room;
+    // When the work not yet submitted alone fills the ring, grow up to this size instead of overwriting
+    // (only for rings bound per draw: descriptor sets keep referencing the buffer of the others).
+    uint32_t max_capacity = 0;
+
+    uint64_t get_head() const {
+        return head;
+    }
+    // everything allocated before position has been consumed by the GPU
+    void release_until(const uint64_t position) {
+        tail = std::max(tail, position);
+        std::erase_if(retired, [position](const auto &entry) { return position >= entry.second; });
+    }
 
     explicit RingBuffer(vk::BufferUsageFlags usage, const size_t capacity);
     virtual ~RingBuffer() = default;
@@ -149,6 +180,7 @@ public:
         : RingBuffer(usage, capacity) {
     }
     void create() override;
+    bool grow(const uint32_t needed) override;
 
     void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) override;
 };
