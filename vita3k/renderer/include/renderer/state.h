@@ -82,7 +82,8 @@ enum struct Filter : int {
     BILINEAR = 1 << 1,
     BICUBIC = 1 << 2,
     FXAA = 1 << 3,
-    FSR = 1 << 4
+    SMAA = 1 << 4,
+    FSR = 1 << 5,
 };
 
 struct State {
