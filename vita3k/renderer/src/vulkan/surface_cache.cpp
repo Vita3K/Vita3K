@@ -1657,6 +1657,14 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
         // they do not overlap
         return nullptr;
 
+    // A presented surface holds the final image of a frame and some games copy it with the CPU
+    // (e.g. METAL MAX Xeno takes a screenshot of the display buffer for scene transitions).
+    // The read trap only schedules a sync for the next render, so a one-shot read would see
+    // stale memory: keep presented surfaces synced while surface sync is enabled.
+    if (state.features.enable_memory_mapping && !state.disable_surface_sync && info.need_surface_sync
+        && info.tiling == SurfaceTiling::Linear && format_support_surface_sync(info.format))
+        *info.need_surface_sync = true;
+
     if (info.stride_bytes == pitch * 4) {
         // In assumption the format is RGBA8
         const size_t data_delta = address.address() - ite->first;
