@@ -785,7 +785,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         if (!info->use_hash) {
             info->dirty = false;
-            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, texture_repr](Address, bool) {
+            add_cache_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, texture_repr](Address, bool) {
                 if (memcmp(&info->texture, &texture_repr, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
                 }

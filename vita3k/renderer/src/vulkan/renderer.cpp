@@ -1948,7 +1948,7 @@ TrappedBuffer *BufferTrapping::access_buffer(Address addr, uint32_t size, MemSta
         aligned_addr = align(addr, KiB(4));
         aligned_size = align_down(addr + size - aligned_addr, KiB(4));
     }
-    add_protect(mem, aligned_addr, aligned_size, MemPerm::ReadOnly, [it](Address addr, bool write) {
+    add_cache_protect(mem, aligned_addr, aligned_size, MemPerm::ReadOnly, [it](Address addr, bool write) {
         it->second.dirty = true;
         return true;
     });

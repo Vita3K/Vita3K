@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <iterator>
 #include <mutex>
 #include <new>
 #include <utility>
@@ -59,6 +60,7 @@ static void delete_memory(uint8_t *memory);
 static void cancel_readbacks_locked(MemState &state, uint64_t begin, uint64_t end);
 static void prune_readbacks_locked(MemState &state);
 static MemPerm readback_page_permission(const MemState &state, uint64_t page);
+static bool protect_checked(MemState &state, Address addr, uint32_t size, MemPerm perm);
 
 #ifdef _WIN32
 static std::string get_error_msg() {
@@ -281,11 +283,114 @@ static void unprotect_unchecked(MemState &state, Address addr, uint32_t size) {
 #endif
 }
 
+// Retire software-cache registrations before opening their shared host pages.
+// Access/abort registrations are deliberately not invoked for collateral access.
+// Callbacks have the same mutex/no-renderer-wait contract as ordinary faults.
+// Erase and re-key existing nodes only: no temporary container or allocation in
+// the fault handler. Affected pages outside the requested opening are restored
+// from their remaining registrations rather than opened unconditionally.
+static unsigned retire_cache_protections_locked(MemState &state, uint64_t begin, uint64_t end, Address fault,
+    uint64_t &affected_begin, uint64_t &affected_end) {
+    // External page-table mappings may have noncontiguous backing. Preserve
+    // their existing path; this fix is for the original unmapped guest view.
+    if (state.use_page_table || begin >= end)
+        return 0;
+    unsigned retired = 0;
+    auto it = state.protect_tree.lower_bound(Address(end - 1));
+    while (it != state.protect_tree.end()) {
+        auto &segment = it->second;
+        if (uint64_t(it->first) + segment.size <= begin)
+            break;
+        bool changed = false;
+        for (auto block = segment.blocks.begin(); block != segment.blocks.end();) {
+            const auto block_begin = align_down(uint64_t(block->first), uint64_t(state.host_page_size));
+            const auto block_end = align(uint64_t(block->first) + block->second.size, uint64_t(state.host_page_size));
+            if (!block->second.cache_invalidation || block_begin >= end || block_end <= begin) {
+                ++block;
+                continue;
+            }
+            affected_begin = std::min(affected_begin, block_begin);
+            affected_end = std::max(affected_end, block_end);
+            // Opening the block permits future writes even for a read fault.
+            // Notify caches conservatively before discarding their registration.
+            block->second.callback(fault, true);
+            block = segment.blocks.erase(block);
+            ++retired;
+            changed = true;
+        }
+        auto next = std::next(it);
+        if (changed) {
+            if (segment.blocks.empty()) {
+                state.protect_tree.erase(it);
+            } else {
+                const auto first = segment.blocks.begin()->first;
+                uint64_t last = first;
+                auto perm = MemPerm::ReadWrite;
+                for (const auto &[address, block] : segment.blocks) {
+                    last = std::max(last, uint64_t(address) + block.size);
+                    perm = most_restrictive_perm(perm, block.perm);
+                }
+                segment.size = uint32_t(last - first);
+                segment.perm = perm;
+                auto node = state.protect_tree.extract(it);
+                node.key() = first;
+                state.protect_tree.insert(std::move(node));
+            }
+        }
+        it = next;
+    }
+    return retired;
+}
+
+static void restore_registered_permissions_locked(MemState &state, uint64_t begin, uint64_t end) {
+    if (begin >= end)
+        return;
+    uint64_t run_begin = begin;
+    auto permission = readback_page_permission(state, begin);
+    const uint64_t max_batch = align_down(uint64_t(UINT32_MAX), uint64_t(state.host_page_size));
+    for (uint64_t page = begin + state.host_page_size; page <= end; page += state.host_page_size) {
+        const auto next = page < end ? readback_page_permission(state, page) : permission;
+        if (page < end && next == permission && page - run_begin < max_batch)
+            continue;
+        if (!protect_checked(state, Address(run_begin), uint32_t(page - run_begin), permission)) {
+            LOG_CRITICAL("Could not restore collateral cache page permissions");
+            std::terminate();
+        }
+        run_begin = page;
+        permission = next;
+    }
+}
+
+static unsigned unprotect_with_cache_invalidation_locked(MemState &state, uint64_t begin, uint64_t end, Address fault) {
+    if (begin >= end)
+        return 0;
+    uint64_t affected_begin = begin, affected_end = end;
+    const unsigned retired = retire_cache_protections_locked(state, begin, end, fault, affected_begin, affected_end);
+    cancel_readbacks_locked(state, begin, end);
+    restore_registered_permissions_locked(state, affected_begin, begin);
+    restore_registered_permissions_locked(state, end, affected_end);
+    // Keep the uint32_t lower-level API valid even if registrations cover the
+    // entire 4GiB address space through overlapping host pages.
+    const uint64_t max_batch = align_down(uint64_t(UINT32_MAX), uint64_t(state.host_page_size));
+    while (begin < end) {
+        const auto size = std::min(end - begin, max_batch);
+        unprotect_unchecked(state, Address(begin), uint32_t(size));
+        begin += size;
+    }
+    return retired;
+}
+
 void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     const std::lock_guard<std::mutex> lock(state.protect_mutex);
-    cancel_readbacks_locked(state, align_down(uint64_t(addr), uint64_t(state.host_page_size)),
-        align(uint64_t(addr) + size, uint64_t(state.host_page_size)));
-    unprotect_unchecked(state, addr, size);
+    if (state.use_page_table) {
+        // Select the backing with the original guest address. Rounding the
+        // address first can select a different external page-table mapping.
+        unprotect_unchecked(state, addr, size);
+        return;
+    }
+    unprotect_with_cache_invalidation_locked(state,
+        align_down(uint64_t(addr), uint64_t(state.host_page_size)),
+        align(uint64_t(addr) + size, uint64_t(state.host_page_size)), addr);
 }
 
 static bool protect_checked(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
@@ -365,16 +470,18 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     auto it = state.protect_tree.lower_bound(vaddr);
     if (it == state.protect_tree.end()) {
         // HACK: keep going
-        unprotect_unchecked(state, align_down(vaddr, state.host_page_size), state.host_page_size);
-        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        const auto begin = align_down(uint64_t(vaddr), uint64_t(state.host_page_size));
+        if (!unprotect_with_cache_invalidation_locked(state, begin, begin + state.host_page_size, vaddr))
+            LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
 
     ProtectSegmentInfo &info = it->second;
     if (vaddr < it->first || vaddr >= it->first + info.size) {
         // HACK: keep going
-        unprotect_unchecked(state, align_down(vaddr, state.host_page_size), state.host_page_size);
-        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        const auto begin = align_down(uint64_t(vaddr), uint64_t(state.host_page_size));
+        if (!unprotect_with_cache_invalidation_locked(state, begin, begin + state.host_page_size, vaddr))
+            LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
 
@@ -383,22 +490,31 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         block.callback(vaddr, write);
     }
 
-    // Opening the whole original segment can affect watches on adjacent pages.
-    cancel_readbacks_locked(state, align_down(uint64_t(it->first), uint64_t(state.host_page_size)),
-        align(uint64_t(it->first) + info.size, uint64_t(state.host_page_size)));
-    unprotect_unchecked(state, it->first, info.size);
+    const auto original_address = it->first;
+    const auto original_size = info.size;
+    const auto begin = align_down(uint64_t(original_address), uint64_t(state.host_page_size));
+    const auto end = align(uint64_t(original_address) + original_size, uint64_t(state.host_page_size));
     state.protect_tree.erase(it);
+    if (state.use_page_table) {
+        unprotect_unchecked(state, original_address, original_size);
+        return true;
+    }
+    // Opening a logical segment can also release neighboring cache blocks and
+    // watches on the same host pages; retire those before exposing writable memory.
+    unprotect_with_cache_invalidation_locked(state, begin, end, vaddr);
 
     return true;
 }
 
-bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPerm perm, const ProtectCallback &callback) {
+static bool add_protect_impl(MemState &state, Address addr, const uint32_t size, const MemPerm perm, const ProtectCallback &callback, bool cache_invalidation) {
     const std::lock_guard<std::mutex> lock(state.protect_mutex);
     ProtectSegmentInfo protect(size, perm);
     align_to_page(state, addr, protect.size);
 
     ProtectBlockInfo block;
-    block.size = size;
+    block.size = protect.size;
+    block.perm = perm;
+    block.cache_invalidation = cache_invalidation;
     block.callback = callback;
 
     protect.blocks.emplace(addr, std::move(block));
@@ -440,6 +556,14 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
             protect_inner(state, Address(page), state.host_page_size, readback_page_permission(state, page));
     }
     return true;
+}
+
+bool add_protect(MemState &state, Address addr, uint32_t size, MemPerm perm, const ProtectCallback &callback) {
+    return add_protect_impl(state, addr, size, perm, callback, false);
+}
+
+bool add_cache_protect(MemState &state, Address addr, uint32_t size, MemPerm perm, const ProtectCallback &callback) {
+    return add_protect_impl(state, addr, size, perm, callback, true);
 }
 
 bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
@@ -499,7 +623,7 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
     {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
         auto prot_it = mem.protect_tree.lower_bound(mapping.address);
-        if (prot_it->first + prot_it->second.size <= mapping.address) {
+        if (prot_it == mem.protect_tree.end() || prot_it->first + prot_it->second.size <= mapping.address) {
             if (prot_it == mem.protect_tree.begin())
                 prot_it = mem.protect_tree.end();
             else
@@ -782,9 +906,11 @@ bool matches_mem_allocation(MemState &state, const MemAllocationToken &expected,
 static MemPerm readback_page_permission(const MemState &state, uint64_t page) {
     MemPerm permission = MemPerm::ReadWrite;
     const uint64_t end = page + state.host_page_size;
-    for (const auto &[start, segment] : state.protect_tree)
-        if (uint64_t(start) < end && uint64_t(start) + segment.size > page)
-            permission = most_restrictive_perm(permission, segment.perm);
+    for (auto it = state.protect_tree.lower_bound(Address(end - 1)); it != state.protect_tree.end(); ++it) {
+        if (uint64_t(it->first) + it->second.size <= page)
+            break;
+        permission = most_restrictive_perm(permission, it->second.perm);
+    }
     for (const auto &registration : state.readback_watches)
         if (page < registration.end && end > registration.begin)
             if (auto watch = registration.watch.lock(); watch && !watch->invalidated)

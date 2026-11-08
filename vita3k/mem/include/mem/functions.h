@@ -56,6 +56,11 @@ Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm);
 void unprotect_inner(MemState &state, Address addr, uint32_t size);
 bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPerm perm, const ProtectCallback &callback);
+// Software-cache notifications may be invalidated conservatively when opening
+// a shared host page in the unmapped view (collateral notifications use write=true).
+// Guest access/abort callbacks must keep using add_protect. Mapped-view handling
+// remains unchanged because external page-table backing may be noncontiguous.
+bool add_cache_protect(MemState &state, Address addr, uint32_t size, MemPerm perm, const ProtectCallback &callback);
 void open_access_parent_protect_segment(MemState &state, Address addr);
 void close_access_parent_protect_segment(MemState &state, Address addr);
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr);

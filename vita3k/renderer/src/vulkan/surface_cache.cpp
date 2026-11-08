@@ -146,7 +146,7 @@ static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
     // Don't track dirty for small surfaces to avoid false positives from unrelated writes
     std::shared_ptr<bool> dirty = small_surface ? nullptr : info.dirty;
 
-    add_protect(mem, addr_start, addr_end - addr_start, perm,
+    add_cache_protect(mem, addr_start, addr_end - addr_start, perm,
         [dirty, need_sync](Address, bool write) {
             if (write && dirty)
                 *dirty = true;

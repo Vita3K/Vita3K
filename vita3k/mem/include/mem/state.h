@@ -42,6 +42,8 @@ using PageNameMap = std::map<int, std::string>;
 
 struct ProtectBlockInfo {
     uint32_t size = 0;
+    MemPerm perm = MemPerm::None;
+    bool cache_invalidation = false;
     ProtectCallback callback;
 };
 
