@@ -36,13 +36,9 @@
 
 #include <SDL3/SDL.h>
 
-#include <atomic>
 #include <cstring>
-#include <future>
-#include <memory>
 #include <mutex>
 #include <optional>
-#include <vector>
 
 namespace sdl_frontend {
 
@@ -212,51 +208,6 @@ bool set_gl_attributes() {
 }
 
 } // namespace
-
-namespace {
-
-struct SessionTask {
-    std::function<void()> fn;
-    std::promise<void> done;
-    // Taken by the session thread to run it, or by the caller to drop it after its timeout
-    std::atomic<bool> claimed{ false };
-};
-
-std::mutex session_tasks_mutex;
-std::vector<std::shared_ptr<SessionTask>> session_tasks;
-
-void run_session_tasks() {
-    std::vector<std::shared_ptr<SessionTask>> tasks;
-    {
-        const std::lock_guard<std::mutex> lock(session_tasks_mutex);
-        tasks.swap(session_tasks);
-    }
-    for (const auto &task : tasks) {
-        if (task->claimed.exchange(true))
-            continue;
-        task->fn();
-        task->done.set_value();
-    }
-}
-
-} // namespace
-
-bool run_on_session_thread(std::function<void()> fn, std::chrono::milliseconds timeout) {
-    const auto task = std::make_shared<SessionTask>();
-    task->fn = std::move(fn);
-    std::future<void> done = task->done.get_future();
-    {
-        const std::lock_guard<std::mutex> lock(session_tasks_mutex);
-        session_tasks.push_back(task);
-    }
-    if (done.wait_for(timeout) == std::future_status::ready)
-        return true;
-    if (!task->claimed.exchange(true))
-        return false;
-    // It started already
-    done.wait();
-    return true;
-}
 
 int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchRequest launch_request, const Hooks &hooks) {
     int exit_code = 0;
@@ -472,7 +423,6 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
 
             update_mouse_input(emuenv, window);
             update_keyboard(emuenv, window);
-            run_session_tasks();
 
             if (!pending_launch_request) {
                 if (auto request = emuenv.take_app_launch_request()) {

@@ -35,6 +35,7 @@
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <packages/vci.h>
+#include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
 
@@ -50,6 +51,7 @@
 #include <util/vita_theme_utils.h>
 
 #include <gdbstub/functions.h>
+#include <gdbstub/state.h>
 #include <stb_image_write.h>
 
 #if USE_DISCORD
@@ -700,6 +702,12 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchR
         // Otherwise the app runs until a debugger attaches
         if (emuenv.cfg.wait_for_debugger)
             emuenv.kernel.set_threads_suspended(true);
+        // Once the renderer has caught up with the app, else the frame can lag its presents. Gives up
+        // before gdb's own 2s timeout.
+        emuenv.gdb.save_frame = [&emuenv](const std::string &path) {
+            bool saved = false;
+            return renderer::run_when_idle(*emuenv.renderer, [&] { saved = save_screenshot(emuenv, path); }, std::chrono::seconds(1)) && saved;
+        };
         server_open(emuenv);
     }
 
