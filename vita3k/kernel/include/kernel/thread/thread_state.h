@@ -211,6 +211,8 @@ public:
         stepped,
         // The thread is at a breakpoint that stops it, or hit a watchpoint
         trapped,
+        // The thread ended instead
+        ended,
     };
     // Lets a thread the debugger stopped run one instruction, then waits until it stops again or is
     // dormant or deleted

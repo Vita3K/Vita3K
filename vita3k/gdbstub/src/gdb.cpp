@@ -886,6 +886,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             // out of a pathological in-range loop.
             constexpr int CTRLC_POLL_INTERVAL = 1024;
             int steps = 0;
+            bool ended = false;
             while (!state.gdb.server_die) {
                 const uint32_t pc = thread->cpu->get_pc();
                 if (pc < range_start || pc >= range_end)
@@ -900,9 +901,8 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 // A breakpoint in the range stops the thread before its instruction
                 if (result == ThreadState::StepResult::trapped)
                     break;
-
-                const ThreadStatus status = thread->get_status();
-                if (status == ThreadStatus::dormant || status == ThreadStatus::deleted)
+                ended = result == ThreadState::StepResult::ended;
+                if (ended)
                     break;
                 if (state.kernel.debugger.has_break.exchange(false))
                     break;
@@ -915,8 +915,9 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             if (state.gdb.server_die)
                 return "";
 
-            state.gdb.current_thread = thread_id;
-            return stop_reply(thread_id);
+            // gdb would select a thread that's gone
+            state.gdb.current_thread = ended ? started_thread(state) : thread_id;
+            return stop_reply(state.gdb.current_thread);
         }
         case 's':
         case 'S': {
@@ -931,11 +932,13 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // A thread something else holds can't step, and gdb takes the error as a stop
             // TODO: a step into a call that waits on a thread the debugger holds never returns
-            if (thread->step() == ThreadState::StepResult::held)
+            const ThreadState::StepResult result = thread->step();
+            if (result == ThreadState::StepResult::held)
                 return "E01";
 
-            state.gdb.current_thread = thread_id;
-            return stop_reply(thread_id);
+            // gdb would select a thread that's gone
+            state.gdb.current_thread = result == ThreadState::StepResult::ended ? started_thread(state) : thread_id;
+            return stop_reply(state.gdb.current_thread);
         }
         case 'c':
         case 'C': {
