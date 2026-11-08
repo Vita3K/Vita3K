@@ -6,7 +6,7 @@ Vita3K includes a GDB remote serial protocol (RSP) server that lets you debug Vi
 
 Set `gdbstub: true` in your `config.yml`. The server listens on **port 2159**, and a GDB client can connect at any time: the app stops when it connects, and runs again when it detaches or disconnects. If the server can't start, for example because the port is taken, the app runs without it.
 
-To debug from the start, also set `wait-for-debugger: true`. The app then runs no guest code, `module_start` functions included, until a client connects and continues. The game window stays invisible until the client continues, while the main Vita3K window stays visible.
+To debug from the start, also set `wait-for-debugger: true`. The app then runs no guest code, `module_start` functions included, until a client connects and continues. With the Qt frontend, the game window stays invisible until the client continues, while the main Vita3K window stays visible. With `--frontend sdl`, its only window, the game's, opens before the client continues.
 
 Optional: set `log-gdb-packets: true` to see every RSP packet in the Vita3K log (useful for debugging the stub itself).
 

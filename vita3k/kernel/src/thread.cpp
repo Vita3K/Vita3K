@@ -728,6 +728,8 @@ ThreadState::StepResult ThreadState::step() {
     cv.notify_all();
     // The thread holds for the debugger again after the instruction
     cv.wait(lock, [&] { return (debugger_hold && parked) || status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
+    if (status == ThreadStatus::dormant || status == ThreadStatus::deleted)
+        return StepResult::ended;
     return step_trapped ? StepResult::trapped : StepResult::stepped;
 }
 
