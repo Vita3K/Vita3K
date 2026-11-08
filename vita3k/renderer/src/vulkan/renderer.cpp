@@ -45,6 +45,7 @@
 
 #ifdef __APPLE__
 #include <MoltenVK/mvk_vulkan.h>
+#include <vkutil/apple_loader.h>
 #endif
 
 #ifdef __ANDROID__
@@ -360,7 +361,14 @@ static std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) 
 bool create(std::unique_ptr<renderer::State> &state, const Config &config) {
     auto &vk_state = dynamic_cast<VKState &>(*state);
 
-    return vk_state.create(state, config);
+    try {
+        return vk_state.create(state, config);
+    } catch (const vk::SystemError &e) {
+        LOG_ERROR("Failed to initialise the Vulkan renderer: {}", e.what());
+    } catch (const std::exception &e) {
+        LOG_ERROR("Failed to initialise the Vulkan renderer: {}", e.what());
+    }
+    return false;
 }
 
 VKState::VKState(int gpu_idx)
@@ -394,6 +402,16 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
         if (!detect_patch_bcn(&texture_cache.support_dxt))
             return false;
+#elif defined(__APPLE__)
+        // Do not let vulkan.hpp pick a library on its own: a Khronos loader installed in /usr/local/lib
+        // without any ICD manifest makes vkCreateInstance fail with VK_ERROR_INCOMPATIBLE_DRIVER.
+        // The validation layer can only be used through the loader, so prefer it in that case.
+        const vkutil::apple::VulkanLibrary *vulkan_library = vkutil::apple::load_vulkan_library(config.validation_layer);
+        if (!vulkan_library)
+            return false;
+        if (config.validation_layer && !vulkan_library->is_loader)
+            LOG_INFO("MoltenVK is used directly, the Vulkan validation layer is not available");
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(vulkan_library->get_instance_proc_addr);
 #else
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
 #endif
@@ -1752,6 +1770,11 @@ renderer::VulkanDeviceInfo renderer::enumerate_vulkan_devices(const std::string 
             return info;
 
         dispatch.init(vk_get_instance_proc_addr);
+#elif defined(__APPLE__)
+        const vkutil::apple::VulkanLibrary *vulkan_library = vkutil::apple::load_vulkan_library(false);
+        if (!vulkan_library)
+            return info;
+        dispatch.init(vulkan_library->get_instance_proc_addr);
 #else
         dispatch.init();
 #endif

@@ -29,6 +29,18 @@
 #include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
 
+#ifdef __APPLE__
+#include <renderer/metal/functions.h>
+#include <renderer/metal/state.h>
+#include <renderer/metal/types.h>
+#define METAL_CASE(...) \
+    case Backend::Metal: \
+        __VA_ARGS__;     \
+        break;
+#else
+#define METAL_CASE(...)
+#endif
+
 #include <util/align.h>
 #include <util/log.h>
 #include <util/tracy.h>
@@ -69,6 +81,8 @@ COMMAND_SET_STATE(region_clip) {
         vulkan::sync_clipping(*static_cast<vulkan::VKContext *>(render_context));
         break;
 
+    METAL_CASE(metal::sync_clipping(*static_cast<metal::MetalContext *>(render_context)))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -94,6 +108,8 @@ COMMAND_SET_STATE(program) {
         case Backend::Vulkan:
             break;
 
+        METAL_CASE()
+
         default:
             REPORT_MISSING(renderer.current_backend);
             break;
@@ -107,6 +123,11 @@ COMMAND_SET_STATE(program) {
     if (renderer.current_backend == Backend::Vulkan) {
         vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
     }
+#ifdef __APPLE__
+    else if (renderer.current_backend == Backend::Metal) {
+        metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context));
+    }
+#endif
 }
 
 COMMAND_SET_STATE(uniform_buffer) {
@@ -127,6 +148,8 @@ COMMAND_SET_STATE(uniform_buffer) {
     case Backend::Vulkan:
         vulkan::set_uniform_buffer(*reinterpret_cast<vulkan::VKContext *>(render_context), mem, program, is_vertex, block_num, size, data);
         break;
+
+    METAL_CASE(metal::set_uniform_buffer(*static_cast<metal::MetalContext *>(render_context), mem, program, is_vertex, block_num, size, data))
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -185,6 +208,8 @@ COMMAND_SET_STATE(viewport) {
             vulkan::sync_viewport_real(*reinterpret_cast<vulkan::VKContext *>(render_context), xOffset, yOffset, zOffset, xScale, yScale, zScale);
             break;
 
+        METAL_CASE(metal::sync_viewport_real(*static_cast<metal::MetalContext *>(render_context), xOffset, yOffset, zOffset, xScale, yScale, zScale))
+
         default:
             REPORT_MISSING(renderer.current_backend);
             break;
@@ -206,6 +231,8 @@ COMMAND_SET_STATE(viewport) {
             vulkan::sync_viewport_flat(*reinterpret_cast<vulkan::VKContext *>(render_context));
             break;
 
+        METAL_CASE(metal::sync_viewport_flat(*static_cast<metal::MetalContext *>(render_context)))
+
         default:
             REPORT_MISSING(renderer.current_backend);
             break;
@@ -224,6 +251,8 @@ COMMAND_SET_STATE(viewport) {
             // We need to sync again state that uses the flip
             vulkan::sync_clipping(*reinterpret_cast<vulkan::VKContext *>(render_context));
             break;
+
+        METAL_CASE(metal::sync_clipping(*static_cast<metal::MetalContext *>(render_context)))
 
         default:
             REPORT_MISSING(renderer.current_backend);
@@ -252,6 +281,8 @@ COMMAND_SET_STATE(depth_bias) {
             vulkan::sync_depth_bias(*reinterpret_cast<vulkan::VKContext *>(render_context));
         break;
 
+    METAL_CASE(if (is_front) metal::sync_depth_bias(*static_cast<metal::MetalContext *>(render_context)))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -278,6 +309,8 @@ COMMAND_SET_STATE(depth_func) {
         vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
         break;
 
+    METAL_CASE(metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context)))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -303,6 +336,8 @@ COMMAND_SET_STATE(depth_write_enable) {
         vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
         break;
 
+    METAL_CASE(metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context)))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -327,6 +362,8 @@ COMMAND_SET_STATE(polygon_mode) {
         vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
         break;
 
+    METAL_CASE(metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context)))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -348,6 +385,8 @@ COMMAND_SET_STATE(point_line_width) {
     case Backend::Vulkan:
         vulkan::sync_point_line_width(*reinterpret_cast<vulkan::VKContext *>(render_context), is_front);
         break;
+
+    METAL_CASE(metal::sync_point_line_width(*static_cast<metal::MetalContext *>(render_context), is_front))
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -390,6 +429,8 @@ COMMAND_SET_STATE(stencil_func) {
         vulkan::sync_stencil_func(dynamic_cast<vulkan::VKContext &>(*render_context), !is_front);
         break;
 
+    METAL_CASE(metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context)); metal::sync_stencil_func(*static_cast<metal::MetalContext *>(render_context), !is_front))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -415,6 +456,8 @@ COMMAND_SET_STATE(stencil_ref) {
         vulkan::sync_stencil_func(dynamic_cast<vulkan::VKContext &>(*render_context), !is_front);
         break;
 
+    METAL_CASE(metal::sync_stencil_func(*static_cast<metal::MetalContext *>(render_context), !is_front))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -436,6 +479,8 @@ COMMAND_SET_STATE(texture) {
         vulkan::sync_texture(*reinterpret_cast<vulkan::VKContext *>(render_context), mem, texture_index, texture,
             config);
         break;
+
+    METAL_CASE(metal::sync_texture(*static_cast<metal::MetalContext *>(render_context), mem, texture_index, texture, config))
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -460,6 +505,8 @@ COMMAND_SET_STATE(two_sided) {
         vulkan::sync_stencil_func(dynamic_cast<vulkan::VKContext &>(*render_context), true);
         break;
 
+    METAL_CASE(metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context)); metal::sync_stencil_func(*static_cast<metal::MetalContext *>(render_context), false); metal::sync_stencil_func(*static_cast<metal::MetalContext *>(render_context), true))
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -478,6 +525,8 @@ COMMAND_SET_STATE(cull_mode) {
     case Backend::Vulkan:
         vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
         break;
+
+    METAL_CASE(metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context)))
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -509,6 +558,11 @@ COMMAND_SET_STATE(fragment_program_enable) {
     if (renderer.current_backend == Backend::Vulkan) {
         vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
     }
+#ifdef __APPLE__
+    else if (renderer.current_backend == Backend::Metal) {
+        metal::refresh_pipeline(*static_cast<metal::MetalContext *>(render_context));
+    }
+#endif
 }
 
 COMMAND_SET_STATE(visibility_buffer) {
@@ -519,6 +573,11 @@ COMMAND_SET_STATE(visibility_buffer) {
     if (renderer.current_backend == Backend::Vulkan) {
         vulkan::sync_visibility_buffer(*reinterpret_cast<vulkan::VKContext *>(render_context), buffer, stride);
     }
+#ifdef __APPLE__
+    else if (renderer.current_backend == Backend::Metal) {
+        metal::sync_visibility_buffer(*static_cast<metal::MetalContext *>(render_context), buffer, stride);
+    }
+#endif
 }
 
 COMMAND_SET_STATE(visibility_index) {
@@ -530,6 +589,11 @@ COMMAND_SET_STATE(visibility_index) {
     if (renderer.current_backend == Backend::Vulkan) {
         vulkan::sync_visibility_index(*reinterpret_cast<vulkan::VKContext *>(render_context), enable, index, is_increment);
     }
+#ifdef __APPLE__
+    else if (renderer.current_backend == Backend::Metal) {
+        metal::sync_visibility_index(*static_cast<metal::MetalContext *>(render_context), enable, index, is_increment);
+    }
+#endif
 }
 
 COMMAND(handle_set_state) {

@@ -320,7 +320,8 @@ bool TextureCache::init(const bool hashless_texture_cache, const fs::path &textu
 void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
 
-    bool is_vulkan = (backend == renderer::Backend::Vulkan);
+    // the Metal renderer uploads textures with the same layouts as the Vulkan one
+    bool is_vulkan = (backend == renderer::Backend::Vulkan) || (backend == renderer::Backend::Metal);
 
     const SceGxmTextureFormat fmt = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);

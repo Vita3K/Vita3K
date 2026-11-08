@@ -26,6 +26,11 @@
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 
+#ifdef __APPLE__
+#include <renderer/metal/functions.h>
+#include <renderer/metal/state.h>
+#endif
+
 #include <gxm/functions.h>
 #include <renderer/functions.h>
 #include <util/align.h>
@@ -65,6 +70,13 @@ COMMAND(handle_create_context) {
         result = vulkan::create(dynamic_cast<vulkan::VKState &>(renderer), *ctx, mem);
         break;
     }
+
+#ifdef __APPLE__
+    case Backend::Metal: {
+        result = metal::create(dynamic_cast<metal::MetalState &>(renderer), *ctx, mem);
+        break;
+    }
+#endif
 
     default: {
         REPORT_MISSING(renderer.current_backend);
@@ -112,6 +124,12 @@ COMMAND(handle_create_render_target) {
         result = vulkan::create(dynamic_cast<vulkan::VKState &>(renderer), *render_target, *params, features);
         break;
 
+#ifdef __APPLE__
+    case Backend::Metal:
+        result = metal::create(dynamic_cast<metal::MetalState &>(renderer), *render_target, *params, features);
+        break;
+#endif
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -142,6 +160,12 @@ COMMAND(handle_destroy_render_target) {
     case Backend::Vulkan:
         vulkan::destroy(dynamic_cast<vulkan::VKState &>(renderer), *render_target);
         break;
+
+#ifdef __APPLE__
+    case Backend::Metal:
+        metal::destroy(dynamic_cast<metal::MetalState &>(renderer), *render_target);
+        break;
+#endif
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -188,6 +212,12 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
         vulkan::create(fp, dynamic_cast<vulkan::VKState &>(state), program, blend);
         break;
 
+#ifdef __APPLE__
+    case Backend::Metal:
+        metal::create(fp, dynamic_cast<metal::MetalState &>(state), program, blend);
+        break;
+#endif
+
     default:
         REPORT_MISSING(state.current_backend);
         return false;
@@ -214,6 +244,12 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     case Backend::Vulkan:
         vulkan::create(vp, dynamic_cast<vulkan::VKState &>(state), program);
         break;
+
+#ifdef __APPLE__
+    case Backend::Metal:
+        metal::create(vp, dynamic_cast<metal::MetalState &>(state), program);
+        break;
+#endif
 
     default:
         REPORT_MISSING(state.current_backend);
@@ -268,9 +304,23 @@ bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, cons
         state = std::make_unique<vulkan::VKState>(config.current_config.gpu_idx);
         state->frame = &frame;
         state->init_paths(root_paths);
-        if (!vulkan::create(state, config))
+        if (!vulkan::create(state, config)) {
+            state.reset();
             return false;
+        }
         break;
+
+#ifdef __APPLE__
+    case Backend::Metal:
+        state = std::make_unique<metal::MetalState>();
+        state->frame = &frame;
+        state->init_paths(root_paths);
+        if (!metal::create(state, config)) {
+            state.reset();
+            return false;
+        }
+        break;
+#endif
 
     default:
         LOG_ERROR("Cannot create a renderer with unsupported backend {}.", static_cast<int>(backend));

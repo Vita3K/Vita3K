@@ -1013,7 +1013,12 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     }
 
     if (!m_app_session.initialize_renderer(*m_game_window)) {
+#ifdef __APPLE__
+        abort_boot(tr("Failed to initialise the %1 renderer.\nCheck the log for details, you can switch the renderer in the settings.")
+                .arg(emuenv.backend_renderer == renderer::Backend::Metal ? QStringLiteral("Metal") : QStringLiteral("Vulkan")));
+#else
         abort_boot(tr("Failed to initialise the renderer."));
+#endif
         return {};
     }
 
@@ -1865,7 +1870,11 @@ void MainWindow::setup_status_bar() {
         Config desired;
         copy_config_for_edit(desired, emuenv.cfg);
         auto &cc = desired.current_config;
+#ifdef __APPLE__
+        cc.backend_renderer = (cc.backend_renderer == "Metal") ? "Vulkan" : "Metal";
+#else
         cc.backend_renderer = (cc.backend_renderer == "Vulkan") ? "OpenGL" : "Vulkan";
+#endif
         desired.backend_renderer = cc.backend_renderer;
         save_config(desired);
         update_renderer_button();
@@ -1875,7 +1884,13 @@ void MainWindow::setup_status_bar() {
     connect(m_renderer_button, &QPushButton::customContextMenuRequested, this, [this](const QPoint &pos) {
         QMenu menu(this);
         auto *vulkan_action = menu.addAction(QStringLiteral("Vulkan"));
+#ifdef __APPLE__
+        auto *metal_action = menu.addAction(QStringLiteral("Metal"));
+        QAction *opengl_action = nullptr;
+#else
+        auto *metal_action = static_cast<QAction *>(nullptr);
         auto *opengl_action = menu.addAction(QStringLiteral("OpenGL"));
+#endif
         QAction *chosen = menu.exec(m_renderer_button->mapToGlobal(pos));
         if (!chosen)
             return;
@@ -1884,7 +1899,9 @@ void MainWindow::setup_status_bar() {
         auto &cc = desired.current_config;
         if (chosen == vulkan_action) {
             cc.backend_renderer = "Vulkan";
-        } else if (chosen == opengl_action) {
+        } else if (metal_action && chosen == metal_action) {
+            cc.backend_renderer = "Metal";
+        } else if (opengl_action && chosen == opengl_action) {
             cc.backend_renderer = "OpenGL";
         }
         desired.backend_renderer = cc.backend_renderer;
@@ -1923,7 +1940,7 @@ void MainWindow::setup_status_bar() {
     sb->addWidget(m_accuracy_button);
 
     auto get_filter_names = [this]() -> QStringList {
-        if (emuenv.cfg.current_config.backend_renderer == "Vulkan")
+        if (emuenv.cfg.current_config.backend_renderer == "Vulkan" || emuenv.cfg.current_config.backend_renderer == "Metal")
             return { QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
                 QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") };
         else
@@ -2080,6 +2097,9 @@ void MainWindow::update_renderer_button() {
     if (renderer == "Vulkan") {
         m_renderer_button->setText(QStringLiteral("VULKAN"));
         update_status_button_accent(m_renderer_button, QStringLiteral("renderer_vulkan"));
+    } else if (renderer == "Metal") {
+        m_renderer_button->setText(QStringLiteral("METAL"));
+        update_status_button_accent(m_renderer_button, QStringLiteral("renderer_vulkan"));
     } else {
         m_renderer_button->setText(QStringLiteral("OPENGL"));
         update_status_button_accent(m_renderer_button, QStringLiteral("renderer_opengl"));
@@ -2088,7 +2108,7 @@ void MainWindow::update_renderer_button() {
 
 void MainWindow::update_accuracy_button() {
     const bool high = emuenv.cfg.current_config.high_accuracy;
-    const bool is_vulkan = emuenv.cfg.current_config.backend_renderer == "Vulkan";
+    const bool is_vulkan = emuenv.cfg.current_config.backend_renderer == "Vulkan" || emuenv.cfg.current_config.backend_renderer == "Metal";
     m_accuracy_button->setVisible(is_vulkan);
     if (high) {
         m_accuracy_button->setText(tr("HIGH"));

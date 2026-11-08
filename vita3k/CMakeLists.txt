@@ -369,13 +369,25 @@ if(APPLE)
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${discord_dylib}" "$<TARGET_FILE_DIR:vita3k>/../Resources")
 	endif()
-	set_target_properties(vita3k PROPERTIES LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/ -ld64")
+	# recent Xcode versions no longer accept -ld64, only pass it when the linker supports it
+	include(CheckLinkerFlag)
+	check_linker_flag(CXX "-ld64" VITA3K_LINKER_SUPPORTS_LD64)
+	set(VITA3K_MACOS_LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/")
+	if(VITA3K_LINKER_SUPPORTS_LD64)
+		string(APPEND VITA3K_MACOS_LINK_FLAGS " -ld64")
+	endif()
+	set_target_properties(vita3k PROPERTIES LINK_FLAGS "${VITA3K_MACOS_LINK_FLAGS}")
 	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
 	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
 
 	message(STATUS "MoltenVK dylib path: ${MOLTENVK_DYLIB}")
 	target_sources(vita3k PRIVATE ${MOLTENVK_DYLIB})
 	set_source_files_properties(${MOLTENVK_DYLIB} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+
+	# ICD manifest so a Khronos loader (needed for validation layers) finds the bundled MoltenVK
+	set(MOLTENVK_ICD "${CMAKE_SOURCE_DIR}/dist/macos/MoltenVK_icd.json")
+	target_sources(vita3k PRIVATE ${MOLTENVK_ICD})
+	set_source_files_properties(${MOLTENVK_ICD} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/vulkan/icd.d")
 
 	qt_finalize_target(vita3k)
 	if(MACDEPLOYQT_EXECUTABLE)

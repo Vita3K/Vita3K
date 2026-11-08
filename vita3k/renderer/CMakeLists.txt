@@ -56,8 +56,45 @@ if(ANDROID)
 endif()
 
 if(APPLE)
-	target_sources(renderer PRIVATE src/vulkan/metal_layer.mm)
-	target_link_libraries(renderer PRIVATE "-framework QuartzCore" "-framework Cocoa")
+	set(METAL_SOURCES
+		include/renderer/metal/functions.h
+		include/renderer/metal/state.h
+		include/renderer/metal/types.h
+		src/metal/context.mm
+		src/metal/gxm_to_metal.h
+		src/metal/gxm_to_metal.mm
+		src/metal/metal_include.h
+		src/metal/mtl_types.h
+		src/metal/overlay_renderer.h
+		src/metal/overlay_renderer.mm
+		src/metal/pipeline_cache.h
+		src/metal/pipeline_cache.mm
+		src/metal/renderer.mm
+		src/metal/scene.mm
+		src/metal/screen_renderer.h
+		src/metal/screen_renderer.mm
+		src/metal/shader_translate.h
+		src/metal/shader_translate.mm
+		src/metal/surface_cache.h
+		src/metal/surface_cache.mm
+		src/metal/sync_state.mm
+		src/metal/texture.mm)
+	target_sources(renderer PRIVATE src/vulkan/metal_layer.mm ${METAL_SOURCES})
+	set_source_files_properties(
+		src/vulkan/metal_layer.mm
+		src/metal/context.mm
+		src/metal/gxm_to_metal.mm
+		src/metal/overlay_renderer.mm
+		src/metal/pipeline_cache.mm
+		src/metal/renderer.mm
+		src/metal/scene.mm
+		src/metal/screen_renderer.mm
+		src/metal/shader_translate.mm
+		src/metal/surface_cache.mm
+		src/metal/sync_state.mm
+		src/metal/texture.mm
+		PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+	target_link_libraries(renderer PRIVATE spirv-cross-msl spirv-cross-glsl spirv-cross-core "-framework Metal" "-framework QuartzCore" "-framework Cocoa" "-framework Foundation")
 endif()
 
 if(X11_FOUND)

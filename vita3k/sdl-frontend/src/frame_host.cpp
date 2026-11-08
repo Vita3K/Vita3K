@@ -34,6 +34,47 @@ FrameHost::FrameHost(SDL_Window *window, SDL_GLContext *gl_context)
     , gl_context(gl_context) {
 }
 
+FrameHost::~FrameHost() {
+    if (metal_view)
+        SDL_Metal_DestroyView(metal_view);
+}
+
+FrameHost::FrameHost(FrameHost &&other) noexcept
+    : window(other.window)
+    , gl_context(other.gl_context)
+    , metal_view(other.metal_view) {
+    other.metal_view = nullptr;
+}
+
+FrameHost &FrameHost::operator=(FrameHost &&other) noexcept {
+    if (this != &other) {
+        if (metal_view)
+            SDL_Metal_DestroyView(metal_view);
+        window = other.window;
+        gl_context = other.gl_context;
+        metal_view = other.metal_view;
+        other.metal_view = nullptr;
+    }
+    return *this;
+}
+
+void *FrameHost::metal_layer() const {
+#ifdef __APPLE__
+    if (!window)
+        return nullptr;
+    if (!metal_view) {
+        metal_view = SDL_Metal_CreateView(window);
+        if (!metal_view) {
+            LOG_ERROR("SDL_Metal_CreateView failed: {}", SDL_GetError());
+            return nullptr;
+        }
+    }
+    return SDL_Metal_GetLayer(metal_view);
+#else
+    return nullptr;
+#endif
+}
+
 renderer::DisplayHandle FrameHost::handle() const {
     return {};
 }

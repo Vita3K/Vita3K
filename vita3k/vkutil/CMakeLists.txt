@@ -1,10 +1,12 @@
 add_library(
 	vkutil
 	STATIC
+	include/vkutil/apple_loader.h
 	include/vkutil/native_surface.h
 	include/vkutil/objects.h
 	include/vkutil/vkutil.h
 
+	src/apple_loader.cpp
 	src/objects.cpp
 	src/vkutil.cpp
 )

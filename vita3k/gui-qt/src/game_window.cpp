@@ -150,7 +150,8 @@ GameWindow::GameWindow(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_set
         setFormat(m_format);
     } else {
 #ifdef __APPLE__
-        setSurfaceType(QSurface::VulkanSurface);
+        // both the Vulkan (MoltenVK) and Metal renderers draw into a CAMetalLayer
+        setSurfaceType(m_backend == renderer::Backend::Metal ? QSurface::MetalSurface : QSurface::VulkanSurface);
 #endif
     }
 

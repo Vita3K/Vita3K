@@ -29,6 +29,12 @@
 #include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
 
+#ifdef __APPLE__
+#include <renderer/metal/functions.h>
+#include <renderer/metal/state.h>
+#include <renderer/metal/types.h>
+#endif
+
 #include <renderer/functions.h>
 #include <util/tracy.h>
 
@@ -86,6 +92,15 @@ COMMAND(handle_set_screen_filter) {
     case Backend::Vulkan:
         dynamic_cast<vulkan::VKState &>(renderer).screen_renderer.set_filter(*filter);
         break;
+
+#ifdef __APPLE__
+    case Backend::Metal:
+        metal::apply_screen_filter(dynamic_cast<metal::MetalState &>(renderer), *filter);
+        break;
+#endif
+
+    default:
+        break;
     }
 }
 
@@ -109,6 +124,14 @@ COMMAND(new_frame) {
             vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(active_context));
         }
     }
+#ifdef __APPLE__
+    else if (renderer.current_backend == Backend::Metal) {
+        renderer::Context *active_context = helper.pop<renderer::Context *>();
+        if (active_context) {
+            metal::new_frame(*static_cast<metal::MetalContext *>(active_context));
+        }
+    }
+#endif
 }
 
 // Client side function

@@ -294,6 +294,9 @@ void SettingsDialog::load_config() {
     m_ui->backend_renderer_box->addItem(QStringLiteral("OpenGL"));
 #endif
     m_ui->backend_renderer_box->addItem(QStringLiteral("Vulkan"));
+#ifdef __APPLE__
+    m_ui->backend_renderer_box->addItem(QStringLiteral("Metal"));
+#endif
     {
         const int idx = m_ui->backend_renderer_box->findText(
             QString::fromStdString(m_config.backend_renderer));
@@ -1467,6 +1470,8 @@ void SettingsDialog::setup_dirty_tracking() {
 
 void SettingsDialog::update_gpu_visibility() {
     const bool is_vulkan = m_ui->backend_renderer_box->currentText() == QStringLiteral("Vulkan");
+    const bool is_metal = m_ui->backend_renderer_box->currentText() == QStringLiteral("Metal");
+    const bool is_opengl = !is_vulkan && !is_metal;
 
     const int gpu_idx = m_ui->gpu_device_box->currentIndex();
     const int mask = app::get_supported_memory_mapping_mask(emuenv, gpu_idx);
@@ -1474,7 +1479,7 @@ void SettingsDialog::update_gpu_visibility() {
 
     // Vulkan-only widgets
     m_ui->gb_gpu_device->setVisible(is_vulkan);
-    m_ui->gb_renderer_accuracy->setVisible(is_vulkan);
+    m_ui->gb_renderer_accuracy->setVisible(is_vulkan || is_metal);
     m_ui->gb_vulkan_options->setVisible(is_vulkan);
     m_ui->spirv_shader->setVisible(is_vulkan);
 
@@ -1482,7 +1487,7 @@ void SettingsDialog::update_gpu_visibility() {
     m_ui->memory_mapping_box->setVisible(has_mapping);
 
     // OpenGL-only widgets
-    m_ui->gb_opengl_options->setVisible(!is_vulkan);
+    m_ui->gb_opengl_options->setVisible(is_opengl);
 
     {
         const QString previous = m_ui->screen_filter_box->currentText().isEmpty()
@@ -1490,7 +1495,7 @@ void SettingsDialog::update_gpu_visibility() {
             : m_ui->screen_filter_box->currentText();
 
         m_ui->screen_filter_box->clear();
-        if (is_vulkan) {
+        if (is_vulkan || is_metal) {
             m_ui->screen_filter_box->addItems({ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
                 QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") });
         } else {

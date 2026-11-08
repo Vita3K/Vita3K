@@ -85,6 +85,12 @@ public:
         return nullptr;
     }
 
+    // The CAMetalLayer of this window for the Metal renderer, or null to have the renderer
+    // get it from the native view in handle()
+    virtual void *metal_layer() const {
+        return nullptr;
+    }
+
     virtual unsigned int default_fbo() const {
         return 0;
     }

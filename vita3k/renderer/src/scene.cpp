@@ -27,6 +27,11 @@
 
 #include <renderer/vulkan/functions.h>
 
+#ifdef __APPLE__
+#include <renderer/metal/functions.h>
+#include <renderer/metal/types.h>
+#endif
+
 #include <config/state.h>
 #include <util/log.h>
 #include <util/tracy.h>
@@ -89,6 +94,12 @@ COMMAND(handle_set_context) {
         vulkan::set_context(*reinterpret_cast<vulkan::VKContext *>(render_context), mem, reinterpret_cast<vulkan::VKRenderTarget *>(rt), features);
         break;
 
+#ifdef __APPLE__
+    case Backend::Metal:
+        metal::set_context(*static_cast<metal::MetalContext *>(render_context), mem, static_cast<metal::MetalRenderTarget *>(rt), features);
+        break;
+#endif
+
     default:
         REPORT_MISSING(renderer.current_backend);
         break;
@@ -132,6 +143,13 @@ COMMAND(handle_sync_surface_data) {
         if (context->is_recording)
             context->stop_recording(vertex_notification, fragment_notification);
     }
+#ifdef __APPLE__
+    else if (renderer.current_backend == Backend::Metal) {
+        metal::MetalContext *context = static_cast<metal::MetalContext *>(render_context);
+        if (metal::is_recording(*context))
+            metal::stop_recording(*context);
+    }
+#endif
 
     SceGxmColorSurface *surface = &render_context->record.color_surface;
     if (helper.cmd->status) {
@@ -147,7 +165,7 @@ COMMAND(handle_sync_surface_data) {
     if (renderer.current_backend == Backend::OpenGL && static_cast<int>(renderer.res_multiplier * 4.0f) % 4 != 0)
         renderer.disable_surface_sync = true;
 
-    if (renderer.disable_surface_sync || renderer.current_backend == Backend::Vulkan) {
+    if (renderer.disable_surface_sync || renderer.current_backend != Backend::OpenGL) {
         if (helper.cmd->status) {
             complete_command(renderer, helper, 0);
         }
@@ -238,6 +256,13 @@ COMMAND(handle_draw) {
         vulkan::draw(*reinterpret_cast<vulkan::VKContext *>(render_context), type, format, indices.cast<void>(),
             count, instance_count, mem, config);
         break;
+
+#ifdef __APPLE__
+    case Backend::Metal:
+        metal::draw(*static_cast<metal::MetalContext *>(render_context), type, format, indices.cast<void>(),
+            count, instance_count, mem, config);
+        break;
+#endif
 
     default:
         REPORT_MISSING(renderer.current_backend);

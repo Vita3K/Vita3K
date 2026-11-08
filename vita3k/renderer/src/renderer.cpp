@@ -31,6 +31,11 @@
 #include <renderer/gl/types.h>
 #include <renderer/vulkan/functions.h>
 
+#ifdef __APPLE__
+#include <renderer/metal/functions.h>
+#include <renderer/metal/state.h>
+#endif
+
 #include <gxm/functions.h>
 #include <util/log.h>
 
@@ -66,7 +71,7 @@ void State::update_overlays() {
             auto notice = overlay_manager->get<overlay::shader_compile_notice>();
             if (!notice)
                 notice = overlay_manager->create<overlay::shader_compile_notice>();
-            notice->update_count(m_shaders_compiled_count, current_backend == Backend::Vulkan);
+            notice->update_count(m_shaders_compiled_count, current_backend != Backend::OpenGL);
         } else if (m_shaders_compiled_count > 0) {
             auto notice = overlay_manager->get<overlay::shader_compile_notice>();
             if (notice && notice->should_hide()) {
@@ -314,6 +319,12 @@ void destroy_render_target_during_shutdown(State &state, std::unique_ptr<RenderT
     case Backend::Vulkan:
         vulkan::destroy(dynamic_cast<vulkan::VKState &>(state), rt);
         break;
+
+#ifdef __APPLE__
+    case Backend::Metal:
+        metal::destroy(dynamic_cast<metal::MetalState &>(state), rt);
+        break;
+#endif
     }
 
     rt.reset();
