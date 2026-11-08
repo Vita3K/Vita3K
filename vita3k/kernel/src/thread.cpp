@@ -367,20 +367,20 @@ void ThreadState::update_status(ThreadStatus status) {
     }
 }
 
-WaitResult ThreadState::delay_until(Deadline deadline, bool callbacks) {
+SceInt32 ThreadState::delay_until(Deadline deadline, bool callbacks) {
     while (true) {
-        WaitResult r = wait({ .type = SCE_KERNEL_WAITTYPE_DELAY, .callbacks = callbacks }, deadline);
-        if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+        SceInt32 r = wait({ .type = SCE_KERNEL_WAITTYPE_DELAY, .callbacks = callbacks }, deadline);
+        if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
-        if (!r)
-            return r;
         // Reaching the deadline is the expected outcome of a delay
-        if (*r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+        if (r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
             return SCE_KERNEL_OK;
+        if (r != SCE_KERNEL_OK)
+            return r;
     }
 }
 
-WaitResult ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
+SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     const auto take_signal = [this] {
         const std::lock_guard<std::mutex> lock(mutex);
         return std::exchange(signal_pending, false);
@@ -389,12 +389,12 @@ WaitResult ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     if (take_signal())
         return SCE_KERNEL_OK;
     const Deadline deadline = deadline_from(timeout);
-    WaitResult r = SCE_KERNEL_OK;
+    SceInt32 r = SCE_KERNEL_OK;
     while (!take_signal()) {
         r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SCE_KERNEL_SIGNAL_WAIT_ID, callbacks }, deadline);
-        if (r && *r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+        if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
-        if (!r || *r != SCE_KERNEL_OK)
+        if (r != SCE_KERNEL_OK)
             break;
     }
     writeback_timeout(timeout, deadline);
@@ -479,7 +479,7 @@ uint64_t ThreadState::next_display_wait(uint64_t next_vblank, int vcount) {
     return last_vblank_waited;
 }
 
-WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks) {
+SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks) {
     std::unique_lock<std::mutex> lock(mutex);
     if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
         if (exit_status)
@@ -491,7 +491,7 @@ WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt
     return end_waiters.wait(end_lock, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id, callbacks }, { exit_status }, deadline);
 }
 
-WaitResult ThreadState::wait(WaitTarget target, Deadline deadline) {
+SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(mutex);
     const auto woken = [&] { return wait_over(); };
     wait_target = target;
@@ -507,19 +507,19 @@ WaitResult ThreadState::wait(WaitTarget target, Deadline deadline) {
     const bool callbacks_due = callback_ends_wait();
     wait_target = {};
     if (exiting())
-        return std::unexpected{ ThreadExiting{} };
+        return SCE_KERNEL_ERROR_THREAD_STOPPED;
     wake_pending = false;
     if (callbacks_due)
         return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
 }
 
-WaitResult ThreadState::run_callbacks() {
+SceInt32 ThreadState::run_callbacks() {
     process_callbacks();
     const std::lock_guard<std::mutex> lock(mutex);
     // The thread exited or was deleted during the callbacks, so the wait must not complete
     if (exiting())
-        return std::unexpected{ ThreadExiting{} };
+        return SCE_KERNEL_ERROR_THREAD_STOPPED;
     // The callbacks may have changed what the caller waits for, so it rechecks before waiting again
     return SCE_KERNEL_OK;
 }

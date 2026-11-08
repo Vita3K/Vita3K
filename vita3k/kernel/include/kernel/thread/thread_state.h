@@ -109,20 +109,21 @@ struct ThreadState final {
 
     // Waits
     // Blocks this thread until the deadline passes.
-    [[nodiscard]] WaitResult delay_until(Deadline deadline, bool callbacks);
+    [[nodiscard]] SceInt32 delay_until(Deadline deadline, bool callbacks);
     // Blocks this thread until a signal is sent to it or the timeout passes, writing the time left back.
-    [[nodiscard]] WaitResult wait_for_signal(SceUInt32 *timeout, bool callbacks);
+    [[nodiscard]] SceInt32 wait_for_signal(SceUInt32 *timeout, bool callbacks);
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
-    [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks);
-    // Waits on target until woken by wake(), the thread exits or is deleted, or the deadline passes.
+    [[nodiscard]] SceInt32 wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks);
+    // Waits on target until woken by wake(), the deadline passes, or the thread exits or is deleted,
+    // which ends it with THREAD_STOPPED.
     // With target.callbacks, a notified callback ends it with NOTIFY_CALLBACK, and the caller runs
     // it with run_callbacks(). A stale wake can end it early, so callers must recheck their condition.
-    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline);
+    [[nodiscard]] SceInt32 wait(WaitTarget target, Deadline deadline);
     // Runs the notified callbacks for a wait that ended with NOTIFY_CALLBACK, with no lock held.
-    // Returns ThreadExiting if the thread exits or is deleted meanwhile.
-    [[nodiscard]] WaitResult run_callbacks();
+    // Returns THREAD_STOPPED if the thread exits or is deleted meanwhile.
+    [[nodiscard]] SceInt32 run_callbacks();
     // Wakes this thread from wait().
     void wake();
     // A host call that blocks the thread inside an export, like an audio output, during which the
