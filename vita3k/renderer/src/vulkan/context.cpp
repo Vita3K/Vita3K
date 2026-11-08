@@ -114,8 +114,14 @@ void VKState::wait_thread_function(const MemState &mem) {
                        },
                        [&](DepthStencilSyncRequest &request) {
                            // only write guest memory once the GPU copy is known to be complete
-                           if (wait_for_fences() && request.readback)
+                           const bool gpu_done = wait_for_fences();
+                           if (!request.readback)
+                               return;
+                           if (gpu_done)
                                VKSurfaceCache::perform_post_depth_stencil_sync(mem, *request.readback);
+                           else
+                               // the copy may still be running: keep the pool from reusing the buffer
+                               request.readback->abandoned.store(true, std::memory_order_relaxed);
                        },
                        [&](SyncSignalRequest &request) {
                            wait_for_fences();
@@ -690,8 +696,9 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
 
-        if (ds_readback)
-            state.request_queue.push(DepthStencilSyncRequest{ std::move(ds_readback) });
+        // a push refused by the aborted queue drops the request while the copy may be running
+        if (ds_readback && !state.request_queue.push(DepthStencilSyncRequest{ ds_readback }))
+            ds_readback->abandoned.store(true, std::memory_order_relaxed);
 
         if (notif1.address || notif2.address) {
             // notifications last

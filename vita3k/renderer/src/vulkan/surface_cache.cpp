@@ -1560,7 +1560,12 @@ std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync
     // which merely makes us skip that buffer.
     const auto find_released = [&]() -> std::shared_ptr<DepthStencilReadback> {
         for (const auto &candidate : stencil_readback_pool) {
-            if (candidate.use_count() == 1)
+            if (candidate.use_count() != 1)
+                continue;
+            // pairs with the release of the dropped reference: makes the abandoned flag
+            // and the wait thread's reads of the buffer visible before we reuse it
+            std::atomic_thread_fence(std::memory_order_acquire);
+            if (!candidate->abandoned.load(std::memory_order_relaxed))
                 return candidate;
         }
         return nullptr;
@@ -1570,16 +1575,20 @@ std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync
         readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
     if (!readback) {
         // All buffers are in flight. Their requests were queued after earlier submits, so the wait
-        // thread releases one as soon as the GPU is done: wait rather than lose a write-back.
+        // thread releases one as soon as the GPU is done: wait rather than grow the pool.
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
         while (!readback && !state.request_queue.is_aborted() && std::chrono::steady_clock::now() < deadline) {
             std::this_thread::sleep_for(std::chrono::microseconds(100));
             readback = find_released();
         }
-        if (!readback) {
-            LOG_WARN_ONCE("No depth-stencil write-back buffer was released in time, skipping a write-back");
-            return nullptr;
-        }
+    }
+    // Shutting down: nothing will write the result back to guest memory
+    if (state.request_queue.is_aborted())
+        return nullptr;
+    if (!readback) {
+        // Never drop a write-back the game relies on: grow the pool past its usual size instead
+        LOG_WARN_ONCE("No depth-stencil write-back buffer was released in time, allocating an extra one");
+        readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
     }
 
     const vk::DeviceSize required_size = static_cast<vk::DeviceSize>(width) * height;

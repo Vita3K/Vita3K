@@ -23,6 +23,7 @@
 #include <util/containers.h>
 #include <vkutil/objects.h>
 
+#include <atomic>
 #include <memory>
 #include <optional>
 
@@ -139,6 +140,9 @@ struct DepthStencilReadback {
     uint32_t height = 0;
     uint32_t stride_samples = 0;
     SceGxmDepthStencilFormat format = SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
+    // Set when the request was dropped before the GPU copy was known to be complete (shutdown):
+    // the GPU may still write this buffer, so it must never be reused
+    std::atomic<bool> abandoned = false;
 };
 
 struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
