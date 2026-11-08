@@ -131,6 +131,12 @@ struct DepthSurfaceView {
     uint32_t delta_row;
 };
 
+enum class DepthStencilReadbackState : uint8_t {
+    Free, // owned by the renderer thread, can be reused
+    InFlight, // a GPU copy and a write-back request are pending
+    Abandoned, // dropped before the GPU copy was known to be complete (shutdown), never reused
+};
+
 // Host-visible copy of the stencil aspect of a depth-stencil surface,
 // written back to guest memory after the GPU has finished rendering
 struct DepthStencilReadback {
@@ -140,9 +146,9 @@ struct DepthStencilReadback {
     uint32_t height = 0;
     uint32_t stride_samples = 0;
     SceGxmDepthStencilFormat format = SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
-    // Set when the request was dropped before the GPU copy was known to be complete (shutdown):
-    // the GPU may still write this buffer, so it must never be reused
-    std::atomic<bool> abandoned = false;
+    // Published with release semantics by the thread that last accessed the buffer
+    // and read with acquire semantics before the renderer thread reuses it
+    std::atomic<DepthStencilReadbackState> state = DepthStencilReadbackState::Free;
 };
 
 struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
@@ -189,7 +195,8 @@ private:
 
     // Buffers for depth-stencil write-back. The VMA allocator is externally synchronized,
     // so they are only created and destroyed on the renderer thread; the wait thread only
-    // reads them and a buffer is reused once its request has been processed.
+    // reads them and marks a buffer Free once its write-back is done. The pool grows when
+    // every buffer is in flight and shrinks back to this size as extra buffers become free.
     static constexpr size_t max_stencil_readbacks = 8;
     std::vector<std::shared_ptr<DepthStencilReadback>> stencil_readback_pool;
 

@@ -117,11 +117,14 @@ void VKState::wait_thread_function(const MemState &mem) {
                            const bool gpu_done = wait_for_fences();
                            if (!request.readback)
                                return;
-                           if (gpu_done)
+                           if (gpu_done) {
                                VKSurfaceCache::perform_post_depth_stencil_sync(mem, *request.readback);
-                           else
-                               // the copy may still be running: keep the pool from reusing the buffer
-                               request.readback->abandoned.store(true, std::memory_order_relaxed);
+                               // last access done: the renderer thread may reuse the buffer
+                               request.readback->state.store(DepthStencilReadbackState::Free, std::memory_order_release);
+                           } else {
+                               // the copy may still be running: never reuse the buffer
+                               request.readback->state.store(DepthStencilReadbackState::Abandoned, std::memory_order_release);
+                           }
                        },
                        [&](SyncSignalRequest &request) {
                            wait_for_fences();
@@ -698,7 +701,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
 
         // a push refused by the aborted queue drops the request while the copy may be running
         if (ds_readback && !state.request_queue.push(DepthStencilSyncRequest{ ds_readback }))
-            ds_readback->abandoned.store(true, std::memory_order_relaxed);
+            ds_readback->state.store(DepthStencilReadbackState::Abandoned, std::memory_order_relaxed);
 
         if (notif1.address || notif2.address) {
             // notifications last

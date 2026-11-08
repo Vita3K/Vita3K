@@ -26,8 +26,6 @@
 #include <vulkan/vulkan_format_traits.hpp>
 
 #include <array>
-#include <chrono>
-#include <thread>
 #include <util/align.h>
 #include <util/log.h>
 #include <util/vector_utils.h>
@@ -1555,41 +1553,33 @@ std::shared_ptr<DepthStencilReadback> VKSurfaceCache::perform_depth_stencil_sync
     if (!data)
         return nullptr;
 
-    // Reuse a buffer the wait thread has released (only the pool still references it).
-    // A use count read while the wait thread drops its reference can only be too high,
-    // which merely makes us skip that buffer.
-    const auto find_released = [&]() -> std::shared_ptr<DepthStencilReadback> {
-        for (const auto &candidate : stencil_readback_pool) {
-            if (candidate.use_count() != 1)
-                continue;
-            // pairs with the release of the dropped reference: makes the abandoned flag
-            // and the wait thread's reads of the buffer visible before we reuse it
-            std::atomic_thread_fence(std::memory_order_acquire);
-            if (!candidate->abandoned.load(std::memory_order_relaxed))
-                return candidate;
-        }
-        return nullptr;
-    };
-    std::shared_ptr<DepthStencilReadback> readback = find_released();
-    if (!readback && stencil_readback_pool.size() < max_stencil_readbacks)
-        readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
-    if (!readback) {
-        // All buffers are in flight. Their requests were queued after earlier submits, so the wait
-        // thread releases one as soon as the GPU is done: wait rather than grow the pool.
-        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
-        while (!readback && !state.request_queue.is_aborted() && std::chrono::steady_clock::now() < deadline) {
-            std::this_thread::sleep_for(std::chrono::microseconds(100));
-            readback = find_released();
-        }
-    }
     // Shutting down: nothing will write the result back to guest memory
     if (state.request_queue.is_aborted())
         return nullptr;
-    if (!readback) {
-        // Never drop a write-back the game relies on: grow the pool past its usual size instead
-        LOG_WARN_ONCE("No depth-stencil write-back buffer was released in time, allocating an extra one");
-        readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
+
+    // Reuse a buffer whose write-back is done. If every buffer is in flight, allocate another
+    // one right away rather than stall the renderer thread, and free extra buffers again once
+    // their write-back is done.
+    std::shared_ptr<DepthStencilReadback> readback;
+    for (auto it = stencil_readback_pool.begin(); it != stencil_readback_pool.end();) {
+        // acquire: pairs with the wait thread's release after its last access to the buffer
+        if ((*it)->state.load(std::memory_order_acquire) != DepthStencilReadbackState::Free) {
+            ++it;
+        } else if (!readback) {
+            readback = *it;
+            ++it;
+        } else if (stencil_readback_pool.size() > max_stencil_readbacks) {
+            // empties the buffer, so dropping the last reference never touches the allocator
+            state.frame().destroy_queue.add_buffer((*it)->buffer);
+            it = stencil_readback_pool.erase(it);
+        } else {
+            ++it;
+        }
     }
+    if (!readback)
+        readback = stencil_readback_pool.emplace_back(std::make_shared<DepthStencilReadback>());
+    // the request queue publishes this to the wait thread
+    readback->state.store(DepthStencilReadbackState::InFlight, std::memory_order_relaxed);
 
     const vk::DeviceSize required_size = static_cast<vk::DeviceSize>(width) * height;
     if (!readback->buffer.buffer || readback->buffer.size < required_size) {
