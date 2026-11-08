@@ -27,8 +27,13 @@
 #include <QActionGroup>
 #include <QDateTime>
 #include <QDirIterator>
+#include <QFile>
+#include <QHash>
 #include <QHeaderView>
 #include <QImage>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMouseEvent>
@@ -39,9 +44,11 @@
 #include <QTableWidgetItem>
 #include <QThreadPool>
 #include <QTimer>
+#include <QVersionNumber>
 
 #include <algorithm>
 #include <limits>
+#include <set>
 
 namespace {
 
@@ -103,6 +110,49 @@ int parental_level_sort_key(const std::string &level) {
     bool ok = false;
     const int parsed = QString::fromStdString(level).toInt(&ok);
     return ok ? parsed : std::numeric_limits<int>::max();
+}
+
+QString latest_update_version(const std::string &title_id) {
+    static const QHash<QString, QString> latest = [] {
+        QHash<QString, QString> db;
+        QFile file(QStringLiteral(":/db/patches.json"));
+        if (!file.open(QIODevice::ReadOnly))
+            return db;
+
+        const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+        for (auto it = root.begin(); it != root.end(); ++it) {
+            QString newest;
+            for (const QJsonValue &patch : it.value().toArray())
+                newest = std::max(newest, patch[QLatin1String("version")].toString());
+            // Match the APP_VER formatting in sfo.cpp, which drops the leading zero
+            if (newest.startsWith(QLatin1Char('0')))
+                newest.remove(0, 1);
+            if (!newest.isEmpty())
+                db.insert(it.key(), newest);
+        }
+        return db;
+    }();
+    return latest.value(QString::fromStdString(title_id));
+}
+
+SortableItem *version_item(const app::AppEntry &app) {
+    const QString installed = QString::fromStdString(app.app_ver);
+    const QString latest = latest_update_version(app.title_id);
+    const QVersionNumber installed_number = QVersionNumber::fromString(installed);
+    if (installed_number.isNull())
+        return new SortableItem(installed, QVariant(std::numeric_limits<qlonglong>::max()));
+
+    // Ascending order lists the newest installed version first; within one version,
+    // titles with an update come first, newest update first
+    const QVersionNumber latest_number = QVersionNumber::fromString(latest);
+    const bool has_update = latest_number > installed_number;
+    const auto descending = [](const QVersionNumber &v) {
+        return qlonglong(0xFFFF - (v.majorVersion() * 100 + v.minorVersion()));
+    };
+    const qlonglong sort_key = (descending(installed_number) << 32) | (qlonglong(!has_update) << 16)
+        | (has_update ? descending(latest_number) : 0);
+    return new SortableItem(has_update ? QObject::tr("%1 (Update available: %2)").arg(installed, latest) : installed,
+        QVariant(sort_key));
 }
 
 } // namespace
@@ -381,8 +431,7 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
             new SortableItem(QString::fromStdString(app.title)));
         setItem(row, static_cast<int>(AppsListColumn::TitleId),
             new SortableItem(QString::fromStdString(app.title_id)));
-        setItem(row, static_cast<int>(AppsListColumn::Version),
-            new SortableItem(QString::fromStdString(app.app_ver)));
+        setItem(row, static_cast<int>(AppsListColumn::Version), version_item(app));
         setItem(row, static_cast<int>(AppsListColumn::Category),
             new SortableItem(app_category_label(app.category)));
 
@@ -478,8 +527,45 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
     horizontalHeader()->setSectionResizeMode(static_cast<int>(AppsListColumn::Icon),
         QHeaderView::Fixed);
     sort(m_sort_column, m_sort_order);
+    apply_filters();
 
     Q_EMIT list_refreshed();
+}
+
+void AppsListTable::set_search_text(const QString &text) {
+    m_search_text = text.toLower();
+    apply_filters();
+}
+
+void AppsListTable::apply_filters() {
+    const auto cell_text = [this](int row, AppsListColumn column) {
+        const auto *cell = item(row, static_cast<int>(column));
+        return cell ? cell->text() : QString();
+    };
+
+    for (int r = 0; r < rowCount(); ++r) {
+        bool visible = true;
+        if (!m_search_text.isEmpty()) {
+            visible = cell_text(r, AppsListColumn::Title).toLower().contains(m_search_text)
+                || cell_text(r, AppsListColumn::TitleId).toLower().contains(m_search_text);
+        }
+        if (visible && m_compat_filter) {
+            const auto *cell = item(r, static_cast<int>(AppsListColumn::CompatStatus));
+            visible = cell && cell->data(Qt::UserRole).toInt() == *m_compat_filter;
+        }
+        if (visible && m_parental_filter) {
+            bool ok = false;
+            const int level = cell_text(r, AppsListColumn::ParentalLevel).toInt(&ok);
+            visible = ok && level == *m_parental_filter;
+        }
+        setRowHidden(r, !visible);
+    }
+
+    if (currentRow() >= 0 && isRowHidden(currentRow())) {
+        clearSelection();
+        setCurrentIndex(QModelIndex());
+        Q_EMIT app_selection_changed(nullptr);
+    }
 }
 
 int AppsListTable::visible_column_count() const {
@@ -547,6 +633,46 @@ void AppsListTable::show_header_context_menu(const QPoint &pos) {
 
     connect(square, &QAction::triggered, this, [this] { set_icon_crop(AppsListIconCrop::Square); });
     connect(circle, &QAction::triggered, this, [this] { set_icon_crop(AppsListIconCrop::Circle); });
+
+    auto *filter_menu = menu.addMenu(tr("Filter"));
+    const auto add_filter = [this](QMenu *submenu, std::optional<int> &filter,
+                                const std::vector<std::pair<QString, int>> &options) {
+        auto *group = new QActionGroup(submenu);
+        const auto add_option = [&](const QString &label, std::optional<int> value) {
+            QAction *action = submenu->addAction(label);
+            action->setCheckable(true);
+            action->setChecked(filter == value);
+            group->addAction(action);
+            connect(action, &QAction::triggered, this, [this, &filter, value] {
+                filter = value;
+                apply_filters();
+            });
+        };
+        add_option(tr("All"), std::nullopt);
+        submenu->addSeparator();
+        for (const auto &[label, value] : options)
+            add_option(label, value);
+    };
+
+    std::vector<std::pair<QString, int>> compat_options;
+    for (int state = CompatibilityState::PLAYABLE; state >= CompatibilityState::UNKNOWN; --state)
+        compat_options.emplace_back(compat_text(static_cast<CompatibilityState>(state)), state);
+    add_filter(filter_menu->addMenu(labels.value(static_cast<int>(AppsListColumn::CompatStatus))),
+        m_compat_filter, compat_options);
+
+    std::set<int> levels;
+    for (int r = 0; r < rowCount(); ++r) {
+        bool ok = false;
+        const auto *cell = item(r, static_cast<int>(AppsListColumn::ParentalLevel));
+        const int level = cell ? cell->text().toInt(&ok) : 0;
+        if (ok)
+            levels.insert(level);
+    }
+    std::vector<std::pair<QString, int>> parental_options;
+    for (const int level : levels)
+        parental_options.emplace_back(QString::number(level), level);
+    add_filter(filter_menu->addMenu(labels.value(static_cast<int>(AppsListColumn::ParentalLevel))),
+        m_parental_filter, parental_options);
 
     menu.exec(horizontalHeader()->viewport()->mapToGlobal(pos));
 }
@@ -667,7 +793,7 @@ app::AppEntry AppsListTable::app_from_row(int row) const {
 
 const app::AppEntry *AppsListTable::selected_app() const {
     const int row = currentRow();
-    if (row < 0)
+    if (row < 0 || isRowHidden(row))
         return nullptr;
     if (const auto *icon_item = dynamic_cast<const AppIconItem *>(
             item(row, static_cast<int>(AppsListColumn::Icon)))) {
@@ -681,6 +807,8 @@ std::vector<const app::AppEntry *> AppsListTable::selected_apps() const {
     const int icon_col = static_cast<int>(AppsListColumn::Icon);
     for (const auto &range : selectedRanges()) {
         for (int r = range.topRow(); r <= range.bottomRow(); ++r) {
+            if (isRowHidden(r))
+                continue;
             if (const auto *icon_item = dynamic_cast<const AppIconItem *>(item(r, icon_col))) {
                 if (const auto *app = icon_item->app())
                     result.push_back(app);
@@ -716,7 +844,7 @@ void AppsListTable::mouseDoubleClickEvent(QMouseEvent *event) {
 void AppsListTable::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         const int row = currentRow();
-        if (row >= 0)
+        if (row >= 0 && !isRowHidden(row))
             Q_EMIT app_boot_requested(app_from_row(row));
         return;
     }
