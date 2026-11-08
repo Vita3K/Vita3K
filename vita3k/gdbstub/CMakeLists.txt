@@ -17,7 +17,7 @@ if(NOT ANDROID)
     )
 
     target_include_directories(gdbstub-tests PRIVATE include)
-    target_link_libraries(gdbstub-tests PRIVATE gdbstub googletest)
+    target_link_libraries(gdbstub-tests PRIVATE audio gdbstub googletest)
     add_test(NAME gdbstub COMMAND gdbstub-tests)
     # A shutdown that hangs fails instead of holding up the suite
     set_tests_properties(gdbstub PROPERTIES TIMEOUT 60)
