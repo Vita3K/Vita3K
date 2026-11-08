@@ -131,7 +131,6 @@ target_link_libraries(gui-qt PUBLIC
 )
 
 target_include_directories(gui-qt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
-target_link_libraries(gui-qt PRIVATE gdbstub)
 if (TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(gui-qt PRIVATE tracy)
 endif()
