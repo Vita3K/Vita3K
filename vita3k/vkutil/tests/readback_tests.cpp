@@ -25,6 +25,7 @@
 #include <mem/functions.h>
 #include <mem/state.h>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <vkutil/readback.h>
 #if defined(__APPLE__)
@@ -49,21 +50,39 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 
 int main() try {
     const char *loader_path = std::getenv("VITA3K_TEST_VULKAN_LOADER");
-    vk::detail::DynamicLoader loader(loader_path ? loader_path : "libvulkan.dylib");
+    vk::detail::DynamicLoader loader = loader_path ? vk::detail::DynamicLoader(loader_path) : vk::detail::DynamicLoader();
     const auto get = loader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
     require(get, "Vulkan loader missing");
     VULKAN_HPP_DEFAULT_DISPATCHER.init(get);
-    const char *extensions[] = { "VK_KHR_portability_enumeration", "VK_EXT_debug_utils" };
     const auto available = vk::enumerateInstanceLayerProperties();
     const bool validation = std::any_of(available.begin(), available.end(), [](auto &v) { return std::strcmp(v.layerName, "VK_LAYER_KHRONOS_validation") == 0; });
     const char *layer = "VK_LAYER_KHRONOS_validation";
+    auto available_extensions = vk::enumerateInstanceExtensionProperties();
+    if (validation) {
+        const auto layer_extensions = vk::enumerateInstanceExtensionProperties(std::string(layer));
+        available_extensions.insert(available_extensions.end(), layer_extensions.begin(), layer_extensions.end());
+    }
+    const auto has_extension = [&](const char *name) {
+        return std::any_of(available_extensions.begin(), available_extensions.end(), [&](const auto &extension) {
+            return std::strcmp(extension.extensionName, name) == 0;
+        });
+    };
+    std::vector<const char *> extensions;
+    const bool portability_enumeration = has_extension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    const bool debug_utils = has_extension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    if (portability_enumeration)
+        extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    if (debug_utils)
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     vk::ApplicationInfo app{ .pApplicationName = "Vita3K readback fixture", .apiVersion = VK_API_VERSION_1_1 };
-    vk::InstanceCreateInfo ci{ .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR, .pApplicationInfo = &app, .enabledLayerCount = validation ? 1U : 0U, .ppEnabledLayerNames = validation ? &layer : nullptr, .enabledExtensionCount = 2, .ppEnabledExtensionNames = extensions };
+    vk::InstanceCreateInfo ci{ .flags = portability_enumeration ? vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR : vk::InstanceCreateFlags{}, .pApplicationInfo = &app, .enabledLayerCount = validation ? 1U : 0U, .ppEnabledLayerNames = validation ? &layer : nullptr, .enabledExtensionCount = uint32_t(extensions.size()), .ppEnabledExtensionNames = extensions.data() };
     auto instance = vk::createInstanceUnique(ci);
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
-    auto messenger = instance->createDebugUtilsMessengerEXTUnique({ .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
-        .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-        .pfnUserCallback = reinterpret_cast<vk::PFN_DebugUtilsMessengerCallbackEXT>(debug_callback) });
+    vk::UniqueDebugUtilsMessengerEXT messenger;
+    if (debug_utils)
+        messenger = instance->createDebugUtilsMessengerEXTUnique({ .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+            .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+            .pfnUserCallback = reinterpret_cast<vk::PFN_DebugUtilsMessengerCallbackEXT>(debug_callback) });
     const auto devices = instance->enumeratePhysicalDevices();
     require(!devices.empty(), "No Vulkan GPU");
     const auto physical = devices[0];
@@ -178,46 +197,49 @@ int main() try {
             }
         }
     }
+    uint32_t mixed_cases = 0;
 #if defined(__APPLE__)
-    require(mem.host_page_size >= 16384, "Mixed-permission fixture needs macOS16KiB host page");
-    std::atomic<uint32_t> mixed_callbacks{ 0 };
-    require(add_protect(mem, base, 4096, MemPerm::ReadOnly, [&](Address, bool) {++mixed_callbacks;return true; }), "Mixed RO setup");
-    require(add_protect(mem, base + 8192, 4096, MemPerm::None, [&](Address, bool) {++mixed_callbacks;return true; }), "Mixed None setup");
-    const uint8_t sixteen[16] = { 1, 2, 3, 4 };
-    require(write_gpu_readback_rows(mem, base + 4096, sixteen, 16, 1, 16), "Mixed permission commit");
-    mach_vm_address_t address = reinterpret_cast<mach_vm_address_t>(mem.memory.get() + base);
-    mach_vm_size_t region_size = 0;
-    vm_region_basic_info_data_64_t region{};
-    mach_msg_type_number_t count = VM_REGION_BASIC_INFO_COUNT_64;
-    mach_port_t object = 0;
-    require(mach_vm_region(mach_task_self(), &address, &region_size, VM_REGION_BASIC_INFO_64,
-                reinterpret_cast<vm_region_info_t>(&region), &count, &object)
-            == KERN_SUCCESS,
-        "Query host permission");
-    require(region.protection == VM_PROT_NONE, "Read trap on shared16KiB page weakened");
-    require(mixed_callbacks == 0 && mem.protect_tree.size() == 2, "Mixed metadata changed");
-    require(handle_access_violation(mem, mem.memory.get() + base + 8192, false), "Mixed None callback");
-    require(handle_access_violation(mem, mem.memory.get() + base, true), "Mixed RO callback");
-    require(mixed_callbacks == 2, "Mixed callbacks lost");
-    require(std::memcmp(mem.memory.get() + base + 4096, sixteen, 16) == 0, "Mixed commit bytes");
-    mixed_callbacks = 0;
-    require(add_protect(mem, base, 5 * 4096, MemPerm::ReadOnly, [&](Address, bool) {++mixed_callbacks;return true; }), "Long RO setup");
-    require(add_protect(mem, base + 6 * 4096, 4096, MemPerm::None, [&](Address, bool) {++mixed_callbacks;return true; }), "Neighbour None setup");
-    require(write_gpu_readback_rows(mem, base + 4096, sixteen, 16, 1, 16), "Long segment commit");
-    address = reinterpret_cast<mach_vm_address_t>(mem.memory.get() + base + 6 * 4096);
-    count = VM_REGION_BASIC_INFO_COUNT_64;
-    require(mach_vm_region(mach_task_self(), &address, &region_size, VM_REGION_BASIC_INFO_64,
-                reinterpret_cast<vm_region_info_t>(&region), &count, &object)
-            == KERN_SUCCESS,
-        "Query neighbour protection");
-    require(region.protection == VM_PROT_NONE, "Long segment commit weakened a neighbouring host page");
-    require(mixed_callbacks == 0 && mem.protect_tree.size() == 2, "Long segment metadata changed");
-    require(handle_access_violation(mem, mem.memory.get() + base + 6 * 4096, false), "Neighbour None callback");
-    require(handle_access_violation(mem, mem.memory.get() + base, true), "Long RO callback");
-    require(mixed_callbacks == 2, "Long segment callbacks lost");
+    if (mem.host_page_size == 16384) {
+        std::atomic<uint32_t> mixed_callbacks{ 0 };
+        require(add_protect(mem, base, 4096, MemPerm::ReadOnly, [&](Address, bool) {++mixed_callbacks;return true; }), "Mixed RO setup");
+        require(add_protect(mem, base + 8192, 4096, MemPerm::None, [&](Address, bool) {++mixed_callbacks;return true; }), "Mixed None setup");
+        const uint8_t sixteen[16] = { 1, 2, 3, 4 };
+        require(write_gpu_readback_rows(mem, base + 4096, sixteen, 16, 1, 16), "Mixed permission commit");
+        mach_vm_address_t address = reinterpret_cast<mach_vm_address_t>(mem.memory.get() + base);
+        mach_vm_size_t region_size = 0;
+        vm_region_basic_info_data_64_t region{};
+        mach_msg_type_number_t count = VM_REGION_BASIC_INFO_COUNT_64;
+        mach_port_t object = 0;
+        require(mach_vm_region(mach_task_self(), &address, &region_size, VM_REGION_BASIC_INFO_64,
+                    reinterpret_cast<vm_region_info_t>(&region), &count, &object)
+                == KERN_SUCCESS,
+            "Query host permission");
+        require(region.protection == VM_PROT_NONE, "Read trap on shared16KiB page weakened");
+        require(mixed_callbacks == 0 && mem.protect_tree.size() == 2, "Mixed metadata changed");
+        require(handle_access_violation(mem, mem.memory.get() + base + 8192, false), "Mixed None callback");
+        require(handle_access_violation(mem, mem.memory.get() + base, true), "Mixed RO callback");
+        require(mixed_callbacks == 2, "Mixed callbacks lost");
+        require(std::memcmp(mem.memory.get() + base + 4096, sixteen, 16) == 0, "Mixed commit bytes");
+        mixed_callbacks = 0;
+        require(add_protect(mem, base, 5 * 4096, MemPerm::ReadOnly, [&](Address, bool) {++mixed_callbacks;return true; }), "Long RO setup");
+        require(add_protect(mem, base + 6 * 4096, 4096, MemPerm::None, [&](Address, bool) {++mixed_callbacks;return true; }), "Neighbour None setup");
+        require(write_gpu_readback_rows(mem, base + 4096, sixteen, 16, 1, 16), "Long segment commit");
+        address = reinterpret_cast<mach_vm_address_t>(mem.memory.get() + base + 6 * 4096);
+        count = VM_REGION_BASIC_INFO_COUNT_64;
+        require(mach_vm_region(mach_task_self(), &address, &region_size, VM_REGION_BASIC_INFO_64,
+                    reinterpret_cast<vm_region_info_t>(&region), &count, &object)
+                == KERN_SUCCESS,
+            "Query neighbour protection");
+        require(region.protection == VM_PROT_NONE, "Long segment commit weakened a neighbouring host page");
+        require(mixed_callbacks == 0 && mem.protect_tree.size() == 2, "Long segment metadata changed");
+        require(handle_access_violation(mem, mem.memory.get() + base + 6 * 4096, false), "Neighbour None callback");
+        require(handle_access_violation(mem, mem.memory.get() + base, true), "Long RO callback");
+        require(mixed_callbacks == 2, "Long segment callbacks lost");
+        mixed_cases = 2;
+    }
 #endif
     require(validation_errors == 0, "Vulkan validation error");
-    std::cout << "{\"passed\":true,\"gpu_cases\":" << cases << ",\"validation_enabled\":" << (validation ? "true" : "false") << ",\"validation_errors\":" << validation_errors << ",\"device\":\"" << physical.getProperties().deviceName << "\"}" << std::endl;
+    std::cout << "{\"passed\":true,\"gpu_cases\":" << cases << ",\"mixed_permission_cases\":" << mixed_cases << ",\"mixed_permission_cases_skipped\":" << (2 - mixed_cases) << ",\"host_page_size\":" << mem.host_page_size << ",\"debug_utils_enabled\":" << (debug_utils ? "true" : "false") << ",\"portability_enumeration_enabled\":" << (portability_enumeration ? "true" : "false") << ",\"validation_enabled\":" << (validation ? "true" : "false") << ",\"validation_errors\":" << validation_errors << ",\"device\":\"" << physical.getProperties().deviceName << "\"}" << std::endl;
     queue.waitIdle();
     free(mem, base);
     vkutil::deinit();

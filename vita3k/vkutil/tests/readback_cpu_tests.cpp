@@ -92,24 +92,27 @@ int main() try {
     require(!write_gpu_readback_rows(mem, base + size - 8, pixels.data(), 16, 1, 16), "Unallocated end accepted");
     require(!write_gpu_readback_rows(mem, 0xfffffff0, pixels.data(), 32, 1, 32), "Overflow accepted");
     require(std::memcmp(mem.memory.get() + base, before.data(), size) == 0, "Failed commit partially wrote");
+    uint32_t mixed_cases = 0;
 #if defined(__APPLE__)
-    require(mem.host_page_size == 16384, "Expected macOS16KiB host pages");
-    const uint8_t data[16] = { 1, 2, 3, 4 };
-    callbacks = 0;
-    require(add_protect(mem, base, 4096, MemPerm::ReadOnly, [&](Address, bool) {++callbacks;return true; }), "Mixed RO");
-    require(add_protect(mem, base + 8192, 4096, MemPerm::None, [&](Address, bool) {++callbacks;return true; }), "Mixed None");
-    require(write_gpu_readback_rows(mem, base + 4096, data, 16, 1, 16), "Mixed commit");
-    require(protection(mem.memory.get() + base) == VM_PROT_NONE && callbacks == 0 && mem.protect_tree.size() == 2, "Shared page permission/metadata");
-    require(handle_access_violation(mem, mem.memory.get() + base + 8192, false) && handle_access_violation(mem, mem.memory.get() + base, true) && callbacks == 2, "Mixed callbacks");
-    callbacks = 0;
-    require(add_protect(mem, base, 5 * 4096, MemPerm::ReadOnly, [&](Address, bool) {++callbacks;return true; }), "Long RO");
-    require(add_protect(mem, base + 6 * 4096, 4096, MemPerm::None, [&](Address, bool) {++callbacks;return true; }), "Neighbour None");
-    require(write_gpu_readback_rows(mem, base + 4096, data, 16, 1, 16), "Clipped commit");
-    require(protection(mem.memory.get() + base + 6 * 4096) == VM_PROT_NONE && callbacks == 0 && mem.protect_tree.size() == 2, "Neighbour page weakened");
-    require(handle_access_violation(mem, mem.memory.get() + base + 6 * 4096, false) && handle_access_violation(mem, mem.memory.get() + base, true) && callbacks == 2, "Neighbour callbacks");
+    if (mem.host_page_size == 16384) {
+        const uint8_t data[16] = { 1, 2, 3, 4 };
+        callbacks = 0;
+        require(add_protect(mem, base, 4096, MemPerm::ReadOnly, [&](Address, bool) {++callbacks;return true; }), "Mixed RO");
+        require(add_protect(mem, base + 8192, 4096, MemPerm::None, [&](Address, bool) {++callbacks;return true; }), "Mixed None");
+        require(write_gpu_readback_rows(mem, base + 4096, data, 16, 1, 16), "Mixed commit");
+        require(protection(mem.memory.get() + base) == VM_PROT_NONE && callbacks == 0 && mem.protect_tree.size() == 2, "Shared page permission/metadata");
+        require(handle_access_violation(mem, mem.memory.get() + base + 8192, false) && handle_access_violation(mem, mem.memory.get() + base, true) && callbacks == 2, "Mixed callbacks");
+        callbacks = 0;
+        require(add_protect(mem, base, 5 * 4096, MemPerm::ReadOnly, [&](Address, bool) {++callbacks;return true; }), "Long RO");
+        require(add_protect(mem, base + 6 * 4096, 4096, MemPerm::None, [&](Address, bool) {++callbacks;return true; }), "Neighbour None");
+        require(write_gpu_readback_rows(mem, base + 4096, data, 16, 1, 16), "Clipped commit");
+        require(protection(mem.memory.get() + base + 6 * 4096) == VM_PROT_NONE && callbacks == 0 && mem.protect_tree.size() == 2, "Neighbour page weakened");
+        require(handle_access_violation(mem, mem.memory.get() + base + 6 * 4096, false) && handle_access_violation(mem, mem.memory.get() + base, true) && callbacks == 2, "Neighbour callbacks");
+        mixed_cases = 2;
+    }
 #endif
     free(mem, base);
-    std::cout << "{\"passed\":true,\"pixel_conversion_cases\":9,\"protected_rows\":200,\"invalid_destination_cases\":4,\"mixed_permission_cases\":2,\"gpu_used\":false}" << std::endl;
+    std::cout << "{\"passed\":true,\"pixel_conversion_cases\":9,\"protected_rows\":200,\"invalid_destination_cases\":4,\"mixed_permission_cases\":" << mixed_cases << ",\"mixed_permission_cases_skipped\":" << (2 - mixed_cases) << ",\"host_page_size\":" << mem.host_page_size << ",\"gpu_used\":false}" << std::endl;
     return 0;
 } catch (const std::exception &error) {
     std::cerr << error.what() << std::endl;
