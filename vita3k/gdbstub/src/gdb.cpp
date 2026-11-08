@@ -773,15 +773,23 @@ static SceUID started_thread(EmuEnvState &state) {
     if (const auto it = threads.find(state.gdb.current_thread); it != threads.end() && started(it->second))
         return it->first;
     SceUID chosen = 0;
+    // Else a dormant thread, which gdb can still read, unlike a deleted one that stays in threads
+    // until its host thread ends
+    SceUID dormant = 0;
     for (const auto &[uid, thread] : threads) {
-        if (!started(thread))
+        if (!started(thread)) {
+            if (dormant == 0 && thread->get_status() == ThreadStatus::dormant)
+                dormant = uid;
             continue;
+        }
         // The main thread has the title ID for a name
         if (thread->name == state.io.title_id)
             return uid;
         if (chosen == 0)
             chosen = uid;
     }
+    if (chosen == 0)
+        chosen = dormant;
     if (chosen == 0 && !threads.empty())
         chosen = threads.begin()->first;
     return chosen;
