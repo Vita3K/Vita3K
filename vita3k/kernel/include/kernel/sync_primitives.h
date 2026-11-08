@@ -61,13 +61,13 @@ protected:
 
     // Runs the thread's pending callbacks if callbacks is set, releasing the lock while they run.
     // Returns WAIT_DELETE if the object was deleted meanwhile.
-    [[nodiscard]] WaitResult run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
+    [[nodiscard]] SceInt32 run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
         if (!callbacks || !thread->has_pending_callbacks())
             return SCE_KERNEL_OK;
         lock.unlock();
-        WaitResult r = thread->run_callbacks();
+        SceInt32 r = thread->run_callbacks();
         lock.lock();
-        if (r && was_deleted())
+        if (r == SCE_KERNEL_OK && was_deleted())
             r = SCE_KERNEL_ERROR_WAIT_DELETE;
         return r;
     }
@@ -78,15 +78,15 @@ protected:
     // (SCE_KERNEL_OK the first time). timeout is updated after every sleep. callbacks_check decides
     // whether callbacks notified during the wait run before it returns.
     template <typename Entry, typename Attempt>
-    [[nodiscard]] WaitResult wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout, CallbacksCheck callbacks_check, Attempt attempt) {
+    [[nodiscard]] SceInt32 wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, SceUInt32 *timeout, CallbacksCheck callbacks_check, Attempt attempt) {
         typename WaitQueue<Entry>::Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         const Deadline deadline = deadline_from(timeout);
         // The result of the last sleep, then the final result
-        WaitResult result = SCE_KERNEL_OK;
+        SceInt32 result = SCE_KERNEL_OK;
         while (true) {
-            if (const WaitResult r = run_pending_callbacks(lock, thread, target.callbacks); !r || *r != SCE_KERNEL_OK)
+            if (const SceInt32 r = run_pending_callbacks(lock, thread, target.callbacks); r != SCE_KERNEL_OK)
                 return r;
-            if (const std::optional<SceInt32> taken = attempt(waiter.entry, *result)) {
+            if (const std::optional<SceInt32> taken = attempt(waiter.entry, result)) {
                 if (callbacks_check != CallbacksCheck::after_take_or_wait)
                     return *taken;
                 result = *taken;
@@ -111,7 +111,7 @@ protected:
                 lock.unlock();
                 result = thread->wait(target, deadline);
                 lock.lock();
-            } while (!waiter.result && result && *result == SCE_KERNEL_OK);
+            } while (!waiter.result && result == SCE_KERNEL_OK);
             if (timeout)
                 *timeout = time_left_until(deadline);
             // A waker's result wins, it already handed over what the waiter waits for
@@ -119,18 +119,18 @@ protected:
                 result = *waiter.result;
                 break;
             }
-            if (result && *result == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+            if (result == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
                 timed_out(thread);
             queue.remove(waiter);
             serve();
-            if (!result || *result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+            if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
                 break;
         }
-        if (!result || (callbacks_check == CallbacksCheck::on_delete && *result != SCE_KERNEL_ERROR_WAIT_DELETE))
+        if (result == SCE_KERNEL_ERROR_THREAD_STOPPED || (callbacks_check == CallbacksCheck::on_delete && result != SCE_KERNEL_ERROR_WAIT_DELETE))
             return result;
         // Run the callbacks notified during the wait. Only the thread exiting changes the result.
-        if (const WaitResult ran = run_pending_callbacks(lock, thread, target.callbacks); !ran)
-            return ran;
+        if (run_pending_callbacks(lock, thread, target.callbacks) == SCE_KERNEL_ERROR_THREAD_STOPPED)
+            return SCE_KERNEL_ERROR_THREAD_STOPPED;
         return result;
     }
 };
@@ -177,7 +177,7 @@ protected:
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     // Returns the guest's result of a wait, and gives a wait that a delete or a cancel ended the error
     // event.
-    SceInt32 wait_result(const WaitResult &r, SceUInt32 *result_pattern);
+    SceInt32 wait_result(SceInt32 r, SceUInt32 *result_pattern);
     // Sets or pulses the bits with user_data and gives them to the waits they match. The lock must be
     // held.
     void fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);

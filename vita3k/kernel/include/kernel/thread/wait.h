@@ -20,13 +20,6 @@
 #include <kernel/types.h>
 
 #include <chrono>
-#include <expected>
-
-// Returned instead of a result when the waiting thread exits or is being deleted. The guest never sees it.
-struct ThreadExiting {};
-
-// Result of a wait: a guest return code, or ThreadExiting.
-using WaitResult = std::expected<SceInt32, ThreadExiting>;
 
 using Deadline = std::chrono::steady_clock::time_point;
 
@@ -59,11 +52,4 @@ inline void writeback_timeout(SceUInt32 *timeout, Deadline deadline) {
     if (!timeout || deadline == Deadline::max())
         return;
     *timeout = time_left_until(deadline);
-}
-
-// Turns a wait result into the value returned to the guest.
-// ThreadExiting becomes SCE_KERNEL_OK, which the guest never sees: after the HLE call returns,
-// the thread sees the exit or delete request and stops before the next guest instruction.
-inline SceInt32 guest_result(WaitResult r) {
-    return r.value_or(SCE_KERNEL_OK);
 }
