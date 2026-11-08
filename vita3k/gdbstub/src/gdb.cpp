@@ -78,6 +78,24 @@ static void close_gdb_sockets(GDBState &gdb) {
     close_socket(gdb.listen_socket);
 }
 
+// gdb can't share the app with another client. One left waiting in the backlog times out, and the stub would
+// run its stale packets once the attached client leaves, so it's turned away at once instead.
+static void refuse_waiting_clients(GDBState &gdb) {
+    while (!gdb.server_die && gdb.listen_socket != BAD_SOCK) {
+        fd_set read_set;
+        timeval tv = { 0, 0 };
+        FD_ZERO(&read_set);
+        FD_SET(gdb.listen_socket, &read_set);
+        if (select(gdb.listen_socket + 1, &read_set, nullptr, nullptr, &tv) <= 0)
+            return;
+        socket_t client = accept(gdb.listen_socket, nullptr, nullptr);
+        if (client == BAD_SOCK)
+            return;
+        LOG_WARN("GDB Server Refused a Connection: another client is attached");
+        close_socket(client);
+    }
+}
+
 static void cleanup_gdb_platform(GDBState &gdb) {
 #ifdef _WIN32
     if (gdb.winsock_started) {
@@ -996,6 +1014,8 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     stopped_id = started_thread(state);
                 }
 
+                refuse_waiting_clients(state.gdb);
+
                 // Check for gdb interrupt (Ctrl-C sends raw \x03).
                 if (!did_break && !interrupted) {
                     fd_set read_set;
@@ -1666,11 +1686,15 @@ static int64_t server_next(EmuEnvState &state) {
 
     // Wait for the server to close or a packet to be received.
     fd_set readSet;
-    timeval timeout = { 1, 0 };
     do {
-        readSet = { 0 };
+        refuse_waiting_clients(state.gdb);
+        FD_ZERO(&readSet);
         FD_SET(state.gdb.client_socket, &readSet);
-    } while (select(state.gdb.client_socket + 1, &readSet, nullptr, nullptr, &timeout) < 1 && !state.gdb.server_die);
+        // select() counts the timeout down on Linux
+        timeval timeout = { 0, 100000 };
+        if (select(state.gdb.client_socket + 1, &readSet, nullptr, nullptr, &timeout) > 0)
+            break;
+    } while (!state.gdb.server_die);
     if (state.gdb.server_die)
         return -1;
 
