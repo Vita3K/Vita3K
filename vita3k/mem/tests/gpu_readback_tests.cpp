@@ -19,6 +19,8 @@
 #include <cerrno>
 #include <chrono>
 #include <cstring>
+#include <cstdlib>
+#include <new>
 #include <dlfcn.h>
 #include <iostream>
 #include <mach/mach.h>
@@ -33,6 +35,19 @@
 static std::atomic<bool> observe{ false }, alias_entered{ false }, fault_entered{ false };
 static mach_vm_address_t observed_source = 0;
 static struct sigaction previous_bus{}, previous_segv{};
+static std::atomic<bool> fail_next_allocation{ false };
+void *operator new(std::size_t size) {
+    if (fail_next_allocation.exchange(false))
+        throw std::bad_alloc();
+    if (auto pointer = std::malloc(size ? size : 1))
+        return pointer;
+    throw std::bad_alloc();
+}
+void *operator new[](std::size_t size) { return ::operator new(size); }
+void operator delete(void *pointer) noexcept { std::free(pointer); }
+void operator delete[](void *pointer) noexcept { std::free(pointer); }
+void operator delete(void *pointer, std::size_t) noexcept { std::free(pointer); }
+void operator delete[](void *pointer, std::size_t) noexcept { std::free(pointer); }
 static std::atomic<bool> fail_next_arm{ false };
 extern "C" int mprotect(void *address, size_t size, int protection) {
     using Function = int (*)(void *, size_t, int);
@@ -70,6 +85,22 @@ int main() try {
     MemState mem;
     require(init(mem, false), "init");
     require(gpu_readback_supported(), "macOS backend absent");
+    // New allocation-identity metadata must not leak guest pages or escape
+    // alloc/try_alloc_at/alloc_aligned when its map node cannot be allocated.
+    const auto available = mem_available(mem);
+    const auto initial_generations = mem.allocation_generations.size();
+    for (int kind = 0; kind < 3; ++kind) {
+        fail_next_allocation = true;
+        const auto failed = kind == 0 ? alloc(mem, 16384, "metadata failure")
+            : kind == 1 ? try_alloc_at(mem, 0x81000000, 16384, "metadata failure")
+                        : alloc_aligned(mem, 16384, "metadata failure", 65536);
+        require(!fail_next_allocation.exchange(false), "allocation failure was not injected");
+        require(!failed && mem_available(mem) == available && mem.allocation_generations.size() == initial_generations, "allocation metadata rollback");
+    }
+    const auto retry = alloc_aligned(mem, 16384, "metadata retry", 65536);
+    require(retry && retry % 65536 == 0 && bool(capture_mem_allocation(mem, retry, 16384)), "aligned metadata retry");
+    free(mem, retry);
+    require(mem_available(mem) == available, "aligned retry leaked pages");
     struct sigaction action{};
     action.sa_sigaction = observer;
     action.sa_flags = SA_SIGINFO;

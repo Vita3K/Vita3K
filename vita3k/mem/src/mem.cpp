@@ -25,6 +25,7 @@
 #include <cassert>
 #include <cstring>
 #include <mutex>
+#include <new>
 #include <utility>
 
 #ifdef _WIN32
@@ -179,6 +180,16 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     const uint32_t size = page_count * STANDARD_PAGE_SIZE;
     const Address addr = page_num * STANDARD_PAGE_SIZE;
 
+    // Publish allocation identity before changing permissions or page metadata.
+    // A host allocation failure must return the bitmap reservation to the pool.
+    try {
+        state.allocation_generations.emplace(addr, state.next_allocation_generation + 1);
+    } catch (const std::bad_alloc &) {
+        state.allocator.free(page_num, page_count);
+        return 0;
+    }
+    ++state.next_allocation_generation;
+
     const Address commit_start = align_down(addr, state.host_page_size);
     const Address commit_end = align(addr + size, state.host_page_size);
     const uint32_t commit_size = commit_end - commit_start;
@@ -203,7 +214,6 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     assert(!page.allocated);
     page.allocated = 1;
     page.size = page_count;
-    state.allocation_generations[addr] = ++state.next_allocation_generation;
 
     if (PAGE_NAME_TRACKING) {
         state.page_name_map.emplace(page_num, name);
@@ -219,6 +229,8 @@ Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned
     size += alignment;
     const uint32_t page_count = align(size, STANDARD_PAGE_SIZE) / STANDARD_PAGE_SIZE;
     const Address addr = alloc_inner(state, start_addr / STANDARD_PAGE_SIZE, page_count, name, false);
+    if (!addr)
+        return 0;
     const Address align_addr = align(addr, alignment);
     const uint32_t page_num = addr / STANDARD_PAGE_SIZE;
     const uint32_t align_page_num = align_addr / STANDARD_PAGE_SIZE;
@@ -231,9 +243,11 @@ Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned
         page.allocated = 0;
         align_page.allocated = 1;
         align_page.size = page.size - remnant_front;
-        const auto generation = state.allocation_generations.at(addr);
-        state.allocation_generations.erase(addr);
-        state.allocation_generations[align_page_num * STANDARD_PAGE_SIZE] = generation;
+        // Re-key the existing node: alignment must not introduce another
+        // potentially throwing host allocation after the guest pages commit.
+        auto generation = state.allocation_generations.extract(addr);
+        generation.key() = align_page_num * STANDARD_PAGE_SIZE;
+        state.allocation_generations.insert(std::move(generation));
     }
 
     return align_addr;
