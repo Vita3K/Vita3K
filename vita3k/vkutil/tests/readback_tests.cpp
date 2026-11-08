@@ -21,9 +21,12 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <gxm/functions.h>
 #include <iostream>
 #include <mem/functions.h>
 #include <mem/state.h>
+#include <renderer/vulkan/surface_cache.h>
+#include <renderer/vulkan/surface_readback.h>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -100,6 +103,7 @@ int main() try {
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
     const auto queue = device->getQueue(family, 0);
     std::mutex queue_mutex;
+    std::mutex production_pool_mutex;
     auto pool = device->createCommandPoolUnique({ .flags = vk::CommandPoolCreateFlagBits::eTransient, .queueFamilyIndex = family });
     const vma::VulkanFunctions functions{ .vkGetInstanceProcAddr = get, .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr };
     const auto allocator = vma::createAllocator({ .physicalDevice = physical, .device = *device, .pVulkanFunctions = &functions, .instance = *instance, .vulkanApiVersion = VK_API_VERSION_1_0 });
@@ -109,7 +113,7 @@ int main() try {
     const auto base = alloc(mem, 128 * 1024, "readback fixture");
     require(base, "Guest region allocation failed");
     std::memset(mem.memory.get() + base, 0xa5, 128 * 1024);
-    uint32_t cases = 0;
+    uint32_t cases = 0, guest_cases = 0, production_cases = 0, rejected_production_cases = 0, stale_cache_cases = 0;
     for (const auto format : { vk::Format::eR5G6B5UnormPack16, vk::Format::eR8G8B8A8Unorm }) {
         for (const float scale : { 1.0f, 1.5f, 2.0f }) {
             const uint32_t width = 96, height = 54, sw = uint32_t(width * scale), sh = uint32_t(height * scale);
@@ -167,31 +171,149 @@ int main() try {
                             require(std::memcmp(converted.data() + at, expected[q], 4) == 0, "RGBA color/orientation mismatch");
                         }
                     }
-                const uint32_t row = width * bpp, stride = row + 16;
-                std::memset(mem.memory.get() + base, 0xa5, 128 * 1024);
-                std::atomic<uint32_t> callbacks{ 0 };
-                const auto protected_address = base;
-                require(add_protect(mem, protected_address, mem.host_page_size * 2, MemPerm::None, [&](Address, bool) {++callbacks;return true; }), "Protect setup failed");
-                const auto segments_before = mem.protect_tree.size();
-                require(write_gpu_readback_rows(mem, base, converted.data(), row, height, stride), "Protected guest commit failed");
-                require(callbacks == 0 && mem.protect_tree.size() == segments_before, "GPU write damaged CPU invalidation metadata");
-                require(handle_access_violation(mem, mem.memory.get() + protected_address, false), "Protected segment not retained");
-                require(callbacks > 0, "Protection callback lost");
-                for (uint32_t y = 0; y < height; ++y) {
-                    require(std::memcmp(mem.memory.get() + base + y * stride, converted.data() + y * row, row) == 0, "Guest row mismatch");
-                    for (uint32_t pad = row; pad < stride; ++pad)
-                        require(mem.memory.get()[base + y * stride + pad] == 0xa5, "Padding overwritten");
+                if (gpu_readback_supported()) {
+                    const uint32_t row = width * bpp, stride = row + 16;
+                    std::memset(mem.memory.get() + base, 0xa5, 128 * 1024);
+                    std::atomic<uint32_t> callbacks{ 0 };
+                    const auto protected_address = base;
+                    require(add_protect(mem, protected_address, mem.host_page_size * 2, MemPerm::None, [&](Address, bool) {++callbacks;return true; }), "Protect setup failed");
+                    const auto segments_before = mem.protect_tree.size();
+                    require(write_gpu_readback_rows(mem, base, converted.data(), row, height, stride), "Protected guest commit failed");
+                    require(callbacks == 0 && mem.protect_tree.size() == segments_before, "GPU write damaged CPU invalidation metadata");
+                    require(handle_access_violation(mem, mem.memory.get() + protected_address, false), "Protected segment not retained");
+                    require(callbacks > 0, "Protection callback lost");
+                    for (uint32_t y = 0; y < height; ++y) {
+                        require(std::memcmp(mem.memory.get() + base + y * stride, converted.data() + y * row, row) == 0, "Guest row mismatch");
+                        for (uint32_t pad = row; pad < stride; ++pad)
+                            require(mem.memory.get()[base + y * stride + pad] == 0xa5, "Padding overwritten");
+                    }
+                    require(mem.memory.get()[base + height * stride] == 0xa5, "Adjacent bytes overwritten");
+                    ++guest_cases;
                 }
-                require(mem.memory.get()[base + height * stride] == 0xa5, "Adjacent bytes overwritten");
                 auto unchanged = converted;
-                require(!write_gpu_readback_rows(mem, 0, converted.data(), row, height, stride), "Null guest accepted");
-                require(!write_gpu_readback_rows(mem, base, converted.data(), row, height, row - 1), "Short stride accepted");
+                require(!write_gpu_readback_rows(mem, 0, converted.data(), width * bpp, height, width * bpp + 16), "Null guest accepted");
+                require(!write_gpu_readback_rows(mem, base, converted.data(), width * bpp, height, width * bpp - 1), "Short stride accepted");
                 std::vector<uint8_t> output = { 9 };
                 require(!vkutil::convert_readback_pixels(vk::Format::eUndefined, identity, bpp, raw, output) && output == std::vector<uint8_t>{ 9 }, "Unsupported format mutated output");
                 if (bpp == 4) {
                     require(vkutil::convert_readback_pixels(format, { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eOne }, 3, raw, output) && output.size() == width * height * 3, "RGB24 conversion failed");
                     for (size_t z = 0; z < output.size() / 3; ++z)
                         require(std::memcmp(output.data() + z * 3, raw.data() + z * 4, 3) == 0, "RGB24 packing mismatch");
+                }
+                if (gpu_readback_supported()) {
+                    using namespace renderer::vulkan;
+                    struct GuestFormat {
+                        SceGxmColorFormat format;
+                        uint32_t bytes;
+                        std::array<uint32_t, 4> order;
+                        bool swap565;
+                    };
+                    const std::vector<GuestFormat> formats = bpp == 2
+                        ? std::vector<GuestFormat>{ { SCE_GXM_COLOR_FORMAT_U5U6U5_RGB, 2, {}, false }, { SCE_GXM_COLOR_FORMAT_U5U6U5_BGR, 2, {}, true } }
+                        : std::vector<GuestFormat>{
+                              { SCE_GXM_COLOR_FORMAT_U8U8U8_BGR, 3, { 0, 1, 2, 3 }, false },
+                              { SCE_GXM_COLOR_FORMAT_U8U8U8_RGB, 3, { 2, 1, 0, 3 }, false },
+                              { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR, 4, { 0, 1, 2, 3 }, false },
+                              { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB, 4, { 2, 1, 0, 3 }, false },
+                              { SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA, 4, { 3, 2, 1, 0 }, false },
+                              { SCE_GXM_COLOR_FORMAT_U8U8U8U8_BGRA, 4, { 3, 0, 1, 2 }, false }
+                          };
+                    for (const auto &guest : formats) {
+                        std::memset(mem.memory.get() + base, 0xa5, 128 * 1024);
+                        ColorSurfaceCacheInfo cached;
+                        cached.data = Ptr<void>(base);
+                        cached.texture.destroy_on_deletion = false;
+                        cached.texture.image = image.image;
+                        cached.texture.width = image.width;
+                        cached.texture.height = image.height;
+                        cached.texture.format = format;
+                        cached.texture.layout = image.layout;
+                        cached.tiling = SurfaceTiling::Linear;
+                        cached.format = gxm::get_base_format(guest.format);
+                        cached.original_width = width + 8;
+                        cached.original_height = height + 8;
+                        cached.stride_bytes = (width + 5) * guest.bytes;
+                        cached.readback_allocation = capture_mem_allocation(mem, base, 128 * 1024);
+                        SceGxmColorSurface surface{};
+                        surface.data = Ptr<void>(base);
+                        surface.width = width;
+                        surface.height = height;
+                        surface.strideInPixels = width + 5;
+                        surface.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
+                        surface.colorFormat = guest.format;
+                        cached.readback_watch = begin_gpu_readback_watch(mem, cached.readback_allocation,
+                            base, width * guest.bytes, height, cached.stride_bytes);
+                        SurfaceReadbackContext production{ physical, *device, queue, queue_mutex,
+                            *pool, production_pool_mutex, allocator, scale };
+                        // Production chooses the crop, guest format and swizzle itself.
+                        require(readback_cached_surface(mem, cached, surface, production), "Production cached readback failed");
+                        for (uint32_t y = 0; y < height; ++y) {
+                            for (uint32_t x = 0; x < width; ++x) {
+                                const auto *actual = mem.memory.get() + base + y * cached.stride_bytes + x * guest.bytes;
+                                const auto *reference = raw.data() + (y * width + x) * bpp;
+                                if (bpp == 2) {
+                                    uint16_t expected, value;
+                                    std::memcpy(&expected, reference, 2);
+                                    if (guest.swap565)
+                                        expected = uint16_t(((expected & 31) << 11) | (expected & 0x7e0) | ((expected >> 11) & 31));
+                                    std::memcpy(&value, actual, 2);
+                                    require(value == expected, "Production RGB565 swizzle");
+                                } else {
+                                    for (uint32_t c = 0; c < guest.bytes; ++c)
+                                        require(actual[c] == reference[guest.order[c]], "Production byte swizzle");
+                                }
+                            }
+                            for (uint32_t pad = width * guest.bytes; pad < cached.stride_bytes; ++pad)
+                                require(mem.memory[base + y * cached.stride_bytes + pad] == 0xa5, "Production padding overwritten");
+                        }
+                        require(mem.memory[base + height * cached.stride_bytes] == 0xa5, "Production sentinel overwritten");
+                        ++production_cases;
+                        std::memset(mem.memory.get() + base, 0xa5, 128 * 1024);
+                        cached.readback_watch = begin_gpu_readback_watch(mem, cached.readback_allocation,
+                            base, width * guest.bytes, height, cached.stride_bytes);
+                        ++surface.strideInPixels;
+                        require(!readback_cached_surface(mem, cached, surface, production), "Production stride mismatch accepted");
+                        require(std::all_of(mem.memory.get() + base, mem.memory.get() + base + 128 * 1024,
+                                    [](uint8_t b) { return b == 0xa5; }),
+                            "Rejected production readback wrote guest bytes");
+                        ++rejected_production_cases;
+                    }
+                    if (pass == 0) {
+                        ColorSurfaceCacheInfo stale;
+                        stale.data = Ptr<void>(base);
+                        stale.texture.destroy_on_deletion = false;
+                        stale.texture.image = image.image;
+                        stale.texture.width = image.width;
+                        stale.texture.height = image.height;
+                        stale.texture.format = format;
+                        stale.texture.layout = image.layout;
+                        stale.tiling = SurfaceTiling::Linear;
+                        stale.format = bpp == 2 ? SCE_GXM_COLOR_BASE_FORMAT_U5U6U5 : SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8;
+                        stale.original_width = width + 8;
+                        stale.original_height = height + 8;
+                        stale.stride_bytes = width * bpp + 16;
+                        stale.readback_allocation = capture_mem_allocation(mem, base, 128 * 1024);
+                        free(mem, base);
+                        require(try_alloc_at(mem, base, 128 * 1024, "replacement cache destination") == base, "Cache replacement allocation");
+                        std::memset(mem.memory.get() + base, 0xa5, 128 * 1024);
+                        const auto replacement = capture_mem_allocation(mem, base, 128 * 1024);
+                        stale.readback_watch = begin_gpu_readback_watch(mem, replacement, base,
+                            width * bpp, height, stale.stride_bytes);
+                        SceGxmColorSurface surface{};
+                        surface.data = Ptr<void>(base);
+                        surface.width = width;
+                        surface.height = height;
+                        surface.strideInPixels = width + 16 / bpp;
+                        surface.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
+                        surface.colorFormat = bpp == 2 ? SCE_GXM_COLOR_FORMAT_U5U6U5_RGB : SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
+                        SurfaceReadbackContext production{ physical, *device, queue, queue_mutex,
+                            *pool, production_pool_mutex, allocator, scale };
+                        require(!readback_cached_surface(mem, stale, surface, production), "Stale cache accepted replacement allocation");
+                        require(std::all_of(mem.memory.get() + base, mem.memory.get() + base + 128 * 1024,
+                                    [](uint8_t b) { return b == 0xa5; }),
+                            "Stale cache overwrote replacement allocation");
+                        ++stale_cache_cases;
+                    }
                 }
                 ++cases;
             }
@@ -239,7 +361,7 @@ int main() try {
     }
 #endif
     require(validation_errors == 0, "Vulkan validation error");
-    std::cout << "{\"passed\":true,\"gpu_cases\":" << cases << ",\"mixed_permission_cases\":" << mixed_cases << ",\"mixed_permission_cases_skipped\":" << (2 - mixed_cases) << ",\"host_page_size\":" << mem.host_page_size << ",\"debug_utils_enabled\":" << (debug_utils ? "true" : "false") << ",\"portability_enumeration_enabled\":" << (portability_enumeration ? "true" : "false") << ",\"validation_enabled\":" << (validation ? "true" : "false") << ",\"validation_errors\":" << validation_errors << ",\"device\":\"" << physical.getProperties().deviceName << "\"}" << std::endl;
+    std::cout << "{\"passed\":true,\"gpu_cases\":" << cases << ",\"guest_commit_cases\":" << guest_cases << ",\"production_selector_cases\":" << production_cases << ",\"rejected_production_cases\":" << rejected_production_cases << ",\"stale_cache_rejections\":" << stale_cache_cases << ",\"protected_alias_backend\":" << (gpu_readback_supported() ? "true" : "false") << ",\"mixed_permission_cases\":" << mixed_cases << ",\"mixed_permission_cases_skipped\":" << (2 - mixed_cases) << ",\"host_page_size\":" << mem.host_page_size << ",\"debug_utils_enabled\":" << (debug_utils ? "true" : "false") << ",\"portability_enumeration_enabled\":" << (portability_enumeration ? "true" : "false") << ",\"validation_enabled\":" << (validation ? "true" : "false") << ",\"validation_errors\":" << validation_errors << ",\"device\":\"" << physical.getProperties().deviceName << "\"}" << std::endl;
     queue.waitIdle();
     free(mem, base);
     vkutil::deinit();

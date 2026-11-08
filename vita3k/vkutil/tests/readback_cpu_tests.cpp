@@ -61,6 +61,10 @@ int main() try {
     out = { 99 };
     require(!vkutil::convert_readback_pixels(vk::Format::eR8G8B8A8Unorm, { S::eR, S::eB, S::eG, S::eA }, 4, input, out) && out == std::vector<uint8_t>({ 99 }), "Unsupported mapping changed output");
     require(!vkutil::convert_readback_pixels(vk::Format::eUndefined, maps[0], 4, input, out) && out == std::vector<uint8_t>({ 99 }), "Unsupported format changed output");
+    if (!gpu_readback_supported()) {
+        std::cout << "{\"passed\":true,\"pixel_conversion_cases\":9,\"guest_memory_checks_skipped\":true,\"reason\":\"protected_alias_backend_not_supported\"}" << std::endl;
+        return 0;
+    }
     MemState mem;
     require(init(mem, false), "Guest memory init");
     const uint32_t size = 128 * 1024;
@@ -112,7 +116,33 @@ int main() try {
     }
 #endif
     free(mem, base);
-    std::cout << "{\"passed\":true,\"pixel_conversion_cases\":9,\"protected_rows\":200,\"invalid_destination_cases\":4,\"mixed_permission_cases\":" << mixed_cases << ",\"mixed_permission_cases_skipped\":" << (2 - mixed_cases) << ",\"host_page_size\":" << mem.host_page_size << ",\"gpu_used\":false}" << std::endl;
+    const Address reused = alloc(mem, size, "readback allocation identity");
+    require(reused, "Identity allocation");
+    const uint8_t replacement[16] = { 7, 6, 5, 4 };
+    const auto original_allocation = capture_mem_allocation(mem, reused, sizeof(replacement));
+    require(bool(original_allocation), "Identity capture");
+    require(write_gpu_readback_rows(mem, reused, replacement, 16, 1, 16, &original_allocation), "Live identity rejected");
+    free(mem, reused);
+    require(!write_gpu_readback_rows(mem, reused, replacement, 16, 1, 16, &original_allocation), "Freed identity accepted");
+    require(try_alloc_at(mem, reused, size, "replacement allocation") == reused, "Address reuse setup");
+    std::memset(mem.memory.get() + reused, 0xa5, size);
+    require(!write_gpu_readback_rows(mem, reused, replacement, 16, 1, 16, &original_allocation), "Reused identity accepted");
+    for (uint32_t i = 0; i < size; ++i)
+        require(mem.memory.get()[reused + i] == 0xa5, "Replacement allocation overwritten");
+    const auto fresh_allocation = capture_mem_allocation(mem, reused, 16);
+    require(fresh_allocation.generation != original_allocation.generation, "Allocation identity reused");
+    require(write_gpu_readback_rows(mem, reused, replacement, 16, 1, 16, &fresh_allocation), "Fresh identity rejected");
+    require(!capture_mem_allocation(mem, reused + size - 8, 16), "Allocation overrun captured");
+    require(!capture_mem_allocation(mem, 0xfffffff0, 32), "Wrapped allocation captured");
+    free(mem, reused);
+    const auto aligned = alloc_aligned(mem, 8192, "aligned identity", 65536, 0x80001000);
+    require(aligned && (aligned % 65536 == 0), "Aligned allocation setup");
+    const auto aligned_allocation = capture_mem_allocation(mem, aligned, 8192);
+    require(bool(aligned_allocation), "Aligned allocation identity missing");
+    require(write_gpu_readback_rows(mem, aligned, replacement, 16, 1, 16, &aligned_allocation), "Aligned identity rejected");
+    free(mem, aligned);
+    require(!capture_mem_allocation(mem, aligned, 16), "Freed aligned identity retained");
+    std::cout << "{\"passed\":true,\"pixel_conversion_cases\":9,\"protected_rows\":200,\"invalid_destination_cases\":4,\"allocation_identity_checks\":true,\"mixed_permission_cases\":" << mixed_cases << ",\"mixed_permission_cases_skipped\":" << (2 - mixed_cases) << ",\"host_page_size\":" << mem.host_page_size << ",\"gpu_used\":false}" << std::endl;
     return 0;
 } catch (const std::exception &error) {
     std::cerr << error.what() << std::endl;
