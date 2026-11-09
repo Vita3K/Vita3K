@@ -42,12 +42,12 @@ bool ThreadEventHandler::claim_run() {
     return true;
 }
 
-void ThreadEventHandler::end_run(uint32_t ret) {
+void ThreadEventHandler::end_run(std::optional<uint32_t> ret) {
     const auto guard = lock();
     if (!guard)
         return;
     --runs;
-    if (ret != 0)
+    if (ret && *ret != 0)
         released = true;
 }
 

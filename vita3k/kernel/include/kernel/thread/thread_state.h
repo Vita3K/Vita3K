@@ -85,8 +85,8 @@ struct ThreadState final : public WithUidClass<SyncPrimitive, UidClass::thread> 
     void run_loop();
     // Calls a guest function on the thread's CPU from inside a kernel call, usually one the thread
     // itself made, like a function pointer call from library code. The registers are then the ones
-    // the function leaves. Returns its r0, or the exit status if the thread ends during it.
-    uint32_t call_guest(Address fn, std::initializer_list<uint32_t> args);
+    // the function leaves. Returns its r0, or nothing if the thread's or the app's end cut it short.
+    std::optional<uint32_t> call_guest(Address fn, std::initializer_list<uint32_t> args);
     // Starts the dormant thread from another thread and returns its exit status once it ends. Used
     // for module start and stop and the GXM display queue.
     uint32_t start_and_wait(SceSize args, const Ptr<void> argp = Ptr<void>{});
@@ -239,8 +239,9 @@ private:
     // nothing once the thread is ending.
     std::optional<uint32_t> enter_guest(std::unique_lock<std::mutex> &lock, CPUContext ctx, Address fn, std::initializer_list<uint32_t> args);
     // Runs a callback or a thread event handler like the kernel does, from the registers of a new
-    // thread on the caller's stack, and puts the caller's registers back after
-    uint32_t run_callback(Address fn, std::initializer_list<uint32_t> args);
+    // thread on the caller's stack, and puts the caller's registers back after. Returns its r0, or
+    // nothing if the thread's or the app's end cut it short.
+    std::optional<uint32_t> run_callback(Address fn, std::initializer_list<uint32_t> args);
     // Ends the thread's run and returns whether it parks dormant for another start
     bool finish_run(std::unique_lock<std::mutex> &lock);
     // Calls the guest's data abort handler with the abort context on the stack, without thread_mutex held
@@ -248,6 +249,9 @@ private:
     // Runs the thread's event handlers for type in registration order, releasing thread_mutex
     // through lock while they run
     void run_event_handlers(std::unique_lock<std::mutex> &lock, SceUInt32 type);
+    // Exits the thread as how with status, or ends the app inside a callback or a thread event
+    // handler. Without thread_mutex held.
+    void request_exit(Ending how, SceInt32 status);
 
     // Fixed when the thread is created
     KernelState &kernel;
@@ -291,6 +295,8 @@ private:
     // Callbacks
     // A callback of this thread was notified since the start of the last callback pass
     bool callback_pending = false;
+    // The callback runs going on, nested ones too
+    int callback_depth = 0;
 
     // ForVM suspend
     // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet

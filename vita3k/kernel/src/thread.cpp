@@ -136,14 +136,22 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
 }
 
 void ThreadState::exit(SceInt32 status) {
-    const std::lock_guard<std::mutex> lock(thread_mutex);
-    request_ending(Ending::exit);
-    returned_value = static_cast<uint32_t>(status);
+    request_exit(Ending::exit, status);
 }
 
 void ThreadState::exit_delete(SceInt32 status) {
-    const std::lock_guard<std::mutex> lock(thread_mutex);
-    request_ending(Ending::exit_delete);
+    request_exit(Ending::exit_delete, status);
+}
+
+void ThreadState::request_exit(Ending how, SceInt32 status) {
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    if (callback_depth > 0 || running_event_handlers) {
+        lock.unlock();
+        LOG_CRITICAL("Thread {} exited inside a callback or a thread event handler, ending the app", id);
+        kernel.request_process_exit(0);
+        return;
+    }
+    request_ending(how);
     returned_value = static_cast<uint32_t>(status);
 }
 
@@ -290,6 +298,10 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
             break;
         case GuestExit::Kind::returned:
             break;
+        case GuestExit::Kind::fault:
+            // A fault in guest code ends the app, and the loop top then ends this thread
+            kernel.request_process_exit(0);
+            break;
         }
         // A host fault on protected guest memory, in guest code or in the import's host code
         if (const std::optional<Address> fault = cpu->take_abort())
@@ -310,7 +322,7 @@ std::optional<uint32_t> ThreadState::enter_guest(std::unique_lock<std::mutex> &l
     return run_guest(lock, true);
 }
 
-uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
+std::optional<uint32_t> ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(thread_mutex);
     const CPUContext caller = cpu->get_context();
     const std::optional<uint32_t> returned = enter_guest(lock, caller, fn, args);
@@ -322,11 +334,10 @@ uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> arg
     ctx.set_pc(caller.get_pc() | caller.thumb());
     ctx.cpsr = caller.cpsr;
     cpu->set_context(ctx);
-    // A call the thread's end cut short returns the exit status
-    return returned.value_or(returned_value);
+    return returned;
 }
 
-uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
+std::optional<uint32_t> ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(thread_mutex);
     CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
@@ -343,7 +354,7 @@ uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> a
     cpu->set_context(saved);
     cpu->set_tpidruro(tpidruro);
     tls_slot(TLS_VFP_EXCEPTION) = vfp_exception;
-    return returned.value_or(returned_value);
+    return returned;
 }
 
 void ThreadState::dispatch_abort(Address fault_addr) {
@@ -619,18 +630,20 @@ SceUInt32 ThreadState::process_callbacks() {
         }
         const Callback::Notification notification = std::exchange(cb->pending, {});
         ++cb->running_count;
+        ++callback_depth;
         lock.unlock();
-        const uint32_t ret = run_callback(cb->cb_func.address(),
+        const std::optional<uint32_t> ret = run_callback(cb->cb_func.address(),
             { static_cast<uint32_t>(notification.notifier_id), notification.count, static_cast<uint32_t>(notification.arg), cb->userdata.address() });
         ++processed;
         lock.lock();
         --cb->running_count;
-        // A callback that exits the thread ends the pass, and the thread's end deletes its callbacks
-        // with their notifications. The call then gives the exit status, not a return value.
+        --callback_depth;
+        // An end of the app during the callback ends the pass, and the thread's end deletes its
+        // callbacks with their notifications. A call cut short only comes with an end.
         const bool ending = exiting();
         // A nonzero return deletes the callback. A delete during the run takes effect once the last
         // run ends.
-        if (!ending && ret != 0)
+        if (!ending && *ret != 0)
             cb->deleted = true;
         const bool remove_now = cb->deleted && cb->running_count == 0;
         lock.unlock();

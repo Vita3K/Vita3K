@@ -37,10 +37,10 @@ callback_errors                 pass
 callback_event_results          fail     # event calls don't take message pipe UIDs
 callback_event_waits            pass
 callback_exit_call              pass
-callback_exit_check             fail     # an exit inside a callback doesn't end the app
-callback_exit_delay             fail     # an exit inside a callback doesn't end the app
-callback_exit_delete_check      fail     # an exit inside a callback doesn't end the app
-callback_exit_delete_delay      fail     # an exit inside a callback doesn't end the app
+callback_exit_check             pass
+callback_exit_delay             pass
+callback_exit_delete_check      pass
+callback_exit_delete_delay      pass
 callback_function_memory        fail     # a callback create takes a function in a USER_RW block or on the stack
 callback_info                   pass
 callback_info_fields            fail     # callbacks registered to simple events aren't notified by its sets
@@ -158,10 +158,10 @@ core_choice                     fail     # the CPU fields of thread info, thread
 cpu_fetch_data_page             fail     # code in a read and write block runs
 cpu_fetch_freed_block           timeout  # a fetch outside guest memory reads zeros and runs them
 cpu_fetch_freed_code            fail     # a thread still runs the code it ran from a block that was freed since
-cpu_fetch_null_arm              timeout  # a fetch fault ends only the call, with its r0, so the worker never signals
-cpu_fetch_null_callback         fail     # a fetch fault ends only the callback and the app goes on
-cpu_fetch_null_end_wait         fail     # a fetch fault ends only the call, with its r0, and the app goes on
-cpu_fetch_null_thumb            timeout  # a fetch fault ends only the call, with its r0, so the worker never signals
+cpu_fetch_null_arm              pass
+cpu_fetch_null_callback         pass
+cpu_fetch_null_end_wait         pass
+cpu_fetch_null_thumb            pass
 cpu_fetch_vm_block              pass
 cpu_strex_overlap               fail     # a strex whose status register is also its value or base register does nothing and leaves the monitor open
 cpu_undefined_arm               fail     # an undefined instruction is skipped and the app goes on
@@ -668,10 +668,10 @@ thread_event_handler_edges      pass
 thread_event_handler_end_return_negative pass
 thread_event_handler_every_thread_running pass
 thread_event_handler_exit_callback_call pass
-thread_event_handler_exit_delete_end fail     # an exit inside a thread event handler doesn't end the app
-thread_event_handler_exit_delete_start fail     # an exit inside a thread event handler doesn't end the app
-thread_event_handler_exit_end   fail     # an exit inside a thread event handler doesn't end the app
-thread_event_handler_exit_start fail     # an exit inside a thread event handler doesn't end the app
+thread_event_handler_exit_delete_end pass
+thread_event_handler_exit_delete_start pass
+thread_event_handler_exit_end   pass
+thread_event_handler_exit_start pass
 thread_event_handler_holds      pass
 thread_event_handler_mask_bits  pass
 thread_event_handler_mixed_order pass

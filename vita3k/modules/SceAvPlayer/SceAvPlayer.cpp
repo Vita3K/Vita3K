@@ -254,8 +254,13 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         const auto buf_ptr = Ptr<char>(buf).get(emuenv.mem);
         thread->call_guest(player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
         // TODO: support file_size > 4GB (callback function returns uint64_t, but I dont know how to get high dword of uint64_t)
-        const uint32_t file_size = thread->call_guest(player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
-        auto remaining = file_size;
+        const std::optional<uint32_t> file_size = thread->call_guest(player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
+        // A call the thread's or the app's end cut short reads nothing
+        if (!file_size) {
+            free(emuenv.mem, buf);
+            return -1;
+        }
+        auto remaining = *file_size;
         uint32_t offset = 0;
         while (remaining) {
             const auto buf_size = std::min(static_cast<uint32_t>(KiB(512)), remaining);
@@ -268,7 +273,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         free(emuenv.mem, buf);
         temp_file.close();
         thread->call_guest(player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
-        if (fs::file_size(temp_file_path) != file_size) {
+        if (fs::file_size(temp_file_path) != *file_size) {
             LOG_ERROR("File is corrupted or incomplete: {}", temp_file_path);
             return -1;
         }

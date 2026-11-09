@@ -21,6 +21,7 @@
 #include <kernel/types.h>
 
 #include <memory>
+#include <optional>
 
 // A callback a thread created, which only that thread runs. Its notifications and runs are guarded
 // by the owner's mutex, and the owner's callback calls change them.
@@ -65,8 +66,8 @@ public:
     bool runs_for(SceUID thread_id, SceUInt32 type) const;
     // Starts a run of the handler. False if it was released or unregistered.
     bool claim_run();
-    // Ends a run of the handler. A nonzero return releases it.
-    void end_run(uint32_t ret);
+    // Ends a run of the handler. A nonzero return releases it, a call cut short doesn't.
+    void end_run(std::optional<uint32_t> ret);
     // Releases the handler for an unregister. False if a run released it and no run of it is left.
     bool release();
 
