@@ -169,6 +169,11 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
     case SCE_AUDIODEC_TYPE_AT9: {
         SceAudiodecInfoAt9 &info = ctrl->info.get(emuenv.mem)->at9;
         DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
+        // libatrac9 leaves the codec info empty for a config it can't parse, which would divide by zero below
+        if (decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME) == 0) {
+            state->codecs[codec].erase(handle);
+            return SCE_AUDIODEC_AT9_ERROR_INVALID_CONFIG;
+        }
         state->decoders[handle] = decoder;
 
         info.channels = decoder->get(DecoderQuery::CHANNELS);
