@@ -947,6 +947,11 @@ static void display_entry_thread(EmuEnvState &emuenv) {
 static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemState &mem, std::mutex &global_lock, std::uint32_t &return_size, Ptr<SceGxmDeferredContextCallback> callback, Ptr<void> userdata,
     const std::uint32_t size, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(global_lock);
+    // A context without the callback gets no memory
+    if (!callback) {
+        return_size = 0;
+        return Ptr<void>();
+    }
 
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
     const Address final_size_addr = thread->cpu->stack_alloc(4);
@@ -4497,10 +4502,9 @@ EXPORT(int, sceGxmSetYuvProfile) {
 static Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams, unsigned int size) {
     if (!shaderPatcherParams.hostAllocCallback) {
         LOG_ERROR("Empty hostAllocCallback");
+        return 0;
     }
-    const auto thread = emuenv.kernel.get_thread(thread_id);
-    auto result = thread->call_guest(shaderPatcherParams.hostAllocCallback.address(), { shaderPatcherParams.userData.address(), size });
-    return result;
+    return emuenv.kernel.get_thread(thread_id)->call_guest(shaderPatcherParams.hostAllocCallback.address(), { shaderPatcherParams.userData.address(), size });
 }
 
 template <typename T>
@@ -4523,6 +4527,7 @@ static Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShad
 static void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Address data) {
     if (!shaderPatcher->params.hostFreeCallback) {
         LOG_ERROR("Empty hostFreeCallback");
+        return;
     }
     const auto thread = emuenv.kernel.get_thread(thread_id);
     thread->call_guest(shaderPatcher->params.hostFreeCallback.address(), { shaderPatcher->params.userData.address(), data });
@@ -4559,7 +4564,6 @@ EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, 
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *shaderPatcher = alloc_callbacked<SceGxmShaderPatcher>(emuenv, thread_id, *params);
-    assert(*shaderPatcher);
     if (!*shaderPatcher) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -4595,7 +4599,6 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     }
 
     *fragmentProgram = alloc_callbacked<SceGxmFragmentProgram>(emuenv, thread_id, shaderPatcher);
-    assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -4621,7 +4624,6 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *fragmentProgram = alloc_callbacked<SceGxmFragmentProgram>(emuenv, thread_id, shaderPatcher);
-    assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -4629,6 +4631,11 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->is_maskupdate = true;
     fp->program = Ptr<const SceGxmProgram>(alloc_callbacked(emuenv, thread_id, shaderPatcher->params, size_mask_gxp));
+    if (!fp->program) {
+        free_callbacked(emuenv, thread_id, shaderPatcher, *fragmentProgram);
+        *fragmentProgram = Ptr<SceGxmFragmentProgram>();
+        return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
+    }
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
 
     if (!renderer::create(fp->renderer_data, *emuenv.renderer, *fp->program.get(mem), nullptr, emuenv.renderer->gxp_ptr_map)) {
@@ -4666,7 +4673,6 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     }
 
     *vertexProgram = alloc_callbacked<SceGxmVertexProgram>(emuenv, thread_id, shaderPatcher);
-    assert(*vertexProgram);
     if (!*vertexProgram) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
@@ -4808,7 +4814,6 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     *programId = alloc_callbacked<SceGxmRegisteredProgram>(emuenv, thread_id, shaderPatcher);
-    assert(*programId);
     if (!*programId) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
