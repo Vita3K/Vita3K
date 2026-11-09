@@ -267,11 +267,6 @@ void KernelState::deinit(MemState &mem) {
     tls_psize = 0;
     tls_msize = 0;
 
-    thread_event_start = Ptr<const void>(0);
-    thread_event_start_arg = 0;
-    thread_event_end = Ptr<const void>(0);
-    thread_event_end_arg = 0;
-
     codec_blocks.clear();
 
     halt_instruction = nullptr;

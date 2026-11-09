@@ -19,6 +19,7 @@
 
 #include <kernel/kernel_object.h>
 #include <kernel/types.h>
+
 #include <memory>
 
 // A callback a thread created, which only that thread runs. Its notifications and runs are guarded
@@ -54,3 +55,31 @@ private:
 };
 
 using CallbackPtr = std::shared_ptr<Callback>;
+
+// A registered thread event handler, run on the threads of target for the event types in mask
+class ThreadEventHandler final : public WithUidClass<KernelObject, UidClass::thread_event> {
+public:
+    ThreadEventHandler(const char *name, SceUID target, SceUInt32 mask, Address handler, Address common);
+
+    // Whether the handler runs on the thread for an event of type. With the lock held.
+    bool runs_for(SceUID thread_id, SceUInt32 type) const;
+    // Starts a run of the handler. False if it was released or unregistered.
+    bool claim_run();
+    // Ends a run of the handler. A nonzero return releases it.
+    void end_run(uint32_t ret);
+    // Releases the handler for an unregister. False if a run released it and no run of it is left.
+    bool release();
+
+    // A thread UID, or SCE_KERNEL_THREAD_ID_PROCESS_ALL_ID for every thread of the process
+    const SceUID target;
+    const SceUInt32 mask;
+    const Address handler;
+    const Address common;
+
+private:
+    // Set by a run that returned nonzero, which unregisters it. Its UID stays with its class once
+    // no run of it is left.
+    bool released = false;
+    // The runs of the handler going on, on any thread
+    int runs = 0;
+};

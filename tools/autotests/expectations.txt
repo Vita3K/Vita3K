@@ -159,7 +159,7 @@ cpu_fetch_data_page             fail     # code in a read and write block runs
 cpu_fetch_freed_block           timeout  # a fetch outside guest memory reads zeros and runs them
 cpu_fetch_freed_code            fail     # a thread still runs the code it ran from a block that was freed since
 cpu_fetch_null_arm              timeout  # a fetch fault ends only the call, with its r0, so the worker never signals
-cpu_fetch_null_callback         fail     # a fetch fault ends only the callback and the app goes on, and thread event handlers are global and registering one returns 0, not a UID
+cpu_fetch_null_callback         fail     # a fetch fault ends only the callback and the app goes on
 cpu_fetch_null_end_wait         fail     # a fetch fault ends only the call, with its r0, and the app goes on
 cpu_fetch_null_thumb            timeout  # a fetch fault ends only the call, with its r0, so the worker never signals
 cpu_fetch_vm_block              pass
@@ -192,7 +192,7 @@ display_framebuf_set_freed      skip     # a framebuffer where a block was freed
 end_wait_cb_notify_then_end     skip     # threads ignore their core and priority, so whether the waiter and the target already ran when their status is read is a race
 end_wait_claim_races            fail     # threads ignore their core and priority, so a timed out waiter has already ended
 end_wait_cycle                  pass
-end_wait_during_end_handler     fail     # end waiters are woken before the END handler runs
+end_wait_during_end_handler     pass
 end_wait_error_order            fail     # a thread end wait on UID 0 gives UNKNOWN_THREAD_ID, not ILLEGAL_THREAD_ID
 end_wait_exit_preempt           fail     # threads ignore their priority, so the run order after the end differs
 end_waiter_priority_change      skip     # threads ignore their core and priority, so end waiters woken together run in host order
@@ -653,38 +653,38 @@ thread_create_relative_priority pass
 thread_creator_ends             pass
 thread_delete_lookup            pass
 thread_edges                    pass
-thread_end_handler_wake         fail     # an END handler runs twice for a thread whose end wait wakes a thread above it
+thread_end_handler_wake         skip     # threads ignore their core and priority, so whether the end waiter above T runs before the END handler returns is a race
 thread_end_restart              pass
 thread_end_wait_more            pass
 thread_end_waits                pass
 thread_entry_block_types        fail     # app data and USER_RW addresses are accepted as thread or callback entries
 thread_errors                   pass
-thread_event_handler            fail     # unknown thread and handler errors
-thread_event_handler_check_order fail     # thread manager calls inside a thread event handler check in another order, and no execute permission tracking, so a handler at a data address is accepted
-thread_event_handler_context    fail     # create and start inside a thread event handler
-thread_event_handler_delete_refused fail     # a delete inside a thread event handler isn't refused
-thread_event_handler_delete_self fail     # a delete inside a thread event handler isn't refused, and a delete of thread 0 reports an unknown thread
-thread_event_handler_edges      fail     # one start and one end handler for every thread whatever was registered, and an end handler sees the exit status instead of NOT_DORMANT
-thread_event_handler_end_return_negative fail     # an END handler returning -1 stays registered
+thread_event_handler            pass
+thread_event_handler_check_order fail     # no execute permission tracking, so a handler at a data address is accepted
+thread_event_handler_context    pass
+thread_event_handler_delete_refused pass
+thread_event_handler_delete_self pass
+thread_event_handler_edges      pass
+thread_event_handler_end_return_negative pass
 thread_event_handler_every_thread_running pass
-thread_event_handler_exit_callback_call fail     # _sceKernelExitCallback is unimplemented, so it returns to the handler, which is kept whatever the value
+thread_event_handler_exit_callback_call pass
 thread_event_handler_exit_delete_end fail     # an exit inside a thread event handler doesn't end the app
 thread_event_handler_exit_delete_start fail     # an exit inside a thread event handler doesn't end the app
 thread_event_handler_exit_end   fail     # an exit inside a thread event handler doesn't end the app
 thread_event_handler_exit_start fail     # an exit inside a thread event handler doesn't end the app
 thread_event_handler_holds      pass
-thread_event_handler_mask_bits  fail     # thread event handler masks with bits other than START and END are accepted
-thread_event_handler_mixed_order fail     # only the last registered handler of a thread runs
-thread_event_handler_null_name  fail     # a NULL thread event handler name is accepted
+thread_event_handler_mask_bits  pass
+thread_event_handler_mixed_order pass
+thread_event_handler_null_name  pass
 thread_event_handler_process_exit pass
-thread_event_handler_register_before_run pass
-thread_event_handler_release_unregister_running fail     # thread event handlers are global and an unregister always returns 0
-thread_event_handler_shared_release fail     # thread event handlers are global and registering one returns 0, not a UID, and an unregister inside a handler isn't refused
+thread_event_handler_register_before_run skip     # threads ignore their core, so in case b the thread runs its START handlers before the main thread registers one, or after, by host timing
+thread_event_handler_release_unregister_running pass
+thread_event_handler_shared_release pass
 thread_event_handler_stack      fail     # event handler sp is 0x28 below the stack top and 16 aligned, the Vita's is 0x30
 thread_event_handler_start_sp   fail     # an END handler starts on the entry's stack pointer, the Vita starts it below it
-thread_event_handler_start_target fail     # a start of a thread that runs its own thread event handler isn't refused
-thread_event_handler_unregister_in_entry fail     # an unregister from the thread's own entry doesn't stop its END run
-thread_event_handler_unregister_other_uids fail     # an unregister always returns 0, whatever the UID
+thread_event_handler_start_target pass
+thread_event_handler_unregister_in_entry pass
+thread_event_handler_unregister_other_uids fail     # an unregister inside a thread event handler of a UID that isn't a sync object, callback or handler, like a thread or memory block UID, gives 0x80028061, not 0x80027101
 thread_event_handler_vfp        pass
 thread_exit_status              pass
 thread_for_vm_errors            pass
@@ -711,7 +711,7 @@ thread_run_status               fail     # sceKernelGetThreadRunStatus
 thread_run_status_cores         fail     # sceKernelGetThreadRunStatus gives the wrong entry, process and priority on both cores
 thread_run_status_in_handler    fail     # sceKernelGetThreadRunStatus is unimplemented
 thread_run_status_waiting_thread fail     # sceKernelGetThreadRunStatus is unimplemented
-thread_self_calls               fail     # calls with UID 0 or the thread's own UID give other errors than 0x80028022
+thread_self_calls               fail     # StartThread with the thread's own UID and GetThreadExitStatus with UID 0 or its own UID give other errors than 0x80028022
 thread_signal                   pass
 thread_signal_timeout           pass
 thread_signal_wait_id           pass
@@ -727,7 +727,7 @@ thread_stack_zero               pass
 thread_start_arg_limit          fail     # a start whose argument size is past the stack is accepted, the Vita refuses it
 thread_start_arg_registers      fail     # the arguments 8 bytes aligned, the size in r0 for a NULL pointer
 thread_start_cpsr               fail     # the CPSR a thread reads has no mode bits
-thread_start_handler_preempt    fail     # a START handler runs twice for a thread that preempts its starter
+thread_start_handler_preempt    fail     # threads ignore their core and priority, so T doesn't preempt its starter when it starts
 thread_start_races              pass
 thread_start_registers          fail     # the arguments and sp 8 bytes below the stack top, not 16
 thread_state                    pass
