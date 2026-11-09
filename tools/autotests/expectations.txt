@@ -25,7 +25,9 @@ callback_cancel_flag            fail     # a cancel or delete of a pending callb
 callback_cancel_sets_waited_bits pass
 callback_changes                pass
 callback_clobbers_registers     pass
+callback_create_check_order     fail     # a callback create checks the attribute before the name, so a long name with attribute 0x80 gives 0x8002000E, not 0x80024002
 callback_delete_in_run          fail     # a self delete in a callback check gives 0x800280A1 where the Vita gives 0
+callback_deleted_nested_wait_notify fail     # a callback deleted during its run is gone at once, so a notify of it gives 0x800280A1
 callback_deleted_object         pass
 callback_edges                  pass
 callback_entry_state            fail     # a Thumb callback run by a check starts with the wrong r4 to r9 values
@@ -37,8 +39,10 @@ callback_exit_check             fail     # an exit inside a callback doesn't end
 callback_exit_delay             fail     # an exit inside a callback doesn't end the app
 callback_exit_delete_check      fail     # an exit inside a callback doesn't end the app
 callback_exit_delete_delay      fail     # an exit inside a callback doesn't end the app
+callback_function_memory        fail     # a callback create takes a function in a USER_RW block or on the stack
 callback_info                   pass
 callback_info_fields            fail     # the notify ID of a callback is -1 and 0 swapped, fresh and inside a run
+callback_info_size_order        fail     # the callback info call looks the UID up before it checks the size
 callback_inner_nonobject_waits  pass
 callback_inner_same_object      pass
 callback_inner_same_pipe        pass
@@ -46,12 +50,14 @@ callback_inner_wait             pass
 callback_limit                  fail     # no callback limit, Vita3K makes 4096 where the Vita stops at 2027 with an error
 callback_names                  fail     # a callback with a function at 0x1000 is created, the Vita refuses it
 callback_nesting                fail     # callbacks don't run inside callbacks
+callback_nesting_depth          fail     # callbacks don't run inside callbacks
 callback_notify_burst           fail     # a callback notified many times before it runs counts fewer notifies
 callback_notify_cross_core      fail     # threads ignore their core and priority, so a notified thread above the spinner doesn't stop it
 callback_notify_departure_more  pass
 callback_notify_departure_state skip     # threads ignore their core and priority, so whether the notified waiter already ran when the main thread looks is a race
 callback_notify_during_run      fail     # a callback's notify ID reads -1 before the notifies, the Vita reads 0
 callback_notify_equal_priority  skip     # threads ignore their core and priority, so whether a notify switches to the waiter is a race
+callback_notify_id_mixed        fail     # callbacks registered to simple events aren't notified by its sets
 callback_notify_preempt         skip     # threads ignore their core and priority, so whether the callback runs inside the notify is a race
 callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
 callback_notify_then_release_more skip     # a notified waiter leaves the queue only when its thread runs, so whether the object still counts it right after the notify is a race
@@ -65,12 +71,16 @@ callback_outer_wake_send        pass
 callback_owner_end              pass
 callback_pass_order             fail     # callback UIDs don't follow the Vita's creation order, and a run's callbacks differ
 callback_priority_requeue       fail     # no requeue on a priority change
+callback_process_exit_spin      pass
+callback_process_exit_wait      pass
 callback_requeue_order          pass
 callback_retake                 pass
 callback_retake_more            pass
 callback_return_in_waits        pass
 callback_return_pass            pass
 callback_stack                  fail     # callbacks don't run inside callbacks
+callback_vfp_nested             fail     # callbacks don't run inside callbacks
+callback_vfp_return             fail     # a callback run gives the caller all 32 d registers back, the Vita keeps only d8 to d15 and leaves the callback's d2 and d3
 callback_wait_requeue           pass
 cancel_calls                    pass
 cancel_calls_more               fail     # sceKernelWaitMultipleEvents
@@ -205,6 +215,7 @@ event_info_multi_wait_nodes     fail     # sceKernelWaitMultipleEvents
 event_info_partial_wakes        pass
 event_initial_user_data         pass
 event_notify_callback           fail     # callbacks registered to simple events
+event_notify_multi_wait         fail     # callbacks registered to simple events aren't notified by its sets, and sceKernelWaitMultipleEvents
 event_notify_other_waits        fail     # a notify on one event leaves other waits and their callbacks in the wrong state
 event_set_walk_before_dispatch  fail     # event flag waiters wake out of FIFO order when the flag is set
 event_take_past_queue           pass
@@ -439,6 +450,7 @@ nonblocking_wait_preempt        fail     # threads ignore their core and priorit
 nonobject_wait_priority_change  fail     # threads ignore their priority, so a woken thread below the main thread runs at once
 nonopenable_name_long_each_kind pass
 nonwaiting_calls_no_yield       fail     # a non-waiting mutex lock or unlock yields to the other thread, the Vita doesn't
+object_limit_source             fail     # no object limit, Vita3K makes 4096 semaphores where the Vita stops plain objects at 2028 and openable ones at 236
 object_limits                   fail     # no limit on the number of objects
 open                            fail     # opening an object that isn't openable
 open_close_kinds                fail     # an open returns the creating UID, close does nothing
@@ -571,7 +583,7 @@ standby_merge_irq               fail     # threads ignore their core and priorit
 start_argument_copy_time        fail     # a start with a 0x1000 stack and an argument past it is accepted, the Vita refuses
 start_core_cursor               fail     # the current CPU of thread info is always 0, so no start gets the previous core minus 1
 start_delay_cores               fail     # threads ignore their core
-start_equal_priority_same_core  fail     # threads ignore their core and priority, so starting a thread above the starter doesn't switch to it
+start_equal_priority_same_core  skip     # threads ignore their core and priority, so whether a started thread runs before the starter's next line is a race
 start_restarted_last_cpu        fail     # a restarted thread's core fields are 0 where the Vita reports the cores it ran on
 stat_mode                       fail     # file and directory stat modes, attributes and directory sizes
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
@@ -594,6 +606,7 @@ suspend_wake_status_kinds       skip     # whether a woken waiter suspended for 
 suspended_nonobject_waits       pass
 syscall_callee_saved            pass
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
+syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
 syscall_vfp_clobber             fail     # a delay or a timed-out semaphore wait keeps every d register, none read the NaN 0x7FF8DEAD7F80DEAD
 sysmodule                       fail     # system modules don't load without firmware
 system_font_blocks              crash    # opening the system font blocks by name
@@ -609,6 +622,7 @@ thread_context_never_ran        fail     # a new thread's argument copy takes it
 thread_context_set_for_vm       fail     # sceKernelSetThreadContextForVM checks, its writes don't reach the thread
 thread_context_set_fpscr        fail     # sceKernelSetThreadContextForVM returns 0 but doesn't write the FPSCR, so the thread keeps its own rounding mode
 thread_context_set_frame        fail     # sceKernelSetThreadContextForVM writes no registers, so the read shows the old ones and the thread runs on past its wait
+thread_context_set_frame_registers fail     # sceKernelSetThreadContextForVM on a thread waiting in a kernel call doesn't send it to the new pc
 thread_context_tls_words        fail     # the context read puts 100000 in words 19 to 21, the write ignores them, and the resumed thread gets past its wait
 thread_context_vfp              pass
 thread_cpu_fields               fail     # the CPU fields of thread info, threads ignore their core
@@ -634,6 +648,7 @@ thread_event_handler_delete_self fail     # a delete inside a thread event handl
 thread_event_handler_edges      fail     # one start and one end handler for every thread whatever was registered, and an end handler sees the exit status instead of NOT_DORMANT
 thread_event_handler_end_return_negative fail     # an END handler returning -1 stays registered
 thread_event_handler_every_thread_running pass
+thread_event_handler_exit_callback_call fail     # _sceKernelExitCallback is unimplemented, so it returns to the handler, which is kept whatever the value
 thread_event_handler_exit_delete_end fail     # an exit inside a thread event handler doesn't end the app
 thread_event_handler_exit_delete_start fail     # an exit inside a thread event handler doesn't end the app
 thread_event_handler_exit_end   fail     # an exit inside a thread event handler doesn't end the app
@@ -642,8 +657,11 @@ thread_event_handler_holds      pass
 thread_event_handler_mask_bits  fail     # thread event handler masks with bits other than START and END are accepted
 thread_event_handler_mixed_order fail     # only the last registered handler of a thread runs
 thread_event_handler_null_name  fail     # a NULL thread event handler name is accepted
+thread_event_handler_process_exit pass
 thread_event_handler_register_before_run pass
+thread_event_handler_shared_release fail     # thread event handlers are global and registering one returns 0, not a UID, and an unregister inside a handler isn't refused
 thread_event_handler_stack      fail     # event handler sp is 0x28 below the stack top and 16 aligned, the Vita's is 0x30
+thread_event_handler_start_sp   fail     # an END handler starts on the entry's stack pointer, the Vita starts it below it
 thread_event_handler_start_target fail     # a start of a thread that runs its own thread event handler isn't refused
 thread_event_handler_unregister_in_entry fail     # an unregister from the thread's own entry doesn't stop its END run
 thread_event_handler_vfp        pass
