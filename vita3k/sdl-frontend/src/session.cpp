@@ -17,6 +17,10 @@
 
 #include "frame_host.h"
 
+#ifdef __APPLE__
+#include <vkutil/apple_loader.h>
+#endif
+
 #include <sdl-frontend/session.h>
 
 #include <app/functions.h>
@@ -275,6 +279,17 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             }
         } else if (emuenv.backend_renderer == renderer::Backend::Vulkan) {
             window_flags |= SDL_WINDOW_VULKAN;
+#ifdef __APPLE__
+            // load the Vulkan implementation first so SDL and the renderer share the same one
+            if (!vkutil::apple::load_vulkan_library(emuenv.cfg.validation_layer)) {
+                LOG_ERROR("No usable Vulkan implementation was found.");
+                exit_code = -1;
+                cleanup_launch(app::AppSessionStopReason::LaunchFailure);
+                break;
+            }
+#endif
+        } else if (emuenv.backend_renderer == renderer::Backend::Metal) {
+            window_flags |= SDL_WINDOW_METAL;
         }
 
         SDL_PropertiesID window_props = SDL_CreateProperties();

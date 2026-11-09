@@ -48,7 +48,8 @@ struct UniformSetRequest {
 
 enum class Backend : uint32_t {
     OpenGL,
-    Vulkan
+    Vulkan,
+    Metal
 };
 
 enum class GXMState : std::uint16_t {

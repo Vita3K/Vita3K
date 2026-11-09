@@ -10,3 +10,6 @@ add_library(
 target_include_directories(sdl-frontend PUBLIC include)
 target_link_libraries(sdl-frontend PUBLIC emuenv)
 target_link_libraries(sdl-frontend PRIVATE app audio config ctrl dialog ime motion renderer touch util SDL3::SDL3)
+if(APPLE)
+	target_link_libraries(sdl-frontend PRIVATE vkutil)
+endif()

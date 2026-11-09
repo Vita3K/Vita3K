@@ -418,7 +418,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
     config->add_flag("--archive-log,-A", command_line.archive_log, "Make a duplicate of the log file with TITLE_ID and Game ID as title")
         ->group("Logging");
     config->add_option("--backend-renderer,-B", command_line.backend_renderer, "Renderer backend to use")
+#ifdef __APPLE__
+        ->ignore_case()->check(CLI::IsMember(std::set<std::string>{ "OpenGL", "Vulkan", "Metal" }))->group("Vita Emulation");
+#else
         ->ignore_case()->check(CLI::IsMember(std::set<std::string>{ "OpenGL", "Vulkan" }))->group("Vita Emulation");
+#endif
     config->add_flag("--color-surface-debug,-C", command_line.color_surface_debug, "Save color surfaces")
         ->group("Vita Emulation");
     config->add_option("--config-location,-c", command_line.config_path, "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault loaded: <Vita3K>/config.yml \nDefaults: <Vita3K>/data/config/default.yml")

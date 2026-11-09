@@ -19,6 +19,7 @@
 
 #include <renderer/frame_host.h>
 
+#include <SDL3/SDL_metal.h>
 #include <SDL3/SDL_video.h>
 
 #include <utility>
@@ -29,6 +30,11 @@ namespace sdl_frontend {
 class FrameHost final : public renderer::FrameHost, public renderer::VulkanSurfaceProvider {
 public:
     FrameHost(SDL_Window *window, SDL_GLContext *gl_context);
+    ~FrameHost() override;
+    FrameHost(FrameHost &&other) noexcept;
+    FrameHost &operator=(FrameHost &&other) noexcept;
+    FrameHost(const FrameHost &) = delete;
+    FrameHost &operator=(const FrameHost &) = delete;
 
     renderer::DisplayHandle handle() const override;
     const renderer::VulkanSurfaceProvider *vulkan_surface_provider() const override;
@@ -39,6 +45,7 @@ public:
     int drawable_height() const override;
     std::vector<std::string> font_dirs() const override;
     void *get_proc_address(const char *name) const override;
+    void *metal_layer() const override;
     bool make_current() override;
     void done_current() override;
     void swap_buffers() override;
@@ -52,6 +59,8 @@ private:
 
     SDL_Window *window = nullptr;
     SDL_GLContext *gl_context = nullptr;
+    // created on demand for the Metal renderer
+    mutable SDL_MetalView metal_view = nullptr;
 };
 
 } // namespace sdl_frontend
