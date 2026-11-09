@@ -13,7 +13,7 @@ env:
   QT_VERSION: '6.11.0'
   SCCACHE_GHA_ENABLED: "true"
   # The VitaAutotests commit to test with. Bump it to pick up new tests.
-  AUTOTESTS_REF: fd4e6a61fcb6ec705b5dde909c9ecff4d16c11c7
+  AUTOTESTS_REF: be116103db9a5f13f6c2a545a11a6c90f909c2e6
 
 jobs:
   desktop-build:
