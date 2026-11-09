@@ -86,6 +86,9 @@ void AudioState::set_backend(const std::string &adapter_name) {
 }
 
 AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) {
+    // Without an audio device the app runs without sound
+    if (!adapter)
+        return nullptr;
     AudioOutPortPtr port = adapter->open_port(nb_channels, freq, nb_sample);
     set_volume(*port, port->volume);
     return port;
@@ -132,7 +135,8 @@ void AudioState::set_global_volume(float volume) {
 }
 
 void AudioState::switch_state(const bool pause) {
-    adapter->switch_state(pause);
+    if (adapter)
+        adapter->switch_state(pause);
 }
 
 int AudioState::get_rest_sample(AudioOutPort &out_port) {
