@@ -335,9 +335,12 @@ EXPORT(int, _sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelExitCallback) {
-    TRACY_FUNC(_sceKernelExitCallback);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelExitCallback, SceInt32 value) {
+    TRACY_FUNC(_sceKernelExitCallback, value);
+    // Ends the innermost callback or handler run, which returns value
+    CPUState &cpu = *emuenv.kernel.get_thread(thread_id)->cpu;
+    cpu.set_pc(cpu.return_pc);
+    return value;
 }
 
 EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallbackInfo *pInfo) {
