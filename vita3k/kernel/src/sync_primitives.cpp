@@ -25,8 +25,8 @@
 #include <algorithm>
 
 SyncPrimitive::SyncPrimitive(SceUInt32 attr, const char *name)
-    : attr(attr)
-    , name(name, strnlen(name, KERNELOBJECT_MAX_NAME_LENGTH)) {}
+    : KernelObject(name)
+    , attr(attr) {}
 
 SceInt32 SyncPrimitive::run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
     if (!callbacks || !thread->has_pending_callbacks())
@@ -42,7 +42,7 @@ SceInt32 SyncPrimitive::run_pending_callbacks(std::unique_lock<std::mutex> &lock
 SceInt32 SyncPrimitive::check_name(const char *name, SceUInt32 attr) {
     if (!name)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
-    if ((strlen(name) > KERNELOBJECT_MAX_NAME_LENGTH) && (attr & SCE_KERNEL_ATTR_OPENABLE))
+    if ((strlen(name) > SCE_UID_NAMELEN) && (attr & SCE_KERNEL_ATTR_OPENABLE))
         return SCE_KERNEL_ERROR_UID_NAME_TOO_LONG;
     return SCE_KERNEL_OK;
 }
@@ -245,7 +245,7 @@ SceInt32 Event::info(SceKernelEventInfo &info) {
 
     info = {};
     info.eventId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.eventPattern = pattern;
     info.userData = last_user_data;
@@ -490,7 +490,7 @@ SceInt32 Timer::timer_info(SceKernelTimerInfo &info) {
 
     info = {};
     info.timerId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.active = is_started;
     // The base of a running timer, the count of a stopped one
@@ -729,7 +729,7 @@ SceInt32 LwMutex::info(SceKernelLwMutexInfo &info) const {
 
     info = {};
     info.uid = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.pWork = workarea;
     info.initCount = init_count;
@@ -746,7 +746,7 @@ SceInt32 HeavyMutex::info(SceKernelMutexInfo &info) const {
 
     info = {};
     info.mutexId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.initCount = init_count;
     info.currentCount = lock_count;
@@ -892,7 +892,7 @@ SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
 
     info = {};
     info.rwLockId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.lockCount = lock_count;
     info.writeOwnerId = write_owner;
@@ -1047,7 +1047,7 @@ SceInt32 Semaphore::info(SceKernelSemaInfo &info) const {
 
     info = {};
     info.semaId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.initCount = init_val;
     info.currentCount = val;
@@ -1141,7 +1141,7 @@ SceInt32 HeavyCond::info(SceKernelCondInfo &info) const {
 
     info = {};
     info.condId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.mutexId = associated_mutex->uid;
     info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
@@ -1159,7 +1159,7 @@ SceInt32 LwCond::info(SceKernelLwCondInfo &info) const {
 
     info = {};
     info.uid = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.pWork = workarea;
     info.pLwMutex = associated_mutex->workarea;
@@ -1361,7 +1361,7 @@ SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
 
     info = {};
     info.evfId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.initPattern = init_pattern;
     info.currentPattern = flags;
@@ -1689,7 +1689,7 @@ SceInt32 MsgPipe::info(SceKernelMppInfo &info) const {
 
     info = {};
     info.mppId = uid;
-    strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    std::ranges::copy(name, info.name);
     info.attr = attr;
     info.bufSize = static_cast<SceInt32>(data_buffer.Capacity());
     info.freeSize = static_cast<SceInt32>(data_buffer.Free());

@@ -19,11 +19,14 @@
 
 #include <kernel/types.h>
 
+#include <algorithm>
 #include <cassert>
 #include <concepts>
+#include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string_view>
 
 // Thread manager object classes, with the values sceKernelGetThreadmgrUIDClass reports
 enum class UidClass : SceUInt32 {
@@ -45,11 +48,15 @@ enum class UidClass : SceUInt32 {
 // A kernel object that guest code refers to by UID.
 class KernelObject {
 public:
+    explicit KernelObject(const char *name) {
+        std::ranges::copy(std::string_view(name, strnlen(name, SCE_UID_NAMELEN)), this->name);
+    }
     virtual ~KernelObject() = default;
     // Returns the class reported by sceKernelGetThreadmgrUIDClass.
     virtual UidClass get_uid_class() const = 0;
 
     SceUID uid{};
+    char name[SCE_UID_NAMELEN + 1] = {};
 
 protected:
     // Locks the object, which guards its fields. The lock is empty if the object was deleted. Only
@@ -153,6 +160,12 @@ public:
                 return std::static_pointer_cast<T>(obj);
         }
         return nullptr;
+    }
+
+    // Returns the T with this name, or null.
+    template <KernelObjectClass T>
+    [[nodiscard]] std::shared_ptr<T> find_by_name(const char *name) const {
+        return find_if<T>([&](const T &obj) { return strncmp(obj.name, name, sizeof(obj.name)) == 0; });
     }
 
     // Calls fn on every T, in UID order, with the table locked. No T is deleted meanwhile, and fn

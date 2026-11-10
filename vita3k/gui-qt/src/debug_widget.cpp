@@ -233,7 +233,7 @@ static QString owner_string(KernelState &kernel, SceUID owner_id) {
         return DebugWidget::tr("not owned");
     const QString uid = QStringLiteral("0x%1").arg(owner_id, 8, 16, QLatin1Char('0')).toUpper();
     const ThreadStatePtr owner = kernel.get_thread(owner_id);
-    return owner ? QStringLiteral("%1 (%2)").arg(QString::fromStdString(owner->name), uid) : uid;
+    return owner ? QStringLiteral("%1 (%2)").arg(QString::fromUtf8(owner->name), uid) : uid;
 }
 
 void DebugWidget::refresh_threads() {
@@ -245,7 +245,7 @@ void DebugWidget::refresh_threads() {
         auto *item = new QTreeWidgetItem(m_threads_tree);
         item->setData(0, Qt::UserRole, static_cast<uint>(id));
         item->setText(0, QStringLiteral("0x%1").arg(id, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromStdString(th->name));
+        item->setText(1, QString::fromUtf8(th->name));
         item->setText(2, thread_status_string(th->get_status()));
         item->setText(3, QStringLiteral("0x%1").arg(th->stack.get(), 8, 16, QLatin1Char('0')).toUpper());
     }
@@ -260,7 +260,7 @@ void DebugWidget::refresh_mutexes() {
             return;
         auto *item = new QTreeWidgetItem(m_mutexes_tree);
         item->setText(0, QStringLiteral("0x%1").arg(mutex.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromStdString(mutex.name));
+        item->setText(1, QString::fromUtf8(mutex.name));
         item->setText(2, QString::number(info.currentCount));
         item->setText(3, QString::number(mutex.attr));
         item->setText(4, QString::number(info.numWaitThreads));
@@ -277,7 +277,7 @@ void DebugWidget::refresh_lw_mutexes() {
             return;
         auto *item = new QTreeWidgetItem(m_lw_mutexes_tree);
         item->setText(0, QStringLiteral("0x%1").arg(mutex.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromStdString(mutex.name));
+        item->setText(1, QString::fromUtf8(mutex.name));
         item->setText(2, QString::number(info.currentCount));
         item->setText(3, QString::number(mutex.attr));
         item->setText(4, QString::number(info.numWaitThreads));
@@ -291,7 +291,7 @@ void DebugWidget::refresh_condvars() {
     emuenv.kernel.objects.for_each<HeavyCond>([&](const Condvar &cv) {
         auto *item = new QTreeWidgetItem(m_condvars_tree);
         item->setText(0, QStringLiteral("0x%1").arg(cv.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromStdString(cv.name));
+        item->setText(1, QString::fromUtf8(cv.name));
         item->setText(2, QString::number(cv.attr));
         item->setText(3, QString::number(cv.num_waiters()));
     });
@@ -303,7 +303,7 @@ void DebugWidget::refresh_lw_condvars() {
     emuenv.kernel.objects.for_each<LwCond>([&](const Condvar &cv) {
         auto *item = new QTreeWidgetItem(m_lw_condvars_tree);
         item->setText(0, QStringLiteral("0x%1").arg(cv.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromStdString(cv.name));
+        item->setText(1, QString::fromUtf8(cv.name));
         item->setText(2, QString::number(cv.attr));
         item->setText(3, QString::number(cv.num_waiters()));
     });
@@ -318,7 +318,7 @@ void DebugWidget::refresh_semaphores() {
             return;
         auto *item = new QTreeWidgetItem(m_semaphores_tree);
         item->setText(0, QStringLiteral("0x%1").arg(sema.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromStdString(sema.name));
+        item->setText(1, QString::fromUtf8(sema.name));
         item->setText(2, QStringLiteral("%1 / %2").arg(info.currentCount).arg(info.maxCount));
         item->setText(3, QString::number(info.maxCount));
         item->setText(4, QString::number(info.numWaitThreads));
@@ -334,7 +334,7 @@ void DebugWidget::refresh_event_flags() {
             return;
         auto *item = new QTreeWidgetItem(m_event_flags_tree);
         item->setText(0, QStringLiteral("0x%1").arg(ef.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromStdString(ef.name));
+        item->setText(1, QString::fromUtf8(ef.name));
         item->setText(2, QStringLiteral("0x%1").arg(static_cast<uint>(info.currentPattern), 8, 16, QLatin1Char('0')).toUpper());
         item->setText(3, QString::number(ef.attr));
         item->setText(4, QString::number(info.numWaitThreads));
@@ -386,7 +386,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
 
     auto *dlg = new QDialog(this);
     dlg->setWindowTitle(tr("Thread: %1 (0x%2)")
-            .arg(QString::fromStdString(thread->name))
+            .arg(QString::fromUtf8(thread->name))
             .arg(thread_id, 8, 16, QLatin1Char('0')));
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     dlg->setMinimumSize(420, 480);
@@ -400,7 +400,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
         return QStringLiteral("0x%1").arg(val, 8, 16, QLatin1Char('0')).toUpper();
     };
 
-    form->addRow(tr("Name:"), new QLabel(QString::fromStdString(thread->name), dlg));
+    form->addRow(tr("Name:"), new QLabel(QString::fromUtf8(thread->name), dlg));
     form->addRow(tr("Status:"), new QLabel(thread_status_string(thread->get_status()), dlg));
     form->addRow(tr("PC:"), new QLabel(make_hex(pc), dlg));
     form->addRow(tr("SP:"), new QLabel(make_hex(sp), dlg));

@@ -20,7 +20,6 @@
 #include <kernel/kernel_object.h>
 #include <kernel/types.h>
 #include <memory>
-#include <string>
 
 // A callback a thread created, which only that thread runs. Its notifications and runs are guarded
 // by the owner's mutex, and the owner's callback calls change them.
@@ -35,12 +34,11 @@ public:
         SceInt32 arg = 0;
     };
 
-    Callback(SceUID thread_id, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
+    Callback(SceUID thread_id, const char *name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
 
     // The thread that created this callback and runs it. Calls look it up by its UID, so they fail
     // once it's deleted.
     const SceUID thread_id;
-    const std::string name;
     const Ptr<SceKernelCallbackFunction> cb_func; // Function to execute when the callback should run
     const Ptr<void> userdata; // User-provided data - passed as pCommon
 

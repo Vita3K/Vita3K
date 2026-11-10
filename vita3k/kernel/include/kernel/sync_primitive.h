@@ -22,7 +22,6 @@
 #include <kernel/types.h>
 
 #include <mutex>
-#include <string>
 
 class SyncPrimitive : public KernelObject {
 public:
@@ -30,7 +29,6 @@ public:
     static SceInt32 check_name(const char *name, SceUInt32 attr);
 
     const SceUInt32 attr;
-    const std::string name;
 
 protected:
     SyncPrimitive(SceUInt32 attr, const char *name);
