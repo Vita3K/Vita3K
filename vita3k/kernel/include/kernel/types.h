@@ -56,6 +56,10 @@
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
 #define SCE_KERNEL_THREAD_INITIAL_FPSCR 0x03000000U
 
+// The words of the value the kernel puts in the d registers it doesn't keep for a thread
+#define SCE_KERNEL_VFP_REGISTER_FILL_LOW 0x7F80DEADU
+#define SCE_KERNEL_VFP_REGISTER_FILL_HIGH 0x7FF8DEADU
+
 // The bits that order the threads waiting on a sync object, separately for each object type
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
 #define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
