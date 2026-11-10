@@ -22,14 +22,14 @@
 #include <memory>
 #include <string>
 
-// A callback a thread created, which only that thread runs. Its notifications are guarded by the
-// owner's mutex, and the owner's callback calls change them.
+// A callback a thread created, which only that thread runs. Its notifications and runs are guarded
+// by the owner's mutex, and the owner's callback calls change them.
 class Callback final : public WithUidClass<KernelObject, UidClass::callback> {
 public:
     // The notifications since the callback last ran, which its function receives
     struct Notification {
-        // The last notifier's UID, SCE_UID_INVALID_UID for a direct notify
-        SceUID notifier_id = SCE_UID_INVALID_UID;
+        // The last notifier's UID, SCE_UID_INVALID_UID for a direct notify, 0 with nothing pending
+        SceUID notifier_id = 0;
         uint32_t count = 0;
         // The last notify's argument
         SceInt32 arg = 0;
@@ -49,7 +49,9 @@ private:
 
     // Guarded by the owner's mutex
     Notification pending;
-    // Deleted, so it takes no more notifies
+    // The runs of the callback going on, more than one when it runs inside its own run
+    uint32_t running_count = 0;
+    // Deleted by a delete or a nonzero return. During a run the UID stays until the last run ends.
     bool deleted = false;
 };
 
