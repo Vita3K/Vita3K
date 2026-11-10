@@ -413,19 +413,21 @@ EXPORT(int, sceKernelOpenVMDomain) {
 EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size) {
     TRACY_FUNC(sceKernelSyncVMDomain, block_uid, base, size);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
-
-    // The blocks for code first, then any block
-    SceKernelVARange range;
-    if (const auto vm_block = state->vm_blocks.find(block_uid); vm_block != state->vm_blocks.end())
-        range = vm_block->second;
-    else if (const auto block = state->blocks.find(block_uid); block != state->blocks.end())
-        range = { block->second->mappedBase.address(), block->second->mappedSize };
-    else
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
-    if (base < range.addr || uint64_t(base) + size > uint64_t(range.addr) + range.size)
-        return RET_ERROR(SCE_KERNEL_ERROR_MEMBLOCK_RANGE_ERROR);
-    emuenv.kernel.get_thread(thread_id)->cpu->invalidate_jit_cache(base, size);
+    {
+        const auto guard = std::lock_guard<std::mutex>(state->mutex);
+        // The blocks for code first, then any block
+        SceKernelVARange range;
+        if (const auto vm_block = state->vm_blocks.find(block_uid); vm_block != state->vm_blocks.end())
+            range = vm_block->second;
+        else if (const auto block = state->blocks.find(block_uid); block != state->blocks.end())
+            range = { block->second->mappedBase.address(), block->second->mappedSize };
+        else
+            return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
+        if (base < range.addr || uint64_t(base) + size > uint64_t(range.addr) + range.size)
+            return RET_ERROR(SCE_KERNEL_ERROR_MEMBLOCK_RANGE_ERROR);
+    }
+    // Every thread drops its old code, and the kernel lock comes after the sysmem one is released
+    emuenv.kernel.invalidate_jit_cache(base, size);
 
     return 0;
 }

@@ -336,7 +336,7 @@ memblock_for_vm_free_minus_one  fail     # sceKernelFreeMemBlockForVM(-1) doesn'
 memblock_for_vm_names           fail     # an open by a name that blocks for code share maps a block for code
 memblock_for_vm_refree          fail     # the find ignores its size, a block for code opens by its name
 memblock_for_vm_space           pass
-memblock_for_vm_sync_other_thread fail     # the sync drops the old code of the calling thread only
+memblock_for_vm_sync_other_thread pass
 memblock_for_vm_thread_end      pass
 memblock_for_vm_uid_kinds       pass
 memblock_free_sizes             pass
