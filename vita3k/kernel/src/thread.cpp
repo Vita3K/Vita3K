@@ -62,10 +62,10 @@ static void fill_unkept_vfp(CPUContext &ctx) {
 }
 
 ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUStatePtr cpu, const char *name, Address entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr)
-    : id(id)
-    , name(name)
+    : WithUidClass(SCE_KERNEL_ATTR_TH_FIFO, name)
+    , id(id)
     , entry_point(entry_point)
-    , attr(attr | SCE_KERNEL_THREAD_ATTR_USER)
+    , thread_attr(attr | SCE_KERNEL_THREAD_ATTR_USER)
     , stack_size(align(stack_size, KiB(4)))
     , stack(alloc_block(mem, this->stack_size, fmt::format("Stack for thread {} (#{})", name, id).c_str()))
     , tls(alloc_block(mem, SCE_KERNEL_TLS_SIZE + kernel.tls_msize, fmt::format("TLS for thread {} (#{})", name, id).c_str()))
@@ -76,6 +76,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     , mem(mem)
     , priority(this->init_priority)
     , affinity_mask(affinity_mask) {
+    uid = id;
     memset(stack.get_ptr<void>().get(mem), 0xcc, this->stack_size);
     memset(tls.get_ptr<void>().get(mem), 0, SCE_KERNEL_TLS_SIZE + kernel.tls_msize);
 
@@ -98,7 +99,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
 }
 
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
-    const std::lock_guard<std::mutex> thread_lock(mutex);
+    const std::lock_guard<std::mutex> thread_lock(thread_mutex);
     if (status != ThreadStatus::dormant)
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     run_start_callback = run_entry_callback;
@@ -128,19 +129,19 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
 }
 
 void ThreadState::exit(SceInt32 status) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     request_ending(Ending::exit);
     returned_value = static_cast<uint32_t>(status);
 }
 
 void ThreadState::exit_delete(SceInt32 status) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     request_ending(Ending::exit_delete);
     returned_value = static_cast<uint32_t>(status);
 }
 
 void ThreadState::remove() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     request_ending(Ending::remove);
     // A dormant thread is gone at once
     if (status == ThreadStatus::dormant)
@@ -153,7 +154,7 @@ void ThreadState::remove() {
 }
 
 SceInt32 ThreadState::remove_dormant() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     if (status != ThreadStatus::dormant)
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     // A dormant thread is gone at once, and the status change wakes its parked host thread to end
@@ -177,7 +178,7 @@ void ThreadState::run_loop() {
     // outside run_guest
     const CurrentCpuState current_cpu(*cpu);
 
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     do {
         // A thread that returns from its entry ends like one that exits, end handler included
         if (const std::optional<uint32_t> returned = run_guest(lock, false)) {
@@ -217,8 +218,16 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
         // The callbacks the thread created end with it, with their pending notifications
         while (const CallbackPtr cb = kernel.objects.find_if<Callback>([&](const Callback &c) { return c.thread_id == id; }))
             kernel.objects.remove<Callback>(cb->uid, id);
+        // The end waiters see the status and the exit status together. Both locks stay held until
+        // they are woken, so a start can't come in between.
+        const auto end_guard = this->lock();
         lock.lock();
         update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
+        end_waiters.wake_if([&](auto &waiter) {
+            if (waiter.entry.exit_status)
+                *waiter.entry.exit_status = static_cast<SceInt32>(returned_value);
+            return true;
+        });
     }
     if (ending != Ending::exit)
         return false;
@@ -304,7 +313,7 @@ std::optional<uint32_t> ThreadState::enter_guest(std::unique_lock<std::mutex> &l
 }
 
 uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     const CPUContext caller = cpu->get_context();
     const std::optional<uint32_t> returned = enter_guest(lock, caller, fn, args);
     // A plain function call returns with the registers the function leaves. Only the return point
@@ -320,7 +329,7 @@ uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> arg
 }
 
 uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
     CPUContext entry = initial_context(saved.get_sp());
@@ -372,7 +381,7 @@ void ThreadState::dispatch_abort(Address fault_addr) {
 
 uint32_t ThreadState::start_and_wait(SceSize args, const Ptr<void> argp) {
     start(args, argp);
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     cv.wait(lock, [&] { return status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
     return returned_value;
 }
@@ -380,15 +389,6 @@ uint32_t ThreadState::start_and_wait(SceSize args, const Ptr<void> argp) {
 void ThreadState::update_status(ThreadStatus status) {
     this->status = status;
     cv.notify_all();
-
-    if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
-        const std::lock_guard<std::mutex> end_lock(end_waiters_mutex);
-        end_waiters.wake_if([&](auto &waiter) {
-            if (waiter.entry.exit_status)
-                *waiter.entry.exit_status = static_cast<SceInt32>(returned_value);
-            return true;
-        });
-    }
 }
 
 SceInt32 ThreadState::delay_until(Deadline deadline, bool callbacks) {
@@ -406,7 +406,7 @@ SceInt32 ThreadState::delay_until(Deadline deadline, bool callbacks) {
 
 SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     const auto take_signal = [this] {
-        const std::lock_guard<std::mutex> lock(mutex);
+        const std::lock_guard<std::mutex> lock(thread_mutex);
         return std::exchange(signal_pending, false);
     };
     // A signal sent before ends the wait at once, with the timeout untouched
@@ -427,7 +427,7 @@ SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
 
 SceInt32 ThreadState::send_signal() {
     {
-        const std::lock_guard<std::mutex> lock(mutex);
+        const std::lock_guard<std::mutex> lock(thread_mutex);
         if (signal_pending)
             return SCE_KERNEL_ERROR_ALREADY_SENT;
         signal_pending = true;
@@ -437,7 +437,7 @@ SceInt32 ThreadState::send_signal() {
 }
 
 ThreadStatus ThreadState::get_status() const {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     return shown_status();
 }
 
@@ -469,7 +469,7 @@ void ThreadState::stop_for_holds(std::unique_lock<std::mutex> &lock) {
 }
 
 int ThreadState::stack_free_size() const {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     // A dormant thread's whole stack is free, a started one's is free below its stack pointer
     if (status == ThreadStatus::dormant)
         return stack_size;
@@ -478,7 +478,7 @@ int ThreadState::stack_free_size() const {
 
 ThreadState::HostWait::HostWait(ThreadState &thread, std::optional<WaitTarget> shown)
     : thread(thread) {
-    const std::lock_guard<std::mutex> lock(thread.mutex);
+    const std::lock_guard<std::mutex> lock(thread.thread_mutex);
     thread.host_waiting = true;
     if (shown) {
         thread.wait_target = *shown;
@@ -489,7 +489,7 @@ ThreadState::HostWait::HostWait(ThreadState &thread, std::optional<WaitTarget> s
 }
 
 ThreadState::HostWait::~HostWait() {
-    const std::lock_guard<std::mutex> lock(thread.mutex);
+    const std::lock_guard<std::mutex> lock(thread.thread_mutex);
     thread.host_waiting = false;
     if (thread.status == ThreadStatus::waiting) {
         thread.wait_target = {};
@@ -498,25 +498,26 @@ ThreadState::HostWait::~HostWait() {
 }
 
 uint64_t ThreadState::next_display_wait(uint64_t next_vblank, int vcount) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     last_vblank_waited = std::max(next_vblank, last_vblank_waited + vcount);
     return last_vblank_waited;
 }
 
 SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks) {
-    std::unique_lock<std::mutex> lock(mutex);
-    if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
-        if (exit_status)
-            *exit_status = static_cast<SceInt32>(returned_value);
-        return SCE_KERNEL_OK;
+    auto end_guard = this->lock();
+    {
+        const std::lock_guard<std::mutex> lock(thread_mutex);
+        if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
+            if (exit_status)
+                *exit_status = static_cast<SceInt32>(returned_value);
+            return SCE_KERNEL_OK;
+        }
     }
-    std::unique_lock<std::mutex> end_lock(end_waiters_mutex);
-    lock.unlock();
-    return end_waiters.wait(end_lock, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id, callbacks }, { exit_status }, deadline);
+    return end_waiters.wait(end_guard, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id, callbacks }, { exit_status }, deadline);
 }
 
 SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     const auto woken = [&] { return wait_over(); };
     wait_target = target;
     update_status(ThreadStatus::waiting);
@@ -540,7 +541,7 @@ SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
 
 SceInt32 ThreadState::run_callbacks() {
     process_callbacks();
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     // The thread exited or was deleted during the callbacks, so the wait must not complete
     if (exiting())
         return SCE_KERNEL_ERROR_THREAD_STOPPED;
@@ -549,13 +550,13 @@ SceInt32 ThreadState::run_callbacks() {
 }
 
 void ThreadState::wake() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     wake_pending = true;
     cv.notify_all();
 }
 
 void ThreadState::notify_callback(Callback &cb, SceInt32 arg) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     cb.pending.notifier_id = SCE_UID_INVALID_UID;
     cb.pending.arg = arg;
     ++cb.pending.count;
@@ -565,17 +566,17 @@ void ThreadState::notify_callback(Callback &cb, SceInt32 arg) {
 }
 
 void ThreadState::cancel_callback(Callback &cb) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     cb.pending = {};
 }
 
 Callback::Notification ThreadState::callback_notifications(const Callback &cb) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     return cb.pending;
 }
 
 bool ThreadState::delete_callback(Callback &cb, SceUID deleter) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     if (std::exchange(cb.deleted, true))
         return false;
     // A run going on keeps the UID, and the end of the last run removes it
@@ -587,12 +588,12 @@ bool ThreadState::delete_callback(Callback &cb, SceUID deleter) {
 }
 
 bool ThreadState::has_pending_callbacks() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     return callback_pending;
 }
 
 SceUInt32 ThreadState::process_callbacks() {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     // The pass clears the flag first, so a notify during the pass leaves it set
     if (!std::exchange(callback_pending, false))
         return 0;
@@ -634,10 +635,10 @@ SceUInt32 ThreadState::process_callbacks() {
 }
 
 SceKernelThreadInfo ThreadState::info() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     SceKernelThreadInfo info{};
     strncpy(info.name, name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
-    info.attr = attr;
+    info.attr = thread_attr;
     info.stack = Ptr<void>(stack.get());
     info.stackSize = stack_size;
     info.initPriority = init_priority;
@@ -658,24 +659,24 @@ SceKernelThreadInfo ThreadState::info() {
 }
 
 int ThreadState::get_priority() const {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     return priority;
 }
 
 int ThreadState::change_priority(int new_priority) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     tls_slot(TLS_CURRENT_PRIORITY) = new_priority;
     return std::exchange(priority, new_priority);
 }
 
 SceInt32 ThreadState::change_affinity_mask(SceInt32 new_affinity_mask) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     tls_slot(TLS_CPU_AFFINITY_MASK) = new_affinity_mask;
     return std::exchange(affinity_mask, new_affinity_mask);
 }
 
 void ThreadState::set_suspended(bool suspended) {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     debugger_hold = suspended;
     // A step the thread didn't take doesn't outlive the debugger's next call
     step_requested = false;
@@ -685,7 +686,7 @@ void ThreadState::set_suspended(bool suspended) {
 }
 
 bool ThreadState::step() {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     // A pause or a ForVM suspend holds the thread, so it doesn't step. One that comes after this
     // check delays the step until it ends.
     if (kernel.is_threads_paused() || vm_suspend_count > 0)
@@ -701,24 +702,24 @@ bool ThreadState::step() {
 }
 
 void ThreadState::wait_until_not_running() {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     cv.wait(lock, [&] { return !runs(); });
 }
 
 bool ThreadState::stopped_at_breakpoint() const {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     return debugger_hold && parked;
 }
 
 void ThreadState::pause_changed() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     if (kernel.is_threads_paused() && runs())
         cpu->request_stop();
     cv.notify_all();
 }
 
 int ThreadState::vm_suspend() {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     if (status == ThreadStatus::dormant)
         return SCE_KERNEL_ERROR_DORMANT;
     const int count = ++vm_suspend_count;
@@ -731,7 +732,7 @@ int ThreadState::vm_suspend() {
 }
 
 int ThreadState::vm_resume() {
-    const std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     // Like on a Vita, a dormant thread fails before the count does
     if (status == ThreadStatus::dormant)
         return SCE_KERNEL_ERROR_DORMANT;
@@ -744,7 +745,7 @@ int ThreadState::vm_resume() {
 }
 
 SceInt32 ThreadState::get_vm_context(CPUContext &context, bool &in_kernel_call) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
     // A thread whose wait timed out while suspended stops on its way back to its code
     cv.wait(lock, [&] { return parked || status != ThreadStatus::running || vm_suspend_count == 0 || exiting(); });
     if (vm_suspend_count == 0)

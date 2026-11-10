@@ -19,7 +19,7 @@
 
 #include <cpu/common.h>
 #include <kernel/callback.h>
-#include <kernel/thread/wait_queue.h>
+#include <kernel/sync_primitive.h>
 #include <kernel/types.h>
 #include <mem/block.h>
 #include <mem/ptr.h>
@@ -47,13 +47,14 @@ enum class ThreadStatus : SceUInt32 {
     suspended = SCE_KERNEL_THREAD_STATUS_SUSPENDED, // Held by a ForVM suspend, only reported
 };
 
-struct ThreadState final {
+// A thread, which its end waiters wait on like on any waitable object. Lock order: the object's lock,
+// which guards the end waiters, then thread_mutex, then the thread_mutex of an end waiter it wakes.
+struct ThreadState final : public WithUidClass<SyncPrimitive, UidClass::thread> {
     // Fixed when the thread is created
     const SceUID id;
-    const std::string name;
     const Address entry_point;
     // What thread info reports, the creation attributes and SCE_KERNEL_THREAD_ATTR_USER
-    const SceUInt32 attr;
+    const SceUInt32 thread_attr;
     // The stack size, a whole number of pages
     const int stack_size;
     const Block stack;
@@ -201,7 +202,7 @@ private:
         SceInt32 *exit_status;
     };
 
-    // The private methods are called with mutex held, unless they say otherwise
+    // The private methods are called with thread_mutex held, unless they say otherwise
     void update_status(ThreadStatus status);
     // The status the guest sees: SUSPENDED for a thread a ForVM suspend holds at its stop
     ThreadStatus shown_status() const;
@@ -213,24 +214,24 @@ private:
     // Whether something holds the thread before its guest code: the debugger, the emulator pause or
     // a ForVM suspend
     bool held() const;
-    // Waits with mutex held through lock until nothing holds the thread, parked meanwhile
+    // Waits with thread_mutex held through lock until nothing holds the thread, parked meanwhile
     void stop_for_holds(std::unique_lock<std::mutex> &lock);
     // Whether the thread may run guest code now, or kernel code that changes its registers
     bool runs() const { return status == ThreadStatus::running && !parked && !host_waiting; }
     // Asks the thread to end, keeping a stronger request already made
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
-    // Whether a notified callback ends the current wait. With mutex held.
+    // Whether a notified callback ends the current wait. With thread_mutex held.
     bool callback_ends_wait() const { return wait_target.callbacks && callback_pending; }
     // Whether the thread's current wait is over, by a wake, its end or a callback it runs, though
-    // the thread hasn't gone on yet. With mutex held.
+    // the thread hasn't gone on yet. With thread_mutex held.
     bool wait_over() const { return exiting() || wake_pending || callback_ends_wait(); }
 
-    // Runs guest code at one level, the thread's run or a call, with mutex held through lock, which
+    // Runs guest code at one level, the thread's run or a call, with thread_mutex held through lock, which
     // it releases around guest code and the handling of each exit. A call the kernel makes starts
     // from_kernel_call. Returns r0 once the level's function returns, or nothing once the
     // thread is ending.
     std::optional<uint32_t> run_guest(std::unique_lock<std::mutex> &lock, bool from_kernel_call);
-    // Runs fn with args from ctx until it returns, with mutex held through lock. Returns r0, or
+    // Runs fn with args from ctx until it returns, with thread_mutex held through lock. Returns r0, or
     // nothing once the thread is ending.
     std::optional<uint32_t> enter_guest(std::unique_lock<std::mutex> &lock, CPUContext ctx, Address fn, std::initializer_list<uint32_t> args);
     // Runs a callback or a thread event handler like the kernel does, from the registers of a new
@@ -238,14 +239,14 @@ private:
     uint32_t run_callback(Address fn, std::initializer_list<uint32_t> args);
     // Ends the thread's run and returns whether it parks dormant for another start
     bool finish_run(std::unique_lock<std::mutex> &lock);
-    // Calls the guest's data abort handler with the abort context on the stack, without mutex held
+    // Calls the guest's data abort handler with the abort context on the stack, without thread_mutex held
     void dispatch_abort(Address fault_addr);
 
     // Fixed when the thread is created
     KernelState &kernel;
     MemState &mem;
 
-    mutable std::mutex mutex;
+    mutable std::mutex thread_mutex;
     // The one condition variable. The thread's waits, its dormant park and its holds wait on it,
     // and so do other threads that wait for its status. Every change any of them reads notifies all.
     std::condition_variable cv;
@@ -296,7 +297,6 @@ private:
     // Blocked in a host wait inside an export
     bool host_waiting = false;
 
-    // Threads blocked in sceKernelWaitThreadEnd on this one, with their own lock, taken after mutex
-    std::mutex end_waiters_mutex;
+    // Threads blocked in sceKernelWaitThreadEnd on this one, guarded by the object's lock
     WaitQueue<EndWaitEntry> end_waiters;
 };
