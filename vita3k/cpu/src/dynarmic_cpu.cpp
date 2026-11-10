@@ -406,6 +406,7 @@ CPUContext DynarmicCPU::save_context() {
     ctx.fpu_registers = std::bit_cast<std::array<float, 64>>(jit->ExtRegs());
     ctx.fpscr = jit->Fpscr();
     ctx.cpsr = jit->Cpsr();
+    ctx.tpidrurw = cp15->tpidrurw;
     return ctx;
 }
 
@@ -414,6 +415,7 @@ void DynarmicCPU::load_context(const CPUContext &ctx) {
     jit->ExtRegs() = std::bit_cast<std::array<uint32_t, 64>>(ctx.fpu_registers);
     jit->SetCpsr(ctx.cpsr);
     jit->SetFpscr(ctx.fpscr);
+    cp15->tpidrurw = ctx.tpidrurw;
 }
 
 float DynarmicCPU::get_float_reg(uint8_t idx) {

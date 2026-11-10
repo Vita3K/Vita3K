@@ -98,9 +98,8 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     affinity_mask = init_affinity_mask;
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
-    cpu->load_context(initial_context(stack.get() + stack_size));
     // A thread starts with TPIDRURW at 0, also when it starts again
-    cpu->set_tpidrurw(0);
+    cpu->load_context(initial_context(stack.get() + stack_size));
     // The entry gets the size of the argument data and its copy on the stack, or null for none
     Address data_addr = 0;
     if (argp && arglen > 0) {
@@ -286,11 +285,10 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
 uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args, bool fresh_vfp_state) {
     std::unique_lock<std::mutex> thread_lock(mutex);
 
-    // Save the thread's context before the call overwrites PC and LR
+    // Save the thread's context before the call overwrites PC and LR. A callback sees the thread's
+    // TPIDRURW, and the thread gets its own value back after it.
     const CPUContext previous_ctx = cpu->save_context();
     const uint32_t previous_tpidruro = cpu->get_tpidruro();
-    // A callback sees the thread's TPIDRURW, and the thread gets its own value back after it
-    const uint32_t previous_tpidrurw = cpu->get_tpidrurw();
     int &vfp_exception = tls_slot(TLS_VFP_EXCEPTION);
     const int previous_vfp_exception = vfp_exception;
     if (fresh_vfp_state) {
@@ -307,7 +305,6 @@ uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> arg
     // The caller and the callback should keep to the calling convention, but put everything back
     cpu->load_context(previous_ctx);
     cpu->set_tpidruro(previous_tpidruro);
-    cpu->set_tpidrurw(previous_tpidrurw);
     if (fresh_vfp_state)
         vfp_exception = previous_vfp_exception;
 
@@ -724,14 +721,13 @@ int ThreadState::vm_resume() {
     return vm_suspend_count;
 }
 
-SceInt32 ThreadState::get_vm_context(CPUContext &context, uint32_t &tpidrurw, bool &in_kernel_call) {
+SceInt32 ThreadState::get_vm_context(CPUContext &context, bool &in_kernel_call) {
     std::unique_lock<std::mutex> lock(mutex);
     // A thread whose wait timed out while suspended stops on its way back to its code
     cv.wait(lock, [&] { return parked || status != ThreadStatus::running || vm_suspend_count == 0 || exiting(); });
     if (vm_suspend_count == 0)
         return SCE_KERNEL_ERROR_NOT_SUSPENDED;
     context = cpu->save_context();
-    tpidrurw = cpu->get_tpidrurw();
     // Inside a kernel call means waiting, or held on the way back from one
     in_kernel_call = status == ThreadStatus::waiting || (parked && stopped_after_kernel_call);
     return SCE_KERNEL_OK;

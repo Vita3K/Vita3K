@@ -612,9 +612,8 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
         return RET_ERROR(error);
 
     CPUContext context;
-    uint32_t tpidrurw = 0;
     bool in_kernel_call = false;
-    if (const SceInt32 error = thread->get_vm_context(context, tpidrurw, in_kernel_call))
+    if (const SceInt32 error = thread->get_vm_context(context, in_kernel_call))
         return RET_ERROR(error);
 
     if (infoCpu) {
@@ -625,7 +624,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
         infoCpu->sb = 100000; // Todo
         infoCpu->st = 100000; // Todo
         infoCpu->teehbr = 100000; // Todo
-        infoCpu->tpidrurw = tpidrurw;
+        infoCpu->tpidrurw = context.tpidrurw;
     }
 
     if (infoVfp) {
