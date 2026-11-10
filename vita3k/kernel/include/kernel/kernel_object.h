@@ -162,12 +162,6 @@ public:
         return nullptr;
     }
 
-    // Returns the T with this name, or null.
-    template <KernelObjectClass T>
-    [[nodiscard]] std::shared_ptr<T> find_by_name(const char *name) const {
-        return find_if<T>([&](const T &obj) { return strncmp(obj.name, name, sizeof(obj.name)) == 0; });
-    }
-
     // Calls fn on every T, in UID order, with the table locked. No T is deleted meanwhile, and fn
     // locks the ones it reads.
     template <KernelObjectClass T>
