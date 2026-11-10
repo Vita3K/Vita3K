@@ -379,7 +379,7 @@ void create_system_font_blocks(EmuEnvState &emuenv) {
         block->size = sizeof(SceKernelMemBlockInfo);
         block->memoryType = SCE_KERNEL_MEMORY_TYPE_NORMAL;
         block->access = SCE_KERNEL_MEMORY_ACCESS_R | SCE_KERNEL_MEMORY_ACCESS_W;
-        std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
+        std::strncpy(block->name, name, SCE_UID_NAMELEN);
         state->blocks.emplace(state->get_next_uid(), block);
     }
 }
@@ -390,7 +390,7 @@ EXPORT(SceUID, sceKernelOpenMemBlock, const char *pName, int flags) {
     const std::lock_guard<std::mutex> memblock_lock(state->mutex);
 
     const auto it = std::ranges::find_if(state->blocks, [=](const auto &block) {
-        return strncmp(block.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+        return strncmp(block.second->name, pName, SCE_UID_NAMELEN) == 0;
     });
 
     if (it != state->blocks.end())

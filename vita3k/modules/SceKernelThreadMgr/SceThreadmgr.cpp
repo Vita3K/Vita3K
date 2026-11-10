@@ -363,7 +363,7 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
 
     SceKernelCallbackInfo info{};
     info.callbackId = callbackId;
-    strncpy(info.name, cb->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
+    strncpy(info.name, cb->name.c_str(), SCE_UID_NAMELEN);
     info.attr = 0;
     info.threadId = cb->thread_id;
     info.callbackFunc = cb->cb_func;
@@ -1351,11 +1351,11 @@ EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Pt
     if (!name)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     // The name is read up to one byte past the kept length
-    const int name_length = guest_strnlen(emuenv.mem, name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    const int name_length = guest_strnlen(emuenv.mem, name, SCE_UID_NAMELEN + 1);
     if (name_length < 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
     // With the openable attribute, a name past the kept length is refused before the attribute
-    if ((attr & SCE_KERNEL_ATTR_OPENABLE) && name_length > KERNELOBJECT_MAX_NAME_LENGTH)
+    if ((attr & SCE_KERNEL_ATTR_OPENABLE) && name_length > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     if (attr)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
@@ -1644,7 +1644,7 @@ EXPORT(int, sceKernelOpenCond) {
 
 EXPORT(SceUID, sceKernelOpenEventFlag, const char *pName) {
     TRACY_FUNC(sceKernelOpenEventFlag, pName);
-    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+    if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
     const auto found = emuenv.kernel.objects.find_if<EventFlag>([=](const EventFlag &evf) {
@@ -1658,7 +1658,7 @@ EXPORT(SceUID, sceKernelOpenEventFlag, const char *pName) {
 
 EXPORT(SceUID, sceKernelOpenMsgPipe, const char *pName) {
     TRACY_FUNC(sceKernelOpenMsgPipe, pName);
-    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+    if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
     const auto found = emuenv.kernel.objects.find_if<MsgPipe>([=](const MsgPipe &msg_pipe) {
@@ -1672,7 +1672,7 @@ EXPORT(SceUID, sceKernelOpenMsgPipe, const char *pName) {
 
 EXPORT(SceUID, sceKernelOpenMutex, const char *pName) {
     TRACY_FUNC(sceKernelOpenMutex, pName);
-    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+    if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
     const auto found = emuenv.kernel.objects.find_if<HeavyMutex>([=](const Mutex &mutex) {
@@ -1696,7 +1696,7 @@ EXPORT(int, sceKernelOpenRWLock) {
 
 EXPORT(SceUID, sceKernelOpenSema, const char *pName) {
     TRACY_FUNC(sceKernelOpenSema, pName);
-    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+    if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
     const auto found = emuenv.kernel.objects.find_if<Semaphore>([=](const Semaphore &sema) {
@@ -1713,7 +1713,7 @@ EXPORT(SceUID, sceKernelOpenSimpleEvent, const char *pName) {
     if (!pName)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+    if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
     const auto found = emuenv.kernel.objects.find_if<SimpleEvent>([=](const SimpleEvent &event) {
@@ -1730,7 +1730,7 @@ EXPORT(SceUID, sceKernelOpenSimpleEvent, const char *pName) {
 
 EXPORT(SceUID, sceKernelOpenTimer, const char *pName) {
     TRACY_FUNC(sceKernelOpenTimer, pName);
-    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+    if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
     const auto found = emuenv.kernel.objects.find_if<Timer>([=](const Timer &timer) {

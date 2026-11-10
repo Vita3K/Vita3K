@@ -153,7 +153,7 @@
 // What a thread waiting for a thread signal reports as its wait UID
 #define SCE_KERNEL_SIGNAL_WAIT_ID 0x00010221
 
-#define KERNELOBJECT_MAX_NAME_LENGTH 31
+#define SCE_UID_NAMELEN 31
 
 #define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
 
@@ -795,7 +795,7 @@ static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
 struct SceKernelLwMutexInfo {
     SceSize size; /**< Size of this structure (sizeof(SceKernelLwMutexInfo)) */
     SceUID uid; /**< Lightweight mutex identifier */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]; /**< Name of the mutex specified by sceKernelCreateLwMutex() */
+    char name[SCE_UID_NAMELEN + 1]; /**< Name of the mutex specified by sceKernelCreateLwMutex() */
     SceUInt32 attr; /**< Mutex attributes specified with sceKernelCreateLwMutex() */
     Ptr<SceKernelLwMutexWork> pWork; /**< Mutex work area specified by sceKernelCreateLwMutex() */
     SceInt32 initCount; /**< Initial number of lw mutex locks specified by sceKernelCreateLwMutex() */
@@ -814,7 +814,7 @@ static_assert(sizeof(SceKernelLwCondWork) == 16, "Incorrect size");
 struct SceKernelLwCondInfo {
     SceSize size; /**< Size of this structure (sizeof(SceKernelLwCondInfo)) */
     SceUID uid; /**< Lightweight condition variable identifier */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]; /**< Name given to sceKernelCreateLwCond() */
+    char name[SCE_UID_NAMELEN + 1]; /**< Name given to sceKernelCreateLwCond() */
     SceUInt32 attr; /**< Attributes given to sceKernelCreateLwCond() */
     Ptr<SceKernelLwCondWork> pWork; /**< Work area given to sceKernelCreateLwCond() */
     Ptr<SceKernelLwMutexWork> pLwMutex; /**< Work area of the lightweight mutex it uses */
@@ -862,7 +862,7 @@ struct SceKernelMsgPipeInfo {
     /** Size of the structure */
     SceSize size;
     SceUID id;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     /** == 0x00000100U if msgpipe uses openLimit */
     uint32_t attr;
     SceSize bufferSize;
@@ -875,7 +875,7 @@ struct SceKernelMsgPipeInfo {
 struct SceKernelCondInfo {
     SceSize size;
     SceUID condId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUID mutexId;
     SceUInt32 numWaitThreads;
@@ -884,7 +884,7 @@ struct SceKernelCondInfo {
 struct SceKernelMppInfo {
     SceSize size;
     SceUID mppId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceInt32 bufSize;
     SceInt32 freeSize;
@@ -895,7 +895,7 @@ struct SceKernelMppInfo {
 struct SceKernelEventFlagInfo {
     SceSize size;
     SceUID evfId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUInt32 initPattern;
     SceUInt32 currentPattern;
@@ -906,7 +906,7 @@ struct SceKernelEventFlagInfo {
 struct SceKernelEventInfo {
     SceSize size;
     SceUID eventId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUInt32 eventPattern;
     SceUInt64 userData;
@@ -942,7 +942,7 @@ static_assert(sizeof(SceKernelResultEvent) == 0x18, "Incorrect size");
 struct SceKernelTimerInfo {
     SceSize size;
     SceUID timerId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceInt32 active;
     SceKernelSysClock baseTime;
@@ -959,7 +959,7 @@ static_assert(sizeof(SceKernelTimerInfo) == 0x60, "Incorrect size");
 struct SceKernelMutexInfo {
     SceSize size;
     SceUID mutexId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUInt32 initCount;
     SceUInt32 currentCount;
@@ -977,7 +977,7 @@ struct SceKernelRWLockInfo {
     /** The UID of the rwlock */
     SceUID rwLockId;
     /** NULL-terminated name of the rwlock */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     /** Attributes */
     SceUInt32 attr;
     /** The current lock count */
@@ -993,7 +993,7 @@ struct SceKernelRWLockInfo {
 struct SceKernelSemaInfo {
     SceSize size;
     SceUID semaId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceInt32 initCount;
     SceInt32 currentCount;
@@ -1007,7 +1007,7 @@ struct SceKernelThreadInfo {
     /** The UID of the process where the thread belongs */
     SceUID processId;
     /** Nul terminated name of the thread */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     /** Thread attributes */
     SceUInt32 attr;
     /** Thread status */
@@ -1104,7 +1104,7 @@ typedef SceInt32(SceKernelCallbackFunction)(SceUID notifyId, SceInt32 notifyCoun
 struct SceKernelCallbackInfo {
     SceSize size;
     SceUID callbackId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUID threadId;
     Ptr<SceKernelCallbackFunction> callbackFunc;

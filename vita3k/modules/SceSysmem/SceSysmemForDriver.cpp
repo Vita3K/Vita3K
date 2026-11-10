@@ -143,7 +143,7 @@ SceUID add_block(SysmemState &state, const char *name, SceKernelMemBlockType typ
     // read and write access
     block->memoryType = ((type & MEMBLOCK_TYPE_MEMORY_ATTR_MASK) >> MEMBLOCK_TYPE_MEMORY_ATTR_SHIFT) & SCE_KERNEL_MEMORY_TYPE_NORMAL;
     block->access = ((type & MEMBLOCK_TYPE_USER_ACCESS_MASK) >> MEMBLOCK_TYPE_USER_ACCESS_SHIFT) & (SCE_KERNEL_MEMORY_ACCESS_R | SCE_KERNEL_MEMORY_ACCESS_W);
-    std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
+    std::strncpy(block->name, name, SCE_UID_NAMELEN);
     state.blocks.emplace(uid, block);
     count_block(state, type, size);
     return uid;
