@@ -305,13 +305,16 @@ std::optional<uint32_t> ThreadState::enter_guest(std::unique_lock<std::mutex> &l
 
 uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(mutex);
-    // Save the thread's context before the call overwrites PC and LR
-    const CPUContext saved = cpu->get_context();
-    const uint32_t tpidruro = cpu->get_tpidruro();
-    const std::optional<uint32_t> returned = enter_guest(lock, saved, fn, args);
-    // The caller and the function should keep to the calling convention, but put everything back
-    cpu->set_context(saved);
-    cpu->set_tpidruro(tpidruro);
+    const CPUContext caller = cpu->get_context();
+    const std::optional<uint32_t> returned = enter_guest(lock, caller, fn, args);
+    // A plain function call returns with the registers the function leaves. Only the return point
+    // place_call replaced comes back: PC, LR, SP below the stack arguments, and the CPSR's state.
+    CPUContext ctx = cpu->get_context();
+    ctx.set_sp(caller.get_sp());
+    ctx.set_lr(caller.get_lr());
+    ctx.set_pc(caller.get_pc() | caller.thumb());
+    ctx.cpsr = caller.cpsr;
+    cpu->set_context(ctx);
     // A call the thread's end cut short returns the exit status
     return returned.value_or(returned_value);
 }
@@ -361,7 +364,10 @@ void ThreadState::dispatch_abort(Address fault_addr) {
     LOG_DEBUG("DABT handler=0x{:08X} FAR=0x{:08X} PC=0x{:08X} SP=0x{:08X} sp_aligned=0x{:08X}",
         handler, fault_addr, ctx[15], sp_orig, sp_aligned);
 
+    // The handler interrupts guest code, which goes on with all its registers
+    const CPUContext interrupted = cpu.get_context();
     call_guest(handler, { sp_aligned });
+    cpu.set_context(interrupted);
 }
 
 uint32_t ThreadState::start_and_wait(SceSize args, const Ptr<void> argp) {
