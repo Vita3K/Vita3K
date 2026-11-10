@@ -18,6 +18,7 @@ import android.view.MotionEvent;
  */
 public final class InputOverlayDrawableButton
 {
+  private boolean mVisible = true;
   // The legacy ID identifying what type of button this Drawable represents.
   private int mLegacyId;
   private int mControl;
@@ -26,6 +27,7 @@ public final class InputOverlayDrawableButton
   private int mControlPositionX, mControlPositionY;
   private int mWidth;
   private int mHeight;
+  private float mScaleFactor = 1.0f;
   private BitmapDrawable mDefaultStateBitmap;
   private BitmapDrawable mPressedStateBitmap;
   private boolean mPressedState = false;
@@ -84,19 +86,26 @@ public final class InputOverlayDrawableButton
 
   public void onConfigureTouch(MotionEvent event)
   {
-    switch (event.getAction())
+    onConfigureTouch(event, event.getActionIndex());
+  }
+
+  public void onConfigureTouch(MotionEvent event, int pointerIndex)
+  {
+    if (pointerIndex < 0 || pointerIndex >= event.getPointerCount()) return;
+    switch (event.getActionMasked())
     {
       case MotionEvent.ACTION_DOWN:
-        mPreviousTouchX = (int) event.getX();
-        mPreviousTouchY = (int) event.getY();
+      case MotionEvent.ACTION_POINTER_DOWN:
+        mPreviousTouchX = (int) event.getX(pointerIndex);
+        mPreviousTouchY = (int) event.getY(pointerIndex);
         break;
       case MotionEvent.ACTION_MOVE:
-        mControlPositionX += (int) event.getX() - mPreviousTouchX;
-        mControlPositionY += (int) event.getY() - mPreviousTouchY;
+        mControlPositionX += (int) event.getX(pointerIndex) - mPreviousTouchX;
+        mControlPositionY += (int) event.getY(pointerIndex) - mPreviousTouchY;
         setBounds(mControlPositionX, mControlPositionY, getWidth() + mControlPositionX,
                 getHeight() + mControlPositionY);
-        mPreviousTouchX = (int) event.getX();
-        mPreviousTouchY = (int) event.getY();
+        mPreviousTouchX = (int) event.getX(pointerIndex);
+        mPreviousTouchY = (int) event.getY(pointerIndex);
         break;
     }
   }
@@ -107,9 +116,28 @@ public final class InputOverlayDrawableButton
     mControlPositionY = y;
   }
 
+  public void setVisible(boolean visible) { mVisible = visible; }
+  public boolean isVisible() { return mVisible; }
+  public void setScaleFactor(float scale) { mScaleFactor = Math.max(0.35f, Math.min(2.5f, scale)); }
   public void draw(Canvas canvas)
   {
+    draw(canvas, false);
+  }
+
+  public void draw(Canvas canvas, boolean showHiddenDimmed)
+  {
+    if (!mVisible && !showHiddenDimmed) return;
+    Rect bounds = getBounds();
+    int dimLayer = -1;
+    if (!mVisible) {
+      Rect dimBounds = getTouchBounds();
+      dimLayer = canvas.saveLayerAlpha(dimBounds.left, dimBounds.top, dimBounds.right, dimBounds.bottom, 105);
+    }
+    int save = canvas.save();
+    canvas.scale(mScaleFactor, mScaleFactor, bounds.exactCenterX(), bounds.exactCenterY());
     getCurrentStateBitmapDrawable().draw(canvas);
+    canvas.restoreToCount(save);
+    if (dimLayer != -1) canvas.restoreToCount(dimLayer);
   }
 
   private BitmapDrawable getCurrentStateBitmapDrawable()
@@ -132,6 +160,16 @@ public final class InputOverlayDrawableButton
   public Rect getBounds()
   {
     return mDefaultStateBitmap.getBounds();
+  }
+
+  public Rect getTouchBounds()
+  {
+    Rect bounds = getBounds();
+    int width = Math.round(bounds.width() * mScaleFactor);
+    int height = Math.round(bounds.height() * mScaleFactor);
+    int cx = bounds.centerX();
+    int cy = bounds.centerY();
+    return new Rect(cx - width / 2, cy - height / 2, cx + (width + 1) / 2, cy + (height + 1) / 2);
   }
 
   public int getWidth()
