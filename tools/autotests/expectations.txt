@@ -25,13 +25,13 @@ callback_cancel_flag            fail     # a cancel or delete of a pending callb
 callback_cancel_sets_waited_bits pass
 callback_changes                pass
 callback_clobbers_registers     pass
-callback_create_check_order     fail     # a callback create checks the attribute before the name, so a long name with attribute 0x80 gives 0x8002000E, not 0x80024002
+callback_create_check_order     fail     # a callback create takes a function at a data address, the Vita refuses one that isn't executable
 callback_delete_in_run          fail     # a self delete in a callback check gives 0x800280A1 where the Vita gives 0
 callback_deleted_nested_wait_notify fail     # a callback deleted during its run is gone at once, so a notify of it gives 0x800280A1
 callback_deleted_object         pass
 callback_edges                  pass
 callback_entry_state            fail     # a Thumb callback run by a check starts with the wrong r4 to r9 values
-callback_errors                 crash    # callback NULL argument errors, a NULL name
+callback_errors                 pass
 callback_event_results          fail     # event calls don't take message pipe UIDs
 callback_event_waits            pass
 callback_exit_call              fail     # _sceKernelExitCallback is unimplemented, so it returns to the callback, which is kept whatever the value
@@ -42,13 +42,13 @@ callback_exit_delete_delay      fail     # an exit inside a callback doesn't end
 callback_function_memory        fail     # a callback create takes a function in a USER_RW block or on the stack
 callback_info                   pass
 callback_info_fields            fail     # the notify ID of a callback is -1 and 0 swapped, fresh and inside a run
-callback_info_size_order        fail     # the callback info call looks the UID up before it checks the size
+callback_info_size_order        pass
 callback_inner_nonobject_waits  pass
 callback_inner_same_object      pass
 callback_inner_same_pipe        pass
 callback_inner_wait             pass
 callback_limit                  fail     # no callback limit, Vita3K makes 4096 where the Vita stops at 2027 with an error
-callback_names                  fail     # a callback with a function at 0x1000 is created, the Vita refuses it
+callback_names                  pass
 callback_nesting                fail     # callbacks don't run inside callbacks
 callback_nesting_depth          fail     # callbacks don't run inside callbacks
 callback_notify_burst           fail     # a callback notified many times before it runs counts fewer notifies
