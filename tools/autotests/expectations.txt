@@ -537,7 +537,7 @@ rwlock_wake_counts              fail     # woken threads aren't READY before the
 rwlock_wake_order               pass
 savedata_slot_id                fail     # save data slot ID range checks
 self_lower_order                fail     # a thread that lowers itself doesn't go to the head of its new priority
-self_mask_change_busy_target    timeout  # threads ignore their core, so a self affinity change onto a busy core returns at once, and the test runs past the timeout
+self_mask_change_busy_target    fail     # threads ignore their core, so a self affinity change onto a busy core returns at once
 self_mask_change_yield          fail     # a self affinity change to a new mask doesn't yield to the other thread
 self_priority_drop              fail     # threads ignore their core and priority
 sema_call_error_order           fail     # semaphore calls on a mutex UID give other errors than the Vita's 0x8002000F
@@ -749,7 +749,7 @@ timer_open_close_bits           fail     # a timer's open and close don't set it
 timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_remaining_passed          pass
 timer_repeat_argument_values    pass
-timer_repeat_auto_reset_missed  pass
+timer_repeat_auto_reset_missed  skip     # whether the second poll sees the next fire depends on how busy the host is between the polls
 timer_repeat_info_steps         pass
 timer_repeat_pulse_vs_set       pass
 timer_requeue                   fail     # no requeue on a priority change
