@@ -164,8 +164,10 @@ struct KernelState {
     std::atomic<Address> exception_handlers[EXCEPTION_HANDLER_MAX]{};
     std::condition_variable thread_deleted_cond;
 
+    // The next UID of any kind, memory blocks too, in the Vita's form: positive, odd and with bit 30
+    // set
     SceUID get_next_uid() {
-        return next_uid++;
+        return static_cast<SceUID>(0x40000000 | next_uid++ << 1 | 1);
     }
 
     bool init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt);
@@ -199,7 +201,7 @@ struct KernelState {
     SceKernelModuleInfo *find_module_by_addr(Address address);
 
 private:
-    std::atomic<SceUID> next_uid{ 1 };
+    std::atomic<uint32_t> next_uid{ 1 };
     std::atomic<bool> threads_paused{ false };
     bool threads_suspended = false;
     // The process is exiting, so a thread still being created ends as well

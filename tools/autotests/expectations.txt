@@ -373,7 +373,7 @@ memblock_sync_kinds             pass
 memblock_threads                fail     # thread stacks don't count in the free sizes, lookups of a freed block give 0x80024700
 memblock_types_all              pass
 memblock_uid_kinds              fail     # sceKernelCloseMemBlock does nothing, other kinds of UID give INVALID_UID
-memblock_uid_no_reuse           fail     # memory block UIDs don't have the UID bits and an alias reuses a closed alias's UID
+memblock_uid_no_reuse           fail     # an opened block gets its original's UID, so an alias reuses a closed alias's UID
 memblock_unaligned_access       pass
 memblock_vaddr_paddr            pass
 misc_edges                      fail     # two openable objects with the same name
@@ -793,8 +793,8 @@ tls_slot5                       fail     # TLS slot 5 doesn't stop the lightweig
 tls_start_slots                 pass
 uid                             pass
 uid_class                       pass
-uid_class_kinds                 fail     # memory block UIDs have the thread class
-uid_raw_bits                    fail     # UIDs are small numbers
+uid_class_kinds                 fail     # sceKernelCloseMemBlock does nothing, so a closed block keeps its UID
+uid_raw_bits                    pass
 uid_semantics                   fail     # opening gives a new UID
 unmapped_in                     crash    # no pointer checks, an unmapped option struct crashes
 unmapped_out                    crash    # no write check on output parameters, an unmapped pointer crashes
