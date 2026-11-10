@@ -83,8 +83,8 @@ struct ThreadState final {
     // ends it, until it's deleted
     void run_loop();
     // Calls a guest function on the thread's CPU from inside a kernel call, usually one the thread
-    // itself made, like a function pointer call from library code, and puts the caller's registers
-    // back after. Returns its r0, or the exit status if the thread ends during it.
+    // itself made, like a function pointer call from library code. The registers are then the ones
+    // the function leaves. Returns its r0, or the exit status if the thread ends during it.
     uint32_t call_guest(Address fn, std::initializer_list<uint32_t> args);
     // Starts the dormant thread from another thread and returns its exit status once it ends. Used
     // for module start and stop and the GXM display queue.

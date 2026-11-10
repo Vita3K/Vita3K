@@ -551,7 +551,7 @@ sema_signal_serve_order         pass
 sema_take_past_waiters          pass
 sema_waits                      pass
 semaphore                       pass
-shader_patcher_callback         fail     # a library callback's caller gets its FPSCR and TPIDRURW back after it
+shader_patcher_callback         pass
 shared_mask_change_place        fail     # the current CPU of thread info is always 0, and threads ignore their core, so A and B run before the gate ends
 shared_queue_mask_skip          fail     # threads ignore their core and priority, so R1 and R2 run at once in host order and are DORMANT before the first release
 shared_raise_cores              fail     # threads are never READY and ignore their core
