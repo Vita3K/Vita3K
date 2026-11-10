@@ -34,7 +34,7 @@ callback_entry_state            fail     # a Thumb callback run by a check start
 callback_errors                 pass
 callback_event_results          fail     # event calls don't take message pipe UIDs
 callback_event_waits            pass
-callback_exit_call              fail     # _sceKernelExitCallback is unimplemented, so it returns to the callback, which is kept whatever the value
+callback_exit_call              pass
 callback_exit_check             fail     # an exit inside a callback doesn't end the app
 callback_exit_delay             fail     # an exit inside a callback doesn't end the app
 callback_exit_delete_check      fail     # an exit inside a callback doesn't end the app
