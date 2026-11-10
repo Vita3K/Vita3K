@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <kernel/callback.h>
 #include <kernel/thread/wait_queue.h>
 #include <mem/ptr.h>
 #include <util/types.h>
@@ -25,6 +24,7 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <thread>
 #include <vector>
 
@@ -71,7 +71,8 @@ struct DisplayState {
     std::atomic<std::uint64_t> vblank_count{ 0 };
     WaitQueue<VBlankWaitEntry> vblank_waiters;
     std::atomic<uint64_t> last_setframe_vblank_count = 0;
-    std::map<SceUID, CallbackPtr> vblank_callbacks{};
+    // The UIDs of the callbacks to notify at each vblank start
+    std::set<SceUID> vblank_callbacks{};
 
     // if set to true, make sceDisplayWaitVblankStartMulti/sceDisplayWaitSetFrameBufMulti behave as sceDisplayWaitVblankStart/sceDisplayWaitSetFrameBuf
     // this allows some game running at 30fps to run at 60fps without any issue

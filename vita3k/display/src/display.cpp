@@ -76,9 +76,12 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             cheat::set_buttons(emuenv.cheat, ctrl_peek_buttons(emuenv, 1));
             cheat::apply(emuenv.cheat, emuenv.mem, invalidate_jit);
 
-            // Notify Vblank callback in each VBLANK start
-            for (auto &[_, cb] : display.vblank_callbacks)
-                cb->event_notify(cb->get_notifier_id());
+            // Notify Vblank callback in each VBLANK start, skipping the deleted ones
+            for (const SceUID uid : display.vblank_callbacks) {
+                const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(uid);
+                if (const ThreadStatePtr owner = cb ? emuenv.kernel.get_thread(cb->thread_id) : nullptr)
+                    owner->notify_callback(*cb, 0);
+            }
 
             display.vblank_waiters.wake_if([&](auto &waiter) {
                 return waiter.entry.target_vcount <= display.vblank_count;

@@ -197,12 +197,11 @@ EXPORT(int, sceDisplayGetVcountInternal) {
 EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
     TRACY_FUNC(sceDisplayRegisterVblankStartCallback, uid);
 
-    const auto cb = emuenv.kernel.objects.find<Callback>(uid);
-    if (!cb)
+    if (!emuenv.kernel.objects.find<Callback>(uid))
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 
     std::lock_guard<std::mutex> guard(emuenv.display.mutex);
-    emuenv.display.vblank_callbacks[uid] = cb;
+    emuenv.display.vblank_callbacks.insert(uid);
 
     return 0;
 }

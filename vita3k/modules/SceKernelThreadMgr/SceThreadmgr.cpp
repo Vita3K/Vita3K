@@ -343,9 +343,11 @@ EXPORT(int, _sceKernelExitCallback) {
 EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallbackInfo *pInfo) {
     TRACY_FUNC(_sceKernelGetCallbackInfo, callbackId, pInfo);
     const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(callbackId);
-
     if (!cb)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+    const ThreadStatePtr owner = emuenv.kernel.get_thread(cb->thread_id);
+    if (!owner)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
     if (!pInfo)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR); // TODO check result
@@ -359,9 +361,10 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
     info.attr = 0;
     info.threadId = cb->thread_id;
     info.callbackFunc = cb->cb_func;
-    info.notifyId = cb->get_notifier_id();
-    info.notifyCount = static_cast<SceInt32>(cb->get_num_notifications());
-    info.notifyArg = cb->get_notify_arg();
+    const Callback::Notification pending = owner->callback_notifications(*cb);
+    info.notifyId = pending.notifier_id;
+    info.notifyCount = static_cast<SceInt32>(pending.count);
+    info.notifyArg = pending.arg;
     info.pCommon = cb->userdata;
     write_info(pInfo, info);
 
@@ -1178,10 +1181,12 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
 EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {
     TRACY_FUNC(sceKernelCancelCallback, callbackId);
     const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(callbackId);
-
     if (!cb)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
-    cb->cancel();
+    const ThreadStatePtr owner = emuenv.kernel.get_thread(cb->thread_id);
+    if (!owner)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    owner->cancel_callback(*cb);
 
     return SCE_KERNEL_OK;
 }
@@ -1330,7 +1335,7 @@ EXPORT(SceUID, sceKernelCreateCallback, char *name, SceUInt32 attr, Ptr<SceKerne
     if (attr || !callbackFunc.address())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
 
-    return emuenv.kernel.create_callback(emuenv.kernel.get_thread(thread_id), name, callbackFunc, pCommon);
+    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name, callbackFunc, pCommon), emuenv.kernel.get_next_uid());
 }
 
 // Whether a game may create a thread with this priority, absolute or relative to the default one
@@ -1412,7 +1417,13 @@ EXPORT(int, sceKernelDelayThreadCB200, SceUInt delay) {
 
 EXPORT(int, sceKernelDeleteCallback, SceUID callbackId) {
     TRACY_FUNC(sceKernelDeleteCallback, callbackId);
-    if (!emuenv.kernel.delete_callback(callbackId, thread_id))
+    const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(callbackId);
+    if (!cb)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+    const ThreadStatePtr owner = emuenv.kernel.get_thread(cb->thread_id);
+    if (!owner)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (!owner->delete_callback(*cb, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
     return 0;
 }
@@ -1505,11 +1516,13 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
 EXPORT(SceInt32, sceKernelGetCallbackCount, SceUID callbackId) {
     TRACY_FUNC(sceKernelGetCallbackCount, callbackId);
     const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(callbackId);
-
     if (!cb)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+    const ThreadStatePtr owner = emuenv.kernel.get_thread(cb->thread_id);
+    if (!owner)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    return cb->get_num_notifications();
+    return owner->callback_notifications(*cb).count;
 }
 
 EXPORT(int, sceKernelGetMsgPipeCreatorId) {
@@ -1587,8 +1600,11 @@ EXPORT(SceInt32, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg)
     const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(callbackId);
     if (!cb)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+    const ThreadStatePtr owner = emuenv.kernel.get_thread(cb->thread_id);
+    if (!owner)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    cb->direct_notify(notifyArg);
+    owner->notify_callback(*cb, notifyArg);
 
     return SCE_KERNEL_OK;
 }
