@@ -350,7 +350,7 @@ static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command
         || !state.kernel.threads.contains(state.gdb.current_thread))
         return "E00";
 
-    const CPUContext context = state.kernel.threads[state.gdb.current_thread]->cpu->save_context();
+    const CPUContext context = state.kernel.threads[state.gdb.current_thread]->cpu->get_context();
 
     // gdb reads the registers after cpsr one by one with p
     std::string str;
@@ -382,7 +382,7 @@ static std::string cmd_read_register(EmuEnvState &state, PacketCommand &command)
         || !state.kernel.threads.contains(state.gdb.current_thread))
         return "E00";
 
-    const CPUContext context = state.kernel.threads[state.gdb.current_thread]->cpu->save_context();
+    const CPUContext context = state.kernel.threads[state.gdb.current_thread]->cpu->get_context();
 
     const std::string content = content_string(command);
     const uint32_t reg = parse_hex(content.substr(1));

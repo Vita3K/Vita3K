@@ -103,8 +103,8 @@ struct CPUState {
     virtual uint32_t get_fpscr() = 0;
     virtual void set_fpscr(uint32_t val) = 0;
 
-    virtual CPUContext save_context() = 0;
-    virtual void load_context(const CPUContext &ctx) = 0;
+    virtual CPUContext get_context() = 0;
+    virtual void set_context(const CPUContext &ctx) = 0;
 
     uint32_t get_sp() { return get_reg(13); }
     void set_sp(uint32_t val) { set_reg(13, val); }

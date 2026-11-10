@@ -64,8 +64,8 @@ public:
     uint32_t get_fpscr() override;
     void set_fpscr(uint32_t val) override;
 
-    CPUContext save_context() override;
-    void load_context(const CPUContext &ctx) override;
+    CPUContext get_context() override;
+    void set_context(const CPUContext &ctx) override;
 
     void set_log_code(bool log) override;
     void set_log_mem(bool log) override;

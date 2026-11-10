@@ -132,7 +132,7 @@ public:
             return false;
         const uint32_t pc = cpu.get_pc();
         if (LOG_INVALID_ACCESS) {
-            LOG_ERROR("Invalid {} at 0x{:x}\n{}", access, addr, cpu.save_context().description());
+            LOG_ERROR("Invalid {} at 0x{:x}\n{}", access, addr, cpu.get_context().description());
             if (pc < mem.host_page_size)
                 LOG_CRITICAL("PC is 0x{:x}", pc);
             else
@@ -226,7 +226,7 @@ public:
     }
 
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) override {
-        LOG_ERROR("Unimplemented instruction at address {}:\n{}", log_hex(addr), cpu.save_context().description());
+        LOG_ERROR("Unimplemented instruction at address {}:\n{}", log_hex(addr), cpu.get_context().description());
     }
 
     void ExceptionRaised(uint32_t pc, Dynarmic::A32::Exception exception) override {
@@ -236,7 +236,7 @@ public:
             cpu.set_pc(cpu.is_thumb_mode() ? pc | 1 : pc);
             break;
         case Dynarmic::A32::Exception::NoExecuteFault:
-            LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, cpu.thread_id, cpu.save_context().description());
+            LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, cpu.thread_id, cpu.get_context().description());
             [[fallthrough]];
         case Dynarmic::A32::Exception::WaitForInterrupt:
             cpu.jit->HaltExecution(HALT_RETURN);
@@ -400,7 +400,7 @@ void DynarmicCPU::set_fpscr(uint32_t val) {
     jit->SetFpscr(val);
 }
 
-CPUContext DynarmicCPU::save_context() {
+CPUContext DynarmicCPU::get_context() {
     CPUContext ctx;
     ctx.cpu_registers = jit->Regs();
     ctx.fpu_registers = std::bit_cast<std::array<float, 64>>(jit->ExtRegs());
@@ -410,7 +410,7 @@ CPUContext DynarmicCPU::save_context() {
     return ctx;
 }
 
-void DynarmicCPU::load_context(const CPUContext &ctx) {
+void DynarmicCPU::set_context(const CPUContext &ctx) {
     jit->Regs() = ctx.cpu_registers;
     jit->ExtRegs() = std::bit_cast<std::array<uint32_t, 64>>(ctx.fpu_registers);
     jit->SetCpsr(ctx.cpsr);
