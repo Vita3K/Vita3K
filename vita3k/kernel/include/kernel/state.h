@@ -177,11 +177,6 @@ struct KernelState {
 
     ThreadStatePtr get_thread(SceUID thread_id);
 
-    // Creates a callback owned by thread and returns its UID.
-    SceUID create_callback(const ThreadStatePtr &thread, const char *name, Ptr<SceKernelCallbackFunction> func, Ptr<void> common);
-    // Deletes the callback with this UID for the thread deleter, so it never runs again. Returns false
-    // if there is none.
-    bool delete_callback(SceUID id, SceUID deleter);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
     // Whether the emulator pause holds every thread. Threads read it without mutex, under their own lock.

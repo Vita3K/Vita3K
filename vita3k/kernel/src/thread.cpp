@@ -202,11 +202,8 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
         kernel.objects.for_each<RWLock>([&](RWLock &rwlock) { rwlock.release_ended_writer(*this); });
         kernel.objects.for_each<EventFlag>([&](EventFlag &flag) { flag.release_ended_holder(*this); });
         // The callbacks the thread created end with it, with their pending notifications
-        for (const auto &weak_cb : callbacks) {
-            if (const CallbackPtr cb = weak_cb.lock())
-                kernel.delete_callback(cb->uid, id);
-        }
-        callbacks.clear();
+        while (const CallbackPtr cb = kernel.objects.find_if<Callback>([&](const Callback &c) { return c.thread_id == id; }))
+            delete_callback(*cb, id);
         lock.lock();
         update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
     }
@@ -537,27 +534,29 @@ bool ThreadState::has_pending_callbacks() {
 
 SceUInt32 ThreadState::process_callbacks() {
     {
-        // Thread info reads the flag too, through wait_over()
+        // Thread info reads the flag too, through wait_over(). With no callback notified, the pass
+        // has nothing to run and doesn't look through the objects.
         const std::lock_guard<std::mutex> lock(mutex);
-        if (is_processing_callbacks)
+        if (is_processing_callbacks || !callbacks_notified())
             return 0;
         is_processing_callbacks = true;
     }
     SceUInt32 processed = 0;
-    for (auto it = callbacks.begin(); it != callbacks.end();) {
-        const CallbackPtr cb = it->lock();
-        // Deleted since it was added
-        if (!cb) {
-            it = callbacks.erase(it);
-            continue;
+    SceUID last = 0;
+    // The thread's callbacks in UID order, which is their creation order
+    while (const CallbackPtr cb = kernel.objects.find_if<Callback>([&](const Callback &c) { return c.uid > last && c.thread_id == id; })) {
+        last = cb->uid;
+        Callback::Notification notification;
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            notification = cb->pending;
+            drop_notifications(*cb);
         }
-        ++it;
-        const std::optional<Callback::Notification> notification = cb->take_notification();
-        if (!notification)
+        if (notification.count == 0)
             continue;
         // A callback starts with the VFP state of a new thread, and the thread gets its own back after it
         const uint32_t ret = call_guest(cb->cb_func.address(),
-            { static_cast<uint32_t>(notification->notifier_id), notification->count, static_cast<uint32_t>(notification->arg), cb->userdata.address() }, true);
+            { static_cast<uint32_t>(notification.notifier_id), notification.count, static_cast<uint32_t>(notification.arg), cb->userdata.address() }, true);
         ++processed;
         // A callback that exits the thread also ends the wait it runs in
         {
@@ -568,23 +567,51 @@ SceUInt32 ThreadState::process_callbacks() {
         }
         // A callback that returns nonzero deletes itself
         if (ret != 0)
-            kernel.delete_callback(cb->uid, id);
+            delete_callback(*cb, id);
     }
     const std::lock_guard<std::mutex> lock(mutex);
     is_processing_callbacks = false;
     return processed;
 }
 
-void ThreadState::add_notified_callback() {
+void ThreadState::notify_callback(Callback &cb, SceInt32 arg) {
     const std::lock_guard<std::mutex> lock(mutex);
-    ++notified_callbacks;
-    cv.notify_all();
+    if (cb.deleted)
+        return;
+    cb.pending.notifier_id = SCE_UID_INVALID_UID;
+    cb.pending.arg = arg;
+    // The thread already counts a callback with notifications, and only the first one wakes it
+    if (cb.pending.count++ == 0) {
+        ++notified_callbacks;
+        cv.notify_all();
+    }
 }
 
-void ThreadState::remove_notified_callback() {
+void ThreadState::cancel_callback(Callback &cb) {
     const std::lock_guard<std::mutex> lock(mutex);
-    if (notified_callbacks > 0)
+    drop_notifications(cb);
+}
+
+Callback::Notification ThreadState::callback_notifications(const Callback &cb) {
+    const std::lock_guard<std::mutex> lock(mutex);
+    return cb.pending;
+}
+
+bool ThreadState::delete_callback(Callback &cb, SceUID deleter) {
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        if (std::exchange(cb.deleted, true))
+            return false;
+        drop_notifications(cb);
+    }
+    kernel.objects.remove<Callback>(cb.uid, deleter);
+    return true;
+}
+
+void ThreadState::drop_notifications(Callback &cb) {
+    if (cb.pending.count != 0)
         --notified_callbacks;
+    cb.pending = {};
 }
 
 SceKernelThreadInfo ThreadState::info() {

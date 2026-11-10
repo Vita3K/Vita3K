@@ -104,6 +104,7 @@ cb_wait_zero_timeout_notify_more fail     # a signal or thread end wait with cal
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_cancel_drops_boost      fail     # a ceiling mutex doesn't raise its owner's priority
+ceiling_cancel_requeue_waiter   fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_change_running_thread   fail     # a mutex ceiling doesn't raise its owner's priority, and a priority change below one applies at once
 ceiling_cond_relock_priority    fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_create_check_order      fail     # a mutex create checks the count before the option struct
@@ -659,11 +660,13 @@ thread_event_handler_mixed_order fail     # only the last registered handler of 
 thread_event_handler_null_name  fail     # a NULL thread event handler name is accepted
 thread_event_handler_process_exit pass
 thread_event_handler_register_before_run pass
+thread_event_handler_release_unregister_running fail     # thread event handlers are global and an unregister always returns 0
 thread_event_handler_shared_release fail     # thread event handlers are global and registering one returns 0, not a UID, and an unregister inside a handler isn't refused
 thread_event_handler_stack      fail     # event handler sp is 0x28 below the stack top and 16 aligned, the Vita's is 0x30
 thread_event_handler_start_sp   fail     # an END handler starts on the entry's stack pointer, the Vita starts it below it
 thread_event_handler_start_target fail     # a start of a thread that runs its own thread event handler isn't refused
 thread_event_handler_unregister_in_entry fail     # an unregister from the thread's own entry doesn't stop its END run
+thread_event_handler_unregister_other_uids fail     # an unregister always returns 0, whatever the UID
 thread_event_handler_vfp        pass
 thread_exit_status              fail     # an end wait for an ended thread writes back part of its timeout
 thread_for_vm_errors            pass

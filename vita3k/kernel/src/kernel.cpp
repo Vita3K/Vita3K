@@ -155,17 +155,6 @@ ThreadStatePtr KernelState::get_thread(SceUID thread_id) {
     return thread;
 }
 
-SceUID KernelState::create_callback(const ThreadStatePtr &thread, const char *name, Ptr<SceKernelCallbackFunction> func, Ptr<void> common) {
-    const CallbackPtr cb = std::make_shared<Callback>(thread, name, func, common);
-    const SceUID uid = objects.add(cb, get_next_uid());
-    thread->add_callback(cb);
-    return uid;
-}
-
-bool KernelState::delete_callback(SceUID id, SceUID deleter) {
-    return objects.remove<Callback>(id, deleter);
-}
-
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr) {
     const SceUID id = get_next_uid();
     int core_num = corenum_allocator.new_corenum();

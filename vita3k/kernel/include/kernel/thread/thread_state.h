@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cpu/common.h>
+#include <kernel/callback.h>
 #include <kernel/thread/wait_queue.h>
 #include <kernel/types.h>
 #include <mem/block.h>
@@ -26,7 +27,6 @@
 #include <algorithm>
 #include <condition_variable>
 #include <initializer_list>
-#include <list>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -143,17 +143,20 @@ struct ThreadState final {
     // display wait ended on, and at least next_vblank. The next display wait counts from it.
     uint64_t next_display_wait(uint64_t next_vblank, int vcount);
 
-    // Callbacks
+    // Callbacks this thread created
+    // Notifies cb directly with arg and wakes a wait with callbacks
+    void notify_callback(Callback &cb, SceInt32 arg);
+    // Drops cb's pending notifications
+    void cancel_callback(Callback &cb);
+    // cb's pending notifications
+    Callback::Notification callback_notifications(const Callback &cb);
+    // Deletes cb for deleter, with its pending notifications, or returns false if it was deleted
+    // already
+    bool delete_callback(Callback &cb, SceUID deleter);
     // Runs the notified callbacks of this thread and returns how many ran. Called by the thread itself.
     SceUInt32 process_callbacks();
     // Returns whether a notified callback would run now, which none does inside a callback. Takes mutex.
     bool has_pending_callbacks();
-    // Adds a callback this thread created. Called by the thread itself.
-    void add_callback(const CallbackPtr &cb) { callbacks.push_back(cb); }
-    // Counts a callback of this thread that was notified and hasn't run for it yet, waking a wait
-    // with callbacks, and stops counting it. Called by the callback with its lock held.
-    void add_notified_callback();
-    void remove_notified_callback();
 
     // Holds: the debugger, the emulator pause and the ForVM suspend
     // Stops the thread for the debugger the next time it would run guest code, or lets it run again.
@@ -219,6 +222,8 @@ private:
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
     // Whether a callback of this thread was notified and hasn't run yet
     bool callbacks_notified() const { return notified_callbacks > 0; }
+    // Drops cb's pending notifications and stops counting it as notified. With mutex held.
+    void drop_notifications(Callback &cb);
     // Whether a notified callback ends the current wait. Callbacks don't nest, so a wait inside a
     // callback runs none. With mutex held.
     bool callback_ends_wait() const { return wait_target.callbacks && !is_processing_callbacks && callbacks_notified(); }
@@ -275,9 +280,6 @@ private:
     SceUInt32 notified_callbacks = 0;
     // Set while the thread runs its callbacks. They don't nest. With mutex held.
     bool is_processing_callbacks = false;
-    // Callbacks this thread created, in creation order. The kernel owns them. Only this thread
-    // touches the list.
-    std::list<std::weak_ptr<Callback>> callbacks;
 
     // ForVM suspend
     // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet
