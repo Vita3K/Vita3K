@@ -109,8 +109,8 @@ ceiling_cancel_drops_boost      fail     # a ceiling mutex doesn't raise its own
 ceiling_cancel_requeue_waiter   fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_change_running_thread   fail     # a mutex ceiling doesn't raise its owner's priority, and a priority change below one applies at once
 ceiling_cond_relock_priority    fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_create_check_order      fail     # a mutex create checks the count before the option struct
-ceiling_init_count_base_rule    fail     # a mutex created locked with a ceiling below its creator's priority isn't refused
+ceiling_create_check_order      pass
+ceiling_init_count_base_rule    pass
 ceiling_init_count_owner        fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_init_count_raised_creator fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_owner_end_handover      fail     # a ceiling mutex doesn't raise its owner's priority
@@ -294,7 +294,7 @@ lw_hand_built_work_edits        fail     # a count edit in a hand built work are
 lw_info_by_id_uid               fail     # the uid the lightweight condition variable info by UID reports
 lw_mutex                        pass
 lw_mutex_contention_stress      pass
-lw_mutex_create_check_order     fail     # lightweight mutex creates take attributes and option sizes the Vita refuses, and check in another order
+lw_mutex_create_check_order     fail     # lightweight mutex creates check their attributes, option size and work area in another order and with other errors
 lw_mutex_errors                 pass
 lw_mutex_object_limit           fail     # no object limit on lightweight mutexes, Vita3K makes 4096 where the Vita stops at 2028
 lw_mutex_semantics              pass
@@ -449,14 +449,14 @@ multi_events_waits              fail     # multiple event wait results, wait typ
 mutex                           pass
 mutex_cancel_counts             pass
 mutex_ceiling                   fail     # mutex priority ceilings
-mutex_ceiling_options           fail     # mutex ceilings: no range check and no ceiling in the info
+mutex_ceiling_options           pass
 mutex_count_check_order         pass
-mutex_create_unmapped_options   fail     # mutex creates don't read the option struct, so one that can't be read isn't refused
+mutex_create_unmapped_options   fail     # the first page reads as mapped, so an option struct at 0x4 isn't refused
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_owner_end_order           skip     # threads ignore their core and priority, so the waiters an ending owner hands its locks to run in host order
 mutex_owner_relock_waiters      pass
 mutex_recursive_partial_unlock_waiter pass
-mutex_rwlock_create_options     fail     # mutex creates accept option sizes and counts that the Vita rejects with 0x8002000B
+mutex_rwlock_create_options     fail     # rwlock creates accept option sizes that the Vita rejects with 0x8002000B
 mutex_waiter_counts             pass
 mutex_waits                     pass
 name_lookup                     fail     # opening gives the object's own UID, opening objects of another type or that aren't openable
@@ -508,7 +508,7 @@ queue_order_matrix              fail     # a waiter whose priority changes keeps
 queue_order_matrix_more         skip     # no requeue on a priority change, and threads ignore their core and priority, so readers and thread end waiters woken together run in host order
 queue_order_timer               fail     # a priority change doesn't move a timer's waiter in its queue
 queued_mask_change_busy_core    fail     # a queued affinity change runs T on the held core 0 and reports DORMANT, not STANDBY
-readonly_in                     fail     # timer and simple event names, the mutex ceiling from its option struct
+readonly_in                     fail     # setting a timer's time from read only memory isn't refused, and a multiple event wait listed in it gets nothing
 readonly_out_info               fail     # no write check on output parameters
 readonly_out_values             fail     # no write check on output parameters
 readonly_timeouts               fail     # no write check on timeouts

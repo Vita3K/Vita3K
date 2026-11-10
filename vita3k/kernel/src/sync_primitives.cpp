@@ -526,19 +526,25 @@ SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
 // * Mutex *
 // *********
 
-Mutex::Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, Ptr<SceKernelLwMutexWork> workarea)
+Mutex::Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea)
     : SyncPrimitive(attr, name)
     , init_count(init_count)
     , workarea(workarea)
+    , ceiling(ceiling)
     , waiters(attr)
     , lock_count(init_count)
     , owner(init_count > 0 && thread ? thread->id : 0) {}
 
-SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count, bool kernel) {
+SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count, const SceKernelMutexOptParam *opt, bool kernel) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
     if (!kernel && attr & ~(SCE_KERNEL_MUTEX_ATTR_RECURSIVE | SCE_KERNEL_MUTEX_ATTR_CEILING | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
         return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    // A smaller option struct is still read whole
+    if (opt && opt->size > sizeof(*opt))
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+    if (!opt && (attr & SCE_KERNEL_MUTEX_ATTR_CEILING))
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     if (init_count < 0)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
     if (init_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE))
@@ -752,6 +758,8 @@ SceInt32 HeavyMutex::info(SceKernelMutexInfo &info) const {
     info.currentCount = lock_count;
     info.currentOwnerId = owner;
     info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
+    if (attr & SCE_KERNEL_MUTEX_ATTR_CEILING)
+        info.ceilingPriority = ceiling;
     return SCE_KERNEL_OK;
 }
 
