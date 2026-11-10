@@ -30,7 +30,7 @@ callback_delete_in_run          fail     # a self delete in a callback check giv
 callback_deleted_nested_wait_notify fail     # a callback deleted during its run is gone at once, so a notify of it gives 0x800280A1
 callback_deleted_object         pass
 callback_edges                  pass
-callback_entry_state            fail     # a Thumb callback run by a check starts with the wrong r4 to r9 values
+callback_entry_state            fail     # a callback run by a CB wait starts on the caller's sp, the Vita's libkernel wrapper puts it 8 bytes below
 callback_errors                 pass
 callback_event_results          fail     # event calls don't take message pipe UIDs
 callback_event_waits            pass
@@ -80,7 +80,7 @@ callback_return_in_waits        pass
 callback_return_pass            pass
 callback_stack                  fail     # callbacks don't run inside callbacks
 callback_vfp_nested             fail     # callbacks don't run inside callbacks
-callback_vfp_return             fail     # a callback run gives the caller all 32 d registers back, the Vita keeps only d8 to d15 and leaves the callback's d2 and d3
+callback_vfp_return             fail     # a kernel call gives the caller all its d registers back, the Vita's resume of a kernel save fills every one but d2, d3 and d8 to d15
 callback_wait_requeue           pass
 cancel_calls                    pass
 cancel_calls_more               fail     # sceKernelWaitMultipleEvents

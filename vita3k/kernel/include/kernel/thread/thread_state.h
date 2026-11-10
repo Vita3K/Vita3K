@@ -83,9 +83,9 @@ struct ThreadState final {
     // ends it, until it's deleted
     void run_loop();
     // Calls a guest function on the thread's CPU from inside a kernel call, usually one the thread
-    // itself made, and returns its r0, or the exit status if the thread ends during it. With
-    // fresh_vfp_state, the call starts with the FPSCR and VFP exception setting of a new thread.
-    uint32_t call_guest(Address fn, std::initializer_list<uint32_t> args, bool fresh_vfp_state = false);
+    // itself made, like a function pointer call from library code, and puts the caller's registers
+    // back after. Returns its r0, or the exit status if the thread ends during it.
+    uint32_t call_guest(Address fn, std::initializer_list<uint32_t> args);
     // Starts the dormant thread from another thread and returns its exit status once it ends. Used
     // for module start and stop and the GXM display queue.
     uint32_t start_and_wait(SceSize args, const Ptr<void> argp = Ptr<void>{});
@@ -235,6 +235,9 @@ private:
     // from_kernel_call. Returns r0 once the level's function returns, or nothing once the
     // thread is ending.
     std::optional<uint32_t> run_guest(std::unique_lock<std::mutex> &lock, bool from_kernel_call);
+    // Runs a callback or a thread event handler like the kernel does, from the registers of a new
+    // thread on the caller's stack, and puts the caller's registers back after
+    uint32_t run_callback(Address fn, std::initializer_list<uint32_t> args);
     // Ends the thread's run and returns whether it parks dormant for another start
     bool finish_run(std::unique_lock<std::mutex> &lock);
     // Calls the guest's data abort handler with the abort context on the stack, without mutex held
