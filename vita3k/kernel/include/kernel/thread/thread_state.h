@@ -150,12 +150,12 @@ struct ThreadState final {
     void cancel_callback(Callback &cb);
     // cb's pending notifications
     Callback::Notification callback_notifications(const Callback &cb);
-    // Deletes cb for deleter, with its pending notifications, or returns false if it was deleted
-    // already
+    // Deletes cb for deleter, or returns false if it was deleted already. A run of it going on keeps
+    // its UID until the run ends.
     bool delete_callback(Callback &cb, SceUID deleter);
     // Runs the notified callbacks of this thread and returns how many ran. Called by the thread itself.
     SceUInt32 process_callbacks();
-    // Returns whether a notified callback would run now, which none does inside a callback. Takes mutex.
+    // Returns whether a callback of this thread was notified since its last callback pass
     bool has_pending_callbacks();
 
     // Holds: the debugger, the emulator pause and the ForVM suspend
@@ -219,13 +219,8 @@ private:
     bool runs() const { return status == ThreadStatus::running && !parked && !host_waiting; }
     // Asks the thread to end, keeping a stronger request already made
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
-    // Whether a callback of this thread was notified and hasn't run yet
-    bool callbacks_notified() const { return notified_callbacks > 0; }
-    // Drops cb's pending notifications and stops counting it as notified. With mutex held.
-    void drop_notifications(Callback &cb);
-    // Whether a notified callback ends the current wait. Callbacks don't nest, so a wait inside a
-    // callback runs none. With mutex held.
-    bool callback_ends_wait() const { return wait_target.callbacks && !is_processing_callbacks && callbacks_notified(); }
+    // Whether a notified callback ends the current wait. With mutex held.
+    bool callback_ends_wait() const { return wait_target.callbacks && callback_pending; }
     // Whether the thread's current wait is over, by a wake, its end or a callback it runs, though
     // the thread hasn't gone on yet. With mutex held.
     bool wait_over() const { return exiting() || wake_pending || callback_ends_wait(); }
@@ -278,10 +273,8 @@ private:
     uint64_t last_vblank_waited = 0;
 
     // Callbacks
-    // Callbacks of this thread with notifications they haven't run for.
-    SceUInt32 notified_callbacks = 0;
-    // Set while the thread runs its callbacks. They don't nest. With mutex held.
-    bool is_processing_callbacks = false;
+    // A callback of this thread was notified since the start of the last callback pass
+    bool callback_pending = false;
 
     // ForVM suspend
     // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet

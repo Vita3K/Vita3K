@@ -21,13 +21,13 @@ callback                        pass
 callback_after_wake             skip     # threads ignore their core and priority, so whether the woken thread ran before the notify is a race
 callback_after_wake_more        fail     # threads ignore their core and priority, so T runs on after the wake, its callback runs at the check or never, and the notify fails once T deleted it
 callback_cancel_departed        skip     # threads ignore their core and priority, so whether a notified callback runs before the cancel or delete is a race
-callback_cancel_flag            fail     # a cancel or delete of a pending callback clears the flag, the Vita keeps it
+callback_cancel_flag            pass
 callback_cancel_sets_waited_bits pass
 callback_changes                pass
 callback_clobbers_registers     pass
 callback_create_check_order     fail     # a callback create takes a function at a data address, the Vita refuses one that isn't executable
-callback_delete_in_run          fail     # a self delete in a callback check gives 0x800280A1 where the Vita gives 0
-callback_deleted_nested_wait_notify fail     # a callback deleted during its run is gone at once, so a notify of it gives 0x800280A1
+callback_delete_in_run          pass
+callback_deleted_nested_wait_notify skip     # a notified waiter leaves the queue only when its thread runs, so whether the object still counts it right after the notify is a race
 callback_deleted_object         pass
 callback_edges                  pass
 callback_entry_state            fail     # a callback run by a CB wait starts on the caller's sp, the Vita's libkernel wrapper puts it 8 bytes below
@@ -41,7 +41,7 @@ callback_exit_delete_check      fail     # an exit inside a callback doesn't end
 callback_exit_delete_delay      fail     # an exit inside a callback doesn't end the app
 callback_function_memory        fail     # a callback create takes a function in a USER_RW block or on the stack
 callback_info                   pass
-callback_info_fields            fail     # the notify ID of a callback is -1 and 0 swapped, fresh and inside a run
+callback_info_fields            fail     # callbacks registered to simple events aren't notified by its sets
 callback_info_size_order        pass
 callback_inner_nonobject_waits  pass
 callback_inner_same_object      pass
@@ -49,13 +49,13 @@ callback_inner_same_pipe        pass
 callback_inner_wait             pass
 callback_limit                  fail     # no callback limit, Vita3K makes 4096 where the Vita stops at 2027 with an error
 callback_names                  pass
-callback_nesting                fail     # callbacks don't run inside callbacks
-callback_nesting_depth          fail     # callbacks don't run inside callbacks
+callback_nesting                pass
+callback_nesting_depth          pass
 callback_notify_burst           fail     # a callback notified many times before it runs counts fewer notifies
 callback_notify_cross_core      fail     # threads ignore their core and priority, so a notified thread above the spinner doesn't stop it
 callback_notify_departure_more  pass
 callback_notify_departure_state skip     # threads ignore their core and priority, so whether the notified waiter already ran when the main thread looks is a race
-callback_notify_during_run      fail     # a callback's notify ID reads -1 before the notifies, the Vita reads 0
+callback_notify_during_run      pass
 callback_notify_equal_priority  skip     # threads ignore their core and priority, so whether a notify switches to the waiter is a race
 callback_notify_id_mixed        fail     # callbacks registered to simple events aren't notified by its sets
 callback_notify_preempt         skip     # threads ignore their core and priority, so whether the callback runs inside the notify is a race
@@ -78,8 +78,8 @@ callback_retake                 pass
 callback_retake_more            pass
 callback_return_in_waits        pass
 callback_return_pass            pass
-callback_stack                  fail     # callbacks don't run inside callbacks
-callback_vfp_nested             fail     # callbacks don't run inside callbacks
+callback_stack                  pass
+callback_vfp_nested             pass
 callback_vfp_return             fail     # a kernel call gives the caller all its d registers back, the Vita's resume of a kernel save fills every one but d2, d3 and d8 to d15
 callback_wait_requeue           pass
 cancel_calls                    pass
