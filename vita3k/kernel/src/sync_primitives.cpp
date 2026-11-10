@@ -28,6 +28,17 @@ SyncPrimitive::SyncPrimitive(SceUInt32 attr, const char *name)
     : attr(attr)
     , name(name, strnlen(name, KERNELOBJECT_MAX_NAME_LENGTH)) {}
 
+SceInt32 SyncPrimitive::run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
+    if (!callbacks || !thread->has_pending_callbacks())
+        return SCE_KERNEL_OK;
+    lock.unlock();
+    SceInt32 r = thread->run_callbacks();
+    lock.lock();
+    if (r == SCE_KERNEL_OK && was_deleted())
+        r = SCE_KERNEL_ERROR_WAIT_DELETE;
+    return r;
+}
+
 SceInt32 SyncPrimitive::check_name(const char *name, SceUInt32 attr) {
     if (!name)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;

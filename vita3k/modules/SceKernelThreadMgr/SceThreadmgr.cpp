@@ -594,7 +594,7 @@ static int vm_target(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id, Th
     thread = emuenv.kernel.get_thread(target_id);
     if (!thread)
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
-    if (!(thread->attr & SCE_KERNEL_THREAD_ATTR_VM))
+    if (!(thread->thread_attr & SCE_KERNEL_THREAD_ATTR_VM))
         return SCE_KERNEL_ERROR_ILLEGAL_PERMISSION;
     return 0;
 }
