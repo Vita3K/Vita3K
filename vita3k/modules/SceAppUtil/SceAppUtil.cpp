@@ -527,6 +527,8 @@ EXPORT(int, sceAppUtilSaveDataMount) {
 
 EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotCreate, slotId, param, mountPoint);
+    if (slotId >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
     if (!sdslot_write_slot_param(emuenv, slotId, param, export_name))
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_NO_SPACE_FS);
     return 0;
@@ -534,6 +536,8 @@ EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDat
 
 EXPORT(int, sceAppUtilSaveDataSlotDelete, unsigned int slotId, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotDelete, slotId, mountPoint);
+    if (slotId >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
     if (!sdslot_delete_slot(emuenv, slotId, export_name))
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_NO_SPACE_FS);
     return 0;
@@ -560,7 +564,7 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
 
     result->hitNum = 0;
     auto slotList = result->slotList.get(emuenv.mem);
-    for (auto i = cond->from; i < (cond->from + cond->range); i++) {
+    for (auto i = cond->from; i < std::min<uint32_t>(cond->from + cond->range, SCE_APPUTIL_SAVEDATA_SLOT_MAX); i++) {
         if (slotList) {
             slotList[i].id = -1;
             slotList[i].status = 0;
