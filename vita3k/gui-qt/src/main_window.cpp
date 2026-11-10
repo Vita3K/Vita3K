@@ -40,6 +40,7 @@
 #include <gui-qt/physical_key_qt.h>
 #include <gui-qt/pkg_install_dialog.h>
 #include <gui-qt/qt_utils.h>
+#include <gui-qt/save_data_manager_dialog.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
 #include <gui-qt/theme_manager.h>
@@ -446,6 +447,9 @@ void MainWindow::initialize() {
 
     connect(m_ui->cheats_action, &QAction::triggered, this, [this] { open_cheats_for({}, {}); });
 
+    connect(m_ui->save_data_manager_action, &QAction::triggered,
+        this, &MainWindow::open_save_data_manager);
+
     connect(m_ui->vita_themes_action, &QAction::triggered,
         this, &MainWindow::open_vita_themes);
 
@@ -814,6 +818,8 @@ void MainWindow::open_settings(int tab_index) {
         connect(m_settings_dialog, &SettingsDialog::storage_path_changed, this, [this] {
             if (m_apps_list_widget)
                 m_apps_list_widget->refresh(true);
+            if (m_save_data_dialog)
+                m_save_data_dialog->reload();
             apply_stylesheet();
         });
         connect(m_settings_dialog, &SettingsDialog::ui_language_request, this, &MainWindow::apply_ui_language);
@@ -1455,6 +1461,14 @@ void MainWindow::refresh_cheats_dialog() {
         m_cheats_dialog->reload();
 }
 
+void MainWindow::open_save_data_manager() {
+    if (!m_save_data_dialog) {
+        m_save_data_dialog = new SaveDataManagerDialog(emuenv, m_gui_settings, [this] { return m_game_window != nullptr; });
+        register_auxiliary_window(m_save_data_dialog);
+    }
+    present_tool_window(m_save_data_dialog);
+}
+
 void MainWindow::open_vita_themes() {
     if (!m_vita_themes_dialog) {
         m_vita_themes_dialog = new VitaThemesDialog(m_gui_settings, *m_theme_manager, this);
@@ -1477,6 +1491,8 @@ void MainWindow::open_user_management() {
             this, [this] {
                 if (m_trophy_dialog)
                     m_trophy_dialog->reload();
+                if (m_save_data_dialog)
+                    m_save_data_dialog->reload();
             });
     }
     present_tool_window(m_user_mgmt_dialog);
