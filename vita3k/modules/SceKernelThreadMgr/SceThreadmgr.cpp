@@ -1299,9 +1299,12 @@ EXPORT(SceInt32, sceKernelClearEventFlag, SceUID evfId, SceUInt32 bitPattern) {
     return event->clear(bitPattern);
 }
 
-EXPORT(int, sceKernelCloseCond) {
-    TRACY_FUNC(sceKernelCloseCond);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCloseCond, SceUID condition_variable_id) {
+    TRACY_FUNC(sceKernelCloseCond, condition_variable_id);
+    // A close of a condition variable is its delete
+    if (!emuenv.kernel.objects.remove<HeavyCond>(condition_variable_id, thread_id))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_COND_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCloseEventFlag, SceUID evfId) {

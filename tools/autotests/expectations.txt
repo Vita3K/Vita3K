@@ -129,7 +129,7 @@ cond_callback_rejoin            pass
 cond_callback_takes_mutex       pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
 cond_error_time_left            fail     # a mutex delete ends its conditions' waits only at their timeout
-cond_errors                     fail     # close, signal to a thread errors, create attributes
+cond_errors                     fail     # signal to a thread errors, create attributes
 cond_final_check_kinds          fail     # threads ignore their core and priority, so the waiter runs as soon as its wait ends, returns before the notify and runs the callback only at its check
 cond_info_after_mutex_delete    fail     # a condition's info still names its mutex after the mutex's delete
 cond_mutex_cancel_during_wait   pass
