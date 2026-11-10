@@ -230,6 +230,9 @@ private:
     // from_kernel_call. Returns r0 once the level's function returns, or nothing once the
     // thread is ending.
     std::optional<uint32_t> run_guest(std::unique_lock<std::mutex> &lock, bool from_kernel_call);
+    // Runs fn with args from ctx until it returns, with mutex held through lock. Returns r0, or
+    // nothing once the thread is ending.
+    std::optional<uint32_t> enter_guest(std::unique_lock<std::mutex> &lock, CPUContext ctx, Address fn, std::initializer_list<uint32_t> args);
     // Runs a callback or a thread event handler like the kernel does, from the registers of a new
     // thread on the caller's stack, and puts the caller's registers back after
     uint32_t run_callback(Address fn, std::initializer_list<uint32_t> args);

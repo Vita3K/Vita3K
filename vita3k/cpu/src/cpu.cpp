@@ -55,18 +55,16 @@ std::optional<Address> CPUState::take_abort() {
     return abort_fault_addr.load();
 }
 
-void CPUState::place_call(Address fn, std::initializer_list<uint32_t> args) {
+void CPUContext::place_call(MemState &mem, Address fn, Address return_pc, std::initializer_list<uint32_t> args) {
     set_pc(fn);
     set_lr(return_pc);
-    Address sp = get_sp();
     for (size_t i = 0; i < std::min<size_t>(args.size(), 4); i++)
-        set_reg(i, args.begin()[i]);
+        cpu_registers[i] = args.begin()[i];
     if (args.size() > 4) {
         // TODO align to 16 bytes
-        sp -= 4 * (args.size() - 4);
-        std::ranges::copy(args.begin() + 4, args.end(), Ptr<uint32_t>(sp).get(mem));
+        set_sp(get_sp() - 4 * (args.size() - 4));
+        std::ranges::copy(args.begin() + 4, args.end(), Ptr<uint32_t>(get_sp()).get(mem));
     }
-    set_sp(sp);
 }
 
 void CPUState::write_call_result(const CallResult &result) {

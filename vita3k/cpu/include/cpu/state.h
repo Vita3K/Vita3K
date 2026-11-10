@@ -36,7 +36,7 @@ struct CPUState {
     const std::size_t processor_id;
     DisasmState disasm;
 
-    // Return address place_call() writes to LR. Execution stops there.
+    // The return address a guest call gets in LR. Execution stops there.
     Address return_pc = 0;
 
     // Set by the kubridge fault handler from a signal, read by the CPU after it halts
@@ -73,9 +73,6 @@ struct CPUState {
 
     // Called by the executor, or under the ThreadState's mutex for a thread with no run, as its
     // start() does
-    // Sets up a call of fn with args: the first four in r0 to r3, the rest on the stack, and the
-    // return address in LR
-    void place_call(Address fn, std::initializer_list<uint32_t> args);
     // Writes an import's result to the registers the calling convention returns it in
     void write_call_result(const CallResult &result);
     uint32_t stack_alloc(size_t size);

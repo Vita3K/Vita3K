@@ -101,14 +101,16 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
     // A thread starts with TPIDRURW at 0, also when it starts again
-    cpu->set_context(initial_context(stack.get() + stack_size));
+    CPUContext ctx = initial_context(stack.get() + stack_size);
     // The entry gets the size of the argument data and its copy on the stack, or null for none
     Address data_addr = 0;
     if (argp && arglen > 0) {
-        data_addr = cpu->stack_alloc(align(arglen, 8));
+        data_addr = ctx.get_sp() - align(arglen, 8);
+        ctx.set_sp(data_addr);
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
     }
-    cpu->place_call(entry_point, { arglen, data_addr });
+    ctx.place_call(mem, entry_point, cpu->return_pc, { arglen, data_addr });
+    cpu->set_context(ctx);
 
     update_status(ThreadStatus::running);
     return SCE_KERNEL_OK;
@@ -283,14 +285,19 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
     }
 }
 
+std::optional<uint32_t> ThreadState::enter_guest(std::unique_lock<std::mutex> &lock, CPUContext ctx, Address fn, std::initializer_list<uint32_t> args) {
+    ctx.place_call(mem, fn, cpu->return_pc, args);
+    cpu->set_context(ctx);
+    // A call runs inside a kernel call, so a hold before its first instruction finds the thread there
+    return run_guest(lock, true);
+}
+
 uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(mutex);
     // Save the thread's context before the call overwrites PC and LR
     const CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
-    cpu->place_call(fn, args);
-    // A call runs inside a kernel call, so a hold before its first instruction finds the thread there
-    const std::optional<uint32_t> returned = run_guest(lock, true);
+    const std::optional<uint32_t> returned = enter_guest(lock, saved, fn, args);
     // The caller and the function should keep to the calling convention, but put everything back
     cpu->set_context(saved);
     cpu->set_tpidruro(tpidruro);
@@ -306,9 +313,7 @@ uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> a
     // The callback sees the thread's TPIDRURW, and the thread gets its own value back after it
     entry.tpidrurw = saved.tpidrurw;
     const int vfp_exception = std::exchange(tls_slot(TLS_VFP_EXCEPTION), 0);
-    cpu->set_context(entry);
-    cpu->place_call(fn, args);
-    const std::optional<uint32_t> returned = run_guest(lock, true);
+    const std::optional<uint32_t> returned = enter_guest(lock, entry, fn, args);
     cpu->set_context(saved);
     cpu->set_tpidruro(tpidruro);
     tls_slot(TLS_VFP_EXCEPTION) = vfp_exception;

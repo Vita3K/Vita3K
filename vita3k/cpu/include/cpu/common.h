@@ -24,6 +24,7 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <iterator>
 #include <memory>
 #include <sstream>
@@ -31,6 +32,7 @@
 
 struct CPUState;
 struct CPUContext;
+struct MemState;
 
 using CPUStatePtr = std::unique_ptr<CPUState>;
 
@@ -108,6 +110,10 @@ struct CPUContext {
     void set_lr(uint32_t val) {
         cpu_registers[14] = val;
     }
+
+    // Sets up a call of fn with args: the first four in r0 to r3, the rest on the stack in mem, and
+    // return_pc in LR
+    void place_call(MemState &mem, Address fn, Address return_pc, std::initializer_list<uint32_t> args);
 
     void set_pc(uint32_t val) {
         if (val & 1) {
