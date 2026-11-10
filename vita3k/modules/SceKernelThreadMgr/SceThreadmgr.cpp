@@ -342,6 +342,10 @@ EXPORT(int, _sceKernelExitCallback) {
 
 EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallbackInfo *pInfo) {
     TRACY_FUNC(_sceKernelGetCallbackInfo, callbackId, pInfo);
+    // The size is checked before the UID, and a NULL info after it
+    if (pInfo && pInfo->size > sizeof(*pInfo))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+
     const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(callbackId);
     if (!cb)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
@@ -350,10 +354,9 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
     if (!pInfo)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR); // TODO check result
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    if (pInfo->size > sizeof(*pInfo))
-        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+    const Callback::Notification pending = owner->callback_notifications(*cb);
 
     SceKernelCallbackInfo info{};
     info.callbackId = callbackId;
@@ -361,7 +364,6 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
     info.attr = 0;
     info.threadId = cb->thread_id;
     info.callbackFunc = cb->cb_func;
-    const Callback::Notification pending = owner->callback_notifications(*cb);
     info.notifyId = pending.notifier_id;
     info.notifyCount = static_cast<SceInt32>(pending.count);
     info.notifyArg = pending.arg;
@@ -1329,12 +1331,36 @@ EXPORT(int, sceKernelCloseTimer) {
     return STUBBED("References not implemented.");
 }
 
-EXPORT(SceUID, sceKernelCreateCallback, char *name, SceUInt32 attr, Ptr<SceKernelCallbackFunction> callbackFunc, Ptr<void> pCommon) {
-    TRACY_FUNC(sceKernelCreateCallback, name, attr, callbackFunc, pCommon);
-    if (attr || !callbackFunc.address())
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
+// The length of the guest string at str, at most max, or -1 if it reaches unmapped memory first
+static int guest_strnlen(const MemState &mem, Ptr<const char> str, int max) {
+    for (int length = 0; length < max; length++) {
+        const Address addr = str.address() + length;
+        if (!is_valid_addr(mem, addr))
+            return -1;
+        if (*Ptr<const char>(addr).get(mem) == '\0')
+            return length;
+    }
+    return max;
+}
 
-    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name, callbackFunc, pCommon), emuenv.kernel.get_next_uid());
+EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Ptr<SceKernelCallbackFunction> callbackFunc, Ptr<void> pCommon) {
+    TRACY_FUNC(sceKernelCreateCallback, name, attr, callbackFunc, pCommon);
+    if (!name)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    // The name is read up to one byte past the kept length
+    const int name_length = guest_strnlen(emuenv.mem, name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    if (name_length < 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    // With the openable attribute, a name past the kept length is refused before the attribute
+    if ((attr & SCE_KERNEL_ATTR_OPENABLE) && name_length > KERNELOBJECT_MAX_NAME_LENGTH)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    if (attr)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
+    if (!is_valid_addr(emuenv.mem, callbackFunc.address() & ~1))
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    const std::string name_str(name.get(emuenv.mem), name_length);
+    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name_str, callbackFunc, pCommon), emuenv.kernel.get_next_uid());
 }
 
 // Whether a game may create a thread with this priority, absolute or relative to the default one
