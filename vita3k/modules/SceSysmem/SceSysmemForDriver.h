@@ -121,7 +121,7 @@ struct SysmemState;
 
 // Adds a block of the type at base to the blocks and counts it in its partition's free size, with the
 // state's mutex held
-SceUID add_block(SysmemState &state, const char *name, SceKernelMemBlockType type, Address base, SceSize size);
+SceUID add_block(SysmemState &state, SceUID uid, const char *name, SceKernelMemBlockType type, Address base, SceSize size);
 
 DECL_EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOptKernel *opt);
 DECL_EXPORT(int, ksceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep);

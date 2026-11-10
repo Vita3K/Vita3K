@@ -132,8 +132,7 @@ static bool takes_from_user(SceKernelMemBlockType type) {
     }
 }
 
-SceUID add_block(SysmemState &state, const char *name, SceKernelMemBlockType type, Address base, SceSize size) {
-    const SceUID uid = state.get_next_uid();
+SceUID add_block(SysmemState &state, SceUID uid, const char *name, SceKernelMemBlockType type, Address base, SceSize size) {
     const auto block = std::make_shared<KernelMemBlock>();
     block->type = type;
     block->mappedBase = Ptr<void>(base);
@@ -195,7 +194,7 @@ EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType 
         }
     }
 
-    return add_block(*state, name, type, address.address(), size);
+    return add_block(*state, emuenv.kernel.get_next_uid(), name, type, address.address(), size);
 }
 
 EXPORT(int, ksceKernelAllocMemBlockWithInfo) {

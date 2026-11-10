@@ -133,7 +133,7 @@ EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelM
     *addr.get(mem) = Ptr<void>(allocated_addr);
 
     // Track it like any other memory block
-    const SceUID uid = add_block(*state, "kubridge_reserve", memBlockType, allocated_addr, size);
+    const SceUID uid = add_block(*state, emuenv.kernel.get_next_uid(), "kubridge_reserve", memBlockType, allocated_addr, size);
 
     LOG_DEBUG("kuKernelMemReserve: addr=0x{:08X} size={} type=0x{:08X} uid=0x{:08X}",
         allocated_addr, size, static_cast<uint32_t>(memBlockType), uid);

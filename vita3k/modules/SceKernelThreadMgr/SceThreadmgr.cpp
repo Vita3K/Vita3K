@@ -22,6 +22,7 @@
 #include <kernel/state.h>
 #include <kernel/sync_primitives.h>
 #include <kernel/types.h>
+#include <modules/sysmem_state.h>
 #include <packages/functions.h>
 
 #include <chrono>
@@ -1619,6 +1620,11 @@ EXPORT(SceInt32, sceKernelGetThreadmgrUIDClass, SceUID uid) {
         return std::to_underlying(UidClass::thread);
     if (const std::shared_ptr<KernelObject> obj = emuenv.kernel.objects.find(uid))
         return std::to_underlying(obj->get_uid_class());
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const std::lock_guard<std::mutex> lock(state->mutex);
+    // A memory block has no thread manager class
+    if (state->blocks.contains(uid))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
 }
 

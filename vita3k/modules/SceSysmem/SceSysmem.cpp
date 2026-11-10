@@ -380,7 +380,7 @@ void create_system_font_blocks(EmuEnvState &emuenv) {
         block->memoryType = SCE_KERNEL_MEMORY_TYPE_NORMAL;
         block->access = SCE_KERNEL_MEMORY_ACCESS_R | SCE_KERNEL_MEMORY_ACCESS_W;
         std::strncpy(block->name, name, SCE_UID_NAMELEN);
-        state->blocks.emplace(state->get_next_uid(), block);
+        state->blocks.emplace(emuenv.kernel.get_next_uid(), block);
     }
 }
 
