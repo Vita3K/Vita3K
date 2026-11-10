@@ -17,8 +17,8 @@
 
 #include <kernel/callback.h>
 
-Callback::Callback(SceUID thread_id, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
-    : thread_id(thread_id)
-    , name(name)
+Callback::Callback(SceUID thread_id, const char *name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
+    : WithUidClass(name)
+    , thread_id(thread_id)
     , cb_func(cb_func)
     , userdata(pCommon) {}

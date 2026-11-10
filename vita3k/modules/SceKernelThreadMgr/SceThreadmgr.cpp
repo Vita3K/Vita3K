@@ -363,7 +363,7 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
 
     SceKernelCallbackInfo info{};
     info.callbackId = callbackId;
-    strncpy(info.name, cb->name.c_str(), SCE_UID_NAMELEN);
+    std::ranges::copy(cb->name, info.name);
     info.attr = 0;
     info.threadId = cb->thread_id;
     info.callbackFunc = cb->cb_func;
@@ -1362,8 +1362,7 @@ EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Pt
     if (!is_valid_addr(emuenv.mem, callbackFunc.address() & ~1))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    const std::string name_str(name.get(emuenv.mem), name_length);
-    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name_str, callbackFunc, pCommon), emuenv.kernel.get_next_uid());
+    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name.get(emuenv.mem), callbackFunc, pCommon), emuenv.kernel.get_next_uid());
 }
 
 // Whether a game may create a thread with this priority, absolute or relative to the default one
@@ -1647,9 +1646,7 @@ EXPORT(SceUID, sceKernelOpenEventFlag, const char *pName) {
     if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
-    const auto found = emuenv.kernel.objects.find_if<EventFlag>([=](const EventFlag &evf) {
-        return evf.name == pName;
-    });
+    const auto found = emuenv.kernel.objects.find_by_name<EventFlag>(pName);
     if (!found)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 
@@ -1661,9 +1658,7 @@ EXPORT(SceUID, sceKernelOpenMsgPipe, const char *pName) {
     if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
-    const auto found = emuenv.kernel.objects.find_if<MsgPipe>([=](const MsgPipe &msg_pipe) {
-        return msg_pipe.name == pName;
-    });
+    const auto found = emuenv.kernel.objects.find_by_name<MsgPipe>(pName);
     if (!found)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 
@@ -1675,9 +1670,7 @@ EXPORT(SceUID, sceKernelOpenMutex, const char *pName) {
     if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
-    const auto found = emuenv.kernel.objects.find_if<HeavyMutex>([=](const Mutex &mutex) {
-        return mutex.name == pName;
-    });
+    const auto found = emuenv.kernel.objects.find_by_name<HeavyMutex>(pName);
     if (!found)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 
@@ -1699,9 +1692,7 @@ EXPORT(SceUID, sceKernelOpenSema, const char *pName) {
     if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
-    const auto found = emuenv.kernel.objects.find_if<Semaphore>([=](const Semaphore &sema) {
-        return sema.name == pName;
-    });
+    const auto found = emuenv.kernel.objects.find_by_name<Semaphore>(pName);
     if (!found)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 
@@ -1717,7 +1708,7 @@ EXPORT(SceUID, sceKernelOpenSimpleEvent, const char *pName) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
     const auto found = emuenv.kernel.objects.find_if<SimpleEvent>([=](const SimpleEvent &event) {
-        return (event.attr & SCE_KERNEL_ATTR_OPENABLE) && (event.name == pName);
+        return (event.attr & SCE_KERNEL_ATTR_OPENABLE) && strncmp(event.name, pName, sizeof(event.name)) == 0;
     });
     if (!found)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
@@ -1733,9 +1724,7 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *pName) {
     if (strlen(pName) > SCE_UID_NAMELEN)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
 
-    const auto found = emuenv.kernel.objects.find_if<Timer>([=](const Timer &timer) {
-        return timer.name == pName;
-    });
+    const auto found = emuenv.kernel.objects.find_by_name<Timer>(pName);
     if (!found)
         return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 

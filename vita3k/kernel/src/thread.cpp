@@ -637,7 +637,7 @@ SceUInt32 ThreadState::process_callbacks() {
 SceKernelThreadInfo ThreadState::info() {
     const std::lock_guard<std::mutex> lock(thread_mutex);
     SceKernelThreadInfo info{};
-    strncpy(info.name, name.c_str(), SCE_UID_NAMELEN);
+    std::ranges::copy(name, info.name);
     info.attr = thread_attr;
     info.stack = Ptr<void>(stack.get());
     info.stackSize = stack_size;
