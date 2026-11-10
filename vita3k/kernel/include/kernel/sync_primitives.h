@@ -256,11 +256,13 @@ class Mutex : public SyncPrimitive {
 public:
     const SceInt32 init_count;
     const Ptr<SceKernelLwMutexWork> workarea;
+    // The ceiling priority a heavy mutex was created with, SCE_KERNEL_LOWEST_PRIORITY_KERNEL for none.
+    // It's reported, not applied yet.
+    const int ceiling;
 
-    Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, Ptr<SceKernelLwMutexWork> workarea = {});
-    // Returns the error for a name, attributes or count the caller can't use, or 0. Kernel callers may
-    // use attributes games can't.
-    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count, bool kernel);
+    Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea = {});
+    // Returns the error for arguments the caller can't use, or 0. Kernel callers may use more attributes.
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count, const SceKernelMutexOptParam *opt, bool kernel);
 
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks);
     // Relocks the mutex after a condition variable wait. No timeout, and target is the reported wait.

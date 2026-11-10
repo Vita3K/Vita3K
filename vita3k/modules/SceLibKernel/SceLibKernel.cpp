@@ -1266,12 +1266,8 @@ EXPORT(int, sceKernelCreateMsgPipeWithLR) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
+EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, Ptr<SceKernelMutexOptParam> opt_param) {
     TRACY_FUNC(sceKernelCreateMutex, name, attr, init_count, opt_param);
-    if (attr & SCE_KERNEL_MUTEX_ATTR_CEILING) {
-        STUBBED("priority ceiling feature is not supported");
-    }
-
     return CALL_EXPORT(_sceKernelCreateMutex, name, attr, init_count, opt_param);
 }
 
