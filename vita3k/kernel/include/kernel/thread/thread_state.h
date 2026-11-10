@@ -180,10 +180,9 @@ struct ThreadState final {
     // it, or an error for a dormant thread or a resume with no suspend.
     int vm_suspend();
     int vm_resume();
-    // Waits until a ForVM suspend has stopped the thread, then gets the context it stopped with, its
-    // TPIDRURW and whether it stopped inside a kernel call. Returns NOT_SUSPENDED if no ForVM
-    // suspend holds it.
-    SceInt32 get_vm_context(CPUContext &context, uint32_t &tpidrurw, bool &in_kernel_call);
+    // Waits until a ForVM suspend has stopped the thread, then gets the context it stopped with and
+    // whether it stopped inside a kernel call. Returns NOT_SUSPENDED if no ForVM suspend holds it.
+    SceInt32 get_vm_context(CPUContext &context, bool &in_kernel_call);
 
 private:
     // How a thread ends, each value stronger than the ones before it

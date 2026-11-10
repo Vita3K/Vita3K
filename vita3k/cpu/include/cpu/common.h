@@ -67,6 +67,7 @@ struct CPUContext {
     std::array<float, 64> fpu_registers{};
     uint32_t cpsr = 0;
     uint32_t fpscr = 0;
+    uint32_t tpidrurw = 0;
 
     // The registers as 32-bit words: r0 to r15, cpsr, s0 to s63, then fpscr. A d register is two
     // words and a q register four.
