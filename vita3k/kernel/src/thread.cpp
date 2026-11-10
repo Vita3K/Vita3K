@@ -101,7 +101,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
     // A thread starts with TPIDRURW at 0, also when it starts again
-    cpu->load_context(initial_context(stack.get() + stack_size));
+    cpu->set_context(initial_context(stack.get() + stack_size));
     // The entry gets the size of the argument data and its copy on the stack, or null for none
     Address data_addr = 0;
     if (argp && arglen > 0) {
@@ -286,13 +286,13 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
 uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(mutex);
     // Save the thread's context before the call overwrites PC and LR
-    const CPUContext saved = cpu->save_context();
+    const CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
     cpu->place_call(fn, args);
     // A call runs inside a kernel call, so a hold before its first instruction finds the thread there
     const std::optional<uint32_t> returned = run_guest(lock, true);
     // The caller and the function should keep to the calling convention, but put everything back
-    cpu->load_context(saved);
+    cpu->set_context(saved);
     cpu->set_tpidruro(tpidruro);
     // A call the thread's end cut short returns the exit status
     return returned.value_or(returned_value);
@@ -300,16 +300,16 @@ uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> arg
 
 uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(mutex);
-    const CPUContext saved = cpu->save_context();
+    const CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
     CPUContext entry = initial_context(saved.get_sp());
     // The callback sees the thread's TPIDRURW, and the thread gets its own value back after it
     entry.tpidrurw = saved.tpidrurw;
     const int vfp_exception = std::exchange(tls_slot(TLS_VFP_EXCEPTION), 0);
-    cpu->load_context(entry);
+    cpu->set_context(entry);
     cpu->place_call(fn, args);
     const std::optional<uint32_t> returned = run_guest(lock, true);
-    cpu->load_context(saved);
+    cpu->set_context(saved);
     cpu->set_tpidruro(tpidruro);
     tls_slot(TLS_VFP_EXCEPTION) = vfp_exception;
     return returned.value_or(returned_value);
@@ -722,7 +722,7 @@ SceInt32 ThreadState::get_vm_context(CPUContext &context, bool &in_kernel_call) 
     cv.wait(lock, [&] { return parked || status != ThreadStatus::running || vm_suspend_count == 0 || exiting(); });
     if (vm_suspend_count == 0)
         return SCE_KERNEL_ERROR_NOT_SUSPENDED;
-    context = cpu->save_context();
+    context = cpu->get_context();
     // Inside a kernel call means waiting, or held on the way back from one
     in_kernel_call = status == ThreadStatus::waiting || (parked && stopped_after_kernel_call);
     return SCE_KERNEL_OK;

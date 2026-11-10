@@ -142,7 +142,7 @@ static void initialize_fiber(EmuEnvState &emuenv, const ThreadStatePtr &thread, 
     fiber->sizeContext = sizeContext;
     fiber->cpu = new CPUContext;
     fiber->status = FiberStatus::INIT;
-    *fiber->cpu = thread->cpu->save_context();
+    *fiber->cpu = thread->cpu->get_context();
 
     if (addrContext && sizeContext > 0) {
         memset(addrContext.get(emuenv.mem), 0xCC, sizeContext);
@@ -155,7 +155,7 @@ static void initialize_fiber(EmuEnvState &emuenv, const ThreadStatePtr &thread, 
 // running thread's value.
 static void load_fiber_context(ThreadState &thread, CPUContext ctx) {
     ctx.tpidrurw = thread.cpu->get_tpidrurw();
-    thread.cpu->load_context(ctx);
+    thread.cpu->set_context(ctx);
 }
 
 EXPORT(int, _sceFiberAttachContextAndRun, SceFiber *fiber, Address addrContext, SceSize sizeContext, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
@@ -178,7 +178,7 @@ EXPORT(int, _sceFiberAttachContextAndRun, SceFiber *fiber, Address addrContext, 
     }
 
     setup_fiber_to_run(emuenv, thread, fiber, thread->cpu->get_sp(), argOnRunTo);
-    set_thread_context(*state, thread->id, thread->cpu->save_context());
+    set_thread_context(*state, thread->id, thread->cpu->get_context());
     set_thread_fiber(*state, thread->id, fiber);
 
     load_fiber_context(*thread, *fiber->cpu);
@@ -206,7 +206,7 @@ EXPORT(int, _sceFiberAttachContextAndSwitch, SceFiber *fiber, Address addrContex
         fiber->cpu->set_sp(addrContext + sizeContext);
     }
 
-    *thread_fiber->cpu = thread->cpu->save_context();
+    *thread_fiber->cpu = thread->cpu->get_context();
     setup_fiber_to_run(emuenv, thread, fiber, ctx.get_sp(), argOnRunTo);
     thread_fiber->status = FiberStatus::SUSPEND;
     thread_fiber->argOnRun = argOnRun;
@@ -357,7 +357,7 @@ EXPORT(SceInt32, sceFiberReturnToThread, uint32_t argOnReturnTo, Ptr<uint32_t> a
         log_fiber(*state, thread, fiber, "Return to thread");
     }
 
-    *fiber->cpu = thread->cpu->save_context();
+    *fiber->cpu = thread->cpu->get_context();
     fiber->cpu->cpu_registers[0] = SCE_FIBER_OK;
     fiber->status = FiberStatus::SUSPEND;
     fiber->argOnRun = argOnRun;
@@ -394,7 +394,7 @@ EXPORT(SceUInt32, sceFiberRun, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUIn
     }
 
     setup_fiber_to_run(emuenv, thread, fiber, thread->cpu->get_sp(), argOnRunTo);
-    set_thread_context(*state, thread->id, thread->cpu->save_context());
+    set_thread_context(*state, thread->id, thread->cpu->get_context());
     set_thread_fiber(*state, thread->id, fiber);
 
     load_fiber_context(*thread, *fiber->cpu);
@@ -434,7 +434,7 @@ EXPORT(SceUInt32, sceFiberSwitch, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<Sce
         log_fiber(*state, thread, fiber, "Switch");
     }
 
-    *thread_fiber->cpu = thread->cpu->save_context();
+    *thread_fiber->cpu = thread->cpu->get_context();
     thread_fiber->status = FiberStatus::SUSPEND;
     thread_fiber->argOnRun = argOnRun;
     thread_fiber->cpu->cpu_registers[0] = SCE_FIBER_OK;
