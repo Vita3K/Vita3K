@@ -80,7 +80,7 @@ callback_return_in_waits        pass
 callback_return_pass            pass
 callback_stack                  pass
 callback_vfp_nested             pass
-callback_vfp_return             fail     # a kernel call gives the caller all its d registers back, the Vita's resume of a kernel save fills every one but d2, d3 and d8 to d15
+callback_vfp_return             pass
 callback_wait_requeue           pass
 cancel_calls                    pass
 cancel_calls_more               fail     # sceKernelWaitMultipleEvents

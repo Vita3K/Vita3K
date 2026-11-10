@@ -26,6 +26,7 @@
 #include <util/log.h>
 
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cstring>
 #include <memory>
@@ -48,6 +49,16 @@ static CPUContext initial_context(Address stack_top) {
     ctx.set_sp(stack_top);
     ctx.fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
     return ctx;
+}
+
+// Puts the fill value in the d registers the kernel doesn't keep when it resumes a thread
+static void fill_unkept_vfp(CPUContext &ctx) {
+    for (std::size_t d = 0; d < 32; d++) {
+        if (d == 2 || d == 3 || (d >= 8 && d <= 15))
+            continue;
+        ctx.fpu_registers[2 * d] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_LOW);
+        ctx.fpu_registers[2 * d + 1] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_HIGH);
+    }
 }
 
 ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUStatePtr cpu, const char *name, Address entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr)
@@ -307,13 +318,18 @@ uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> arg
 
 uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(mutex);
-    const CPUContext saved = cpu->get_context();
+    CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
     CPUContext entry = initial_context(saved.get_sp());
     // The callback sees the thread's TPIDRURW, and the thread gets its own value back after it
     entry.tpidrurw = saved.tpidrurw;
     const int vfp_exception = std::exchange(tls_slot(TLS_VFP_EXCEPTION), 0);
     const std::optional<uint32_t> returned = enter_guest(lock, entry, fn, args);
+    // It returns through the kernel, which resumes the thread from the save it took before. d2 and
+    // d3 are s4 to s7, which keep the callback's values.
+    const CPUContext end = cpu->get_context();
+    std::copy_n(end.fpu_registers.begin() + 4, 4, saved.fpu_registers.begin() + 4);
+    fill_unkept_vfp(saved);
     cpu->set_context(saved);
     cpu->set_tpidruro(tpidruro);
     tls_slot(TLS_VFP_EXCEPTION) = vfp_exception;
