@@ -184,8 +184,7 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
             const Ending old_ending = ending;
             set_ending(Ending::none);
             lock.unlock();
-            // A thread event handler starts with the VFP state of a new thread, like a callback
-            const int ret = call_guest(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg }, true);
+            const int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
             if (ret != 0)
                 LOG_WARN("Thread end event handler returned {}", log_hex(ret));
             lock.lock();
@@ -227,10 +226,10 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         if (exiting())
             return std::nullopt;
 
-        // The thread start event runs once per start, with the VFP state of a new thread
+        // The thread start event runs once per start
         if (std::exchange(run_start_callback, false) && kernel.thread_event_start) {
             lock.unlock();
-            const int ret = call_guest(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg }, true);
+            const int ret = run_callback(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg });
             if (ret != 0)
                 LOG_WARN("Thread start event handler returned {}", log_hex(ret));
             lock.lock();
@@ -282,33 +281,35 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
     }
 }
 
-uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args, bool fresh_vfp_state) {
-    std::unique_lock<std::mutex> thread_lock(mutex);
-
-    // Save the thread's context before the call overwrites PC and LR. A callback sees the thread's
-    // TPIDRURW, and the thread gets its own value back after it.
-    const CPUContext previous_ctx = cpu->save_context();
-    const uint32_t previous_tpidruro = cpu->get_tpidruro();
-    int &vfp_exception = tls_slot(TLS_VFP_EXCEPTION);
-    const int previous_vfp_exception = vfp_exception;
-    if (fresh_vfp_state) {
-        cpu->set_fpscr(SCE_KERNEL_THREAD_INITIAL_FPSCR);
-        vfp_exception = 0;
-    }
-
+uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
+    std::unique_lock<std::mutex> lock(mutex);
+    // Save the thread's context before the call overwrites PC and LR
+    const CPUContext saved = cpu->save_context();
+    const uint32_t tpidruro = cpu->get_tpidruro();
     cpu->place_call(fn, args);
+    // A call runs inside a kernel call, so a hold before its first instruction finds the thread there
+    const std::optional<uint32_t> returned = run_guest(lock, true);
+    // The caller and the function should keep to the calling convention, but put everything back
+    cpu->load_context(saved);
+    cpu->set_tpidruro(tpidruro);
+    // A call the thread's end cut short returns the exit status
+    return returned.value_or(returned_value);
+}
 
-    // A callback runs inside a kernel call, so a hold before its first instruction finds the
-    // thread there
-    const std::optional<uint32_t> returned = run_guest(thread_lock, true);
-
-    // The caller and the callback should keep to the calling convention, but put everything back
-    cpu->load_context(previous_ctx);
-    cpu->set_tpidruro(previous_tpidruro);
-    if (fresh_vfp_state)
-        vfp_exception = previous_vfp_exception;
-
-    // A callback the thread's end cut short returns the exit status
+uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
+    std::unique_lock<std::mutex> lock(mutex);
+    const CPUContext saved = cpu->save_context();
+    const uint32_t tpidruro = cpu->get_tpidruro();
+    CPUContext entry = initial_context(saved.get_sp());
+    // The callback sees the thread's TPIDRURW, and the thread gets its own value back after it
+    entry.tpidrurw = saved.tpidrurw;
+    const int vfp_exception = std::exchange(tls_slot(TLS_VFP_EXCEPTION), 0);
+    cpu->load_context(entry);
+    cpu->place_call(fn, args);
+    const std::optional<uint32_t> returned = run_guest(lock, true);
+    cpu->load_context(saved);
+    cpu->set_tpidruro(tpidruro);
+    tls_slot(TLS_VFP_EXCEPTION) = vfp_exception;
     return returned.value_or(returned_value);
 }
 
@@ -551,9 +552,8 @@ SceUInt32 ThreadState::process_callbacks() {
         }
         if (notification.count == 0)
             continue;
-        // A callback starts with the VFP state of a new thread, and the thread gets its own back after it
-        const uint32_t ret = call_guest(cb->cb_func.address(),
-            { static_cast<uint32_t>(notification.notifier_id), notification.count, static_cast<uint32_t>(notification.arg), cb->userdata.address() }, true);
+        const uint32_t ret = run_callback(cb->cb_func.address(),
+            { static_cast<uint32_t>(notification.notifier_id), notification.count, static_cast<uint32_t>(notification.arg), cb->userdata.address() });
         ++processed;
         // A callback that exits the thread also ends the wait it runs in
         {
