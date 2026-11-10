@@ -129,7 +129,7 @@ cond_callback_rejoin            pass
 cond_callback_takes_mutex       pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
 cond_error_time_left            fail     # a mutex delete ends its conditions' waits only at their timeout
-cond_errors                     fail     # close, signal to a thread errors, create attributes, open with a NULL name
+cond_errors                     fail     # close, signal to a thread errors, create attributes
 cond_final_check_kinds          fail     # threads ignore their core and priority, so the waiter runs as soon as its wait ends, returns before the notify and runs the callback only at its check
 cond_info_after_mutex_delete    fail     # a condition's info still names its mutex after the mutex's delete
 cond_mutex_cancel_during_wait   pass
@@ -203,7 +203,7 @@ event_callback_two_events       fail     # callbacks registered to a simple even
 event_edges                     pass
 event_flag                      pass
 event_flag_delete_bits          pass
-event_flag_errors               crash    # closing unknown UIDs, a NULL name
+event_flag_errors               fail     # closes are unimplemented and return 0
 event_flag_hold_callback_events pass
 event_flag_hold_callbacks       pass
 event_flag_hold_leak            pass
@@ -452,7 +452,7 @@ mutex_ceiling                   fail     # mutex priority ceilings
 mutex_ceiling_options           pass
 mutex_count_check_order         pass
 mutex_create_unmapped_options   fail     # the first page reads as mapped, so an option struct at 0x4 isn't refused
-mutex_errors                    crash    # closing unknown UIDs, a NULL name
+mutex_errors                    fail     # closes are unimplemented and return 0, and an info with a NULL pointer gives 0x80020005
 mutex_owner_end_order           skip     # threads ignore their core and priority, so the waiters an ending owner hands its locks to run in host order
 mutex_owner_relock_waiters      pass
 mutex_recursive_partial_unlock_waiter pass
@@ -467,14 +467,14 @@ nonopenable_name_long_each_kind pass
 nonwaiting_calls_no_yield       fail     # a non-waiting mutex lock or unlock yields to the other thread, the Vita doesn't
 object_limit_source             fail     # no object limit, Vita3K makes 4096 semaphores where the Vita stops plain objects at 2028 and openable ones at 236
 object_limits                   fail     # no limit on the number of objects
-open                            fail     # opening an object that isn't openable
+open                            pass
 open_close_kinds                fail     # an open returns the creating UID, close does nothing
 open_name_rules                 fail     # openable names, NAME_TOO_LONG at 32 characters
 open_uid_limits                 fail     # no limit on opened UIDs
-openable_name_limit_each_kind   fail     # a rwlock opens by its name with one more character
+openable_name_limit_each_kind   pass
 opened_cancel_after_close       fail     # cancels through a closed opened UID succeed
 opened_cancel_msgpipe_timer     pass
-opened_cancel_mutex_rwlock      fail     # rwlock calls don't take opened UIDs
+opened_cancel_mutex_rwlock      pass
 opened_cancel_sema_evflag       pass
 opened_cancel_simple_event      pass
 opened_event_queue_across_uids  pass
@@ -556,7 +556,7 @@ self_mask_change_yield          fail     # a self affinity change to a new mask 
 self_priority_drop              fail     # threads ignore their core and priority
 sema_call_error_order           fail     # semaphore calls on a mutex UID give other errors than the Vita's 0x8002000F
 sema_count_overflow             pass
-sema_errors                     crash    # closing unknown UIDs, a NULL name
+sema_errors                     fail     # closes are unimplemented and return 0
 sema_head_leaves                fail     # a head that leaves by a priority drop doesn't let the next waiter take
 sema_mutex_edges                pass
 sema_poll_negative              pass
@@ -752,7 +752,7 @@ timer_cancel_with_set_pattern   fail     # event calls don't take timer UIDs
 timer_clear_mask_pattern        pass
 timer_delete_event              pass
 timer_edges                     pass
-timer_errors                    crash    # close of unknown UIDs, open and create with a NULL name
+timer_errors                    fail     # closes are unimplemented and return 0, and a create takes any attribute
 timer_event_interval_zero       pass
 timer_event_replaced_armed      pass
 timer_event_schedule_offset     pass
