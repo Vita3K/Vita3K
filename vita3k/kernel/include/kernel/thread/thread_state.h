@@ -117,10 +117,9 @@ struct ThreadState final : public WithUidClass<SyncPrimitive, UidClass::thread> 
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
     [[nodiscard]] SceInt32 wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks);
-    // Waits on target until woken by wake(), the deadline passes, or the thread exits or is deleted,
-    // which ends it with THREAD_STOPPED.
-    // With target.callbacks, a notified callback ends it with NOTIFY_CALLBACK, and the caller runs
-    // it with run_callbacks(). A stale wake can end it early, so callers must recheck their condition.
+    // sleep(), but a callback already pending ends a wait with callbacks at once with NOTIFY_CALLBACK,
+    // and the caller then runs it with run_callbacks(). A stale wake can end it early, so callers must
+    // recheck their condition.
     [[nodiscard]] SceInt32 wait(WaitTarget target, Deadline deadline);
     // Runs the notified callbacks for a wait that ended with NOTIFY_CALLBACK, with no lock held.
     // Returns THREAD_STOPPED if the thread exits or is deleted meanwhile.
@@ -222,6 +221,9 @@ private:
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
     // Whether the thread's current wait has a result or the thread is ending. With thread_mutex held.
     bool wait_over() const { return exiting() || wait_result.has_value(); }
+    // Sleeps on target until wake(), a callback notify during the sleep if target.callbacks, the
+    // deadline, or the thread's exit or delete (THREAD_STOPPED), with thread_mutex held through lock.
+    [[nodiscard]] SceInt32 sleep(std::unique_lock<std::mutex> &lock, WaitTarget target, Deadline deadline);
 
     // Runs guest code at one level, the thread's run or a call, with thread_mutex held through lock, which
     // it releases around guest code and the handling of each exit. A call the kernel makes starts

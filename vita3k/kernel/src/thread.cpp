@@ -420,7 +420,11 @@ SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     const Deadline deadline = deadline_from(timeout);
     SceInt32 r = SCE_KERNEL_OK;
     while (!take_signal()) {
-        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SCE_KERNEL_SIGNAL_WAIT_ID, callbacks }, deadline);
+        {
+            // A signal wait sleeps with a callback pending, only a notify during the sleep ends it
+            std::unique_lock<std::mutex> lock(thread_mutex);
+            r = sleep(lock, { SCE_KERNEL_WAITTYPE_SIGNAL, SCE_KERNEL_SIGNAL_WAIT_ID, callbacks }, deadline);
+        }
         if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
         if (r != SCE_KERNEL_OK)
@@ -523,9 +527,13 @@ SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32
 
 SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(thread_mutex);
-    // A pending callback ends a wait with callbacks at once
+    // A callback already pending ends a wait with callbacks at once
     if (!wait_result && target.callbacks && callback_pending)
         wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
+    return sleep(lock, target, deadline);
+}
+
+SceInt32 ThreadState::sleep(std::unique_lock<std::mutex> &lock, WaitTarget target, Deadline deadline) {
     const auto woken = [&] { return wait_over(); };
     wait_target = target;
     update_status(ThreadStatus::waiting);

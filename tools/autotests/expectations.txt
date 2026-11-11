@@ -93,16 +93,16 @@ cb_wait_check_order             pass
 cb_wait_check_order_more        fail     # a message pipe call refused for its size doesn't run pending callbacks
 cb_wait_deadline_during_callback fail     # a signal or thread end wait whose deadline passes during a callback writes a time left of 0
 cb_wait_early_notify_timeout    pass
-cb_wait_early_notify_timeout_more fail     # a signal wait with callbacks runs a callback again after it notified itself, so it gets the signal at once instead of timing out
+cb_wait_early_notify_timeout_more pass
 cb_wait_initial_callback_deadline pass
 cb_wait_initial_callback_deadline_more fail     # signal and thread end waits count their timeout from after the callbacks pending at the call, not from the call
-cb_wait_self_notify_during_sleep fail     # a signal wait runs a callback that notified itself again before it sleeps, where the Vita sleeps with it pending
+cb_wait_self_notify_during_sleep pass
 cb_wait_take_final_check        pass
 cb_wait_take_final_check_more   fail     # a delay runs a callback pending again on its first pass instead of returning, and sceKernelWaitMultipleEvents
 cb_wait_timeout_copy            pass
 cb_wait_timeout_copy_more       fail     # sceKernelWaitMultipleEvents
 cb_wait_zero_timeout_notify     pass
-cb_wait_zero_timeout_notify_more fail     # a signal or thread end wait with callbacks and a timeout of 0 runs a callback that notified itself again, and gets what that run gave instead of timing out
+cb_wait_zero_timeout_notify_more fail     # a thread end wait with callbacks and a timeout of 0 runs a callback that notified itself again, and gets what that run gave instead of timing out
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_cancel_drops_boost      fail     # a ceiling mutex doesn't raise its owner's priority
@@ -175,7 +175,7 @@ cross_core_scheduling           fail     # threads ignore their core and priorit
 delay                           pass
 delay_cb_early_return           fail     # a delay runs a callback that notified itself again and sleeps instead of returning with it pending
 delay_cb_one_yields             pass
-delay_cb_self_notify            fail     # a delay or a signal wait runs a callback that notified itself again instead of returning or sleeping with it pending
+delay_cb_self_notify            fail     # a delay runs a callback that notified itself again instead of returning with it pending
 delay_huge_values               pass
 delay_negative                  pass
 delay_precision                 skip     # timing, and waits with a timeout of 50 or 100 microseconds end before 150
@@ -576,7 +576,7 @@ signal_state_across_restart     fail     # a thread's start keeps a signal sent 
 signal_wait_arguments           pass
 signal_wait_callbacks_first     pass
 signal_wait_claim_races         fail     # a woken thread runs at once, so it has ended when the main thread reads its status
-signal_wait_second_notify       fail     # a signal wait runs a callback that notified itself again before it sleeps, where the Vita sleeps with it pending
+signal_wait_second_notify       pass
 simple_event                    pass
 simple_event_auto_waiters       pass
 simple_event_cancel             pass
