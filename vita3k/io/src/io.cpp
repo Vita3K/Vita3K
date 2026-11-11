@@ -975,6 +975,9 @@ int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const
             return IO_ERROR(SCE_ERROR_ERRNO_ENOTEMPTY);
     }
     if (!fs::remove(emulated_path, error_code)) {
+        // An entry added after the check
+        if (error_code == std::errc::directory_not_empty)
+            return IO_ERROR(SCE_ERROR_ERRNO_ENOTEMPTY);
         LOG_ERROR("Cannot remove dir: {} ({})", dir, device::construct_normalized_path(device, translated_path));
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
