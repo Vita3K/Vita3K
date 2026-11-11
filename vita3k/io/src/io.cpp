@@ -968,11 +968,13 @@ int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const
 
     // The Vita removes only a directory, and only an empty one
     std::error_code error_code;
-    if (fs::exists(emulated_path, error_code) && !fs::is_directory(emulated_path, error_code))
-        return IO_ERROR(SCE_ERROR_ERRNO_ENOTDIR);
-    if (!fs::remove(emulated_path, error_code)) {
-        if (fs::is_directory(emulated_path, error_code) && !fs::is_empty(emulated_path, error_code))
+    if (fs::exists(emulated_path, error_code)) {
+        if (!fs::is_directory(emulated_path, error_code))
+            return IO_ERROR(SCE_ERROR_ERRNO_ENOTDIR);
+        if (!fs::is_empty(emulated_path, error_code))
             return IO_ERROR(SCE_ERROR_ERRNO_ENOTEMPTY);
+    }
+    if (!fs::remove(emulated_path, error_code)) {
         LOG_ERROR("Cannot remove dir: {} ({})", dir, device::construct_normalized_path(device, translated_path));
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
