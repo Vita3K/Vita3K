@@ -20,6 +20,8 @@
 #include <renderer/commands.h>
 #include <renderer/types.h>
 
+#include <chrono>
+#include <functional>
 #include <string>
 
 struct MemState;
@@ -70,6 +72,10 @@ bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
 void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config);
+// Runs fn on the render thread once it has run every batch that is ready, so the frames the app
+// submitted are complete, and waits for it. Returns false if it didn't start within timeout, and then
+// it never runs.
+bool run_when_idle(State &state, std::function<void()> fn, std::chrono::milliseconds timeout);
 void stop_render_thread(State &state);
 bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
 

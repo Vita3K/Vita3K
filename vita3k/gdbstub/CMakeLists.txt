@@ -8,4 +8,17 @@ add_library(
 
 target_include_directories(gdbstub PUBLIC include)
 target_link_libraries(gdbstub PUBLIC cpu emuenv)
-target_link_libraries(gdbstub PRIVATE kernel)
+target_link_libraries(gdbstub PRIVATE audio config ctrl display io kernel)
+
+if(NOT ANDROID)
+    add_executable(
+        gdbstub-tests
+        tests/gdb_state_tests.cpp
+    )
+
+    target_include_directories(gdbstub-tests PRIVATE include)
+    target_link_libraries(gdbstub-tests PRIVATE audio gdbstub googletest)
+    add_test(NAME gdbstub COMMAND gdbstub-tests)
+    # A shutdown that hangs fails instead of holding up the suite
+    set_tests_properties(gdbstub PROPERTIES TIMEOUT 60)
+endif()

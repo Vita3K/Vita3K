@@ -52,6 +52,8 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             {
                 const std::lock_guard<std::mutex> guard_info(display.display_info_mutex);
                 ++display.vblank_count;
+                if (!emuenv.kernel.is_threads_paused() && !emuenv.kernel.is_threads_suspended())
+                    ++display.app_vblank_count;
 
                 has_frame = static_cast<bool>(display.sce_frame.base);
 
