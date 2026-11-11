@@ -178,7 +178,7 @@ delay_cb_one_yields             pass
 delay_cb_self_notify            fail     # a delay or a signal wait runs a callback that notified itself again instead of returning or sleeping with it pending
 delay_huge_values               pass
 delay_negative                  pass
-delay_precision                 skip     # timing, how long short delays and timeouts take
+delay_precision                 skip     # timing, and waits with a timeout of 50 or 100 microseconds end before 150
 delay_variants                  pass
 delay_wait_id                   pass
 delete_race_end_waiters         pass
