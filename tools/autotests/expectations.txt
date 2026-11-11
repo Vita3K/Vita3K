@@ -235,7 +235,7 @@ files                           fail     # closed file, EXCL, access mode and wr
 fios_overlay02                  fail     # FIOS overlays
 fios_overlay_resolve            fail     # FIOS overlays
 fios_overlay_table              fail     # FIOS overlays
-format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
+format                          fail     # sceClibSnprintf with %#x and long arguments
 forvm_attr_refusal              pass
 forvm_suspend_core_handover     fail     # the ForVM suspend hands the core over in the wrong order between T and U
 forvm_suspend_preempt_count     fail     # the interrupt preempt count of thread info stays 0, a ForVM suspend doesn't grow it

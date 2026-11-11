@@ -317,13 +317,8 @@ EXPORT(int, sceClibSnprintf, char *dst, SceSize dst_max_size, const char *fmt, m
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    int result = utils::snprintf(dst, dst_max_size, fmt, *(thread->cpu), emuenv.mem, args);
-
-    if (!result) {
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-    }
-
-    return result;
+    // An empty result is no error, the Vita returns its length of 0
+    return utils::snprintf(dst, dst_max_size, fmt, *(thread->cpu), emuenv.mem, args);
 }
 
 EXPORT(int, sceClibSnprintfChk) {
