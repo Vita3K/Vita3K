@@ -415,23 +415,19 @@ SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
         const std::lock_guard<std::mutex> lock(thread_mutex);
         return std::exchange(signal_pending, false);
     };
-    // A signal sent before ends the wait at once, with the timeout untouched
-    if (take_signal())
-        return SCE_KERNEL_OK;
     const Deadline deadline = deadline_from(timeout);
-    SceInt32 r = SCE_KERNEL_OK;
-    while (!take_signal()) {
+    SceInt32 r = callbacks ? run_callbacks() : SCE_KERNEL_OK;
+    // A signal sent before ends the wait at once, with the timeout as it was
+    while (r == SCE_KERNEL_OK && !take_signal()) {
         {
             // A signal wait sleeps with a callback pending, only a notify during the sleep ends it
             std::unique_lock<std::mutex> lock(thread_mutex);
             r = sleep(lock, { SCE_KERNEL_WAITTYPE_SIGNAL, SCE_KERNEL_SIGNAL_WAIT_ID, callbacks }, deadline);
         }
+        writeback_timeout(timeout, deadline);
         if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
-        if (r != SCE_KERNEL_OK)
-            break;
     }
-    writeback_timeout(timeout, deadline);
     return r;
 }
 

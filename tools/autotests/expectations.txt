@@ -88,14 +88,14 @@ cancel_calls                    pass
 cancel_calls_more               fail     # sceKernelWaitMultipleEvents
 cancel_unknown_counts           fail     # failed event flag, simple event, message pipe and timer cancels leave their counts as they were
 cb_wait_callback_writes_timeout pass
-cb_wait_callback_writes_timeout_more fail     # signal waits with callbacks read their timeout only after the pending callbacks ran, so a callback's write sets their timeout
+cb_wait_callback_writes_timeout_more pass
 cb_wait_check_order             pass
 cb_wait_check_order_more        fail     # a message pipe call refused for its size doesn't run pending callbacks
-cb_wait_deadline_during_callback fail     # a signal wait whose deadline passes during a callback writes a time left of 0
+cb_wait_deadline_during_callback pass
 cb_wait_early_notify_timeout    pass
 cb_wait_early_notify_timeout_more pass
 cb_wait_initial_callback_deadline pass
-cb_wait_initial_callback_deadline_more fail     # signal waits count their timeout from after the callbacks pending at the call, not from the call
+cb_wait_initial_callback_deadline_more pass
 cb_wait_self_notify_during_sleep pass
 cb_wait_take_final_check        pass
 cb_wait_take_final_check_more   fail     # sceKernelWaitMultipleEvents
