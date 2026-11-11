@@ -2,6 +2,7 @@
 # catches: pass, fail (exits normally with other output), crash (Vita3K exits with an error),
 # timeout, or skip (not run, for a test whose outcome depends on how busy the host is). Every test
 # must be listed, and one that doesn't do what its line says fails the run.
+active_cpu_mask_level           fail     # sceKernelChangeActiveCpuMask succeeds for an app thread instead of refusing its permission level
 address_ranges                  pass
 affinity_mask_values            fail     # the CPU fields of thread info, threads ignore their core
 affinity_migrate                fail     # the CPU fields of thread info, threads ignore their core
@@ -11,6 +12,7 @@ affinity_widen                  fail     # threads are never READY or STANDBY an
 app_free_sizes                  fail     # the app's code, data, stack and TLS aren't memory blocks, free sizes to the page
 app_memory_blocks               fail     # the app's code, data, stacks and TLS aren't memory blocks with their types
 app_memory_ranges               fail     # the app's own memory isn't in memory blocks, the find ignores its size
+app_start_free                  fail     # the app's code, data, stack and TLS aren't memory blocks, and the reported free size isn't the Vita's
 appmgr_app_param_string         fail     # sceAppMgrAppParamGetString sizes, the NUL and the errors
 appmgr_system_event             crash    # sceAppMgrReceiveSystemEvent, then a host access past the guest's memory
 atomics                         pass
@@ -238,6 +240,7 @@ fios_overlay_table              fail     # FIOS overlays
 format                          fail     # sceClibSnprintf with %#x and long arguments
 forvm_attr_refusal              pass
 forvm_suspend_core_handover     fail     # the ForVM suspend hands the core over in the wrong order between T and U
+forvm_suspend_exact_counts      fail     # thread info's preempt counters stay 0
 forvm_suspend_preempt_count     fail     # the interrupt preempt count of thread info stays 0, a ForVM suspend doesn't grow it
 fpscr_flags_across_calls        fail     # the start handler sees an inexact flag (0x10) in FPSCR that the Vita does not set
 gxm_context_memory              fail     # sceGxmCreateContext checks no buffer size, alignment, mapping or NULL pointer
@@ -306,17 +309,21 @@ lw_work_area_memory             fail     # misaligned lightweight work areas are
 lw_work_area_unmapped           crash    # a freed block's base still counts as in a block, so a work area there crashes
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 lw_zero_sum_recursive_owner     fail     # a lightweight mutex try lock that wraps the recursive count isn't refused
+main_thread_start               pass
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_access_by_type         fail     # writes to read only memory block types succeed where the Vita gives 0x80022005
+memblock_alias_33               fail     # opened memory blocks don't keep their original's lifetime rules
 memblock_alias_close_orders     fail     # a find of a closed alias still finds its block, the Vita gives 0x80022007
 memblock_alias_edges            fail     # finds of a freed spacer and of alias edge ranges give the wrong error
 memblock_alias_gaps             fail     # finds and info by range in the gaps around an alias and a freed block
+memblock_alias_holes_more       fail     # opened memory blocks don't keep their original's lifetime rules
 memblock_alias_write_through    fail     # a 0x10 alias open succeeds where the Vita refuses it with 0x80024B01
 memblock_alignment              pass
 memblock_alignment_free_size    pass
 memblock_alignment_zero         pass
 memblock_base_block             pass
 memblock_cdialog_partition      fail     # USER_CDIALOG_RW holds more than the Vita, and its full error is 0x8002710B
+memblock_cdram_failed_validation fail     # a CDRAM block refused for its options takes nothing from the CDRAM free size
 memblock_contents               pass
 memblock_dup_name_free          fail     # ENABLE_OPEN names aren't unique
 memblock_failed_alloc_free      fail     # a 1 GiB allocation gives NO_MEMORY, not NO_FREE_PHYSICAL_PAGE
@@ -325,6 +332,7 @@ memblock_find_ranges            fail     # the find ignores its size, info by ra
 memblock_for_vm                 pass
 memblock_for_vm_domain          pass
 memblock_for_vm_failed_alloc    pass
+memblock_for_vm_free_minus_one  fail     # sceKernelFreeMemBlockForVM(-1) doesn't take a stale size off the VM block total
 memblock_for_vm_names           fail     # an open by a name that blocks for code share maps a block for code
 memblock_for_vm_refree          fail     # the find ignores its size, a block for code opens by its name
 memblock_for_vm_space           pass
@@ -347,14 +355,18 @@ memblock_open_lifetime          fail     # an open returns its original's UID, s
 memblock_open_name_case         pass
 memblock_open_name_reuse        fail     # an open returns its original's UID, sceKernelCloseMemBlock does nothing
 memblock_open_names             fail     # ENABLE_OPEN names aren't unique or cut to 31 characters
+memblock_open_other_class       fail     # sceKernelOpenMemBlock doesn't check the flags first or tell other kinds of objects from unknown names
 memblock_open_types             fail     # every block type opens
+memblock_opt3c_roundup          fail     # the option word for the size rounding isn't supported
 memblock_opt_attrs              pass
 memblock_opt_effects            fail     # memory block UIDs aren't process UIDs, sceKernelOpenMemBlock, what PHYCONT takes
 memblock_opt_unused_fields      pass
+memblock_phycont_charge         fail     # a PHYCONT block takes its plain size from the free size, not the rounded one
 memblock_phycont_open           fail     # an alias opened with 0x10 keeps the type and access of its original
 memblock_placement              fail     # lookups past a block, the errors when memory runs out
 memblock_readonly_out           fail     # opened blocks are writable, no write check on output parameters
 memblock_region_live_reuse      pass
+memblock_rx_contents            fail     # code and read only blocks are zeroed when allocated, and option word 15 is refused
 memblock_size_granule           pass
 memblock_size_wrap              fail     # sizes near the top of the 32-bit range give NO_MEMORY
 memblock_sync_kinds             pass
@@ -362,11 +374,13 @@ memblock_threads                fail     # thread stacks don't count in the free
 memblock_types_all              pass
 memblock_uid_kinds              fail     # sceKernelCloseMemBlock does nothing, other kinds of UID give INVALID_UID
 memblock_uid_no_reuse           fail     # memory block UIDs don't have the UID bits and an alias reuses a closed alias's UID
+memblock_unaligned_access       pass
 memblock_vaddr_paddr            pass
 misc_edges                      fail     # two openable objects with the same name
 module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
 module_start_threads            fail     # thread event handlers don't run for module start and stop threads
 module_start_vfp                pass
+module_text_padding             fail     # the app's code isn't a memory block
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_async_partial_receive   fail     # message pipe calls with DONT_WAIT finish at once like a try instead of in the background, and a pipe isn't an event
@@ -572,6 +586,7 @@ simple_event_info               pass
 simple_event_null_pointers      pass
 simple_event_open_close_bits    pass
 simple_event_open_close_notify_arg fail     # callbacks registered to a simple event aren't notified by its open and close
+simple_event_preempt_counter    fail     # thread info's preempt counters stay 0
 simple_event_wait_null          pass
 simple_event_waiter_patterns    fail     # a raised waiter in a simple event priority queue gets the wrong cancel count and results
 simple_event_wake_snapshot      pass
@@ -605,6 +620,7 @@ suspend_vm_syscall_boundary     pass
 suspend_wake_status_at_once     skip     # whether a woken waiter suspended for VM still shows READY or already parked as SUSPENDED is a race, and so is its relock
 suspend_wake_status_kinds       skip     # whether a woken waiter suspended for VM still shows READY or already parked as SUSPENDED is a race
 suspended_nonobject_waits       pass
+sync_object_memory_cost         fail     # kernel objects take no main memory
 syscall_callee_saved            pass
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
@@ -616,6 +632,7 @@ system_info_counters            fail     # core 0 never goes idle, so its idle a
 thread                          pass
 thread_call_states              fail     # a thread ready behind a gate reports RUNNING where the Vita reports READY
 thread_change_attr              pass
+thread_change_cpu_count_never_ran fail     # thread info's CPU change count is 0 before a thread runs and never grows
 thread_context_core_registers   fail     # a waiting thread's context sp is the one inside the wait, not the one before it
 thread_context_for_vm           pass
 thread_context_for_vm_error_order fail     # Get checks block sizes before the thread ID, Set skips the caller and VM checks and returns 0 without blocks
@@ -683,6 +700,7 @@ thread_nouse_vfp                fail     # a waiting thread keeps d16 across its
 thread_null_name                pass
 thread_opt_fields               fail     # the thread option struct's fields aren't checked
 thread_opt_param                fail     # thread option struct size and attribute checks
+thread_own_run_clocks           fail     # thread info's run clocks stay 0
 thread_priority                 pass
 thread_ready_status             fail     # a thread that can run but doesn't reports RUNNING instead of READY
 thread_restart                  fail     # the stack free size of a thread started again
@@ -806,6 +824,7 @@ wake_ready_areas                fail     # threads ignore their core and priorit
 wake_spread                     fail     # threads ignore their core
 wake_target_core                fail     # threads ignore their core
 wake_waker_core                 fail     # threads ignore their core
+waker_vfp_fill                  fail     # a call that wakes a higher priority thread keeps every d register
 wrapper_out_zero                fail     # failed cancels of simple events and timers on unknown UIDs leave the count as it was
 yield_order                     fail     # threads ignore their core and priority
 zero_timeout_wait_no_yield      fail     # threads ignore their priority, so a ready thread runs while the caller spins
