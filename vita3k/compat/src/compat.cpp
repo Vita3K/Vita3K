@@ -16,14 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <compat/functions.h>
-#include <compat/state.h>
-#include <config/state.h>
 #include <fmt/std.h>
 #include <util/log.h>
 
 #include <miniz.h>
 #include <pugixml.hpp>
 
+#include <fstream>
 #include <regex>
 #include <span>
 

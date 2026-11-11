@@ -275,7 +275,12 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         }
 
         state.render_frame(display, gxm, mem);
+        if (state.screenshot_requested.exchange(false) && state.screenshot_callback)
+            state.screenshot_callback();
+        if (state.frontend_frame_callback)
+            state.frontend_frame_callback();
         state.swap_window();
+
         state.async_flip_requested.store(false, std::memory_order_relaxed);
 
 #ifdef TRACY_ENABLE
@@ -297,6 +302,8 @@ void stop_render_thread(State &state) {
     if (state.render_thread && state.render_thread->joinable())
         state.render_thread->join();
     state.render_thread.reset();
+    if (state.screenshot_requested.exchange(false))
+        LOG_WARN("Screenshot request discarded because the render thread stopped.");
     state.command_buffer_queue.reset();
 }
 

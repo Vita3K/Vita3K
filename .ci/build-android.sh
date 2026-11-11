@@ -10,8 +10,9 @@ if [[ -z "$OUTPUT_DIR" ]]; then
 fi
 
 mkdir -p android/app/assets
-rm -rf android/app/assets/data android/app/assets/shaders-builtin
+rm -rf android/app/assets/data android/app/assets/lang android/app/assets/shaders-builtin
 cp -r data android/app/assets/data
+cp -r lang android/app/assets/lang
 cp -r vita3k/shaders-builtin android/app/assets/shaders-builtin
 
 download_android_strings android/app/src/main/res

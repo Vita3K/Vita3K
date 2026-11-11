@@ -11,6 +11,10 @@
     <string name="action_back">Back</string>
     <string name="action_install">Install</string>
 
+    <!-- Update installer -->
+    <string name="update_apk_not_found">APK file not found.</string>
+    <string name="update_installer_launch_failed">Failed to launch installer.</string>
+
     <!-- Compatibility states -->
     <string name="compat_unknown">Unknown</string>
     <string name="compat_nothing">Nothing</string>
@@ -380,6 +384,8 @@
     <string name="settings_gpu_android_driver_section">Custom GPU Driver</string>
     <string name="settings_gpu_backend">Backend Renderer</string>
     <string name="settings_gpu_backend_desc">Select the preferred backend renderer. Vulkan is recommended for most systems.</string>
+    <string name="settings_interface_frontend">Android interface</string>
+    <string name="settings_interface_frontend_desc">Choose Compose or the complete ImGui frontend. The change takes effect the next time Vita3K starts.</string>
     <string name="settings_gpu_graphics_device">Graphics Device</string>
     <string name="settings_gpu_accuracy">Rendering Accuracy</string>
     <string name="settings_gpu_accuracy_desc">Set the renderer accuracy level for Vulkan. High accuracy may improve visuals but reduce performance.</string>
