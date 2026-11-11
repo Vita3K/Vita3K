@@ -25,6 +25,7 @@
 #include <packages/functions.h>
 
 #include <chrono>
+#include <span>
 #include <thread>
 #include <utility>
 
@@ -1349,16 +1350,22 @@ EXPORT(int, sceKernelCloseTimer) {
     return STUBBED("References not implemented.");
 }
 
-// The length of the guest string at str, at most max, or -1 if it reaches unmapped memory first
-static int guest_strnlen(const MemState &mem, Ptr<const char> str, int max) {
-    for (int length = 0; length < max; length++) {
+// Copies a guest string of at most out.size() - 1 characters to out. Returns its length, out.size() if it is longer, or -1 if a byte isn't mapped.
+static int copy_guest_string(const MemState &mem, Ptr<const char> str, std::span<char> out) {
+    const int size = static_cast<int>(out.size());
+    for (int length = 0; length < size; length++) {
         const Address addr = str.address() + length;
-        if (!is_valid_addr(mem, addr))
+        if (!is_valid_addr(mem, addr)) {
+            out[0] = '\0';
             return -1;
-        if (*Ptr<const char>(addr).get(mem) == '\0')
+        }
+        const char c = *Ptr<const char>(addr).get(mem);
+        out[length] = c;
+        if (c == '\0')
             return length;
     }
-    return max;
+    out[size - 1] = '\0';
+    return size;
 }
 
 EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Ptr<SceKernelCallbackFunction> callbackFunc, Ptr<void> pCommon) {
@@ -1366,7 +1373,8 @@ EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Pt
     if (!name)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     // The name is read up to one byte past the kept length
-    const int name_length = guest_strnlen(emuenv.mem, name, SCE_UID_NAMELEN + 1);
+    char name_copy[SCE_UID_NAMELEN + 1];
+    const int name_length = copy_guest_string(emuenv.mem, name, name_copy);
     if (name_length < 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
     // With the openable attribute, a name past the kept length is refused before the attribute
@@ -1377,7 +1385,7 @@ EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Pt
     if (!is_valid_addr(emuenv.mem, callbackFunc.address() & ~1))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name.get(emuenv.mem), callbackFunc, pCommon), emuenv.kernel.get_next_uid());
+    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name_copy, callbackFunc, pCommon), emuenv.kernel.get_next_uid());
 }
 
 // Whether a game may create a thread with this priority, absolute or relative to the default one
