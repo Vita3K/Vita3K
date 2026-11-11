@@ -632,7 +632,7 @@ system_info_counters            fail     # core 0 never goes idle, so its idle a
 thread                          pass
 thread_call_states              fail     # a thread ready behind a gate reports RUNNING where the Vita reports READY
 thread_change_attr              pass
-thread_change_cpu_count_never_ran fail     # thread info's CPU change count is 0 before a thread runs and never grows
+thread_change_cpu_count_never_ran fail     # thread info's CPU change count never grows
 thread_context_core_registers   fail     # a waiting thread's context sp is the one inside the wait, not the one before it
 thread_context_for_vm           pass
 thread_context_for_vm_error_order fail     # Get checks block sizes before the thread ID, Set skips the caller and VM checks and returns 0 without blocks
@@ -649,7 +649,7 @@ thread_create_current_priority  pass
 thread_create_edges             pass
 thread_create_prio0_ceiling     fail     # a ceiling mutex doesn't raise its owner's priority
 thread_create_relative_priority pass
-thread_creator_ends             fail     # a child of a creator that has ended isn't in the creator's process
+thread_creator_ends             pass
 thread_delete_lookup            pass
 thread_edges                    pass
 thread_end_handler_wake         fail     # an END handler runs twice for a thread whose end wait wakes a thread above it
@@ -690,7 +690,7 @@ thread_for_vm_errors            pass
 thread_fpscr                    pass
 thread_id_registers             pass
 thread_info                     pass
-thread_info_fields              fail     # thread info process, CPU and run time fields
+thread_info_fields              fail     # thread info's run time, the last CPU is 0 since threads ignore their core, sceKernelGetThreadRunStatus
 thread_info_sizes               pass
 thread_lifecycle                fail     # starting with more arguments than the stack holds
 thread_limit_release            fail     # thread creates aren't refused at the Vita's limit, which gives 0x8002450D
@@ -788,7 +788,7 @@ timer_wake_order                fail     # threads ignore their core and priorit
 timer_zero_pattern_delete       pass
 tls                             crash    # TLS key 256 and slots by thread UID
 tls_blocks                      fail     # TLS isn't a memory block
-tls_process_id                  fail     # thread info doesn't report the process ID
+tls_process_id                  pass
 tls_slot5                       fail     # TLS slot 5 doesn't stop the lightweight mutex locks
 tls_start_slots                 pass
 uid                             pass
