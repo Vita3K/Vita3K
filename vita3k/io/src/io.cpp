@@ -753,31 +753,37 @@ int remove_file(IOState &io, const char *file, const fs::path &vita_fs_path, con
 }
 
 int rename(IOState &io, const char *old_name, const char *new_name, const fs::path &vita_fs_path, const char *export_name) {
-    auto device = device::get_device(old_name);
-    if (device == VitaIoDevice::_INVALID) {
+    auto old_device = device::get_device(old_name);
+    if (old_device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", old_name);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_old_path = translate_path(old_name, device, io.device_paths);
+    auto new_device = device::get_device(new_name);
+    if (new_device == VitaIoDevice::_INVALID) {
+        LOG_ERROR("Cannot find device for path: {}", new_name);
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    const auto translated_old_path = translate_path(old_name, old_device, io.device_paths);
     if (translated_old_path.empty()) {
-        LOG_ERROR("Cannot translate path: {}", translated_old_path);
+        LOG_ERROR("Cannot translate path: {}", old_name);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_new_path = translate_path(new_name, device, io.device_paths);
+    const auto translated_new_path = translate_path(new_name, new_device, io.device_paths);
     if (translated_new_path.empty()) {
-        LOG_ERROR("Cannot translate path: {}", translated_new_path);
+        LOG_ERROR("Cannot translate path: {}", new_name);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto emulated_old_path = device::construct_emulated_path(device, translated_old_path, vita_fs_path, io.redirect_stdio);
+    const auto emulated_old_path = device::construct_emulated_path(old_device, translated_old_path, vita_fs_path, io.redirect_stdio);
     if (!fs::exists(emulated_old_path)) {
         LOG_ERROR("File does not exist at path: {} (target path: {})", emulated_old_path, old_name);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto emulated_new_path = device::construct_emulated_path(device, translated_new_path, vita_fs_path, io.redirect_stdio);
+    const auto emulated_new_path = device::construct_emulated_path(new_device, translated_new_path, vita_fs_path, io.redirect_stdio);
 
     LOG_TRACE_IF(log_file_op, "{}: Renaming file {} to {} ({} to {})", export_name, old_name, new_name, emulated_old_path, emulated_new_path);
 
