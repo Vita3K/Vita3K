@@ -61,8 +61,10 @@ void CPUContext::place_call(MemState &mem, Address fn, Address return_pc, std::i
     for (size_t i = 0; i < std::min<size_t>(args.size(), 4); i++)
         cpu_registers[i] = args.begin()[i];
     if (args.size() > 4) {
-        // TODO align to 16 bytes
-        set_sp(get_sp() - 4 * (args.size() - 4));
+        constexpr size_t stack_alignment = 16;
+        const size_t stack_args_size = sizeof(uint32_t) * (args.size() - 4);
+        const size_t stack_size = (stack_args_size + stack_alignment - 1) & ~(stack_alignment - 1);
+        set_sp(get_sp() - static_cast<uint32_t>(stack_size));
         std::ranges::copy(args.begin() + 4, args.end(), Ptr<uint32_t>(get_sp()).get(mem));
     }
 }
