@@ -940,7 +940,7 @@ int close_dir(IOState &io, const SceUID fd, const char *export_name) {
     return 0;
 }
 
-int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const char *export_name) {
+int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const char *export_name, const bool recursive) {
     auto device = device::get_device(dir);
     if (device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", dir);
@@ -955,7 +955,16 @@ int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const
 
     LOG_TRACE_IF(log_file_op, "{}: Removing dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
 
-    if (!fs::remove_all(device::construct_emulated_path(device, translated_path, vita_fs_path, io.redirect_stdio))) {
+    const auto emulated_path = device::construct_emulated_path(device, translated_path, vita_fs_path, io.redirect_stdio);
+
+    // The Vita removes only a directory, and only an empty one
+    std::error_code error_code;
+    if (fs::exists(emulated_path, error_code) && !fs::is_directory(emulated_path, error_code))
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOTDIR);
+    if (!recursive && fs::is_directory(emulated_path, error_code) && !fs::is_empty(emulated_path, error_code))
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOTEMPTY);
+
+    if (!fs::remove_all(emulated_path)) {
         LOG_ERROR("Cannot remove dir: {} ({})", dir, device::construct_normalized_path(device, translated_path));
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }

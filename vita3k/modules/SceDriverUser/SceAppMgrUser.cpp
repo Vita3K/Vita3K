@@ -560,7 +560,7 @@ EXPORT(int, sceAppMgrSaveDataDataRemove, Ptr<SceAppMgrSaveDataDataDelete> data) 
         if (fs::is_regular_file(file)) {
             remove_file(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
         } else
-            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
+            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name, true);
     }
 
     return 0;

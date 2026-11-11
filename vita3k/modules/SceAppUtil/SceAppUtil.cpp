@@ -418,7 +418,7 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceA
         if (fs::is_regular_file(file)) {
             remove_file(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
         } else
-            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
+            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name, true);
     }
 
     if (slot && files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT && !sdslot_delete_slot(emuenv, slot->id, export_name))
