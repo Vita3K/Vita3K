@@ -1431,9 +1431,9 @@ EXPORT(int, sceKernelGetPMUSERENR) {
 
 EXPORT(int, sceKernelGetProcessTime, SceUInt64 *time) {
     TRACY_FUNC(sceKernelGetProcessTime, time);
-    if (time) {
-        *time = rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick;
-    }
+    if (!time)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    *time = rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick;
     return 0;
 }
 

@@ -120,7 +120,7 @@ ceiling_waiter                  fail     # a mutex ceiling doesn't raise its own
 ceiling_waiter_base_change_order fail     # a mutex ceiling doesn't raise its owner's priority, and a priority change below one applies at once
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 claim_races_more                fail     # a woken thread runs at once, so it has ended when the main thread reads its status
-clocks                          fail     # a NULL process time pointer
+clocks                          pass
 cond                            pass
 cond_callback_after_wake        skip     # threads ignore their core and priority, so whether the waiter ran before the notify is a race
 cond_callback_departure         pass
