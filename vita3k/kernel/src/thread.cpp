@@ -523,25 +523,24 @@ SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32
 
 SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(thread_mutex);
+    // A pending callback ends a wait with callbacks at once
+    if (!wait_result && target.callbacks && callback_pending)
+        wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     const auto woken = [&] { return wait_over(); };
     wait_target = target;
     update_status(ThreadStatus::waiting);
-    bool satisfied = true;
     if (deadline == Deadline::max())
         cv.wait(lock, woken);
     else
-        satisfied = cv.wait_until(lock, deadline, woken);
+        cv.wait_until(lock, deadline, woken);
     // Before the call writes its result to the registers. A thread something holds goes on to its
     // holds, which keep it from its callbacks and its code.
     update_status(ThreadStatus::running);
-    const bool callbacks_due = callback_ends_wait();
     wait_target = {};
+    const std::optional<SceInt32> result = std::exchange(wait_result, std::nullopt);
     if (exiting())
         return SCE_KERNEL_ERROR_THREAD_STOPPED;
-    wake_pending = false;
-    if (callbacks_due)
-        return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
-    return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+    return result.value_or(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
 }
 
 SceInt32 ThreadState::run_callbacks() {
@@ -556,7 +555,9 @@ SceInt32 ThreadState::run_callbacks() {
 
 void ThreadState::wake() {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    wake_pending = true;
+    // The first result ends the wait, a later one is dropped
+    if (!wait_result)
+        wait_result = SCE_KERNEL_OK;
     cv.notify_all();
 }
 
@@ -565,8 +566,11 @@ void ThreadState::notify_callback(Callback &cb, SceInt32 arg) {
     cb.pending.notifier_id = SCE_UID_INVALID_UID;
     cb.pending.arg = arg;
     ++cb.pending.count;
-    // Every notify reaches the owner, also one of a deleted callback that still runs
+    // Every notify reaches the owner, also one of a deleted callback that still runs, and ends a wait
+    // with callbacks
     callback_pending = true;
+    if (wait_target.callbacks && !wait_result)
+        wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     cv.notify_all();
 }
 

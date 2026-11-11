@@ -220,11 +220,8 @@ private:
     bool runs() const { return status == ThreadStatus::running && !parked && !host_waiting; }
     // Asks the thread to end, keeping a stronger request already made
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
-    // Whether a notified callback ends the current wait. With thread_mutex held.
-    bool callback_ends_wait() const { return wait_target.callbacks && callback_pending; }
-    // Whether the thread's current wait is over, by a wake, its end or a callback it runs, though
-    // the thread hasn't gone on yet. With thread_mutex held.
-    bool wait_over() const { return exiting() || wake_pending || callback_ends_wait(); }
+    // Whether the thread's current wait has a result or the thread is ending. With thread_mutex held.
+    bool wait_over() const { return exiting() || wait_result.has_value(); }
 
     // Runs guest code at one level, the thread's run or a call, with thread_mutex held through lock, which
     // it releases around guest code and the handling of each exit. A call the kernel makes starts
@@ -272,8 +269,8 @@ private:
     // Waits
     // What the thread waits on while waiting, empty otherwise
     WaitTarget wait_target;
-    // Set by wake() and consumed by the next wait().
-    bool wake_pending = false;
+    // The result the next wait() returns, set by the first wake() or callback notify
+    std::optional<SceInt32> wait_result;
     // A sceKernelSendSignal is pending for this thread.
     bool signal_pending = false;
     // The vblank the thread's last display wait ended on

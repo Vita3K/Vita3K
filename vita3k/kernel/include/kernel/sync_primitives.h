@@ -67,8 +67,9 @@ SceInt32 SyncPrimitive::wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std:
         } while (!waiter.result && result == SCE_KERNEL_OK);
         if (timeout)
             *timeout = time_left_until(deadline);
-        // A waker's result wins, it already handed over what the waiter waits for
-        if (waiter.result) {
+        // A waker's result wins, it already handed over what the waiter waits for, unless the
+        // thread is ending
+        if (waiter.result && result != SCE_KERNEL_ERROR_THREAD_STOPPED) {
             result = *waiter.result;
             break;
         }

@@ -373,7 +373,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUI
         }
         if (timeout)
             *timeout = time_left_until(deadline);
-        if (waiter.result) {
+        if (waiter.result && result != SCE_KERNEL_ERROR_THREAD_STOPPED) {
             result = *waiter.result;
             break;
         }
