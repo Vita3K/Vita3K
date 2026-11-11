@@ -40,7 +40,7 @@ object NativeLib {
     external fun getAppVersion(): String
     external fun getFirmwareInstallStateMask(): Int
     external fun getCompatibilityDatabaseVersion(): String
-    external fun installCompatibilityDatabase(zipData: ByteArray, version: String): Boolean
+    external fun installCompatibilityDatabase(archiveData: ByteArray, version: String): Boolean
     /** Returns the installed application size in bytes, or 0 on error. */
     external fun getAppInstallSize(titleId: String): Long
 
