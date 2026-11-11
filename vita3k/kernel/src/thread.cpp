@@ -104,6 +104,11 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     run_start_callback = run_entry_callback;
     returned_value = SCE_KERNEL_ERROR_NOT_DORMANT;
+    // Vita3K runs every thread as CPU 0, and a later start keeps the CPU fields
+    if (last_cpu == -1) {
+        last_cpu = 0;
+        change_cpu_count = 0;
+    }
     // A start clears a callback notification the thread's last run left, which its end keeps
     callback_pending = false;
     // Each run starts at the priority and on the cores the thread was created with, and its TLS
@@ -637,6 +642,7 @@ SceUInt32 ThreadState::process_callbacks() {
 SceKernelThreadInfo ThreadState::info() {
     const std::lock_guard<std::mutex> lock(thread_mutex);
     SceKernelThreadInfo info{};
+    info.processId = PROCESS_ID;
     std::ranges::copy(name, info.name);
     info.attr = thread_attr;
     info.stack = Ptr<void>(stack.get());
@@ -655,6 +661,9 @@ SceKernelThreadInfo ThreadState::info() {
     info.waitId = reported.id;
     info.exitStatus = returned_value;
     info.fNotifyCallback = callback_pending ? 1 : 0;
+    info.currentCpuId = status == ThreadStatus::running ? last_cpu : -1;
+    info.lastExecutedCpuId = last_cpu;
+    info.changeCpuCount = change_cpu_count;
     return info;
 }
 

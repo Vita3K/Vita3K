@@ -258,6 +258,9 @@ private:
     // The exit status the guest sees: DORMANT until the first start, NOT_DORMANT while the thread
     // runs, then what it returned or exited with
     uint32_t returned_value = SCE_KERNEL_ERROR_DORMANT;
+    // The CPU the thread last ran on and how often it changed CPU, -1 until its first run
+    SceInt32 last_cpu = -1;
+    SceInt32 change_cpu_count = -1;
     Ending ending = Ending::none;
     // Run the thread start event once before guest code. Set by start().
     bool run_start_callback = false;
