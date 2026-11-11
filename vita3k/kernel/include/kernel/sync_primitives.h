@@ -37,7 +37,7 @@ SceInt32 SyncPrimitive::wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std:
     // The result of the last sleep, then the final result
     SceInt32 result = SCE_KERNEL_OK;
     while (true) {
-        if (const SceInt32 r = run_pending_callbacks(lock, thread, target.callbacks); r != SCE_KERNEL_OK)
+        if (const SceInt32 r = run_wait_callbacks(lock, thread, target.callbacks); r != SCE_KERNEL_OK)
             return r;
         if (const std::optional<SceInt32> taken = attempt(waiter.entry, result)) {
             if (callbacks_check != CallbacksCheck::after_take_or_wait)
@@ -82,7 +82,7 @@ SceInt32 SyncPrimitive::wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std:
     if (result == SCE_KERNEL_ERROR_THREAD_STOPPED || (callbacks_check == CallbacksCheck::on_delete && result != SCE_KERNEL_ERROR_WAIT_DELETE))
         return result;
     // Run the callbacks notified during the wait. Only the thread exiting changes the result.
-    if (run_pending_callbacks(lock, thread, target.callbacks) == SCE_KERNEL_ERROR_THREAD_STOPPED)
+    if (run_wait_callbacks(lock, thread, target.callbacks) == SCE_KERNEL_ERROR_THREAD_STOPPED)
         return SCE_KERNEL_ERROR_THREAD_STOPPED;
     return result;
 }

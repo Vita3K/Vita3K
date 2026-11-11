@@ -28,7 +28,7 @@ SyncPrimitive::SyncPrimitive(SceUInt32 attr, const char *name)
     : KernelObject(name)
     , attr(attr) {}
 
-SceInt32 SyncPrimitive::run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
+SceInt32 SyncPrimitive::run_wait_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks) {
     if (!callbacks || !thread->has_pending_callbacks())
         return SCE_KERNEL_OK;
     lock.unlock();
@@ -338,7 +338,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUI
     // The result of the last sleep, then the final result
     SceInt32 result = SCE_KERNEL_OK;
     while (true) {
-        if (const SceInt32 r = run_pending_callbacks(guard, thread, callbacks); r != SCE_KERNEL_OK)
+        if (const SceInt32 r = run_wait_callbacks(guard, thread, callbacks); r != SCE_KERNEL_OK)
             return wait_result(r, result_pattern);
         // Events that are already due fire before the take, so the waiter can't get an old pulse
         catch_up();
@@ -383,7 +383,7 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUI
             break;
     }
     // Run the callbacks notified during the wait. Only the thread exiting changes the result.
-    if (result != SCE_KERNEL_ERROR_THREAD_STOPPED && run_pending_callbacks(guard, thread, callbacks) == SCE_KERNEL_ERROR_THREAD_STOPPED)
+    if (result != SCE_KERNEL_ERROR_THREAD_STOPPED && run_wait_callbacks(guard, thread, callbacks) == SCE_KERNEL_ERROR_THREAD_STOPPED)
         result = SCE_KERNEL_ERROR_THREAD_STOPPED;
     return wait_result(result, result_pattern);
 }

@@ -54,7 +54,7 @@ protected:
 
     // Runs the thread's pending callbacks if callbacks is set, releasing the lock while they run.
     // Returns WAIT_DELETE if the object was deleted meanwhile.
-    [[nodiscard]] SceInt32 run_pending_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks);
+    [[nodiscard]] SceInt32 run_wait_callbacks(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, bool callbacks);
 
     // Waits on queue. Each round runs the pending callbacks, calls attempt, then sleeps until woken,
     // and a callback notify starts a new round. attempt returns the result once the thread got what
