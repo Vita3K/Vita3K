@@ -397,16 +397,17 @@ void ThreadState::update_status(ThreadStatus status) {
 }
 
 SceInt32 ThreadState::delay_until(Deadline deadline, bool callbacks) {
-    while (true) {
-        SceInt32 r = wait({ .type = SCE_KERNEL_WAITTYPE_DELAY, .callbacks = callbacks }, deadline);
+    SceInt32 r = callbacks ? run_callbacks() : SCE_KERNEL_OK;
+    // A callback pending again after the first pass ends the delay at once
+    if (callbacks && has_pending_callbacks())
+        return r;
+    while (r == SCE_KERNEL_OK) {
+        r = wait({ .type = SCE_KERNEL_WAITTYPE_DELAY, .callbacks = callbacks }, deadline);
         if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
-        // Reaching the deadline is the expected outcome of a delay
-        if (r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
-            return SCE_KERNEL_OK;
-        if (r != SCE_KERNEL_OK)
-            return r;
     }
+    // Reaching the deadline is the expected outcome of a delay
+    return r == SCE_KERNEL_ERROR_WAIT_TIMEOUT ? SCE_KERNEL_OK : r;
 }
 
 SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {

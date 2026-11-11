@@ -98,7 +98,7 @@ cb_wait_initial_callback_deadline pass
 cb_wait_initial_callback_deadline_more fail     # signal and thread end waits count their timeout from after the callbacks pending at the call, not from the call
 cb_wait_self_notify_during_sleep pass
 cb_wait_take_final_check        pass
-cb_wait_take_final_check_more   fail     # a delay runs a callback pending again on its first pass instead of returning, and sceKernelWaitMultipleEvents
+cb_wait_take_final_check_more   fail     # sceKernelWaitMultipleEvents
 cb_wait_timeout_copy            pass
 cb_wait_timeout_copy_more       fail     # sceKernelWaitMultipleEvents
 cb_wait_zero_timeout_notify     pass
@@ -173,9 +173,9 @@ create_attributes               fail     # the attributes condition variables, l
 create_attrs                    fail     # the attribute bits each create accepts
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
-delay_cb_early_return           fail     # a delay runs a callback that notified itself again and sleeps instead of returning with it pending
+delay_cb_early_return           pass
 delay_cb_one_yields             pass
-delay_cb_self_notify            fail     # a delay runs a callback that notified itself again instead of returning with it pending
+delay_cb_self_notify            pass
 delay_huge_values               pass
 delay_negative                  pass
 delay_precision                 skip     # timing, and waits with a timeout of 50 or 100 microseconds end before 150
