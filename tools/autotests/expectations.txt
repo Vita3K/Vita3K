@@ -102,7 +102,7 @@ cb_wait_take_final_check_more   fail     # sceKernelWaitMultipleEvents
 cb_wait_timeout_copy            pass
 cb_wait_timeout_copy_more       fail     # sceKernelWaitMultipleEvents
 cb_wait_zero_timeout_notify     pass
-cb_wait_zero_timeout_notify_more fail     # a thread end wait with callbacks and a timeout of 0 runs a callback that notified itself again, and gets what that run gave instead of timing out
+cb_wait_zero_timeout_notify_more pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_cancel_drops_boost      fail     # a ceiling mutex doesn't raise its owner's priority

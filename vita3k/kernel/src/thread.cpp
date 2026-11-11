@@ -528,8 +528,8 @@ SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32
 
 SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(thread_mutex);
-    // A callback already pending ends a wait with callbacks at once
-    if (!wait_result && target.callbacks && callback_pending)
+    // A callback already pending ends a wait with callbacks at once, unless the deadline passed
+    if (!wait_result && target.callbacks && callback_pending && std::chrono::steady_clock::now() < deadline)
         wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     return sleep(lock, target, deadline);
 }
