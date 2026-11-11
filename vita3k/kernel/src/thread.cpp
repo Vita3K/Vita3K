@@ -513,17 +513,18 @@ uint64_t ThreadState::next_display_wait(uint64_t next_vblank, int vcount) {
     return last_vblank_waited;
 }
 
-SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks) {
-    auto end_guard = this->lock();
-    {
-        const std::lock_guard<std::mutex> lock(thread_mutex);
-        if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
-            if (exit_status)
-                *exit_status = static_cast<SceInt32>(returned_value);
-            return SCE_KERNEL_OK;
-        }
-    }
-    return end_waiters.wait(end_guard, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id, callbacks }, { exit_status }, deadline);
+SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks) {
+    auto guard = lock();
+    // An ended run gives its exit status at once with the timeout as it was. No callback runs after
+    // the wait, and a thread is never deleted from the object table.
+    return wait_loop(end_waiters, guard, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id, callbacks }, EndWaitEntry{ exit_status }, timeout, CallbacksCheck::on_delete, [&](EndWaitEntry &entry, SceInt32) -> std::optional<SceInt32> {
+        const std::lock_guard<std::mutex> thread_lock(thread_mutex);
+        if (status != ThreadStatus::dormant && status != ThreadStatus::deleted)
+            return std::nullopt;
+        if (entry.exit_status)
+            *entry.exit_status = static_cast<SceInt32>(returned_value);
+        return SCE_KERNEL_OK;
+    });
 }
 
 SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {

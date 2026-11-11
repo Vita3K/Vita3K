@@ -115,8 +115,9 @@ struct ThreadState final : public WithUidClass<SyncPrimitive, UidClass::thread> 
     [[nodiscard]] SceInt32 wait_for_signal(SceUInt32 *timeout, bool callbacks);
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
-    // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
-    [[nodiscard]] SceInt32 wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks);
+    // Blocks waiter until this thread becomes dormant or deleted, then writes its exit status to
+    // exit_status. The time left is written back to timeout after every sleep.
+    [[nodiscard]] SceInt32 wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks);
     // sleep(), but a callback already pending ends a wait with callbacks at once with NOTIFY_CALLBACK,
     // and the caller then runs it with run_callbacks(). A stale wake can end it early, so callers must
     // recheck their condition.

@@ -1178,11 +1178,12 @@ EXPORT(int, _sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, SceUInt32 
     return thread->wait_for_signal(timeout, true);
 }
 
-// Waits for target to end, writing the time left back to timeout
+// Waits for target to end, writing the time left back to timeout once the wait ends
 static int wait_thread_end(const ThreadStatePtr &waiter, const ThreadStatePtr &target, int *stat, SceUInt *timeout, bool callbacks) {
-    const Deadline deadline = deadline_from(timeout);
-    const SceInt32 r = target->wait_for_thread_end(waiter, stat, deadline, callbacks);
-    writeback_timeout(timeout, deadline);
+    SceUInt32 time_left = timeout ? *timeout : 0;
+    const SceInt32 r = target->wait_for_thread_end(waiter, stat, timeout ? &time_left : nullptr, callbacks);
+    if (timeout)
+        *timeout = time_left;
     return r;
 }
 
@@ -1205,7 +1206,6 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     if (target == waiter)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
-    waiter->process_callbacks();
     return wait_thread_end(waiter, target, stat, timeout, true);
 }
 

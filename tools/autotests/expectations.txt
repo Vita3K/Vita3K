@@ -88,14 +88,14 @@ cancel_calls                    pass
 cancel_calls_more               fail     # sceKernelWaitMultipleEvents
 cancel_unknown_counts           fail     # failed event flag, simple event, message pipe and timer cancels leave their counts as they were
 cb_wait_callback_writes_timeout pass
-cb_wait_callback_writes_timeout_more fail     # signal and thread end waits with callbacks read their timeout only after the pending callbacks ran, so a callback's write sets their timeout
+cb_wait_callback_writes_timeout_more fail     # signal waits with callbacks read their timeout only after the pending callbacks ran, so a callback's write sets their timeout
 cb_wait_check_order             pass
 cb_wait_check_order_more        fail     # a message pipe call refused for its size doesn't run pending callbacks
-cb_wait_deadline_during_callback fail     # a signal or thread end wait whose deadline passes during a callback writes a time left of 0
+cb_wait_deadline_during_callback fail     # a signal wait whose deadline passes during a callback writes a time left of 0
 cb_wait_early_notify_timeout    pass
 cb_wait_early_notify_timeout_more pass
 cb_wait_initial_callback_deadline pass
-cb_wait_initial_callback_deadline_more fail     # signal and thread end waits count their timeout from after the callbacks pending at the call, not from the call
+cb_wait_initial_callback_deadline_more fail     # signal waits count their timeout from after the callbacks pending at the call, not from the call
 cb_wait_self_notify_during_sleep pass
 cb_wait_take_final_check        pass
 cb_wait_take_final_check_more   fail     # sceKernelWaitMultipleEvents
@@ -189,7 +189,7 @@ display                         crash    # display size, framebuffer pitch check
 display_framebuf_blocks         fail     # no framebuffer base alignment check
 display_framebuf_free           skip     # whether the renderer crashes on a freed framebuffer depends on timing
 display_framebuf_set_freed      skip     # a framebuffer where a block was freed is taken, whether the renderer crashes on it depends on timing
-end_wait_claim_races            fail     # threads ignore their core and priority, so a timed out waiter has already ended, and an end wait takes an end during its callback instead of waiting again
+end_wait_claim_races            fail     # threads ignore their core and priority, so a timed out waiter has already ended
 end_wait_cycle                  pass
 end_wait_during_end_handler     fail     # end waiters are woken before the END handler runs
 end_wait_error_order            fail     # a thread end wait on UID 0 gives UNKNOWN_THREAD_ID, not ILLEGAL_THREAD_ID
@@ -685,7 +685,7 @@ thread_event_handler_start_target fail     # a start of a thread that runs its o
 thread_event_handler_unregister_in_entry fail     # an unregister from the thread's own entry doesn't stop its END run
 thread_event_handler_unregister_other_uids fail     # an unregister always returns 0, whatever the UID
 thread_event_handler_vfp        pass
-thread_exit_status              fail     # an end wait for an ended thread writes back part of its timeout
+thread_exit_status              pass
 thread_for_vm_errors            pass
 thread_fpscr                    pass
 thread_id_registers             pass

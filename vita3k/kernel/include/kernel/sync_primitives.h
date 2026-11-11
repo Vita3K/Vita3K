@@ -70,6 +70,9 @@ SceInt32 SyncPrimitive::wait_loop(WaitQueue<Entry> &queue, std::unique_lock<std:
         // A waker's result wins, it already handed over what the waiter waits for, unless the
         // thread is ending
         if (waiter.result && result != SCE_KERNEL_ERROR_THREAD_STOPPED) {
+            // The callback that ended the sleep runs before the waker's result is returned
+            if (result == SCE_KERNEL_ERROR_NOTIFY_CALLBACK && run_wait_callbacks(lock, thread, target.callbacks) == SCE_KERNEL_ERROR_THREAD_STOPPED)
+                return SCE_KERNEL_ERROR_THREAD_STOPPED;
             result = *waiter.result;
             break;
         }
