@@ -75,6 +75,7 @@
     <uses-permission android:name = "android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name = "android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name = "android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- if you want to capture audio, uncomment this. -->
     <!-- <uses-permission android:name="android.permission.RECORD_AUDIO" /> -->
@@ -114,6 +115,19 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ImGuiActivity"
+            android:alwaysRetainTaskState="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:preferMinimalPostProcessing="true"
+            android:theme="@style/Theme.Design.NoActionBar"
+            android:exported="false"
+            tools:targetApi="r" />
+
+        <activity android:name=".ImGuiRestartActivity"
+            android:process=":imgui_restart"
+            android:theme="@style/Theme.Vita3K.Starting"
+            android:exported="false" />
+
         <!-- SDL game rendering activity -->
         <activity android:name=".Emulator"
             android:alwaysRetainTaskState="true"
@@ -130,6 +144,16 @@
             </intent-filter>
 
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".InstallForegroundService"

@@ -26,6 +26,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string_view>
 
 // Thread manager object classes, with the values sceKernelGetThreadmgrUIDClass reports
@@ -102,6 +103,10 @@ public:
 template <typename T>
 concept KernelObjectClass = std::derived_from<T, KernelObject> && std::same_as<decltype(T::uid_class), const UidClass>;
 
+constexpr bool event_flag_legacy_uid_rules(SceUInt32 sdk_version) {
+    return sdk_version != 0 && sdk_version < 0x03100000;
+}
+
 // The kernel objects by UID. UIDs are shared by objects of all classes.
 class KernelObjects {
 public:
@@ -117,7 +122,7 @@ public:
     // Returns the object with this UID, of any class, or null.
     [[nodiscard]] std::shared_ptr<KernelObject> find(SceUID uid) const {
         const std::lock_guard<std::mutex> lock(mutex);
-        const auto it = objects.find(uid);
+        const auto it = find_handle(uid);
         return it == objects.end() ? nullptr : it->second;
     }
 
@@ -135,6 +140,7 @@ public:
     // deleter. Returns false if there is none.
     template <KernelObjectClass T>
     bool remove(SceUID uid, SceUID deleter) {
+        static_assert(T::uid_class != UidClass::event_flag);
         std::shared_ptr<KernelObject> obj;
         {
             const std::lock_guard<std::mutex> lock(mutex);
@@ -145,6 +151,70 @@ public:
         }
         // Without the table lock, so lookups never wait for on_delete()
         obj->mark_deleted(deleter);
+        return true;
+    }
+
+    // Opens a separate event-flag UID while holding the table lock, so the object cannot disappear
+    // between the name lookup and creation of the reference.
+    template <KernelObjectClass T>
+    bool open_event_flag_reference(SceUID uid, std::predicate<const T &> auto pick) {
+        static_assert(T::uid_class == UidClass::event_flag);
+        const std::lock_guard<std::mutex> lock(mutex);
+        assert(uid > 0 && !objects.contains(uid) && !event_flag_references.contains(uid));
+        if (uid <= 0 || objects.contains(uid) || event_flag_references.contains(uid))
+            return false;
+        for (const auto &[owner, obj] : objects) {
+            if (obj->get_uid_class() != T::uid_class)
+                continue;
+            const std::lock_guard<std::mutex> obj_lock(obj->mutex);
+            if (!pick(static_cast<const T &>(*obj)))
+                continue;
+            event_flag_references.emplace(uid, owner);
+            ++event_flag_reference_counts[owner];
+            return true;
+        }
+        return false;
+    }
+
+    template <KernelObjectClass T>
+    [[nodiscard]] std::pair<std::shared_ptr<T>, bool> find_event_flag_reference(SceUID uid) const {
+        static_assert(T::uid_class == UidClass::event_flag);
+        const std::lock_guard<std::mutex> lock(mutex);
+        const auto it = lookup<T>(uid);
+        if (it == objects.end())
+            return { nullptr, false };
+        return { std::static_pointer_cast<T>(it->second), event_flag_references.contains(uid) };
+    }
+
+    // Removes one event-flag UID. Older SDKs accept either kind of UID for close or delete.
+    bool remove_event_flag_reference(SceUID uid, SceUID deleter, bool close, bool legacy) {
+        std::shared_ptr<KernelObject> deleted;
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            const auto reference = event_flag_references.find(uid);
+            const bool opened = reference != event_flag_references.end();
+            const SceUID owner = opened ? reference->second : uid;
+            const auto it = objects.find(owner);
+            if (it == objects.end() || it->second->get_uid_class() != UidClass::event_flag
+                || (!opened && closed_event_flag_owners.contains(owner)) || (!legacy && close != opened))
+                return false;
+
+            if (opened) {
+                event_flag_references.erase(reference);
+                const auto count = event_flag_reference_counts.find(owner);
+                assert(count != event_flag_reference_counts.end() && count->second > 0);
+                if (--count->second == 0)
+                    event_flag_reference_counts.erase(count);
+            } else {
+                closed_event_flag_owners.insert(owner);
+            }
+            if (closed_event_flag_owners.contains(owner) && !event_flag_reference_counts.contains(owner)) {
+                closed_event_flag_owners.erase(owner);
+                deleted = std::move(objects.extract(it).mapped());
+            }
+        }
+        if (deleted)
+            deleted->mark_deleted(deleter);
         return true;
     }
 
@@ -177,15 +247,26 @@ public:
     void clear() {
         const std::lock_guard<std::mutex> lock(mutex);
         objects.clear();
+        event_flag_references.clear();
+        event_flag_reference_counts.clear();
+        closed_event_flag_owners.clear();
     }
 
 private:
     using Map = std::map<SceUID, std::shared_ptr<KernelObject>>;
 
+    Map::const_iterator find_handle(SceUID uid) const {
+        if (const auto reference = event_flag_references.find(uid); reference != event_flag_references.end())
+            return objects.find(reference->second);
+        if (closed_event_flag_owners.contains(uid))
+            return objects.end();
+        return objects.find(uid);
+    }
+
     // Returns the entry of the T with this UID, or end(). mutex must be held.
     template <KernelObjectClass T>
     Map::const_iterator lookup(SceUID uid) const {
-        const auto it = objects.find(uid);
+        const auto it = find_handle(uid);
         if (it == objects.end() || it->second->get_uid_class() != T::uid_class)
             return objects.end();
         return it;
@@ -193,4 +274,7 @@ private:
 
     mutable std::mutex mutex;
     Map objects;
+    std::map<SceUID, SceUID> event_flag_references;
+    std::map<SceUID, size_t> event_flag_reference_counts;
+    std::set<SceUID> closed_event_flag_owners;
 };

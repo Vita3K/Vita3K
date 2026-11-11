@@ -104,9 +104,15 @@
  */
 
 /**
- * @dir vita3k/gui
+ * @dir vita3k/gui-imgui
  *
- * @brief UI elements management code
+ * @brief ImGui frontend and UI elements management code
+ */
+
+/**
+ * @dir vita3k/gui-qt
+ *
+ * @brief Qt frontend and UI elements management code
  */
 
 /**

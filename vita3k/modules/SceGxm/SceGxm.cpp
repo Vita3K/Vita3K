@@ -34,6 +34,7 @@
 #include <gxm/state.h>
 #include <gxm/types.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <mem/state.h>
 
 #include <io/state.h>
@@ -2249,7 +2250,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     // for another thread's addition and for the slot, and the debugger can stop the process meanwhile.
     std::unique_lock<std::mutex> add_lock(emuenv.gxm.display_queue_add_mutex, std::defer_lock);
     {
-        const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
         add_lock.lock();
         if (emuenv.gxm.display_queue_closed)
             return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
@@ -2307,7 +2308,7 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
     TRACY_FUNC(sceGxmDisplayQueueFinish);
     if (!emuenv.gxm.params.displayQueueCallback)
         return RET_ERROR(SCE_GXM_ERROR_UNINITIALIZED);
-    const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
+    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
     emuenv.gxm.display_queue.wait_empty();
 
     return 0;
@@ -2653,7 +2654,10 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
     SceGxmNotification empty_notification = { Ptr<uint32_t>(0), 0 };
 
     // Add command to end the scene
-    renderer::sync_surface_data(*emuenv.renderer, context->renderer.get(), vertexNotification ? *vertexNotification : empty_notification, fragmentNotification ? *fragmentNotification : empty_notification);
+    {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+        renderer::sync_surface_data(*emuenv.renderer, context->renderer.get(), vertexNotification ? *vertexNotification : empty_notification, fragmentNotification ? *fragmentNotification : empty_notification);
+    }
 
     if (context->state.fragment_sync_object) {
         SceGxmSyncObject *sync = context->state.fragment_sync_object.get(mem);
@@ -2729,7 +2733,7 @@ EXPORT(int, sceGxmFinish, SceGxmContext *context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     // Wait on this context's rendering finish code.
-    const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
+    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
     renderer::finish(*emuenv.renderer, renderer_context);
 
     return 0;
@@ -3034,10 +3038,16 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
     std::uint32_t volatile *value = notification->address.get(emuenv.mem);
     const std::uint32_t target_value = notification->value;
 
-    const ThreadState::HostWait waiting(*emuenv.kernel.get_thread(thread_id));
     std::unique_lock<std::mutex> lock(emuenv.renderer->notification_mutex);
     if (*value != target_value) {
-        emuenv.renderer->notification_ready.wait(lock, [&]() { return *value == target_value || emuenv.display.abort.load(); });
+        lock.unlock();
+        {
+            ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+            lock.lock();
+            emuenv.renderer->notification_ready.wait(lock, [&]() { return *value == target_value || emuenv.display.abort.load(); });
+            lock.unlock();
+        }
+        lock.lock();
     }
 
     return 0;
@@ -4715,8 +4725,11 @@ EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shad
         for (auto it = shaderPatcher->vertex_program_cache.begin(); it != shaderPatcher->vertex_program_cache.end();) {
             if (it->first.vertex_program.program == rp->program) {
                 SceGxmVertexProgram *vertex_program = it->second.get(emuenv.mem);
-                while (vertex_program->compile_threads_on.load(std::memory_order_acquire) > 0)
-                    std::this_thread::yield();
+                {
+                    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                    while (vertex_program->compile_threads_on.load(std::memory_order_acquire) > 0)
+                        std::this_thread::yield();
+                }
 
                 free_callbacked(emuenv, thread_id, shaderPatcher, it->second.address());
                 it = shaderPatcher->vertex_program_cache.erase(it);
@@ -4728,8 +4741,11 @@ EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shad
         for (auto it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end();) {
             if (it->first.fragment_program.program == rp->program) {
                 SceGxmFragmentProgram *frag_program = it->second.get(emuenv.mem);
-                while (frag_program->compile_threads_on.load(std::memory_order_acquire) > 0)
-                    std::this_thread::yield();
+                {
+                    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+                    while (frag_program->compile_threads_on.load(std::memory_order_acquire) > 0)
+                        std::this_thread::yield();
+                }
 
                 free_callbacked(emuenv, thread_id, shaderPatcher, it->second.address());
                 it = shaderPatcher->fragment_program_cache.erase(it);
@@ -4827,8 +4843,11 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
     SceGxmFragmentProgram *const fp = fragmentProgram.get(emuenv.mem);
     --fp->reference_count;
     if (fp->reference_count == 0) {
-        while (fp->compile_threads_on.load(std::memory_order_acquire) > 0)
-            std::this_thread::yield();
+        {
+            ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+            while (fp->compile_threads_on.load(std::memory_order_acquire) > 0)
+                std::this_thread::yield();
+        }
 
         for (FragmentProgramCache::const_iterator it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end(); ++it) {
             if (it->second == fragmentProgram) {
@@ -4850,8 +4869,11 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     SceGxmVertexProgram *const vp = vertexProgram.get(emuenv.mem);
     --vp->reference_count;
     if (vp->reference_count == 0) {
-        while (vp->compile_threads_on.load(std::memory_order_acquire) > 0)
-            std::this_thread::yield();
+        {
+            ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+            while (vp->compile_threads_on.load(std::memory_order_acquire) > 0)
+                std::this_thread::yield();
+        }
 
         for (VertexProgramCache::const_iterator it = shaderPatcher->vertex_program_cache.begin(); it != shaderPatcher->vertex_program_cache.end(); ++it) {
             if (it->second == vertexProgram) {
@@ -4929,17 +4951,23 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 EXPORT(int, sceGxmTerminate) {
     TRACY_FUNC(sceGxmTerminate);
     {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
         const std::lock_guard<std::mutex> add_guard(emuenv.gxm.display_queue_add_mutex);
         emuenv.gxm.display_queue_closed = true;
     }
     // Make sure everything is done in SDL side before killing Vita thread
-    emuenv.gxm.display_queue.wait_empty();
+    {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
+        emuenv.gxm.display_queue.wait_empty();
+    }
     gxm::destroy_all_contexts(emuenv, false);
     gxm::destroy_all_render_targets(emuenv, false);
     emuenv.gxm.display_queue.abort();
     // a later sceGxmInitialize reassigns this std::thread, which terminates if still joinable
-    if (emuenv.gxm.display_host_thread.joinable())
+    if (emuenv.gxm.display_host_thread.joinable()) {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
         emuenv.gxm.display_host_thread.join();
+    }
     // The display queue thread is dormant once the host thread that ran it was joined
     emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->remove();
     return 0;
@@ -5698,6 +5726,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
 EXPORT(int, sceGxmTransferFinish) {
     TRACY_FUNC(sceGxmTransferFinish);
     // same as sceGxmFinish
+    ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
     renderer::finish(*emuenv.renderer, nullptr);
 
     return 0;

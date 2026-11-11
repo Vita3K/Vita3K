@@ -28,6 +28,7 @@
 
 #include <atomic>
 #include <functional>
+#include <string_view>
 #include <type_traits>
 
 #define LOG_TRACE SPDLOG_TRACE
@@ -36,6 +37,11 @@
 #define LOG_WARN SPDLOG_WARN
 #define LOG_ERROR SPDLOG_ERROR
 #define LOG_CRITICAL SPDLOG_CRITICAL
+
+#define LOG_INFO_SYNC(...) logging::log_sync({ __FILE__, __LINE__, SPDLOG_FUNCTION }, spdlog::level::info, fmt::format(__VA_ARGS__))
+#define LOG_WARN_SYNC(...) logging::log_sync({ __FILE__, __LINE__, SPDLOG_FUNCTION }, spdlog::level::warn, fmt::format(__VA_ARGS__))
+#define LOG_ERROR_SYNC(...) logging::log_sync({ __FILE__, __LINE__, SPDLOG_FUNCTION }, spdlog::level::err, fmt::format(__VA_ARGS__))
+#define LOG_CRITICAL_SYNC(...) logging::log_sync({ __FILE__, __LINE__, SPDLOG_FUNCTION }, spdlog::level::critical, fmt::format(__VA_ARGS__))
 
 #define LOG_IF(log_function, flag, ...) ((flag) ? log_function(__VA_ARGS__) : static_cast<void>(0))
 
@@ -66,6 +72,8 @@ ExitCode init(const Root &root_paths, bool use_stdout);
 void set_level(spdlog::level::level_enum log_level);
 ExitCode add_sink(const fs::path &log_path);
 void set_log_callback(std::function<void(std::string, int)> cb);
+// Write and flush diagnostic file sinks without waiting for the async logger or UI callbacks.
+void log_sync(spdlog::source_loc location, spdlog::level::level_enum level, std::string_view message);
 
 } // namespace logging
 

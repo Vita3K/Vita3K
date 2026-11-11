@@ -17,13 +17,113 @@
 
 #include "SceAppMgr.h"
 
+#include <config/config.h>
+#include <io/functions.h>
+#include <io/io.h>
 #include <io/state.h>
 #include <kernel/state.h>
+#include <kernel/sync_primitives.h>
 #include <packages/sfo.h>
 #include <renderer/state.h>
 #include <util/tracy.h>
+#include <vfs/mounts.h>
+
+#include <algorithm>
+#include <cstring>
+#include <limits>
+#include <mutex>
+#include <string>
 
 TRACY_MODULE_NAME(SceAppMgr);
+
+struct AppMgrBgm {
+    std::mutex mutex;
+    int32_t active_process = -1;
+    int32_t requested_priority = 0;
+    int32_t sub_priority = 0;
+    bool sub_priority_enabled = false;
+};
+
+LIBRARY_INIT(SceAppMgr) {
+    emuenv.kernel.obj_store.create<AppMgrBgm>();
+    emuenv.kernel.obj_store.create<AppMgrEvents>();
+}
+
+AppMgrBgmState get_appmgr_bgm_state(EmuEnvState &emuenv) {
+    auto *bgm = emuenv.kernel.obj_store.get<AppMgrBgm>();
+    const std::lock_guard<std::mutex> lock(bgm->mutex);
+    if (bgm->active_process < 0)
+        return { -1, 0xffff, 0xffff, -1, {} };
+    const int32_t sub_priority = bgm->sub_priority_enabled ? bgm->sub_priority : 0;
+    return { bgm->active_process, std::max(bgm->requested_priority, sub_priority), sub_priority, -1, {} };
+}
+
+static std::string appmgr_mount_log_string(const MemState &mem, Ptr<const char> input, size_t limit = 256) {
+    if (!input)
+        return "<null>";
+
+    std::string result;
+    for (size_t i = 0; i < limit; ++i) {
+        if (i > std::numeric_limits<Address>::max() - input.address())
+            return result + "<invalid>";
+        const Ptr<const char> current(input.address() + static_cast<Address>(i));
+        if (!current.valid(mem))
+            return result + "<invalid>";
+        const unsigned char ch = *current.get(mem);
+        if (ch == 0)
+            return result;
+        result += ch >= 32 && ch < 127 ? static_cast<char>(ch) : '?';
+    }
+    return result + "<truncated>";
+}
+
+static bool read_mount_string(const MemState &mem, Ptr<const char> input, size_t max_length, std::string &value) {
+    value.clear();
+    if (!input)
+        return false;
+    for (size_t i = 0; i <= max_length; ++i) {
+        if (i > std::numeric_limits<Address>::max() - input.address())
+            return false;
+        const Ptr<const char> current(input.address() + static_cast<Address>(i));
+        if (!current.valid(mem))
+            return false;
+        const char ch = *current.get(mem);
+        if (ch == '\0')
+            return true;
+        if (i == max_length)
+            return false;
+        value.push_back(ch);
+    }
+    return false;
+}
+
+static bool valid_mount_output(const MemState &mem, Ptr<char> output) {
+    if (!output || output.address() > std::numeric_limits<Address>::max() - 15)
+        return false;
+    for (Address i = 0; i < 16; ++i) {
+        if (!Ptr<char>(output.address() + i).valid(mem))
+            return false;
+    }
+    return true;
+}
+
+static bool valid_mount_sfo(EmuEnvState &emuenv, const std::string &mount_point, const char *relative_sfo, const std::string &title_id, const char *export_name) {
+    const std::string sfo_path = mount_point + relative_sfo;
+    SceIoStat stat{};
+    if (stat_file(emuenv.io, sfo_path.c_str(), &stat, emuenv.vita_fs_path, export_name) < 0
+        || !(stat.st_mode & SCE_S_IFREG) || stat.st_size <= 0 || stat.st_size > 32768)
+        return false;
+
+    const SceUID fd = open_file(emuenv.io, sfo_path.c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
+    if (fd < 0)
+        return false;
+    vfs::FileBuffer buffer(static_cast<size_t>(stat.st_size));
+    const int bytes_read = read_file(buffer.data(), emuenv.io, fd, static_cast<SceSize>(buffer.size()), export_name);
+    close_file(emuenv.io, fd, export_name);
+    sfo::SfoAppInfo info;
+    return bytes_read == static_cast<int>(buffer.size())
+        && sfo::get_param_info(info, buffer, emuenv.cfg.sys_lang) && info.app_title_id == title_id;
+}
 
 EXPORT(SceInt32, __sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
     TRACY_FUNC(__sceAppMgrGetAppState, appState, sizeofSceAppMgrAppState, buildVersion);
@@ -57,9 +157,35 @@ EXPORT(int, _sceAppMgrAppDataMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrAppDataMountById) {
-    TRACY_FUNC(_sceAppMgrAppDataMountById);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrAppDataMountById, int mountId, Ptr<const char> id, Ptr<char> mountPoint) {
+    TRACY_FUNC(_sceAppMgrAppDataMountById, mountId, id.address(), mountPoint.address());
+    if (mountId != 0x6e) {
+        LOG_WARN("Unsupported AppDataMountById type {}", log_hex(mountId));
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    }
+    std::string title_id;
+    if (!read_mount_string(emuenv.mem, id, 32, title_id) || title_id.empty() || !valid_mount_output(emuenv.mem, mountPoint))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    if (title_id == "new") {
+        LOG_WARN("Writable appmeta promotion is not implemented");
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    }
+
+    std::string mount_point;
+    if (!pfsmgr::mount_readonly_appmeta(emuenv.io, emuenv.vita_fs_path, title_id, mount_point)) {
+        LOG_WARN("Cannot mount appmeta for '{}'", title_id);
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+    if (mount_point.size() >= 16 || !valid_mount_sfo(emuenv, mount_point, "/param.sfo", title_id, export_name)) {
+        LOG_WARN("Invalid or encrypted appmeta SFO for '{}'", title_id);
+        if (!pfsmgr::unmount_appmeta(emuenv.io, mount_point))
+            LOG_ERROR("Failed to release rejected appmeta mount '{}'", mount_point);
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    }
+    for (Address i = 0; i < 16; ++i)
+        *Ptr<char>(mountPoint.address() + i).get(emuenv.mem) = i < mount_point.size() ? mount_point[i] : '\0';
+    LOG_INFO("Mounted appmeta with readable SFO for '{}' at '{}'", title_id, mount_point);
+    return 0;
 }
 
 EXPORT(int, _sceAppMgrAppMount) {
@@ -92,7 +218,7 @@ EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, 
     if (!sfo::get_data_by_id(res, emuenv.sfo_handle, param))
         return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
     else {
-        uint32_t size = optParam->size;
+        uint32_t size = optParam->length;
         if (size > 400)
             size = 400;
 
@@ -159,14 +285,22 @@ EXPORT(int, _sceAppMgrDestroyAppByName) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrDrmClose) {
-    TRACY_FUNC(_sceAppMgrDrmClose);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrDrmClose, const SceAppMgrDrmOpenParam *param) {
+    TRACY_FUNC(_sceAppMgrDrmClose, param);
+    if (!param || param->size != sizeof(*param)
+        || !std::memchr(param->dir_name, '\0', sizeof(param->dir_name))
+        || !std::memchr(param->mount_point, '\0', sizeof(param->mount_point)))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    return pfsmgr::unmount_addcont(emuenv.io, param->mount_point, param->dir_name);
 }
 
-EXPORT(int, _sceAppMgrDrmOpen) {
-    TRACY_FUNC(_sceAppMgrDrmOpen);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrDrmOpen, const SceAppMgrDrmOpenParam *param) {
+    TRACY_FUNC(_sceAppMgrDrmOpen, param);
+    if (!param || param->size != sizeof(*param)
+        || !std::memchr(param->dir_name, '\0', sizeof(param->dir_name))
+        || !std::memchr(param->mount_point, '\0', sizeof(param->mount_point)))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    return pfsmgr::mount_addcont(emuenv.io, emuenv.vita_fs_path, param->mount_point, param->dir_name);
 }
 
 EXPORT(int, _sceAppMgrForceUmount) {
@@ -174,9 +308,45 @@ EXPORT(int, _sceAppMgrForceUmount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrGameDataMount) {
-    TRACY_FUNC(_sceAppMgrGameDataMount);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrGameDataMount, Ptr<const char> source, Ptr<const char> patch, Ptr<const void> license, Ptr<char> mountPoint) {
+    TRACY_FUNC(_sceAppMgrGameDataMount, source.address(), patch.address(), license.address(), mountPoint.address());
+    std::string source_path;
+    std::string patch_path;
+    if (!read_mount_string(emuenv.mem, source, 0x123, source_path) || !valid_mount_output(emuenv.mem, mountPoint)
+        || (patch && !read_mount_string(emuenv.mem, patch, 0x123, patch_path)))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    if (license) {
+        LOG_WARN("GameDataMount with an explicit license is not implemented");
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    }
+    if (source_path.starts_with("ux0:/"))
+        source_path.erase(4, 1);
+    if (patch_path.starts_with("ux0:/"))
+        patch_path.erase(4, 1);
+    if (!source_path.starts_with("ux0:app/") || source_path.size() <= 8) {
+        LOG_WARN("Unsupported GameDataMount source '{}'", source_path);
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    }
+    const auto title_id = source_path.substr(8);
+    if (patch && patch_path != "ux0:patch/" + title_id) {
+        LOG_WARN("Unsupported GameDataMount patch '{}'", patch_path);
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    }
+    std::string mount_point;
+    if (!pfsmgr::mount_readonly_game_data(emuenv.io, emuenv.vita_fs_path, title_id, bool(patch), mount_point)) {
+        LOG_WARN("Cannot mount game data for '{}'", title_id);
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+    if (!valid_mount_sfo(emuenv, mount_point, "/sce_sys/param.sfo", title_id, export_name)) {
+        LOG_WARN("Invalid or encrypted game data SFO for '{}'", title_id);
+        if (!pfsmgr::unmount_game_data(emuenv.io, mount_point))
+            LOG_ERROR("Failed to release rejected game data mount '{}'", mount_point);
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    }
+    for (Address i = 0; i < 16; ++i)
+        *Ptr<char>(mountPoint.address() + i).get(emuenv.mem) = i < mount_point.size() ? mount_point[i] : '\0';
+    LOG_INFO("Mounted game data for '{}' at '{}' in read-only mode", title_id, mount_point);
+    return 0;
 }
 
 EXPORT(int, _sceAppMgrGetAppInfo) {
@@ -232,9 +402,9 @@ EXPORT(int, _sceAppMgrGetCurrentBgmState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrGetCurrentBgmState2) {
+EXPORT(int, _sceAppMgrGetCurrentBgmState2, AppMgrBgmState *state) {
     TRACY_FUNC(_sceAppMgrGetCurrentBgmState2);
-    return UNIMPLEMENTED();
+    return CALL_EXPORT(sceAppMgrGetCurrentBgmState2, state);
 }
 
 EXPORT(int, _sceAppMgrGetDevInfo) {
@@ -397,9 +567,26 @@ EXPORT(int, _sceAppMgrLaunchAppByNameForShell) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrLaunchAppByPath4) {
-    TRACY_FUNC(_sceAppMgrLaunchAppByPath4);
-    return UNIMPLEMENTED();
+int appmgr_launch_app_by_path(EmuEnvState &emuenv, Ptr<const char> path, Ptr<const char> title_id,
+    SceUInt32 budget_size, Ptr<const char> param, SceUInt32 process_attr, Ptr<const void> option) {
+    LOG_DEBUG("LaunchAppByPath4 path: {}, title: {}, budget: {}, param: {}, process attributes: {}, option: {}",
+        appmgr_mount_log_string(emuenv.mem, path, 292), appmgr_mount_log_string(emuenv.mem, title_id, 32),
+        log_hex(budget_size), log_hex(param.address()), log_hex(process_attr), log_hex(option.address()));
+    LOG_ERROR("LaunchAppByPath4 requires multi-process support; application was not launched");
+    return static_cast<int>(SCE_KERNEL_ERROR_NOT_IMPLEMENTED);
+}
+
+EXPORT(int, _sceAppMgrLaunchAppByPath4, Ptr<const char> path, Ptr<const char> title_id,
+    SceUInt32 budget_size, Ptr<const AppMgrLaunchAppByPathArgs> arguments) {
+    TRACY_FUNC(_sceAppMgrLaunchAppByPath4, path, title_id, budget_size, arguments);
+    if (!arguments || !is_valid_addr_len(emuenv.mem, arguments.address(), sizeof(AppMgrLaunchAppByPathArgs)))
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    AppMgrLaunchAppByPathArgs args{};
+    auto *bytes = reinterpret_cast<uint8_t *>(&args);
+    for (size_t i = 0; i < sizeof(args); ++i)
+        bytes[i] = *Ptr<const uint8_t>(arguments.address() + static_cast<Address>(i)).get(emuenv.mem);
+    return appmgr_launch_app_by_path(emuenv, path, title_id, budget_size, args.param, args.process_attr, args.option);
 }
 
 EXPORT(int, _sceAppMgrLaunchAppByUri) {
@@ -433,7 +620,11 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
     // Load exec executable
     vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, emuenv.vita_fs_path, emuenv.io.app_path, exec_path)) {
+    const auto mounted_exec_path = "app0:/" + exec_path;
+    const bool read_exec = emuenv.io.app_game_base_mount.empty()
+        ? vfs::read_app_file(exec_buffer, emuenv.vita_fs_path, emuenv.io.app_path, exec_path, emuenv.io.title_id)
+        : read_file_to_buffer(emuenv.io, mounted_exec_path.c_str(), emuenv.vita_fs_path, exec_buffer, export_name);
+    if (read_exec) {
         std::vector<std::string> exec_argv;
         if (argv && argv->get(emuenv.mem)) {
             size_t args = 0;
@@ -526,14 +717,30 @@ EXPORT(int, _sceAppMgrPspSaveDataRootMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrReceiveEvent) {
-    TRACY_FUNC(_sceAppMgrReceiveEvent);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrReceiveEvent, SceAppMgrEvent *event) {
+    TRACY_FUNC(_sceAppMgrReceiveEvent, event);
+    if (!event)
+        return RET_ERROR(SCE_APPMGR_ERROR_NULL_POINTER);
+    STUBBED("Only launch parameter events are supported");
+    auto *events = emuenv.kernel.obj_store.get<AppMgrEvents>();
+    if (!events->launch_param_pending.exchange(false)) {
+        event->event = 0;
+        return RET_ERROR(SCE_APPMGR_ERROR_NO_EVENT);
+    }
+    *event = {};
+    event->event = 0x20000004;
+    event->app_id = -1;
+    return 0;
 }
 
-EXPORT(int, _sceAppMgrReceiveEventNum) {
-    TRACY_FUNC(_sceAppMgrReceiveEventNum);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrReceiveEventNum, SceUInt32 *eventNum) {
+    TRACY_FUNC(_sceAppMgrReceiveEventNum, eventNum);
+    if (!eventNum)
+        return RET_ERROR(SCE_APPMGR_ERROR_NULL_POINTER);
+    auto *events = emuenv.kernel.obj_store.get<AppMgrEvents>();
+    *eventNum = events->launch_param_pending.load() ? 1 : 0;
+    STUBBED("Only launch parameter events are supported");
+    return 0;
 }
 
 EXPORT(int, _sceAppMgrReceiveNotificationRequestForShell) {
@@ -717,9 +924,27 @@ EXPORT(int, _sceAppMgrSystemParamGetString) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrThemeDataMount) {
-    TRACY_FUNC(_sceAppMgrThemeDataMount);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrThemeDataMount, Ptr<const char> contentId, Ptr<const void> option1, Ptr<const void> option2, Ptr<char> mountPoint) {
+    TRACY_FUNC(_sceAppMgrThemeDataMount, contentId.address(), option1.address(), option2.address(), mountPoint.address());
+    std::string id;
+    if (!read_mount_string(emuenv.mem, contentId, 0x7f, id) || !valid_mount_output(emuenv.mem, mountPoint)
+        || id.empty() || id == "." || id == ".." || id.find_first_of("\\/:") != std::string::npos)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    if (option1 || option2) {
+        LOG_WARN("ThemeDataMount with options is not implemented");
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    }
+    std::string mount_point;
+    bool is_protected = false;
+    const auto directory = emuenv.vita_fs_path / "ux0" / "theme" / fs_utils::utf8_to_path(id);
+    if (!pfsmgr::mount_theme_data(emuenv.io, directory, mount_point, is_protected)) {
+        LOG_WARN("Cannot mount theme data for '{}'", id);
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+    for (Address i = 0; i < 16; ++i)
+        *Ptr<char>(mountPoint.address() + i).get(emuenv.mem) = i < mount_point.size() ? mount_point[i] : '\0';
+    LOG_INFO("Mounted theme data for '{}' at '{}'", id, mount_point);
+    return 0;
 }
 
 EXPORT(int, _sceAppMgrTrophyMount) {
@@ -732,9 +957,31 @@ EXPORT(int, _sceAppMgrTrophyMountById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrUmount) {
-    TRACY_FUNC(_sceAppMgrUmount);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceAppMgrUmount, Ptr<const char> mountPoint) {
+    TRACY_FUNC(_sceAppMgrUmount, mountPoint.address());
+    std::string mount_point;
+    if (!read_mount_string(emuenv.mem, mountPoint, 15, mount_point))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    if (pfsmgr::unmount_game_data(emuenv.io, mount_point)) {
+        LOG_INFO("Unmounted game data '{}'", mount_point);
+        return 0;
+    }
+    if (pfsmgr::unmount_appmeta(emuenv.io, mount_point)) {
+        LOG_INFO("Unmounted appmeta '{}'", mount_point);
+        return 0;
+    }
+    if (pfsmgr::unmount_theme_data(emuenv.io, mount_point)) {
+        LOG_INFO("Unmounted theme data '{}'", mount_point);
+        return 0;
+    }
+    if (mount_point == "ux0:picture" || mount_point == "friend0:" || mount_point == "psnmsg0:"
+        || mount_point == "near0:" || mount_point == "ux0:music" || mount_point == "ux0:calendar"
+        || mount_point == "ux0:video" || mount_point == "sqlite0:/" || mount_point == "attach0:/"
+        || mount_point == "ux0:pspemu/" || mount_point == "checkout0:/" || mount_point == "webbrowser0:/"
+        || mount_point == "ux0:mms/photo" || mount_point == "ux0:mms/music" || mount_point == "ux0:mms/video")
+        return STUBBED("Unmount of legacy static path redirection");
+    LOG_WARN("Unknown or unsupported AppMgr mount '{}'", mount_point);
+    return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
 }
 
 EXPORT(int, _sceAppMgrUmountByPid) {
@@ -759,17 +1006,23 @@ EXPORT(int, _sceAppMgrWorkDirMountById) {
 
 EXPORT(int, sceAppMgrAcquireBgmPort) {
     TRACY_FUNC(sceAppMgrAcquireBgmPort);
-    return UNIMPLEMENTED();
+    return CALL_EXPORT(sceAppMgrAcquireBgmPortWithPriority, 256);
 }
 
 EXPORT(int, sceAppMgrAcquireBgmPortForMusicPlayer) {
     TRACY_FUNC(sceAppMgrAcquireBgmPortForMusicPlayer);
-    return UNIMPLEMENTED();
+    return CALL_EXPORT(sceAppMgrAcquireBgmPortWithPriority, 130);
 }
 
-EXPORT(int, sceAppMgrAcquireBgmPortWithPriority) {
-    TRACY_FUNC(sceAppMgrAcquireBgmPortWithPriority);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrAcquireBgmPortWithPriority, int priority) {
+    TRACY_FUNC(sceAppMgrAcquireBgmPortWithPriority, priority);
+    if (priority < 0)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
+    auto *bgm = emuenv.kernel.obj_store.get<AppMgrBgm>();
+    const std::lock_guard<std::mutex> lock(bgm->mutex);
+    bgm->requested_priority = priority;
+    bgm->active_process = PROCESS_ID;
+    return STUBBED("Single-process BGM; permissions and audio adoption are not emulated");
 }
 
 EXPORT(int, sceAppMgrAcquireBtrm) {
@@ -922,9 +1175,16 @@ EXPORT(int, sceAppMgrLaunchAppCancel) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrLoadSafeMemory) {
-    TRACY_FUNC(sceAppMgrLoadSafeMemory);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceAppMgrLoadSafeMemory, void *buffer, SceSize size, SceOff offset) {
+    TRACY_FUNC(sceAppMgrLoadSafeMemory, buffer, size, offset);
+    if (!buffer)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_POINTER);
+    if (offset < 0 || static_cast<uint64_t>(offset) + size > SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER2);
+    const auto result = execute_savedata_safe_memory(emuenv, buffer, size, offset, export_name, false);
+    if (result < 0)
+        return RET_ERROR(result);
+    return result > 0 ? size : 0;
 }
 
 EXPORT(int, sceAppMgrNotifyLiveBoardModeForShell) {
@@ -949,7 +1209,11 @@ EXPORT(int, sceAppMgrReceiveShellEventNum) {
 
 EXPORT(int, sceAppMgrReleaseBgmPort) {
     TRACY_FUNC(sceAppMgrReleaseBgmPort);
-    return UNIMPLEMENTED();
+    auto *bgm = emuenv.kernel.obj_store.get<AppMgrBgm>();
+    const std::lock_guard<std::mutex> lock(bgm->mutex);
+    bgm->requested_priority = 0;
+    bgm->active_process = PROCESS_ID;
+    return STUBBED("Single-process BGM; audio adoption is not emulated");
 }
 
 EXPORT(int, sceAppMgrReleaseBtrm) {
@@ -997,9 +1261,14 @@ EXPORT(int, sceAppMgrSaveDataGetCachedRequiredSizeKiB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSaveSafeMemory) {
-    TRACY_FUNC(sceAppMgrSaveSafeMemory);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceAppMgrSaveSafeMemory, const void *buffer, SceSize size, SceOff offset) {
+    TRACY_FUNC(sceAppMgrSaveSafeMemory, buffer, size, offset);
+    if (!buffer)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_POINTER);
+    if (offset < 0 || static_cast<uint64_t>(offset) + size > SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER2);
+    const auto result = execute_savedata_safe_memory(emuenv, const_cast<void *>(buffer), size, offset, export_name, true);
+    return result < 0 ? RET_ERROR(result) : static_cast<SceInt32>(size);
 }
 
 EXPORT(int, sceAppMgrSendLiveBoardMode) {
@@ -1012,14 +1281,21 @@ EXPORT(int, sceAppMgrSetAppProtectionModeOnMemoryShortage) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSetBgmSubPriority) {
-    TRACY_FUNC(sceAppMgrSetBgmSubPriority);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSetBgmSubPriority, int enabled, int priority) {
+    TRACY_FUNC(sceAppMgrSetBgmSubPriority, enabled, priority);
+    if (priority < 0)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
+    auto *bgm = emuenv.kernel.obj_store.get<AppMgrBgm>();
+    const std::lock_guard<std::mutex> lock(bgm->mutex);
+    bgm->sub_priority_enabled = enabled != 0;
+    bgm->sub_priority = priority;
+    bgm->active_process = PROCESS_ID;
+    return STUBBED("Single-process BGM; permissions and audio adoption are not emulated");
 }
 
-EXPORT(int, sceAppMgrSetBgmSubPriorityForSystemChat) {
-    TRACY_FUNC(sceAppMgrSetBgmSubPriorityForSystemChat);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrSetBgmSubPriorityForSystemChat, int enabled) {
+    TRACY_FUNC(sceAppMgrSetBgmSubPriorityForSystemChat, enabled);
+    return CALL_EXPORT(sceAppMgrSetBgmSubPriority, enabled, 194);
 }
 
 EXPORT(int, sceAppMgrSetDisplayMergeConf) {

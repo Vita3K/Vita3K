@@ -15,10 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <ngs/modules/envelope.h>
 #include <ngs/scheduler.h>
 #include <ngs/system.h>
 
+#include <cpu/state.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 
 #include <algorithm>
 #include <cstring>
@@ -30,6 +33,15 @@ bool VoiceScheduler::deque_voice(Voice *voice) {
     const std::lock_guard<std::recursive_mutex> guard(mutex);
 
     return vector_utils::erase_first(queue, voice);
+}
+
+bool VoiceScheduler::relock_voice_after_callback(Voice *voice, std::unique_lock<std::mutex> &voice_lock) {
+    if (released_voices_during_update.contains(voice)) {
+        voice_lock.release();
+        return false;
+    }
+    voice_lock.lock();
+    return true;
 }
 
 void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
@@ -109,22 +121,40 @@ bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
         deque_voice(voice);
 
     voice->is_paused = false;
+    voice->is_keyed_off = false;
 
     return true;
 }
 
 bool VoiceScheduler::off(const MemState &mem, Voice *voice) {
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
     if (voice->state != VOICE_STATE_ACTIVE)
         return false;
 
+    voice->is_keyed_off = true;
     voice->transition(mem, VOICE_STATE_FINALIZING);
 
     return true;
 }
 
-void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID thread_id) {
+bool VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID thread_id) {
     std::unique_lock<std::recursive_mutex> scheduler_lock(mutex);
+    if (is_updating && updating_thread_id == thread_id)
+        return false;
+    while (is_updating) {
+        scheduler_lock.unlock();
+        {
+            ThreadHostWait host_wait(kern.get_thread(thread_id));
+            scheduler_lock.lock();
+            if (is_updating)
+                condvar.wait(scheduler_lock);
+            scheduler_lock.unlock();
+        }
+        scheduler_lock.lock();
+    }
     is_updating = true;
+    updating_thread_id = thread_id;
+    released_voices_during_update.clear();
 
     // make a copy of the queue, this way we have no issue if it is modified in a callback
     std::vector<ngs::Voice *> queue_copy = queue;
@@ -135,60 +165,105 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     }
 
     for (ngs::Voice *voice : queue_copy) {
+        if (released_voices_during_update.contains(voice))
+            continue;
+
         // Modify the state, in peace....
         std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
         memset(voice->products, 0, sizeof(voice->products));
 
-        bool finished = false;
+        const bool has_key_off_handler = [&] {
+            for (size_t i = 0; i < voice->rack->modules.size(); ++i) {
+                const auto &module = voice->rack->modules[i];
+                if (module && !voice->datas[i].is_bypassed && module->module_id() == (SCE_NGS_ENVELOPE_PARAMS_STRUCT_ID & 0xffff))
+                    return true;
+            }
+            return false;
+        }();
+        const bool finish_on_key_off = voice->is_keyed_off && !has_key_off_handler;
+        bool finished = finish_on_key_off;
+        bool finished_triggers_callback = true;
         uint32_t finished_module = 0;
 
+        bool released = false;
         for (size_t i = 0; i < voice->rack->modules.size(); i++) {
-            if (voice->rack->modules[i]) {
-                if (voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock)) {
+            if (voice->rack->modules[i] && !finish_on_key_off) {
+                processing_rack = voice->rack;
+                processing_module_index = i;
+                const uint32_t module_id = voice->rack->modules[i]->module_id();
+                const bool module_finished = voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock);
+                processing_rack = nullptr;
+                processing_module_keepalive.reset();
+                if (released_voices_during_update.contains(voice)) {
+                    voice_lock.release();
+                    released = true;
+                    break;
+                }
+                if (module_finished) {
                     finished = true;
-                    finished_module = voice->rack->modules[i]->module_id();
+                    finished_module = module_id;
+                    finished_triggers_callback = voice->rack->modules[i]->finished_triggers_callback(voice->datas[i]);
                 }
             }
         }
+        if (released)
+            continue;
         if (finished) {
-            voice->is_keyed_off = true;
-            voice->transition(mem, VOICE_STATE_FINALIZING);
-            if (voice->finished_callback) {
-                voice_lock.unlock();
-                scheduler_lock.unlock();
-                voice->invoke_callback(kern, mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, finished_module);
-                scheduler_lock.lock();
-                voice_lock.lock();
-            }
-            voice->is_keyed_off = false;
+            if (!finished_triggers_callback) {
+                stop(mem, voice);
+            } else {
+                if (voice->is_keyed_off)
+                    finished_module = 0;
+                voice->is_keyed_off = true;
+                voice->transition(mem, VOICE_STATE_FINALIZING);
+                if (voice->finished_callback) {
+                    voice_lock.unlock();
+                    scheduler_lock.unlock();
+                    voice->invoke_callback(kern, mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, finished_module);
+                    scheduler_lock.lock();
+                    if (released_voices_during_update.contains(voice))
+                        continue;
+                    voice_lock.lock();
+                }
+                voice->is_keyed_off = false;
 
-            stop(mem, voice);
+                stop(mem, voice);
+            }
         }
 
         for (size_t i = 0; i < voice->rack->vdef->output_count; i++) {
             if (voice->products[i].data)
-                deliver_data(mem, queue_copy, voice, static_cast<uint8_t>(i), voice->products[i]);
+                deliver_data(mem, queue, voice, static_cast<uint8_t>(i), voice->products[i]);
         }
 
         voice->frame_count++;
     }
 
     while (!operations_pending.empty()) {
-        OperationPending &op = operations_pending.front();
+        OperationPending op = operations_pending.front();
+        operations_pending.pop();
 
         switch (op.type) {
         case PendingType::ReleaseRack:
             release_rack(*op.release_data.state, mem, op.system, op.release_data.rack);
-            // run callback (we know it is defined)
-            kern.get_thread(thread_id)->call_guest(op.release_data.callback, { Ptr<void>(op.release_data.rack, mem).address() });
+            pending_rack_releases.erase(op.release_data.rack);
+            {
+                const ThreadStatePtr thread = kern.get_thread(thread_id);
+                const Address callback_info_addr = thread->cpu->stack_alloc(sizeof(SceNgsCallbackInfo));
+                auto *info = Ptr<SceNgsCallbackInfo>(callback_info_addr).get(mem);
+                *info = {};
+                info->rack_handle = Ptr<void>(op.release_data.rack, mem);
+                thread->call_guest(op.release_data.callback, { callback_info_addr });
+                thread->cpu->stack_free(sizeof(SceNgsCallbackInfo));
+            }
             break;
         }
-
-        operations_pending.pop();
     }
 
     is_updating = false;
+    updating_thread_id = -1;
     condvar.notify_all();
+    return true;
 }
 
 int32_t VoiceScheduler::get_position(Voice *v) {

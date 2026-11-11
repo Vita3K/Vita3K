@@ -20,6 +20,8 @@
 #include <array>
 #include <camera/camera.h>
 #include <camera/state.h>
+#include <cmath>
+#include <limits>
 #include <rtc/rtc.h>
 #include <stb_image.h>
 #include <util/log.h>
@@ -92,11 +94,36 @@ static bool init_web_camera(Camera *self) {
         framerate_denominator = 10;
     }
     self->frame_interval_us = SDL_US_PER_SECOND * framerate_denominator / framerate_numerator;
+    int width = self->info.width;
+    int height = self->info.height;
+    int num_formats = 0;
+    std::unique_ptr<SDL_CameraSpec *[], SDL_Deleter> formats(SDL_GetCameraSupportedFormats(self->pImpl->device_id, &num_formats));
+    if (formats && num_formats > 0) {
+        const float target_aspect = static_cast<float>(width) / height;
+        float best_aspect_diff = std::numeric_limits<float>::max();
+        int best_width_diff = std::numeric_limits<int>::max();
+        for (int i = 0; i < num_formats; ++i) {
+            const auto &format = *formats[i];
+            if (format.width <= 0 || format.height <= 0)
+                continue;
+            const float aspect_diff = std::abs(target_aspect - static_cast<float>(format.width) / format.height);
+            const int width_diff = std::abs(format.width - static_cast<int>(self->info.width));
+            if (aspect_diff < best_aspect_diff - 0.000001f || (std::abs(aspect_diff - best_aspect_diff) < 0.000001f && width_diff < best_width_diff)) {
+                best_aspect_diff = aspect_diff;
+                best_width_diff = width_diff;
+                width = format.width;
+                height = format.height;
+            }
+        }
+    } else {
+        LOG_WARN("Unable to enumerate formats for camera '{}': {}", self->id, SDL_GetError());
+    }
+    // SDL can silently fail when converting MJPEG camera frames directly to YUV.
     SDL_CameraSpec camera_spec{
-        .format = self->pImpl->format, /**< Frame format */
-        .colorspace = self->pImpl->colorspace, /**< Frame colorspace */
-        .width = self->info.width, /**< Frame width */
-        .height = self->info.height, /**< Frame height */
+        .format = SDL_PIXELFORMAT_ARGB8888, /**< Frame format */
+        .colorspace = SDL_COLORSPACE_SRGB, /**< Frame colorspace */
+        .width = width, /**< Frame width */
+        .height = height, /**< Frame height */
         .framerate_numerator = framerate_numerator, /**< Frame rate numerator ((num / denom) == FPS, (denom / num) == duration in seconds) */
         .framerate_denominator = framerate_denominator /**< Frame rate demoninator ((num / denom) == FPS, (denom / num) == duration in seconds) */
     };
@@ -256,7 +283,7 @@ int Camera::open(SceCameraInfo *info, uint64_t base_tick, uint64_t start_tick) {
         this->pImpl->colorspace = SDL_COLORSPACE_RGB_DEFAULT;
     }
 
-    if (this->info.range == SCE_CAMERA_DATA_RANGE_BT601) {
+    if (this->info.range == SCE_CAMERA_DATA_RANGE_BT601 && SDL_ISPIXELFORMAT_FOURCC(this->pImpl->format)) {
         this->pImpl->colorspace = SDL_COLORSPACE_BT601_LIMITED;
     }
 
@@ -311,10 +338,26 @@ int Camera::read(SceCameraRead *read, void *pIBase, void *pUBase, void *pVBase, 
         if (next_surface)
             SDL_ReleaseCameraFrame(pImpl->sdl_camera.get(), next_surface);
         if (surface) {
-            pImpl->frame.reset(SDL_DuplicateSurface(surface));
+            SDL_SurfacePtr scaled;
+            SDL_SurfacePtr converted;
+            if (!SDL_SetSurfaceColorspace(surface, SDL_COLORSPACE_SRGB)) {
+                LOG_ERROR("Failed to set camera frame colorspace: {}", SDL_GetError());
+            } else {
+                SDL_Surface *source = surface;
+                if (surface->w != info.width || surface->h != info.height) {
+                    scaled.reset(SDL_ScaleSurface(surface, info.width, info.height, SDL_SCALEMODE_LINEAR));
+                    source = scaled.get();
+                }
+                if (source)
+                    converted.reset(SDL_ConvertSurfaceAndColorspace(source, pImpl->format, nullptr, pImpl->colorspace, 0));
+                if (!converted)
+                    LOG_ERROR("Failed to scale or convert camera frame: {}", SDL_GetError());
+            }
             SDL_ReleaseCameraFrame(pImpl->sdl_camera.get(), surface);
-            LOG_ERROR_IF(!pImpl->frame, "Failed to duplicate camera surface: {}", SDL_GetError());
-            last_frame_timestamp_us = timestampNS / SDL_NS_PER_US + tick_diff_us;
+            if (converted) {
+                pImpl->frame = std::move(converted);
+                last_frame_timestamp_us = timestampNS / SDL_NS_PER_US + tick_diff_us;
+            }
         }
     }
     read->frame = frame_idx++;
@@ -326,8 +369,8 @@ int Camera::read(SceCameraRead *read, void *pIBase, void *pUBase, void *pVBase, 
             sizeUBase = std::min(sizeUBase, (SceSize)(pImpl->frame->pitch * pImpl->frame->h / 4));
             sizeVBase = std::min(sizeVBase, (SceSize)(pImpl->frame->pitch * pImpl->frame->h / 4));
             memcpy(pIBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels), sizeIBase);
-            memcpy(pVBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels) + (pImpl->frame->pitch * pImpl->frame->h), sizeUBase);
-            memcpy(pUBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels) + (pImpl->frame->pitch * pImpl->frame->h * 5 / 4), sizeVBase);
+            memcpy(pVBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels) + (pImpl->frame->pitch * pImpl->frame->h), sizeVBase);
+            memcpy(pUBase, reinterpret_cast<uint8_t *>(pImpl->frame->pixels) + (pImpl->frame->pitch * pImpl->frame->h * 5 / 4), sizeUBase);
         } else if (this->info.format == SCE_CAMERA_FORMAT_YUV422_PLANE) {
             // convert SDL_PIXELFORMAT_YUY2 Y0+U0+Y1+V0 to planar format
             const int width = pImpl->frame->w;

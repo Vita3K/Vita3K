@@ -204,6 +204,9 @@ internal fun SettingsCategoryBody(
     defaultStoragePath: String,
     onChangeStorageFolder: () -> Unit,
     onResetStorageFolder: () -> Unit,
+    onImportIdentity: () -> Unit = {},
+    onResetIdentity: () -> Unit = {},
+    identityImportBusy: Boolean = false,
     installedCustomDrivers: List<String>,
     customDriverBusy: Boolean,
     onInstallCustomDriver: () -> Unit,
@@ -305,6 +308,9 @@ internal fun SettingsCategoryBody(
             defaultStoragePath = defaultStoragePath,
             onChangeStorageFolder = onChangeStorageFolder,
             onResetStorageFolder = onResetStorageFolder,
+            onImportIdentity = onImportIdentity,
+            onResetIdentity = onResetIdentity,
+            identityImportBusy = identityImportBusy,
             allowStorageFolderManagement = allowStorageFolderManagement,
             allowClearAllCustomConfigs = allowClearAllCustomConfigs,
             onClearAllCustomConfigs = onClearAllCustomConfigs,
@@ -1470,6 +1476,20 @@ private fun InterfaceSettingsSection(
         onShowHelp = onShowHelp
     ) {
         SettingsSubsectionTitle(title = stringResource(R.string.settings_interface_ui_options))
+        val frontendTitle = stringResource(R.string.settings_interface_frontend)
+        val frontendOptions = listOf("Compose", "ImGui")
+        SettingsChoiceField(
+            title = frontendTitle,
+            options = frontendOptions,
+            selectedIndex = frontendOptions.indexOf(cfg.guiBackend).coerceAtLeast(0),
+            onSelect = { index -> onUpdate { guiBackend = frontendOptions[index] } },
+            help = SettingsHelpEntry(
+                title = frontendTitle,
+                body = stringResource(R.string.settings_interface_frontend_desc),
+                scope = SettingsScope.Global
+            ),
+            onShowHelp = onShowHelp
+        )
         val uiLanguageTitle = stringResource(R.string.settings_emulator_ui_language)
         val uiLanguageOptions = UiLanguages.options
         val uiLanguageIndex = uiLanguageOptions.indexOfFirst { it.tag == cfg.userLang }.let { index ->
@@ -1498,6 +1518,9 @@ private fun EmulatorSettingsSection(
     defaultStoragePath: String,
     onChangeStorageFolder: () -> Unit,
     onResetStorageFolder: () -> Unit,
+    onImportIdentity: () -> Unit,
+    onResetIdentity: () -> Unit,
+    identityImportBusy: Boolean,
     allowStorageFolderManagement: Boolean,
     allowClearAllCustomConfigs: Boolean,
     onClearAllCustomConfigs: () -> Unit,
@@ -1515,6 +1538,25 @@ private fun EmulatorSettingsSection(
             ),
             onShowHelp = onShowHelp
         )
+            val identityTitle = stringResource(R.string.settings_identity_title)
+            SettingsActionRow(
+                title = identityTitle,
+                onClick = onImportIdentity,
+                enabled = !identityImportBusy,
+                help = SettingsHelpEntry(
+                    title = identityTitle,
+                    body = stringResource(R.string.settings_identity_description),
+                    scope = SettingsScope.Global
+                ),
+                onShowHelp = onShowHelp
+            )
+            SettingsActionRow(
+                title = stringResource(R.string.settings_identity_reset),
+                onClick = onResetIdentity,
+                enabled = !identityImportBusy,
+                help = null,
+                onShowHelp = onShowHelp
+            )
         SettingsSliderRow(
             title = stringResource(R.string.settings_emulator_file_loading_delay, cfg.fileLoadingDelay),
             valueLabel = "${cfg.fileLoadingDelay} ms",

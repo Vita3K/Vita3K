@@ -1,6 +1,7 @@
 package org.vita3k.emulator.ui.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,6 +22,8 @@ import org.vita3k.emulator.data.RestartRequiredSetting
 import org.vita3k.emulator.data.SettingsRepository
 import org.vita3k.emulator.data.SettingsSnapshot
 import org.vita3k.emulator.data.UiLanguages
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 
 data class SettingsOperationResult(
     val message: String,
@@ -79,6 +82,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         private set
 
     var operationResult by mutableStateOf<SettingsOperationResult?>(null)
+        private set
+
+    var identityImportBusy by mutableStateOf(false)
         private set
 
     var supportedMemoryMappingMask by mutableStateOf(1)
@@ -227,6 +233,67 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun resetStorageFolder(onStorageChanged: () -> Unit) {
         changeStorageFolder(defaultStoragePath, onStorageChanged)
+    }
+
+    fun importSavedataIdentity(uri: Uri) {
+        if (identityImportBusy) return
+        identityImportBusy = true
+        viewModelScope.launch {
+            try {
+                val bytes = withContext(Dispatchers.IO) {
+                    val stream = getApplication<Application>().contentResolver.openInputStream(uri)
+                        ?: throw IOException(str(R.string.settings_identity_read_failed))
+                    stream.use { input ->
+                        val output = ByteArrayOutputStream()
+                        val buffer = ByteArray(8192)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            if (output.size() + count > 1024 * 1024)
+                                throw IOException(str(R.string.settings_identity_too_large))
+                            output.write(buffer, 0, count)
+                        }
+                        output.toByteArray()
+                    }
+                }
+                if (NativeLib.isAppRunning()) {
+                    operationResult = SettingsOperationResult(str(R.string.settings_identity_running), true)
+                } else {
+                    NativeLib.importSavedataIdentity(bytes)
+                    operationResult = SettingsOperationResult(str(R.string.settings_identity_success), false)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                operationResult = SettingsOperationResult(
+                    str(R.string.settings_identity_error, e.message ?: str(R.string.settings_identity_read_failed)),
+                    true
+                )
+            } finally {
+                identityImportBusy = false
+            }
+        }
+    }
+
+    fun resetSavedataIdentity() {
+        if (identityImportBusy) return
+        identityImportBusy = true
+        viewModelScope.launch {
+            try {
+                if (NativeLib.isAppRunning()) {
+                    operationResult = SettingsOperationResult(str(R.string.settings_identity_change_running), true)
+                } else {
+                    withContext(Dispatchers.IO) { NativeLib.resetSavedataIdentity() }
+                    operationResult = SettingsOperationResult(str(R.string.settings_identity_reset_success), false)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                operationResult = SettingsOperationResult(str(R.string.settings_identity_reset_error, e.message ?: ""), true)
+            } finally {
+                identityImportBusy = false
+            }
+        }
     }
 
     fun resetToDefaults() {

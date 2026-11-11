@@ -23,14 +23,21 @@
 
 #include <chrono>
 #include <cstdint>
+#include <ctime>
+#include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
 struct Config;
 struct EmuEnvState;
 struct AppLaunchRequest;
+struct RegMgrState;
 class Root;
+namespace pfsmgr {
+struct SavedataIdentity;
+}
 
 namespace app {
 
@@ -58,18 +65,14 @@ struct SettingsCommitResult {
     std::vector<config::RestartRequiredSetting> restart_required_settings;
 };
 
-/// Describes the state of the application to be run
-enum class AppRunType {
-    /// Run type is unknown
-    Unknown,
-    /// Extracted, files are as they are on console
-    Extracted,
-};
-
 bool init_paths(Root &root_paths);
+void recover_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path);
+pfsmgr::SavedataIdentity get_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path);
+bool import_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path, const pfsmgr::SavedataIdentity &identity, std::string &error);
+bool reset_savedata_identity(RegMgrState &regmgr, const fs::path &vita_fs_path, std::string &error);
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
-void shutdown_app_runtime(EmuEnvState &state);
-void reset_app_state(EmuEnvState &state);
+void shutdown_app_runtime(EmuEnvState &state, bool preserve_renderer = false);
+void reset_app_state(EmuEnvState &state, bool update_discord_presence = true);
 bool late_init(EmuEnvState &state);
 void apply_renderer_config(EmuEnvState &emuenv);
 void apply_runtime_settings(EmuEnvState &emuenv);
@@ -80,16 +83,20 @@ void destroy(EmuEnvState &emuenv);
 
 bool init_apps_list(EmuEnvState &emuenv);
 bool scan_apps(EmuEnvState &emuenv);
+bool update_firmware_apps(EmuEnvState &emuenv, std::vector<std::string> &added_paths);
 bool load_cached_apps(EmuEnvState &emuenv);
 void save_apps_cache(EmuEnvState &emuenv);
 AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id);
+void update_app(EmuEnvState &emuenv, const AppEntry &app);
 void load_app_times(EmuEnvState &emuenv);
 void save_app_times(EmuEnvState &emuenv);
 void update_last_time_app_used(EmuEnvState &emuenv, const std::string &app_path);
 void update_app_time_used(EmuEnvState &emuenv, const std::string &app_path);
 void reset_last_time_app_used(EmuEnvState &emuenv, const std::string &app_path);
-void delete_app(EmuEnvState &emuenv, const std::string &app_path);
+bool delete_app(EmuEnvState &emuenv, const std::string &app_path);
 std::vector<AppEntry> get_apps(const EmuEnvState &emuenv);
+std::optional<AppEntry> get_app(const EmuEnvState &emuenv, const std::string &app_path);
+void sort_apps(EmuEnvState &emuenv, const std::function<bool(const AppEntry &, const AppEntry &)> &compare);
 std::map<std::string, AppTime> get_user_app_times(const EmuEnvState &emuenv);
 int get_supported_memory_mapping_mask(const EmuEnvState &emuenv, int gpu_idx = -1);
 void ensure_camera_defaults(Config &cfg);
@@ -113,6 +120,7 @@ void request_in_process_launch(EmuEnvState &emuenv, AppLaunchRequest request);
 void load_users(EmuEnvState &emuenv);
 void save_user(EmuEnvState &emuenv, const std::string &user_id);
 std::string create_user(EmuEnvState &emuenv, const std::string &name);
+std::string create_user(EmuEnvState &emuenv, User user);
 void delete_user(EmuEnvState &emuenv, const std::string &user_id);
 bool activate_user(EmuEnvState &emuenv, const std::string &user_id);
 

@@ -202,7 +202,7 @@ updater::UpdateCheckResult build_check_result() {
     const auto current_build_number = static_cast<std::uint64_t>(app_number);
     const auto build_delta = static_cast<std::int64_t>(result.info.build_number) - static_cast<std::int64_t>(current_build_number);
 
-    if (!updater::is_official_build()) {
+    if (!updater::is_official_build() && !is_limule_update_build) {
         result.status = updater::UpdateCheckStatus::CustomBuildCanUpdate;
         return result;
     }
@@ -214,12 +214,18 @@ updater::UpdateCheckResult build_check_result() {
 
     if (build_delta < 0) {
         result.status = updater::UpdateCheckStatus::CurrentBuildNewerThanLatest;
-        result.message = tr_update("This installation appears newer than the latest official continuous build.").toStdString();
+        result.message = (is_limule_update_build
+                ? tr_update("This installation appears newer than the latest Limule build.")
+                : tr_update("This installation appears newer than the latest official continuous build."))
+                             .toStdString();
         return result;
     }
 
     result.status = updater::UpdateCheckStatus::UpToDate;
-    result.message = tr_update("You already have the latest official build installed.").toStdString();
+    result.message = (is_limule_update_build
+            ? tr_update("You already have the latest Limule build installed.")
+            : tr_update("You already have the latest official build installed."))
+                         .toStdString();
     return result;
 }
 

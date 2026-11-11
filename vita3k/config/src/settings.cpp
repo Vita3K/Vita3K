@@ -60,7 +60,9 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
     current.pstv_mode = cfg.pstv_mode;
     current.stretch_the_display_area = cfg.stretch_the_display_area;
     current.fullscreen_hd_res_pixel_perfect = cfg.fullscreen_hd_res_pixel_perfect;
+    current.show_touchpad_cursor = cfg.show_touchpad_cursor;
     current.file_loading_delay = cfg.file_loading_delay;
+    current.thread_scheduler = cfg.thread_scheduler;
     current.psn_signed_in = cfg.psn_signed_in;
     current.sys_button = cfg.sys_button;
     current.sys_lang = cfg.sys_lang;
@@ -106,7 +108,9 @@ void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.pstv_mode = current.pstv_mode;
     cfg.stretch_the_display_area = current.stretch_the_display_area;
     cfg.fullscreen_hd_res_pixel_perfect = current.fullscreen_hd_res_pixel_perfect;
+    cfg.show_touchpad_cursor = current.show_touchpad_cursor;
     cfg.file_loading_delay = current.file_loading_delay;
+    cfg.thread_scheduler = current.thread_scheduler;
     cfg.psn_signed_in = current.psn_signed_in;
     cfg.sys_button = current.sys_button;
     cfg.sys_lang = current.sys_lang;
@@ -146,12 +150,19 @@ std::vector<RestartRequiredSetting> get_restart_required_settings(
     append_if_changed(before.audio_backend != after.audio_backend, RestartRequiredSetting::AudioBackend);
     append_if_changed(before.validation_layer != after.validation_layer, RestartRequiredSetting::ValidationLayer);
     append_if_changed(before.disable_mask_bit != after.disable_mask_bit, RestartRequiredSetting::DisableMaskBit);
+    append_if_changed(before.thread_scheduler != after.thread_scheduler, RestartRequiredSetting::ThreadScheduler);
 
     return changed;
 }
 
 static fs::path get_custom_config_path(const fs::path &config_path, const std::string &app_path) {
-    return config_path / "config" / fmt::format("config_{}.xml", app_path);
+    const auto name = fs::path(app_path).filename().string();
+    if (name.empty() || name == "." || name == ".."
+        || std::any_of(name.begin(), name.end(), [](unsigned char c) {
+               return c < 32 || c == 127 || c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' || c == '"' || c == '<' || c == '>' || c == '|';
+           }))
+        return {};
+    return config_path / "config" / fmt::format("config_{}.xml", name);
 }
 
 bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path, const std::string &app_path) {
@@ -159,7 +170,7 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
         return false;
 
     const auto custom_cfg_path = get_custom_config_path(config_path, app_path);
-    if (!fs::exists(custom_cfg_path))
+    if (custom_cfg_path.empty() || !fs::exists(custom_cfg_path))
         return false;
 
     pugi::xml_document doc;
@@ -230,8 +241,10 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
     if (!config_child.child("emulator").empty()) {
         const auto emu = config_child.child("emulator");
         out.file_loading_delay = emu.attribute("file-loading-delay").as_int();
+        out.thread_scheduler = emu.attribute("thread-scheduler").as_bool(out.thread_scheduler);
         out.stretch_the_display_area = emu.attribute("stretch-the-display-area").as_bool();
         out.fullscreen_hd_res_pixel_perfect = emu.attribute("fullscreen-hd-res-pixel-perfect").as_bool();
+        out.show_touchpad_cursor = emu.attribute("show-touchpad-cursor").as_bool(true);
     }
 
     if (!config_child.child("debug").empty()) {
@@ -251,6 +264,10 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
 
 bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_path, const std::string &app_path) {
     if (app_path.empty())
+        return false;
+
+    const auto custom_cfg_path = get_custom_config_path(config_path, app_path);
+    if (custom_cfg_path.empty())
         return false;
 
     const auto dir = config_path / "config";
@@ -311,8 +328,10 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
 
     auto emu_child = config_child.append_child("emulator");
     emu_child.append_attribute("file-loading-delay") = cc.file_loading_delay;
+    emu_child.append_attribute("thread-scheduler") = cc.thread_scheduler;
     emu_child.append_attribute("stretch-the-display-area") = cc.stretch_the_display_area;
     emu_child.append_attribute("fullscreen-hd-res-pixel-perfect") = cc.fullscreen_hd_res_pixel_perfect;
+    emu_child.append_attribute("show-touchpad-cursor") = cc.show_touchpad_cursor;
 
     auto debug_child = config_child.append_child("debug");
     debug_child.append_attribute("log-active-shaders") = cc.log_active_shaders;
@@ -324,7 +343,6 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
     auto network_child = config_child.append_child("network");
     network_child.append_attribute("psn-signed-in") = cc.psn_signed_in;
 
-    const auto custom_cfg_path = get_custom_config_path(config_path, app_path);
     if (!doc.save_file(custom_cfg_path.c_str())) {
         LOG_ERROR("Failed to save custom config xml for app path: {}", app_path);
         return false;
@@ -338,7 +356,7 @@ bool delete_custom_config(const fs::path &config_path, const std::string &app_pa
         return false;
 
     const auto custom_cfg_path = get_custom_config_path(config_path, app_path);
-    if (fs::exists(custom_cfg_path)) {
+    if (!custom_cfg_path.empty() && fs::exists(custom_cfg_path)) {
         fs::remove(custom_cfg_path);
         return true;
     }
@@ -372,7 +390,8 @@ int delete_all_custom_configs(const fs::path &config_path) {
 bool has_custom_config(const fs::path &config_path, const std::string &app_path) {
     if (app_path.empty())
         return false;
-    return fs::exists(get_custom_config_path(config_path, app_path));
+    const auto custom_cfg_path = get_custom_config_path(config_path, app_path);
+    return !custom_cfg_path.empty() && fs::exists(custom_cfg_path);
 }
 
 void set_current_config(Config &cfg, const fs::path &config_path, const std::string &app_path) {

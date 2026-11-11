@@ -2072,6 +2072,24 @@ QGroupBox[flat=&quot;true&quot;]::title {
                      </item>
                     </layout>
                    </item>
+                   <item>
+                    <layout class="QHBoxLayout" name="savedata_identity_buttons">
+                     <item>
+                      <widget class="QPushButton" name="import_savedata_identity">
+                       <property name="text">
+                        <string>Import Identity from Save SFO</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="reset_savedata_identity">
+                       <property name="text">
+                        <string>Reset Identity</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
                   </layout>
                  </widget>
                 </item>
@@ -2302,6 +2320,23 @@ QGroupBox[flat=&quot;true&quot;]::title {
                    <item>
                     <widget class="QComboBox" name="ui_language_box"/>
                    </item>
+                    <item>
+                     <widget class="QLabel" name="gui_backend_label">
+                      <property name="toolTip">
+                       <string>The selection takes effect after restarting Vita3K.</string>
+                      </property>
+                      <property name="text">
+                       <string>GUI Frontend</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QComboBox" name="gui_backend_box">
+                      <property name="toolTip">
+                       <string>The selection takes effect after restarting Vita3K.</string>
+                      </property>
+                     </widget>
+                    </item>
                    <item>
                     <widget class="QCheckBox" name="show_welcome">
                      <property name="text">

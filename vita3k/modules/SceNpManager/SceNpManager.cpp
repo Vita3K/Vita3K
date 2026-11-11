@@ -140,6 +140,15 @@ EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
     return 0;
 }
 
+EXPORT(int, SceNpManager_E45E4003, void *account_info) {
+    TRACY_FUNC(SceNpManager_E45E4003, account_info);
+    if (!account_info)
+        return RET_ERROR(SCE_NP_MANAGER_ERROR_INVALID_ARGUMENT);
+
+    LOG_WARN_ONCE("NP account information is unavailable; refusing to return an uninitialized account record");
+    return RET_ERROR(SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL);
+}
+
 EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> data) {
     TRACY_FUNC(sceNpRegisterServiceStateCallback, callback, data);
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);

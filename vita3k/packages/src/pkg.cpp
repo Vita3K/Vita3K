@@ -20,11 +20,7 @@
  * @brief PlayStation Vita software package (`.pkg`) handling
  */
 
-#include <F00DKeyEncryptorFactory.h>
-#include <PsvPfsParserConfig.h>
-#include <Utils.h>
 #include <openssl/evp.h>
-#include <rif2zrif.h>
 
 #include <io/functions.h>
 
@@ -36,6 +32,7 @@
 #include <packages/pkg.h>
 #include <packages/sce_types.h>
 #include <packages/sfo.h>
+#include <pfsmgr/functions.h>
 
 #include <util/bytes.h>
 #include <util/log.h>
@@ -50,37 +47,47 @@ static void ctr_init(uint8_t *counter, uint8_t *iv, uint64_t n) {
     }
 }
 
-static int execute(std::string &zrif, fs::path &title_src, fs::path &title_dst, F00DEncryptorTypes type, std::string &f00d_arg, PfsProgressCallback progress = nullptr) {
-    std::string title_src_str = title_src.string();
-    std::string title_dst_str = title_dst.string();
-    return execute(zrif, title_src_str, title_dst_str, type, f00d_arg, progress);
-}
-
-bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, const fs::path &title_path, const std::function<void(float)> &progress_callback) {
-    fs::path title_id_src = title_path;
-    fs::path title_id_dst = fs_utils::path_concat(title_path, "_dec");
-    std::ifstream binfile(drmlicpath, std::ios::in | std::ios::binary | std::ios::ate);
-    std::string zRIF = rif2zrif(binfile);
-    F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
-    std::string f00d_arg = std::string();
-
-    PfsProgressCallback pfs_progress = nullptr;
-    if (progress_callback) {
-        pfs_progress = [&progress_callback](std::uint64_t processed, std::uint64_t total, const std::string &) {
-            progress_callback(total ? static_cast<float>(processed) / static_cast<float>(total) : 1.f);
-        };
-    }
-
-    if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg, pfs_progress) < 0) && (title_path.string().find("theme") == std::string::npos))
+bool install_nonpdrm_license(EmuEnvState &emuenv, const fs::path &drmlicpath, const fs::path &title_path) {
+    SceNpDrmLicense license{};
+    std::ifstream input(drmlicpath, std::ios::binary);
+    if (!input.read(reinterpret_cast<char *>(&license), sizeof(license)) || input.peek() != std::char_traits<char>::eof()) {
+        LOG_ERROR("Cannot read valid license '{}'", drmlicpath);
         return false;
-
-    if (!emuenv.app_info.app_category.contains("gp"))
-        copy_license(emuenv, drmlicpath);
-
-    fs::remove_all(title_id_src);
-    fs::rename(title_id_dst, title_id_src);
-
-    return true;
+    }
+    input.close();
+    const auto end = std::find(std::begin(license.content_id), std::end(license.content_id), '\0');
+    const std::string content_id(std::begin(license.content_id), end);
+    const auto parent = title_path.parent_path();
+    const bool theme = parent.filename() == "theme";
+    const bool addcont = parent.parent_path().filename() == "addcont";
+    if (content_id.size() != 36 || content_id[6] != '-' || content_id[16] != '_' || content_id[19] != '-'
+        || (theme && title_path.filename() != content_id)
+        || (addcont && (parent.filename() != content_id.substr(7, 9) || title_path.filename() != content_id.substr(20)))
+        || (!theme && !addcont && title_path.filename() != content_id.substr(7, 9))) {
+        LOG_ERROR("License '{}' does not match installed content '{}'", drmlicpath, title_path);
+        return false;
+    }
+    const auto mode = theme ? pfsmgr::Mode::ThemeData : addcont ? pfsmgr::Mode::AcidDirectory
+                                                                : pfsmgr::Mode::GameData;
+    try {
+        const auto files_db = title_path / "sce_pfs" / "files.db";
+        const auto unicv_db = title_path / "sce_pfs" / "unicv.db";
+        const bool has_files = fs::exists(fs::symlink_status(files_db));
+        const bool has_unicv = fs::exists(fs::symlink_status(unicv_db));
+        if (has_files != has_unicv) {
+            LOG_ERROR("Cannot authenticate installed PFS '{}': incomplete PFS databases", title_path);
+            return false;
+        }
+        if (has_files) {
+            pfsmgr::AesKey key{};
+            std::copy(std::begin(license.key), std::end(license.key), key.begin());
+            pfsmgr::Layer layer(title_path, key, pfsmgr::make_key_material(), mode);
+        }
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Cannot authenticate installed PFS '{}': {}", title_path, error.what());
+        return false;
+    }
+    return copy_license(emuenv, drmlicpath);
 }
 
 bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
@@ -100,7 +107,8 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     fseek(infile, sizeof(PkgHeader), SEEK_SET);
     fread(reinterpret_cast<char *>(&ext_header), sizeof(PkgExtHeader), 1, infile);
 
-    progress_callback(0);
+    if (progress_callback)
+        progress_callback(0);
 
     if (byte_swap(pkg_header.magic) != 0x7F504b47 && byte_swap(ext_header.magic) != 0x7F657874) {
         LOG_ERROR("Not a valid pkg file!");
@@ -232,7 +240,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         emuenv.app_info.app_content_id.erase(0, 20);
     }
 
-    if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(emuenv.app_info.app_category.c_str(), "gp") == 0) {
+    if (type == PkgType::PKG_TYPE_VITA_APP && emuenv.app_info.app_category.starts_with("gp")) {
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
@@ -270,7 +278,8 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     };
 
     std::vector<uint8_t> buffer(0x10000);
-    for (uint32_t i = 0; i < byte_swap(pkg_header.file_count); i++) {
+    const auto file_count = byte_swap(pkg_header.file_count);
+    for (uint32_t i = 0; i < file_count; i++) {
         PkgEntry entry;
         uint64_t file_offset = items_offset + i * 32;
         fseek(infile, byte_swap(pkg_header.data_offset) + file_offset, SEEK_SET);
@@ -283,8 +292,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             evp_cleanup();
             return false;
         }
-        const auto file_count = static_cast<float>(byte_swap(pkg_header.file_count));
-        progress_callback(i / file_count * 100.f * 0.6f);
         std::vector<unsigned char> name(byte_swap(entry.name_size));
         fseek(infile, byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset), SEEK_SET);
         fread(name.data(), byte_swap(entry.name_size), 1, infile);
@@ -322,59 +329,26 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             outfile.write(reinterpret_cast<char *>(buffer.data()), dec_len);
             outfile.close();
         }
+        if (progress_callback)
+            progress_callback(static_cast<float>(i + 1) / file_count * 99.f);
     }
     fclose(infile);
 
     evp_cleanup();
-    fs::path title_id_src = path;
-    fs::path title_id_dst = fs_utils::path_concat(path, "_dec");
     std::string zRIF = p_zRIF;
-    F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
-    std::string f00d_arg = std::string();
+    if (!create_license(emuenv, zRIF))
+        LOG_WARN("Package extracted, but its license could not be created for {}", emuenv.app_info.app_title_id);
 
-    progress_callback(80);
-    switch (type) {
-    case PkgType::PKG_TYPE_VITA_APP:
-    case PkgType::PKG_TYPE_VITA_PATCH:
-
-        if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
-            fs::remove_all(fs::path(title_id_src));
-            fs::remove_all(fs::path(title_id_dst));
+    if (type == PkgType::PKG_TYPE_VITA_APP || type == PkgType::PKG_TYPE_VITA_PATCH) {
+        if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id,
+                type == PkgType::PKG_TYPE_VITA_PATCH ? AppmetaInstallType::Patch : AppmetaInstallType::Application,
+                AppmetaFormat::Protected, AppmetaCache::Populate)) {
+            LOG_ERROR("Package extracted, but Appmeta or its shell cache for {} could not be completed; see preceding log messages", emuenv.app_info.app_title_id);
             return false;
         }
-        fs::remove_all(title_id_src);
-        fs::rename(title_id_dst, title_id_src);
-
-        break;
-    case PkgType::PKG_TYPE_VITA_DLC:
-
-        if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
-            fs::remove_all(fs::path(title_id_src));
-            fs::remove_all(fs::path(title_id_dst));
-            return false;
-        } else {
-            fs::remove_all(title_id_src);
-            fs::rename(title_id_dst, title_id_src);
-            return true;
-        }
-        break;
-
-    case PkgType::PKG_TYPE_VITA_THEME:
-
-        // Theme don't have keystone file, need skip error
-        execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg);
-        fs::remove_all(title_id_src);
-        fs::rename(title_id_dst, title_id_src);
-        return true;
-        break;
     }
-
-    if (!copy_path(title_id_src, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
-        return false;
-
-    create_license(emuenv, zRIF);
-
-    progress_callback(100);
+    if (progress_callback)
+        progress_callback(100);
     return true;
 }
 

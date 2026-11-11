@@ -186,13 +186,23 @@ struct ShaderProgram {
 
     uint16_t texture_count; // max texture index used by the shader + 1
     TextureInfo textures_used; // textures_used[i] is true if and only if the i-th texture is used by the shader
+    TextureInfo cube_textures;
 };
 
 struct FragmentProgram : ShaderProgram {
 };
 
+struct VertexAttributeBinding {
+    uint16_t stream_index;
+    uint32_t offset;
+    SceGxmAttributeFormat format;
+    uint8_t component_count;
+    shader::usse::AttributeInformation info;
+};
+
 struct VertexProgram : ShaderProgram {
     shader::usse::AttributeInformationMap attribute_infos;
+    std::vector<VertexAttributeBinding> attribute_bindings;
 };
 
 struct ShadersHash {

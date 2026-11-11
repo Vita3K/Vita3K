@@ -210,6 +210,11 @@ void get_attribute_informations(const SceGxmProgram &program, AttributeInformati
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+            const uint32_t location = fcount_allocated / 4;
+            fcount_allocated += ((parameter.array_size * parameter.component_count + 3) / 4) * 4;
+            if (!gxp::is_attribute_used(program, parameter))
+                continue;
+
             bool is_integer;
             switch (parameter.type) {
             case SCE_GXM_PARAMETER_TYPE_C10:
@@ -235,8 +240,7 @@ void get_attribute_informations(const SceGxmProgram &program, AttributeInformati
             }
 
             bool regformat = (vertex_varyings_ptr->untyped_pa_regs & ((uint64_t)1 << parameter.resource_index)) != 0;
-            locmap.emplace(parameter.resource_index, AttributeInformation(fcount_allocated / 4, parameter.type, parameter.component_count, is_integer, is_signed, regformat));
-            fcount_allocated += ((parameter.array_size * parameter.component_count + 3) / 4) * 4;
+            locmap.emplace(parameter.resource_index, AttributeInformation(location, parameter.type, parameter.array_size * parameter.component_count, is_integer, is_signed, regformat));
         }
     }
 }

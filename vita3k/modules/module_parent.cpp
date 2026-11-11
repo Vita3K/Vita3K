@@ -27,6 +27,7 @@
 #include <io/vfs.h>
 #include <kernel/load_self.h>
 #include <kernel/state.h>
+#include <mem/functions.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <packages/license.h>
@@ -201,7 +202,9 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     }
 
     LOG_INFO("Loading module \"{}\"", module_path);
-    if (module_path.starts_with("vs0:sys/external/")) {
+    const auto app_device = device::get_device(emuenv.io.app_path);
+    const bool is_firmware_app = app_device == VitaIoDevice::vs0 || app_device == VitaIoDevice::pd0;
+    if (!is_firmware_app && module_path.starts_with("vs0:sys/external/")) {
         // check if module is LLEd or not
         // check only for this path because app modules are always LLEd and os0 modules can be loaded only by developer.
         const auto module_name = fs::path(module_path).stem().string();
@@ -239,10 +242,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         return module_id;
     };
 
-    VitaIoDevice device = device::get_device(module_path);
-    auto device_for_icase = device;
-    fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
-    auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.vita_fs_path, emuenv.io.redirect_stdio);
+    const auto system_path = expand_path(emuenv.io, module_path.c_str(), emuenv.vita_fs_path);
 
     if (module_path.starts_with("os0:kd/")) {
         if (!fs::exists(system_path)) {
@@ -261,34 +261,11 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         }
     }
 
-    if (emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
-        // Attempt a case-insensitive file search.
-        const auto original_translated_module_path = translated_module_path;
-        const auto cached_path = find_in_cache(emuenv.io, string_utils::tolower(translated_module_path.string()));
-        if (!cached_path.empty()) {
-            translated_module_path = cached_path;
-            LOG_TRACE("Found cached filepath at {}", translated_module_path);
-        } else {
-            const bool path_found = find_case_isens_path(emuenv.io, device_for_icase, translated_module_path, system_path);
-            translated_module_path = find_in_cache(emuenv.io, string_utils::tolower(system_path.string()));
-            if (!translated_module_path.empty() && path_found) {
-                LOG_TRACE("Found file on case-sensitive filesystem at {}", translated_module_path);
-                translated_module_path = translated_module_path.string().substr(emuenv.vita_fs_path.string().length());
-                translated_module_path = translated_module_path.string().substr(translated_module_path.string().find('/') + 1);
-            } else {
-                LOG_ERROR("Missing file at {} (target path: {})", original_translated_module_path.string(), module_path);
-                return SCE_ERROR_ERRNO_ENOENT;
-            }
-        }
-    }
-
     vfs::FileBuffer module_buffer;
-    bool res;
-    if (device == VitaIoDevice::app0)
-        res = vfs::read_app_file(module_buffer, emuenv.vita_fs_path, emuenv.io.app_path, translated_module_path);
-    else
-        res = vfs::read_file(device, module_buffer, emuenv.vita_fs_path, translated_module_path);
-    if (!res) {
+    const bool read_module = (module_path.starts_with("app0:") && !emuenv.io.app_game_base_mount.empty()) || module_path.starts_with("addcont0:")
+        ? read_file_to_buffer(emuenv.io, module_path.c_str(), emuenv.vita_fs_path, module_buffer, "load_module")
+        : fs_utils::read_data(system_path, module_buffer);
+    if (!read_module) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }

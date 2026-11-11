@@ -164,10 +164,10 @@ SaveDataManagerDialog::SaveDataManagerDialog(EmuEnvState &emuenv, std::shared_pt
     detail_scroll->setWidgetResizable(true);
     detail_scroll->setFrameShape(QFrame::NoFrame);
 
-    auto *import_button = new QPushButton(tr("Import from PS Vita (Decrypt)..."), this);
-    import_button->setToolTip(tr("Decrypts a savedata folder copied from ux0:user/00/savedata on a PS Vita and adds it here."));
-    m_export_button = new QPushButton(tr("Export for PS Vita (Encrypt)..."), this);
-    m_export_button->setToolTip(tr("Encrypts the selected savedata so it can be copied back to ux0:user/00/savedata on a PS Vita."));
+    auto *import_button = new QPushButton(tr("Import from PS Vita..."), this);
+    import_button->setToolTip(tr("Copies a protected savedata folder from a PS Vita without decrypting it on disk."));
+    m_export_button = new QPushButton(tr("Export for PS Vita..."), this);
+    m_export_button->setToolTip(tr("Copies the selected protected savedata without changing its encryption or console identity."));
     m_delete_button = new QPushButton(tr("Delete Selection"), this);
     m_open_button = new QPushButton(tr("View Folder"), this);
 
@@ -289,15 +289,10 @@ void SaveDataManagerDialog::reload() {
         if (!slot_list.empty())
             title += QStringLiteral("\n") + QString::fromStdString(slot_list.front().title + " " + slot_list.front().subtitle).trimmed();
 
-        const bool encrypted = savedata::is_encrypted(path);
-        const bool exportable = savedata::can_export(path);
+        const bool exportable = savedata::is_encrypted(path);
         QString details = QStringLiteral("<b>%1</b><br>").arg(escape(app_title));
         details += tr("Save ID: %1").arg(QString::fromStdString(save_id)) + QStringLiteral("<br>");
-        QString export_state = tr("unavailable, not created on a PS Vita");
-        if (encrypted)
-            export_state = tr("still encrypted, import it first");
-        else if (exportable)
-            export_state = tr("available");
+        const QString export_state = exportable ? tr("protected copy available") : tr("unavailable for unprotected saves");
         details += tr("PS Vita export: %1").arg(export_state) + QStringLiteral("<br>");
         for (const auto &entry : slot_list) {
             details += QStringLiteral("<br><b>") + tr("Slot %1").arg(entry.id) + QStringLiteral("</b> ") + format_date_time(entry.modified).toHtmlEscaped();
@@ -478,11 +473,11 @@ void SaveDataManagerDialog::import_from_vita() {
         return;
 
     std::string error;
-    const bool ok = run_with_progress(tr("Decrypting %1...").arg(save_id), [&](const auto &progress) {
-        return savedata::import_encrypted(src, dst, progress, error);
+    const bool ok = run_with_progress(tr("Copying %1...").arg(save_id), [&](const auto &progress) {
+        return savedata::copy_protected(src, dst, progress, error);
     });
     if (!ok) {
-        QMessageBox::critical(this, windowTitle(), tr("Failed to decrypt the save data.\n\n%1").arg(QString::fromStdString(error)));
+        QMessageBox::critical(this, windowTitle(), tr("Failed to import the protected save data.\n\n%1").arg(QString::fromStdString(error)));
         return;
     }
 
@@ -499,10 +494,9 @@ void SaveDataManagerDialog::export_for_vita() {
     if (src.empty())
         return;
 
-    if (!savedata::can_export(src)) {
-        QMessageBox::warning(this, windowTitle(), tr("This save data cannot be encrypted for a PS Vita.\n\n"
-                                                     "Only save data that was imported from a PS Vita has the sce_sys/sealedkey, keystone and param.sfo the console needs. "
-                                                     "Import the game's save data from your PS Vita once, play with it here, then export it."));
+    if (!savedata::is_encrypted(src)) {
+        QMessageBox::warning(this, windowTitle(), tr("This save data is not protected. Exporting it does not encrypt or convert it for a PS Vita.\n\n"
+                                                     "Import a protected save from your PS Vita to export a protected copy."));
         return;
     }
 
@@ -523,15 +517,15 @@ void SaveDataManagerDialog::export_for_vita() {
         return;
 
     std::string error;
-    const bool ok = run_with_progress(tr("Encrypting %1...").arg(save_id), [&](const auto &progress) {
-        return savedata::export_encrypted(src, dst, progress, error);
+    const bool ok = run_with_progress(tr("Copying %1...").arg(save_id), [&](const auto &progress) {
+        return savedata::copy_protected(src, dst, progress, error);
     });
     if (!ok) {
-        QMessageBox::critical(this, windowTitle(), tr("Failed to encrypt the save data.\n\n%1").arg(QString::fromStdString(error)));
+        QMessageBox::critical(this, windowTitle(), tr("Failed to export the protected save data.\n\n%1").arg(QString::fromStdString(error)));
         return;
     }
 
-    QMessageBox::information(this, windowTitle(), tr("Encrypted save data was written to:\n%1\n\nCopy this folder to ux0:user/00/savedata/ on your PS Vita, replacing the existing one.").arg(QDir::toNativeSeparators(gui::utils::to_qt_path(dst))));
+    QMessageBox::information(this, windowTitle(), tr("Protected save data was written to:\n%1\n\nThe copy retains its original console and account identity. Compatibility with another PS Vita is not guaranteed.").arg(QDir::toNativeSeparators(gui::utils::to_qt_path(dst))));
 }
 
 void SaveDataManagerDialog::delete_selected() {

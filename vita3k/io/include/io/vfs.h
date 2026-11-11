@@ -27,6 +27,9 @@ namespace vfs {
 using FileBuffer = std::vector<SceUInt8>;
 
 bool read_file(VitaIoDevice device, FileBuffer &buf, const fs::path &vita_fs_path, const fs::path &vfs_file_path);
-bool read_app_file(FileBuffer &buf, const fs::path &vita_fs_path, const std::string &app_path, const fs::path &vfs_file_path);
+fs::path get_app_base_path(const fs::path &vita_fs_path, const std::string &app_path);
+fs::path resolve_app_path(const fs::path &vita_fs_path, const std::string &app_path, const fs::path &vfs_file_path, const std::string &title_id = {});
+bool read_app_file(FileBuffer &buf, const fs::path &vita_fs_path, const std::string &app_path, const fs::path &vfs_file_path, const std::string &title_id = {});
+bool app_dir_has_entries(const fs::path &vita_fs_path, const std::string &app_path, const fs::path &vfs_dir_path, const std::string &title_id = {});
 SceSize get_directory_used_size(const VitaIoDevice device, const std::string &vfs_path, const fs::path &vita_fs_path);
 } // namespace vfs

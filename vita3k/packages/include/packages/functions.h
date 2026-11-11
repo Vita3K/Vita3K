@@ -22,7 +22,27 @@
 
 #pragma once
 
+#include <packages/ebootparam.h>
+
 #include <functional>
 #include <util/fs.h>
 
+struct IOState;
+
 std::string install_pup(const fs::path &vita_fs_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);
+
+enum class AppmetaInstallType { Application,
+    Patch };
+
+enum class AppmetaFormat { Plain,
+    Protected };
+enum class AppmetaCache { None,
+    Populate };
+
+bool create_appmeta(IOState &io, const fs::path &vita_fs_path, const std::string &title_id,
+    AppmetaInstallType type = AppmetaInstallType::Application, AppmetaFormat format = AppmetaFormat::Protected,
+    AppmetaCache cache = AppmetaCache::None);
+bool refresh_appmeta_cache(IOState &io, const fs::path &vita_fs_path, const std::string &title_id);
+
+// Build and verify a mode-5 appmeta at a new destination.
+bool create_protected_appmeta(const fs::path &source, const fs::path &destination, const packages::Ebootparam &ebootparam);

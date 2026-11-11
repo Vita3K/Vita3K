@@ -1,4 +1,6 @@
 add_library(packages STATIC
+            src/appmeta.cpp
+            src/ebootparam.cpp
             src/exfat.cpp
             src/license.cpp
             src/pkg.cpp
@@ -10,6 +12,7 @@ add_library(packages STATIC
             include/packages/exfat.h
             include/packages/license.h
             include/packages/functions.h
+            include/packages/ebootparam.h
             include/packages/pkg.h
             include/packages/savedata.h
             include/packages/sce_types.h
@@ -17,5 +20,5 @@ add_library(packages STATIC
             include/packages/vci.h
 )
 target_include_directories(packages PUBLIC include)
-target_link_libraries(packages PUBLIC emuenv util)
-target_link_libraries(packages PRIVATE config crypto emuenv FAT16 io miniz psvpfsparser vita-toolchain)
+target_link_libraries(packages PUBLIC emuenv util pfsmgr)
+target_link_libraries(packages PRIVATE config crypto emuenv FAT16 io miniz libzRIF vfs vita-toolchain)

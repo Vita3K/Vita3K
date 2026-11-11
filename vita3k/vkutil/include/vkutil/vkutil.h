@@ -174,6 +174,13 @@ static constexpr vma::AllocationCreateInfo vma_mapped_alloc = {
     .preferredFlags = vk::MemoryPropertyFlagBits::eHostCoherent
 };
 
+static constexpr vma::AllocationCreateInfo vma_readback_alloc = {
+    .flags = vma::AllocationCreateFlagBits::eHostAccessRandom | vma::AllocationCreateFlagBits::eMapped,
+    .usage = vma::MemoryUsage::eAuto,
+    .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+    .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached
+};
+
 static constexpr vma::AllocationCreateInfo vma_host_visible = {
     .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
     .usage = vma::MemoryUsage::eAuto,

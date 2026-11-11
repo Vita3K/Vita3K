@@ -87,9 +87,10 @@ Image::~Image() {
 }
 
 void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, const vk::ImageCreateFlags image_create_flags, const void *pNext) {
+    const bool srgb_storage = format == vk::Format::eR8G8B8A8Srgb && static_cast<bool>(usage & vk::ImageUsageFlagBits::eStorage);
     vk::ImageCreateInfo image_info{
         .pNext = pNext,
-        .flags = image_create_flags,
+        .flags = image_create_flags | (srgb_storage ? vk::ImageCreateFlagBits::eExtendedUsage : vk::ImageCreateFlags()),
         .imageType = vk::ImageType::e2D,
         .format = format,
         .extent = vk::Extent3D{
@@ -121,7 +122,9 @@ void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, 
         range = vkutil::color_subresource_range;
     }
 
+    const vk::ImageViewUsageCreateInfo view_usage{ .usage = usage & ~vk::ImageUsageFlagBits::eStorage };
     vk::ImageViewCreateInfo view_info{
+        .pNext = srgb_storage ? &view_usage : nullptr,
         .image = image,
         .viewType = vk::ImageViewType::e2D,
         .format = format,

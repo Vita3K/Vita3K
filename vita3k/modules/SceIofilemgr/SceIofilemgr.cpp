@@ -205,9 +205,9 @@ EXPORT(int, sceIoCloseAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoComplete) {
-    TRACY_FUNC(sceIoComplete);
-    return UNIMPLEMENTED();
+EXPORT(int, sceIoComplete, SceUID request_id) {
+    TRACY_FUNC(sceIoComplete, request_id);
+    return complete_async_io(emuenv.io, request_id, export_name);
 }
 
 EXPORT(int, sceIoDclose, const SceUID fd) {
@@ -275,9 +275,9 @@ EXPORT(int, sceIoRead, const SceUID fd, void *data, const SceSize size) {
     return read_file(data, emuenv.io, fd, size, export_name);
 }
 
-EXPORT(int, sceIoReadAsync) {
-    TRACY_FUNC(sceIoReadAsync);
-    return UNIMPLEMENTED();
+EXPORT(int, sceIoReadAsync, SceUID fd, Ptr<uint8_t> data, SceSize size, Ptr<uint8_t> result) {
+    TRACY_FUNC(sceIoReadAsync, fd, data.address(), size, result.address());
+    return read_file_async(emuenv.io, emuenv.kernel, emuenv.mem, thread_id, fd, data, size, result, export_name);
 }
 
 EXPORT(int, sceIoSetPriority) {

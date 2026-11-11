@@ -77,6 +77,12 @@ target_include_directories(concurrentqueue INTERFACE "${CMAKE_CURRENT_SOURCE_DIR
 
 add_subdirectory(libfat16)
 
+# The imgui target is including both imgui and imgui_club.
+add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
+target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_DEMO_WINDOWS)
+target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui_club/imgui_memory_editor/")
+
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
@@ -201,6 +207,8 @@ option(ENABLE_HLSL "Enables HLSL input support" OFF)
 option(GLSLANG_TESTS "Enable glslang testing" OFF)
 option(ENABLE_OPT "Enables spirv-opt capability if present" OFF)
 add_subdirectory(glslang)
+
+add_subdirectory(json)
 
 option(SPIRV_CROSS_CLI "Build the CLI binary. Requires SPIRV_CROSS_STATIC." OFF)
 option(SPIRV_CROSS_ENABLE_TESTS "Enable SPIRV-Cross tests." OFF)
@@ -365,7 +373,18 @@ add_library(crypto INTERFACE)
 target_link_libraries(crypto INTERFACE OpenSSL::Crypto)
 
 # Must be after openssl
-add_subdirectory(psvpfstools)
+find_package(ZLIB 1.2.11)
+if(ZLIB_FOUND)
+	add_library(zlib ALIAS ZLIB::ZLIB)
+	set(ZLIB_INCLUDE_DIR "${ZLIB_INCLUDE_DIRS}")
+else()
+	add_subdirectory(zlib)
+	set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib")
+endif()
+set(LIBB64_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libb64/include")
+add_subdirectory(libb64)
+add_subdirectory(libzrif)
+target_link_libraries(libzRIF PUBLIC libb64 zlib)
 
 find_package(CURL QUIET)
 if(NOT CURL_FOUND)
@@ -383,14 +402,17 @@ if(NOT CURL_FOUND)
 	option(CURL_CA_FALLBACK "Use built-in CA store of OpenSSL. Defaults to OFF" ON)
 	option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 	option(BUILD_STATIC_LIBS "Build static libraries" ON)
-	option(BUILD_TESTING "Build tests" OFF)
 	option(BUILD_EXAMPLES "Build libcurl examples" OFF)
 	option(CURL_USE_LIBPSL "Use libpsl" OFF)
 	FetchContent_Declare(curl
 		GIT_REPOSITORY https://github.com/curl/curl.git
 		GIT_TAG        68720b4837284335b2d63cb358f8f6ce65f5bc55 # release 8.21.0
 	)
-	FetchContent_MakeAvailable(curl)
+	function(vita3k_make_available_curl)
+		set(BUILD_TESTING OFF)
+		FetchContent_MakeAvailable(curl)
+	endfunction()
+	vita3k_make_available_curl()
 else()
 	add_library(libcurl INTERFACE)
 	target_link_libraries(libcurl INTERFACE CURL::libcurl)

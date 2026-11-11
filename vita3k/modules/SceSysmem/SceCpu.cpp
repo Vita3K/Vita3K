@@ -15,8 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <module/module.h>
 
 EXPORT(int, sceKernelGetCpuId) {
-    return UNIMPLEMENTED();
+    ThreadState *const current = Scheduler::current();
+    if (!current || !emuenv.kernel.sched.is_enabled())
+        return 0;
+    return emuenv.kernel.sched.info(*current).current_cpu;
 }

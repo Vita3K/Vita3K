@@ -20,23 +20,27 @@
 
 #include "module/load_module.h"
 
+#include <app/functions.h>
+#include <app/session_controller.h>
 #include <cheat/functions.h>
 #include <config/state.h>
 #include <ctime>
 #include <ctrl/state.h>
-#include <dialog/state.h>
 #include <display/functions.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
 #include <lang/state.h>
+#include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <packages/vci.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
+#include <vfs/mounts.h>
 
 #include <miniz.h>
 #include <pugixml.hpp>
@@ -44,12 +48,14 @@
 #include <modules/module_parent.h>
 #include <modules/sysmem_state.h>
 #include <string>
+#include <string_view>
 #include <util/log.h>
 #include <util/string_utils.h>
 #include <util/vector_utils.h>
 #include <util/vita_theme_utils.h>
 
 #include <gdbstub/functions.h>
+#include <gxm/state.h>
 #include <stb_image_write.h>
 
 #if USE_DISCORD
@@ -58,6 +64,8 @@
 
 #include "patch/patch.h"
 
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <regex>
 
@@ -99,10 +107,9 @@ static bool is_nonpdrm(EmuEnvState &emuenv, const fs::path &output_path) {
     const auto is_patch_found_app_license = (emuenv.app_info.app_category == "gp") && fs::exists(app_license_path);
     if (fs::exists(output_path / "sce_sys/package/work.bin") || is_patch_found_app_license) {
         fs::path licpath = is_patch_found_app_license ? app_license_path : output_path / "sce_sys/package/work.bin";
-        LOG_INFO("Decrypt layer: {}", output_path);
-        if (!decrypt_install_nonpdrm(emuenv, licpath, output_path)) {
-            LOG_ERROR("NoNpDrm installation failed, deleting data!");
-            fs::remove_all(output_path);
+        LOG_INFO("Installing license and validating PFS: {}", output_path);
+        if (!install_nonpdrm_license(emuenv, licpath, output_path)) {
+            LOG_ERROR("NoNpDrm installation failed for '{}'", output_path);
             return false;
         }
         return true;
@@ -164,6 +171,7 @@ static void set_theme_name(EmuEnvState &emuenv, const vfs::FileBuffer &buffer, c
         buffer.size());
     emuenv.app_info.app_content_id = resolved_id;
     emuenv.app_info.app_title_id = resolved_id;
+    emuenv.app_info.app_category = "theme";
 
     if (!title.empty()) {
         emuenv.app_info.app_title = title;
@@ -201,21 +209,28 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
         if (reinstall_callback) {
             if (!reinstall_callback(emuenv.app_info.app_title, emuenv.app_info.app_title_id)) {
                 LOG_INFO("{} already installed, skipping", emuenv.app_info.app_title_id);
+                if (progress_callback)
+                    progress_callback({ {}, {}, 100.f });
                 return true;
             }
         }
         fs::remove_all(output_path);
     }
 
-    float file_progress = 0;
-    float decrypt_progress = 0;
-
-    const auto update_progress = [&]() {
+    const auto update_progress = [&](float progress) {
         if (progress_callback)
-            progress_callback({ {}, {}, { file_progress * 0.7f + decrypt_progress * 0.3f } });
+            progress_callback({ {}, {}, progress });
     };
 
     mz_uint num_files = mz_zip_reader_get_num_files(zip.get());
+    mz_uint content_files = 0;
+    for (mz_uint i = 0; i < num_files; ++i) {
+        mz_zip_archive_file_stat file_stat;
+        if (mz_zip_reader_file_stat(zip.get(), i, &file_stat) && std::string_view(file_stat.m_filename).contains(content_path))
+            ++content_files;
+    }
+    mz_uint processed_files = 0;
+    update_progress(0.f);
     for (mz_uint i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
@@ -223,9 +238,6 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
         }
         const std::string m_filename = file_stat.m_filename;
         if (m_filename.contains(content_path)) {
-            file_progress = static_cast<float>(i) / num_files * 100.0f;
-            update_progress();
-
             std::string replace_filename = m_filename.substr(content_path.size());
             const fs::path file_output = fs_utils::generic_path(output_path / fs_utils::utf8_to_path(replace_filename));
 
@@ -242,23 +254,33 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
             } else {
                 fs::create_directories(file_output.parent_path());
                 LOG_INFO("Extracting {}", file_output);
-                mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0);
+                if (!mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0)) {
+                    LOG_ERROR("Failed to extract {}: {}", m_filename, miniz_get_error(zip));
+                    return false;
+                }
             }
+            ++processed_files;
+            update_progress(static_cast<float>(processed_files) / content_files * 99.f);
         }
     }
 
     if (fs::exists(output_path / "sce_sys/package/") && emuenv.app_info.app_title_id.starts_with("PCS")) {
-        update_progress();
-        if (is_nonpdrm(emuenv, output_path))
-            decrypt_progress = 100.f;
-        else
+        if (!is_nonpdrm(emuenv, output_path))
             return false;
     }
-    if (!copy_path(output_path, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
-        return false;
 
-    update_progress();
+    if (!is_theme) {
+        const auto ux0 = emuenv.vita_fs_path / "ux0";
+        if (output_path == ux0 / "app" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Application, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        } else if (output_path == ux0 / "patch" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Patch, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        }
+    }
 
+    update_progress(100.f);
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
 
     return true;
@@ -366,7 +388,7 @@ static std::vector<fs::path> get_contents_path(const fs::path &path) {
     return contents_path;
 }
 
-static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
+bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     const auto sfo_path{ content_path / "sce_sys/param.sfo" };
     const auto theme_path{ content_path / "theme.xml" };
     vfs::FileBuffer buffer;
@@ -400,23 +422,34 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(emuenv, dst_path))
         return false;
 
-    if (!copy_path(dst_path, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
-        return false;
+    if (!is_theme) {
+        const auto ux0 = emuenv.vita_fs_path / "ux0";
+        if (dst_path == ux0 / "app" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Application, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        } else if (dst_path == ux0 / "patch" / emuenv.app_info.app_title_id) {
+            if (!create_appmeta(emuenv.io, emuenv.vita_fs_path, emuenv.app_info.app_title_id, AppmetaInstallType::Patch, AppmetaFormat::Protected, AppmetaCache::Populate))
+                return false;
+        }
+    }
 
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
 
     return true;
 }
 
-uint32_t install_contents(EmuEnvState &emuenv, const fs::path &path) {
+uint32_t install_contents(EmuEnvState &emuenv, const fs::path &path, const std::function<void(const std::string &, const std::string &)> &installed_callback) {
     const auto src_path = get_contents_path(path);
 
     LOG_WARN_IF(src_path.empty(), "No found any content compatible on this path: {}", path);
 
     uint32_t installed = 0;
     for (const auto &src : src_path) {
-        if (install_content(emuenv, src))
+        if (install_content(emuenv, src)) {
             ++installed;
+            if (installed_callback)
+                installed_callback(emuenv.app_info.app_title_id, emuenv.app_info.app_category);
+        }
     }
 
     if (installed) {
@@ -471,14 +504,20 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     const auto call_import = [&emuenv](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         return ::call_import(emuenv, cpu, nid, thread_id);
     };
+    emuenv.mem.trace_silent_hill = emuenv.io.title_id == "PCSB00115";
+    const char *scheduler_test = std::getenv("VITA3K_SH_TEST_SCHEDULER");
+    const char *late_wait_test = std::getenv("VITA3K_SH_TEST_LATE_WAIT");
+    emuenv.mem.silent_hill_late_wait_experiment = emuenv.mem.trace_silent_hill && late_wait_test && std::strcmp(late_wait_test, "1") == 0;
+    emuenv.mem.silent_hill_scheduler_experiment = emuenv.mem.silent_hill_late_wait_experiment
+        || (emuenv.mem.trace_silent_hill && scheduler_test && std::strcmp(scheduler_test, "1") == 0);
+    const bool thread_scheduler = emuenv.cfg.current_config.thread_scheduler || emuenv.mem.silent_hill_scheduler_experiment;
     emuenv.kernel.process_exit_callback = [&emuenv](int res, std::optional<AppLaunchRequest> relaunch) {
         emuenv.post_app_launch_request(relaunch.value_or(AppLaunchRequest{ .reason = AppLaunchReason::ProcessExit, .exit_code = res }));
     };
-    if (!emuenv.kernel.init(emuenv.mem, call_import, emuenv.cfg.current_config.cpu_opt)) {
+    if (!emuenv.kernel.init(emuenv.mem, call_import, emuenv.cfg.current_config.cpu_opt, thread_scheduler)) {
         LOG_WARN("Failed to init kernel!");
         return KernelInitFailed;
     }
-
     if (emuenv.cfg.archive_log) {
         const fs::path log_directory{ emuenv.log_path / "logs" };
         fs::create_directory(log_directory);
@@ -516,12 +555,28 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     LOG_INFO("Version: {}", emuenv.app_info.app_version);
     LOG_INFO("Category: {}", emuenv.app_info.app_category);
 
-    init_device_paths(emuenv.io);
-    init_savedata_app_path(emuenv.io, emuenv.vita_fs_path);
+    init_device_paths(emuenv.io, emuenv.vita_fs_path);
+    if (!pfsmgr::mount_application_game_data(emuenv.io, emuenv.vita_fs_path))
+        return ModuleLoadFailed;
+    try {
+        app::recover_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path);
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Cannot recover savedata identity: {}", error.what());
+        return ModuleLoadFailed;
+    }
+    if (!init_savedata_app_path(emuenv.io, emuenv.vita_fs_path, [&emuenv] { return app::get_savedata_identity(emuenv.regmgr, emuenv.vita_fs_path); }))
+        return ModuleLoadFailed;
 
     // Load param.sfo
     vfs::FileBuffer param_sfo;
-    if (vfs::read_app_file(param_sfo, emuenv.vita_fs_path, emuenv.io.app_path, "sce_sys/param.sfo"))
+    const bool read_param = emuenv.io.app_game_base_mount.empty()
+        ? fs_utils::read_data(expand_path(emuenv.io, "app0:sce_sys/param.sfo", emuenv.vita_fs_path), param_sfo)
+        : read_file_to_buffer(emuenv.io, "app0:sce_sys/param.sfo", emuenv.vita_fs_path, param_sfo, "load_app");
+    if (!read_param && !emuenv.io.app_game_base_mount.empty()) {
+        LOG_ERROR("Cannot read mounted application param.sfo for '{}'", emuenv.io.title_id);
+        return ModuleLoadFailed;
+    }
+    if (read_param)
         sfo::load(emuenv.sfo_handle, param_sfo);
 
     init_exported_vars(emuenv);
@@ -570,15 +625,13 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
             process_preload_disabled = *preload_disabled_ptr.get(emuenv.mem);
         }
     }
-    const auto module_app_path{ emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
-
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
     auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
         if ((process_preload_disabled & code) == 0) {
             if (is_lle_module(name, emuenv)) {
                 const auto module_name_file = fmt::format("{}.suprx", name);
-                if (load_from_app && fs::exists(module_app_path / module_name_file))
+                if (load_from_app && fs::exists(expand_path(emuenv.io, fmt::format("app0:sce_module/{}", module_name_file).c_str(), emuenv.vita_fs_path)))
                     lib_load_list.emplace_back(fmt::format("app0:sce_module/{}", module_name_file));
                 else if (fs::exists(emuenv.vita_fs_path / "vs0/sys/external" / module_name_file))
                     lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
@@ -588,8 +641,11 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
                 emuenv.kernel.loaded_sysmodules[module_id] = {};
         }
     };
-    lib_load_list.emplace_back("os0:kd/bootimage.skprx");
-    lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
+    const auto app_device = device::get_device(emuenv.io.app_path);
+    if (app_device != VitaIoDevice::vs0 && app_device != VitaIoDevice::pd0) {
+        lib_load_list.emplace_back("os0:kd/bootimage.skprx");
+        lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
+    }
     add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
     add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
     add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);
@@ -616,7 +672,7 @@ void toggle_texture_replacement(EmuEnvState &emuenv) {
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
 }
 
-static std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t &width, uint32_t &height) {
+std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t &width, uint32_t &height) {
     // Dump the current frame from the emulator display
     std::vector<uint32_t> frame = emuenv.renderer->dump_frame(emuenv.display, width, height);
     if (frame.empty() || (frame.size() != (width * height))) {
@@ -629,6 +685,22 @@ static std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t
     }
 
     return frame;
+}
+
+void request_screenshot(EmuEnvState &emuenv) {
+    if (emuenv.cfg.screenshot_format == None)
+        return;
+    if (!emuenv.renderer || !emuenv.renderer->app_session_controller
+        || !emuenv.renderer->app_session_controller->get().is_running()) {
+        LOG_ERROR("Trying to take a screenshot while not ingame");
+        return;
+    }
+    if (!emuenv.renderer->screenshot_callback) {
+        LOG_ERROR("Cannot take a screenshot: the renderer is not ready.");
+        return;
+    }
+    if (emuenv.renderer->screenshot_requested.exchange(true))
+        LOG_WARN("A screenshot request is already pending.");
 }
 
 void take_screenshot(EmuEnvState &emuenv) {
@@ -648,7 +720,12 @@ void take_screenshot(EmuEnvState &emuenv) {
     }
 
     const fs::path save_folder = emuenv.shared_path / "screenshots" / fmt::format("{}", string_utils::remove_special_chars(emuenv.current_app_title));
-    fs::create_directories(save_folder);
+    std::error_code error;
+    fs::create_directories(save_folder, error);
+    if (error) {
+        LOG_ERROR("Failed to create screenshot directory {}: {}", save_folder, error.message());
+        return;
+    }
 
     auto t = std::time(nullptr);
     struct tm localtime;
@@ -665,12 +742,12 @@ void take_screenshot(EmuEnvState &emuenv) {
         if (stbi_write_jpg(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), quality) == 1)
             LOG_INFO("Successfully saved screenshot to {}", save_file);
         else
-            LOG_INFO("Failed to save screenshot");
+            LOG_ERROR("Failed to save screenshot to {}", save_file);
     } else {
         if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
             LOG_INFO("Successfully saved screenshot to {}", save_file);
         else
-            LOG_INFO("Failed to save screenshot");
+            LOG_ERROR("Failed to save screenshot to {}", save_file);
     }
 }
 
@@ -682,7 +759,8 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
 
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchRequest &launch_request) {
     if (load_app_impl(main_module_id, emuenv, launch_request) != Success) {
-        std::string message = fmt::format(fmt::runtime(lang::get(lang::str::load_app_failed_msg)), emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
+        const auto executable_path = vfs::resolve_app_path(emuenv.vita_fs_path, emuenv.io.app_path, emuenv.self_path, emuenv.io.title_id);
+        std::string message = fmt::format(fmt::runtime(lang::get(lang::str::load_app_failed_msg)), executable_path);
         LOG_ERROR(message);
         return ModuleLoadFailed;
     }

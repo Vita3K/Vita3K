@@ -103,7 +103,8 @@ void sync_depth_bias(VKContext &context) {
     if (!context.is_recording)
         return;
 
-    context.render_cmd.setDepthBias(static_cast<float>(context.record.depth_bias_unit), 0.0, static_cast<float>(context.record.depth_bias_slope));
+    // The slope factor applies per raster pixel
+    context.render_cmd.setDepthBias(static_cast<float>(context.record.depth_bias_unit), 0.0, static_cast<float>(context.record.depth_bias_slope) * context.state.res_multiplier);
 }
 
 void sync_depth_data(VKContext &context) {

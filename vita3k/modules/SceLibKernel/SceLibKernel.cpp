@@ -22,12 +22,14 @@
 #include <../SceIofilemgr/SceIofilemgr.h>
 #include <../SceKernelModulemgr/SceModulemgr.h>
 #include <../SceKernelThreadMgr/SceThreadmgr.h>
+#include <../SceSblSsMgr/SceSblAimgr.h>
 
 #include <cpu/state.h>
 #include <dlmalloc.h>
 #include <io/functions.h>
 #include <kernel/state.h>
 #include <kernel/sync_primitives.h>
+#include <kernel/thread/thread_state.h>
 #include <packages/functions.h>
 
 #include <io/device.h>
@@ -38,9 +40,12 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
+#include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <type_traits>
 
 enum class TimerFlags : uint32_t {
@@ -353,10 +358,18 @@ EXPORT(int, sceClibStrcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrlcat, char *dst, const char *src, SceSize len) {
+EXPORT(SceSize, sceClibStrlcat, char *dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrlcat, dst, src, len);
-    char *res = strncat(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    const size_t src_length = std::strlen(src);
+    size_t dst_length = 0;
+    while (dst_length < len && dst[dst_length] != '\0')
+        ++dst_length;
+    if (dst_length < len) {
+        const size_t copy_length = std::min(src_length, len - dst_length - 1);
+        std::memcpy(dst + dst_length, src, copy_length);
+        dst[dst_length + copy_length] = '\0';
+    }
+    return static_cast<SceSize>(dst_length + src_length);
 }
 
 EXPORT(int, sceClibStrlcatChk) {
@@ -364,10 +377,15 @@ EXPORT(int, sceClibStrlcatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrlcpy, char *dst, const char *src, SceSize len) {
+EXPORT(SceSize, sceClibStrlcpy, char *dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrlcpy, dst, src, len);
-    char *res = strncpy(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    const size_t src_length = std::strlen(src);
+    if (len != 0) {
+        const size_t copy_length = std::min(src_length, static_cast<size_t>(len - 1));
+        std::memcpy(dst, src, copy_length);
+        dst[copy_length] = '\0';
+    }
+    return static_cast<SceSize>(src_length);
 }
 
 EXPORT(int, sceClibStrlcpyChk) {
@@ -624,10 +642,14 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
 
-    if (emuenv.cfg.current_config.file_loading_delay > 0)
+    if (emuenv.cfg.current_config.file_loading_delay > 0) {
+        ThreadHostWait host_wait(emuenv.kernel.get_thread(thread_id));
         std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.current_config.file_loading_delay));
+    }
 
-    LOG_INFO("Opening file: {}", file);
+    if (emuenv.io.title_id != "PCSB00115") {
+        LOG_INFO("Opening file: {}", file);
+    }
     return open_file(emuenv.io, file, flags, emuenv.vita_fs_path, export_name);
 }
 
@@ -1420,9 +1442,9 @@ EXPORT(int, sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *info) {
     return CALL_EXPORT(_sceKernelGetMutexInfo, mutexId, info);
 }
 
-EXPORT(int, sceKernelGetOpenPsId) {
-    TRACY_FUNC(sceKernelGetOpenPsId);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetOpenPsId, uint8_t *id) {
+    TRACY_FUNC(sceKernelGetOpenPsId, id);
+    return CALL_EXPORT(_sceKernelGetOpenPsId, id);
 }
 
 EXPORT(int, sceKernelGetPMUSERENR) {
@@ -1591,7 +1613,7 @@ EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
-    const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
+    const auto mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
@@ -1636,9 +1658,9 @@ EXPORT(SceInt32, sceKernelLockWriteRWLockCB, SceUID lock_id, SceUInt32 *timeout)
     return CALL_EXPORT(_sceKernelLockWriteRWLockCB, lock_id, timeout);
 }
 
-EXPORT(int, sceKernelOpenModule) {
-    TRACY_FUNC(sceKernelOpenModule);
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelOpenModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+    TRACY_FUNC(sceKernelOpenModule, moduleFileName, args, argp, flags, pOpt, pRes);
+    return CALL_EXPORT(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
 }
 
 EXPORT(int, sceKernelPMonThreadGetCounter) {

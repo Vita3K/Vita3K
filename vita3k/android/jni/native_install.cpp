@@ -22,8 +22,9 @@
 #include <packages/functions.h>
 #include <packages/license.h>
 #include <packages/pkg.h>
-#include <rif2zrif.h>
 #include <util/log.h>
+
+#include <algorithm>
 
 extern "C" {
 
@@ -85,22 +86,34 @@ Java_org_vita3k_emulator_NativeLib_installArchive(JNIEnv *env, jclass, jstring p
     const std::string path = jstring_to_string(env, path_str);
     ScopedJniCallback progress_callback(env, callback, "onProgress", "(ILjava/lang/String;)V");
 
-    auto progress_fn = [&progress_callback](ArchiveContents contents) {
-        int percent = 0;
-        if (contents.progress.has_value()) {
-            percent = static_cast<int>(contents.progress.value());
-        } else if (contents.count.has_value() && contents.current.has_value() && contents.count.value() > 0) {
-            percent = static_cast<int>((static_cast<float>(contents.current.value()) / contents.count.value()) * 100.0f);
+    float content_count = 0.f;
+    float current_content = 0.f;
+    float content_progress = 0.f;
+    auto progress_fn = [&](ArchiveContents contents) {
+        if (contents.count)
+            content_count = *contents.count;
+        if (contents.current && *contents.current != current_content) {
+            current_content = *contents.current;
+            content_progress = 0.f;
         }
+        if (contents.progress)
+            content_progress = std::clamp(*contents.progress, 0.f, 100.f);
+        const auto overall = content_count > 0.f && current_content > 0.f
+            ? ((current_content - 1.f) + content_progress / 100.f) / content_count * 100.f
+            : content_progress;
+        const int percent = static_cast<int>(std::clamp(overall, 0.f, 99.f));
         progress_callback.call_progress(percent, "Installing archive...");
     };
 
     const auto reinstall_fn = [force_reinstall](const std::string &, const std::string &) -> bool { return static_cast<bool>(force_reinstall); };
     const auto result = install_archive(*emuenv, fs::path(path), progress_fn, reinstall_fn);
-    if (!result.empty())
+    if (std::any_of(result.begin(), result.end(), [](const ContentInfo &info) { return info.state; }))
         app::scan_apps(*emuenv);
 
-    return result.empty() ? JNI_FALSE : JNI_TRUE;
+    const bool success = !result.empty() && std::all_of(result.begin(), result.end(), [](const ContentInfo &info) { return info.state; });
+    if (success)
+        progress_callback.call_progress(100, "Installing archive...");
+    return success ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jboolean JNICALL

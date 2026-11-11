@@ -93,8 +93,9 @@ KernelState::KernelState()
     : debugger(*this) {
 }
 
-bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
+bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt, bool thread_scheduler) {
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
+    sched.set_enabled(thread_scheduler);
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     this->call_import = call_import;
@@ -260,6 +261,7 @@ void KernelState::deinit(MemState &mem) {
 
     corenum_allocator.alloc.reset();
     corenum_allocator.alloc.set_maximum(0);
+    sched.reset();
 
     obj_store.clear();
 

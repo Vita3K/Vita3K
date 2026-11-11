@@ -894,9 +894,9 @@ void MainWindow::init_current_user() {
 
 void MainWindow::on_app_selected(const app::AppEntry &app) {
     if (emuenv.cfg.show_live_area_screen && !m_game_window)
-        show_live_area(app.title_id);
+        show_live_area(app.path);
     else
-        boot_game(app.title_id);
+        boot_game(app.path);
 }
 
 void MainWindow::boot_game(const std::string &title_id) {
@@ -1059,7 +1059,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         this, [this]() { toggle_texture_replacement(emuenv); });
 
     connect(m_kb_filter, &CtrlKeyboardFilter::screenshot_requested,
-        this, [this]() { take_screenshot(emuenv); });
+        this, [this]() { request_screenshot(emuenv); });
 
     connect(m_kb_filter, &CtrlKeyboardFilter::exit_requested,
         m_game_window, &QWindow::close, Qt::QueuedConnection);
@@ -1225,10 +1225,10 @@ void MainWindow::show_live_area(const std::string &title_id) {
         return;
     }
 
-    app::set_current_config(emuenv, title_id);
+    app::set_current_config(emuenv, emuenv.io.app_path);
     get_license(emuenv, emuenv.io.title_id, emuenv.io.content_id);
-    app::update_last_time_app_used(emuenv, title_id);
-    m_live_area_title_id = title_id;
+    app::update_last_time_app_used(emuenv, emuenv.io.app_path);
+    m_live_area_title_id = emuenv.io.app_path;
 
     m_live_area_widget = new LiveAreaWidget(emuenv, emuenv.io.app_path);
     m_game_container = m_live_area_widget;
@@ -1554,6 +1554,28 @@ void MainWindow::setup_toolbar() {
     connect(m_ui->toolbar_start, &QAction::triggered,
         this, &MainWindow::on_toolbar_start);
 
+    connect(m_ui->toolbar_shell, &QAction::triggered, this, [this] {
+        const auto shell_path = emuenv.vita_fs_path / "vs0/vsh/shell/shell.self";
+        std::error_code error;
+        if (!fs::is_regular_file(shell_path, error)) {
+            if (error && error != std::errc::no_such_file_or_directory) {
+                LOG_ERROR("Cannot access Vita shell '{}': {}", shell_path, error.message());
+                QMessageBox::warning(this, tr("PS Vita OS"),
+                    tr("Could not access the Vita system shell: %1").arg(QString::fromStdString(error.message())));
+            } else {
+                LOG_ERROR("Vita shell executable not found: '{}'", shell_path);
+                QMessageBox::warning(this, tr("PS Vita OS"),
+                    tr("The Vita system shell was not found. Install the main firmware and try again."));
+            }
+            return;
+        }
+
+        boot_game(AppLaunchRequest{
+            .app_path = "vs0:vsh/shell",
+            .self_path = "shell.self",
+        });
+    });
+
     connect(m_ui->toolbar_config, &QAction::triggered,
         this, [this] { open_settings(0); });
 
@@ -1752,6 +1774,7 @@ void MainWindow::repaint_toolbar_icons() {
     m_ui->toolbar_refresh->setIcon(icon(QStringLiteral(":/icons/refresh.png")));
     m_ui->toolbar_fullscreen->setIcon(m_fullscreen ? m_icon_fullscreen_off : m_icon_fullscreen_on);
     m_ui->toolbar_stop->setIcon(m_icon_stop);
+    m_ui->toolbar_shell->setIcon(icon(QStringLiteral(":/icons/vita_shell.svg")));
     m_ui->toolbar_config->setIcon(icon(QStringLiteral(":/icons/configure.png")));
     m_ui->toolbar_controls->setIcon(icon(QStringLiteral(":/icons/controllers.png")));
 
@@ -1808,9 +1831,9 @@ void MainWindow::on_toolbar_start() {
         const app::AppEntry *app = m_apps_list_widget->selected_app();
         if (app && !app->title_id.empty()) {
             if (emuenv.cfg.show_live_area_screen && !m_live_area_widget)
-                show_live_area(app->title_id);
+                show_live_area(app->path);
             else
-                boot_game(app->title_id);
+                boot_game(app->path);
         }
     }
 }
@@ -1825,11 +1848,11 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
 
     connect(&menu, &AppsListContextMenu::boot_requested,
         this, [this](const app::AppEntry &app) {
-            boot_game(app.title_id);
+            boot_game(app.path);
         });
     connect(&menu, &AppsListContextMenu::view_live_area_requested,
         this, [this](const app::AppEntry &app) {
-            show_live_area(app.title_id);
+            show_live_area(app.path);
         });
     connect(&menu, &AppsListContextMenu::open_settings_requested,
         this, [this](const std::string &app_path, int tab) {
@@ -1858,6 +1881,11 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
         });
     connect(&menu, &AppsListContextMenu::refresh_requested,
         this, [this] { m_apps_list_widget->refresh(); });
+    connect(&menu, &AppsListContextMenu::update_changed,
+        this, [this](const std::string &app_path) {
+            if (m_live_area_widget)
+                m_live_area_widget->refresh_app_contents(app_path);
+        });
 
     menu.exec(global_pos);
 }

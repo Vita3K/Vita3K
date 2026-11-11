@@ -21,6 +21,7 @@
 #include <compat/functions.h>
 #include <config/settings.h>
 #include <io/state.h>
+#include <io/vfs.h>
 #include <util/log.h>
 
 extern "C" {
@@ -106,8 +107,7 @@ Java_org_vita3k_emulator_NativeLib_performAppAction(JNIEnv *env, jclass, jstring
         const auto app = find_app_by_title_id(title_id);
         if (!app.has_value())
             return JNI_FALSE;
-        app::delete_app(*emuenv, app->path);
-        return JNI_TRUE;
+        return app::delete_app(*emuenv, app->path) ? JNI_TRUE : JNI_FALSE;
     }
     case ACTION_DELETE_SAVE_DATA: {
         const auto app = find_app_by_title_id(title_id);
@@ -186,7 +186,7 @@ Java_org_vita3k_emulator_NativeLib_getAppInstallSize(JNIEnv *env, jclass, jstrin
     if (!app.has_value())
         return 0L;
 
-    const auto app_path = emuenv->vita_fs_path / "ux0/app" / app->path;
+    const auto app_path = vfs::get_app_base_path(emuenv->vita_fs_path, app->path);
     if (!fs::exists(app_path))
         return 0L;
 

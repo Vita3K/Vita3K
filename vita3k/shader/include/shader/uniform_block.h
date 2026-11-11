@@ -35,6 +35,10 @@ struct RenderFragUniformBlock {
     float writing_mask;
     float use_raw_image;
     float res_multiplier;
+    float cast_sampler_mask = 0.0f;
+    float cast_phase_mask = 0.0f;
+    float inv_frag_width = 1.0f;
+    float inv_frag_height = 1.0f;
 };
 
 enum FragUniformFieldId : uint32_t {
@@ -42,7 +46,11 @@ enum FragUniformFieldId : uint32_t {
     FRAG_UNIFORM_front_disabled,
     FRAG_UNIFORM_writing_mask,
     FRAG_UNIFORM_use_raw_image,
-    FRAG_UNIFORM_res_multiplier
+    FRAG_UNIFORM_res_multiplier,
+    FRAG_UNIFORM_cast_sampler_mask,
+    FRAG_UNIFORM_cast_phase_mask,
+    FRAG_UNIFORM_inv_frag_width,
+    FRAG_UNIFORM_inv_frag_height
 };
 
 template <typename T>
@@ -55,6 +63,19 @@ struct UniformBlockExtended {
     bool changed = false;
     uint16_t buffer_count = 0;
     uint16_t texture_count = 0;
+    uint16_t cast_sampler_bits = 0;
+    uint16_t cast_phase_bits = 0;
+
+    void set_cast_sampler_bit(int idx, bool is_cast, bool phase_hi) {
+        const uint16_t bit = uint16_t(1u << idx);
+        const uint16_t new_bits = is_cast ? cast_sampler_bits | bit : cast_sampler_bits & ~bit;
+        const uint16_t new_phase = is_cast && phase_hi ? cast_phase_bits | bit : cast_phase_bits & ~bit;
+        if (new_bits != cast_sampler_bits || new_phase != cast_phase_bits) {
+            changed = true;
+            cast_sampler_bits = new_bits;
+            cast_phase_bits = new_phase;
+        }
+    }
 
     void set_buffer_count(uint16_t new_buffer_count) {
         if (new_buffer_count == buffer_count)

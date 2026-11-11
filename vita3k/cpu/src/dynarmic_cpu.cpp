@@ -15,7 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "cpu/common.h"
+#include <cpu/common.h>
+#include <cpu/disasm/functions.h>
+#include <cpu/impl/aliased_thumb.h>
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/state.h>
 #include <util/log.h>
@@ -23,10 +25,13 @@
 #include <mem/ptr.h>
 
 #include <dynarmic/frontend/A32/a32_ir_emitter.h>
+#include <dynarmic/frontend/A32/a32_types.h>
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <array>
 #include <bit>
+#include <cstring>
 #include <memory>
 #include <optional>
 #include <string>
@@ -88,16 +93,20 @@ public:
     }
 };
 
-static constexpr bool LOG_INVALID_ACCESS = false;
+static constexpr bool LOG_INVALID_ACCESS = true;
+
+static Dynarmic::ExclusiveMonitor shared_monitor(MAX_CORE_COUNT);
 
 // Why the JIT halts, as the mask Run() and Step() return
 static constexpr Dynarmic::HaltReason HALT_STOP = Dynarmic::HaltReason::UserDefined1;
 static constexpr Dynarmic::HaltReason HALT_RETURN = Dynarmic::HaltReason::UserDefined2;
 static constexpr Dynarmic::HaltReason HALT_BREAKPOINT = Dynarmic::HaltReason::UserDefined3;
+static constexpr Dynarmic::HaltReason HALT_SILENT_HILL_WAIT = Dynarmic::HaltReason::UserDefined4;
 static constexpr Dynarmic::HaltReason HALT_IMPORT = Dynarmic::HaltReason::UserDefined8;
 
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
     DynarmicCPU &cpu;
+    uint8_t silent_hill_mismatch_logged = 0;
 
 public:
     explicit ArmDynarmicCallback(DynarmicCPU &cpu)
@@ -107,6 +116,8 @@ public:
         if (cpu.log_mem)
             LOG_TRACE("Instruction fetch at address 0x{:X}", addr);
         if (addr < KiB(4))
+            return std::nullopt;
+        if (invalid_access("instruction fetch", addr))
             return std::nullopt;
         return MemoryRead32(addr);
     }
@@ -119,10 +130,93 @@ public:
         LOG_TRACE("{} ({}): {} {}", log_hex(self_), self.cpu.thread_id, log_hex(address), disassembly);
     }
 
+    std::optional<uint32_t> read_diagnostic_word(uint32_t address) {
+        MemState &mem = cpu.mem;
+        if (address < mem.host_page_size || (address & (KiB(4) - 1)) > KiB(4) - sizeof(uint32_t))
+            return std::nullopt;
+
+        const std::array ranges{ GuestMemoryRange{ address, sizeof(uint32_t) } };
+        const uint64_t pin = pin_guest_memory(mem, ranges);
+        if (!pin)
+            return std::nullopt;
+
+        std::optional<uint32_t> result;
+        {
+            const std::lock_guard lock(mem.protect_mutex);
+            const auto protected_address = [&](Address addr) {
+                const auto it = mem.protect_tree.lower_bound(addr);
+                return it != mem.protect_tree.end() && addr < it->first + it->second.size;
+            };
+            if (!protected_address(address) && !protected_address(address + sizeof(uint32_t) - 1)
+                && (!mem.use_page_table || mem.page_table[address / KiB(4)])) {
+                uint32_t value;
+                std::memcpy(&value, Ptr<const void>(address).get(mem), sizeof(value));
+                result = value;
+            }
+        }
+        unpin_guest_memory(mem, pin);
+        return result;
+    }
+
+    static void StopForSilentHillIntro(uint64_t self_) {
+        ArmDynarmicCallback &self = *reinterpret_cast<ArmDynarmicCallback *>(self_);
+        self.cpu.jit->HaltExecution(HALT_SILENT_HILL_WAIT);
+    }
+
     void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
         if (cpu.log_code) {
             ir.CallHostFunction(&TraceInstruction, ir.Imm64(reinterpret_cast<uint64_t>(this)), ir.Imm64(pc), ir.Imm64(is_thumb));
         }
+    }
+
+    bool PreCodeReadHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
+        if (cpu.mem.trace_silent_hill && cpu.mem.silent_hill_late_wait_experiment && is_thumb && pc == 0x811AD55E) {
+            static constexpr std::array<uint8_t, 18> expected = { 0x40, 0x46, 0x77, 0xf0, 0xcd, 0xfc, 0xda, 0xf8, 0x00, 0x10, 0x50, 0x46, 0xd1, 0xf8, 0xf4, 0x11, 0x88, 0x47 };
+            if (!is_valid_addr(cpu.mem, pc) || !is_valid_addr(cpu.mem, pc + expected.size() - 1)
+                || std::memcmp(Ptr<const void>(pc).get(cpu.mem), expected.data(), expected.size()) != 0
+                || ir.current_location.IT().IsInITBlock()) {
+                if ((silent_hill_mismatch_logged & 64) == 0) {
+                    silent_hill_mismatch_logged |= 64;
+                    LOG_WARN("[SH-EXPERIMENT] Load completion at {:08X} does not match the analyzed executable; wait skipped", pc);
+                }
+            } else {
+                if (ir.block.Location() != static_cast<Dynarmic::IR::LocationDescriptor>(ir.current_location)) {
+                    ir.SetTerm(Dynarmic::IR::Term::LinkBlockFast{ ir.current_location });
+                    return false;
+                }
+                // Execute the original MOV R0, R8 before stopping at the following instruction.
+                ir.SetRegister(Dynarmic::A32::Reg::R0, ir.GetRegister(Dynarmic::A32::Reg::R8));
+                ir.UpdateUpperLocationDescriptor();
+                ir.BranchWritePC(ir.Imm32(pc + 2));
+                ir.CallHostFunction(&StopForSilentHillIntro, ir.Imm64(reinterpret_cast<uint64_t>(this)));
+                ir.SetTerm(Dynarmic::IR::Term::CheckHalt{ Dynarmic::IR::Term::ReturnToDispatch{} });
+                return false;
+            }
+        }
+        if (cpu.mem.trace_silent_hill && !cpu.mem.silent_hill_scheduler_experiment && is_thumb && pc == 0x811AD2BA) {
+            static constexpr std::array<uint8_t, 14> expected = { 0x44, 0xf2, 0x9c, 0x40, 0xc8, 0xf2, 0x7b, 0x10, 0x01, 0x78, 0x00, 0x29, 0x4d, 0xd1 };
+            if (!is_valid_addr(cpu.mem, pc) || !is_valid_addr(cpu.mem, pc + expected.size() - 1)
+                || std::memcmp(Ptr<const void>(pc).get(cpu.mem), expected.data(), expected.size()) != 0
+                || ir.current_location.IT().IsInITBlock()) {
+                if ((silent_hill_mismatch_logged & 8) == 0) {
+                    silent_hill_mismatch_logged |= 8;
+                    LOG_WARN("[SH-EXPERIMENT] Loading decision at {:08X} does not match the analyzed executable; wait skipped", pc);
+                }
+            } else {
+                if (ir.block.Location() != static_cast<Dynarmic::IR::LocationDescriptor>(ir.current_location)) {
+                    ir.SetTerm(Dynarmic::IR::Term::LinkBlockFast{ ir.current_location });
+                    return false;
+                }
+                // Execute the original MOVW before stopping at the following instruction.
+                ir.SetRegister(Dynarmic::A32::Reg::R0, ir.Imm32(0x449c));
+                ir.UpdateUpperLocationDescriptor();
+                ir.BranchWritePC(ir.Imm32(pc + 4));
+                ir.CallHostFunction(&StopForSilentHillIntro, ir.Imm64(reinterpret_cast<uint64_t>(this)));
+                ir.SetTerm(Dynarmic::IR::Term::CheckHalt{ Dynarmic::IR::Term::ReturnToDispatch{} });
+                return false;
+            }
+        }
+        return intercept_aliased_thumb(is_thumb, pc, ir, [this](uint32_t address) { return MemoryReadCode(address); }, [this, pc, &ir]() { PreCodeTranslationHook(true, pc, ir); });
     }
 
     // Logs and returns true if guest code may not access addr
@@ -131,12 +225,49 @@ public:
         if (addr >= mem.host_page_size && is_valid_addr(mem, addr))
             return false;
         const uint32_t pc = cpu.get_pc();
-        if (LOG_INVALID_ACCESS) {
-            LOG_ERROR("Invalid {} at 0x{:x}\n{}", access, addr, cpu.get_context().description());
-            if (pc < mem.host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
-                LOG_ERROR("Executing: {}", cpu.disassemble(pc, nullptr));
+        if (LOG_INVALID_ACCESS && !mem.invalid_access_logged.test_and_set()) {
+            LOG_ERROR("Invalid {} at 0x{:x} by thread {}\n{}", access, addr, cpu.thread_id, cpu.get_context().description());
+            if (pc < mem.host_page_size || !is_valid_addr(mem, pc) || pc > UINT32_MAX - 3 || !is_valid_addr(mem, pc + 3)) {
+                LOG_CRITICAL("Cannot disassemble invalid PC 0x{:x}", pc);
+                const uint32_t lr = cpu.get_lr() & ~1U;
+                if (cpu.is_thumb_mode() && lr >= 6 && cpu.get_reg(1) == (pc | 1U)) {
+                    const auto first = read_diagnostic_word(lr - 6);
+                    const auto second = read_diagnostic_word(lr - 4);
+                    std::optional<uint32_t> slot_offset;
+                    if (first && second && *first == 0x69c96801 && *second == 0x478869c9) {
+                        slot_offset = 0x1c;
+                    } else if (lr >= 14 && cpu.get_reg(0) == cpu.get_reg(4)) {
+                        const auto load_object = read_diagnostic_word(lr - 14);
+                        const auto load_method = read_diagnostic_word(lr - 10);
+                        const auto call = read_diagnostic_word(lr - 2);
+                        if (load_object && load_method && first && call
+                            && *load_object == 0x17d36820 && *load_method == 0x20006b81
+                            && *first == 0x1c209000 && (*call & 0xffff) == 0x4788) {
+                            slot_offset = 0x38;
+                        }
+                    }
+                    if (slot_offset) {
+                        const uint32_t object = cpu.get_reg(0);
+                        const auto vtable = read_diagnostic_word(object);
+                        if (vtable && *vtable <= UINT32_MAX - *slot_offset) {
+                            const auto method = read_diagnostic_word(*vtable + *slot_offset);
+                            if (method)
+                                LOG_ERROR("Invalid virtual call: object=0x{:08x}, vtable=0x{:08x}, slot=0x{:08x}, target=0x{:08x}", object, *vtable, *vtable + *slot_offset, *method);
+                            else
+                                LOG_ERROR("Invalid virtual call: object=0x{:08x}, vtable=0x{:08x}, slot unavailable", object, *vtable);
+                        } else {
+                            LOG_ERROR("Invalid virtual call: object=0x{:08x}, vtable unavailable", object);
+                        }
+                    }
+                }
+            } else {
+                const auto instruction = read_diagnostic_word(pc);
+                if (instruction) {
+                    LOG_ERROR("Executing: {}", ::disassemble(cpu.disasm, reinterpret_cast<const uint8_t *>(&*instruction), sizeof(*instruction), pc, cpu.is_thumb_mode()));
+                } else {
+                    LOG_CRITICAL("Cannot safely disassemble PC 0x{:x}", pc);
+                }
+            }
         } else if (!mem.invalid_access_logged.test_and_set()) {
             LOG_ERROR("Invalid {} at 0x{:x} by thread {} (pc 0x{:x}). Set LOG_INVALID_ACCESS for full reports", access, addr, cpu.thread_id, pc);
         } else {
@@ -226,7 +357,18 @@ public:
     }
 
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) override {
-        LOG_ERROR("Unimplemented instruction at address {}:\n{}", log_hex(addr), cpu.get_context().description());
+        LOG_ERROR_SYNC("Unimplemented instruction at address {}", log_hex(addr));
+        const auto context = cpu.get_context().description();
+        LOG_ERROR_SYNC("Unimplemented instruction at address {}:\n{}", log_hex(addr), context);
+        LOG_ERROR("Unimplemented instruction at address {}:\n{}", log_hex(addr), context);
+    }
+
+    void log_instruction_exception(uint32_t pc, const char *description) {
+        LOG_WARN_SYNC("{} at address 0x{:X}", description, pc);
+        const auto instruction = MemoryReadCode(pc).value();
+        const auto disassembly = cpu.disassemble(pc, nullptr);
+        LOG_WARN_SYNC("{} at address 0x{:X}, instruction 0x{:X} ({})", description, pc, instruction, disassembly);
+        LOG_WARN("{} at address 0x{:X}, instruction 0x{:X} ({})", description, pc, instruction, disassembly);
     }
 
     void ExceptionRaised(uint32_t pc, Dynarmic::A32::Exception exception) override {
@@ -250,15 +392,15 @@ public:
         case Dynarmic::A32::Exception::Yield:
             break;
         case Dynarmic::A32::Exception::UndefinedInstruction:
-            LOG_WARN("Undefined instruction at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), cpu.disassemble(pc, nullptr));
+            log_instruction_exception(pc, "Undefined instruction");
             InterpreterFallback(pc, 1);
             break;
         case Dynarmic::A32::Exception::UnpredictableInstruction:
-            LOG_WARN("Unpredictable instruction at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), cpu.disassemble(pc, nullptr));
+            log_instruction_exception(pc, "Unpredictable instruction");
             InterpreterFallback(pc, 1);
             break;
         case Dynarmic::A32::Exception::DecodeError:
-            LOG_WARN("Decode error at address 0x{:X}, instruction 0x{:X} ({})", pc, MemoryReadCode(pc).value(), cpu.disassemble(pc, nullptr));
+            log_instruction_exception(pc, "Decode error");
             InterpreterFallback(pc, 1);
             break;
         default:
@@ -278,8 +420,6 @@ public:
     }
 };
 
-static Dynarmic::ExclusiveMonitor shared_monitor(MAX_CORE_COUNT);
-
 std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
@@ -289,6 +429,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.absolute_offset_page_table = true;
     } else if (!log_mem && cpu_opt) {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(mem.memory.get());
+        config.recompile_on_fastmem_failure = true;
     }
     config.hook_hint_instructions = true;
     config.global_monitor = &shared_monitor;
@@ -321,6 +462,8 @@ GuestExit DynarmicCPU::run(RunMode mode) {
             reason = jit->Run();
         } while (reason == Dynarmic::HaltReason::Step || reason == Dynarmic::HaltReason::CacheInvalidation);
     }
+    if (Dynarmic::Has(reason, HALT_SILENT_HILL_WAIT))
+        return { GuestExit::Kind::silent_hill_intro_wait, 0, step };
     // The NID is the word after the SVC. A stepped SVC reports the debugger stop with it.
     if (Dynarmic::Has(reason, HALT_IMPORT))
         return { GuestExit::Kind::import, *Ptr<uint32_t>(get_pc() + 4).get(mem), step };

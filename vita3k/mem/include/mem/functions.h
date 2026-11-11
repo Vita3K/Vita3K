@@ -21,8 +21,14 @@
 #include <mem/util.h>
 
 #include <functional>
+#include <span>
 
 struct MemState;
+
+struct GuestMemoryRange {
+    Address address;
+    uint32_t size;
+};
 
 using AccessViolationHandler = std::function<bool(uint8_t *addr, bool write)>;
 
@@ -62,6 +68,8 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm = nullptr);
 bool is_valid_addr(const MemState &state, Address addr);
 bool is_valid_addr_range(const MemState &state, Address start, Address end);
 bool is_valid_addr_len(const MemState &state, Address addr, uint32_t len);
+uint64_t pin_guest_memory(MemState &state, std::span<const GuestMemoryRange> ranges);
+void unpin_guest_memory(MemState &state, uint64_t pin);
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept;
 Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_addr = user_main_memory_start);
 Address alloc_at(MemState &state, Address address, uint32_t size, const char *name);

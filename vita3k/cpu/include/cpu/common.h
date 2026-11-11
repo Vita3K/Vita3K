@@ -47,6 +47,8 @@ struct GuestExit {
         import,
         // A request_stop(), a breakpoint or a finished step
         stopped,
+        // A temporary Silent Hill diagnostic needs to wait outside the JIT
+        silent_hill_intro_wait,
     };
     Kind kind;
     uint32_t value = 0;

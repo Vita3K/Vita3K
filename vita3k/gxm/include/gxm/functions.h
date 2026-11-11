@@ -43,6 +43,8 @@ uint32_t get_stride_in_bytes(const SceGxmTexture &texture);
 uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 // get the size of the first mip of the first face
 uint32_t texture_size_first_mip(const SceGxmTexture &texture);
+// Span of the uploaded mips and faces, including padding between them.
+uint64_t texture_size(const SceGxmTexture &texture);
 bool is_bcn_format(SceGxmTextureBaseFormat base_format);
 bool is_pvrt_format(SceGxmTextureBaseFormat base_format);
 bool is_block_compressed_format(SceGxmTextureBaseFormat base_format);
@@ -92,6 +94,8 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program);
 
 int get_parameter_type_size(const SceGxmParameterType type);
 int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp);
+bool has_attribute_symbols(const SceGxmProgram &program);
+bool is_attribute_used(const SceGxmProgram &program, const SceGxmProgramParameter &parameter);
 
 const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx);
 const char *get_container_name(const std::uint16_t idx);

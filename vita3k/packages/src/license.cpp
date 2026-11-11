@@ -28,35 +28,61 @@
 #include <util/log.h>
 
 #include <zRIF/keyflate.h>
-#include <zrif2rif.h>
 
 #include <b64/cdecode.h>
+#include <b64/cencode.h>
 
+#include <algorithm>
+#include <array>
 #include <cstring>
+#include <vector>
 
-bool validate_zrif(const std::string &zRIF) {
-    if (zRIF.empty())
+static bool decode_zrif(const std::string &zRIF, std::array<uint8_t, 512> &license) {
+    if (zRIF.empty() || zRIF.size() > 2048)
         return false;
 
-    char buf[2048];
+    std::array<char, 2048> buf{};
     base64_decodestate state;
     base64_init_decodestate(&state);
-    const size_t decoded_len = base64_decode_block(zRIF.c_str(), static_cast<int>(zRIF.size()), buf, &state);
-    if (decoded_len == 0)
+    const int decoded_len = base64_decode_block(zRIF.c_str(), static_cast<int>(zRIF.size()), buf.data(), &state);
+    if (decoded_len <= 0)
         return false;
 
-    uint8_t license[512] = {};
-    const int inflated_len = inflateKey(reinterpret_cast<const uint8_t *>(buf), decoded_len, license, sizeof(license));
-    return inflated_len == 512;
+    return inflateKey(reinterpret_cast<const uint8_t *>(buf.data()), decoded_len, license.data(), license.size()) == license.size();
+}
+
+bool validate_zrif(const std::string &zRIF) {
+    std::array<uint8_t, 512> license{};
+    return decode_zrif(zRIF, license);
+}
+
+std::string rif2zrif(std::ifstream &binfile) {
+    std::array<uint8_t, 512> license{};
+    binfile.seekg(0, std::ios::beg);
+    if (!binfile.read(reinterpret_cast<char *>(license.data()), license.size()) || binfile.peek() != std::char_traits<char>::eof()) {
+        LOG_ERROR("Cannot convert an unreadable or invalid-size RIF license");
+        return {};
+    }
+    std::array<uint8_t, 2048> compressed{};
+    const int length = deflateKey(license.data(), license.size(), compressed.data(), compressed.size());
+    if (length <= 0 || static_cast<size_t>(length) > compressed.size() - 2) {
+        LOG_ERROR("Cannot compress RIF license");
+        return {};
+    }
+    const int padded = (length + 2) / 3 * 3;
+    std::vector<char> encoded(static_cast<size_t>(padded) * 2 + 16);
+    base64_encodestate state;
+    base64_init_encodestate(&state);
+    int size = base64_encode_block(reinterpret_cast<const char *>(compressed.data()), padded, encoded.data(), &state);
+    size += base64_encode_blockend(encoded.data() + size, &state);
+    return std::string(encoded.data(), size);
 }
 
 static bool open_license(const fs::path &license_path, SceNpDrmLicense &license_buf) {
     memset(&license_buf, 0, sizeof(SceNpDrmLicense));
     std::ifstream license(license_path, std::ios::in | std::ios::binary);
     if (license.is_open()) {
-        license.read(reinterpret_cast<char *>(&license_buf), sizeof(SceNpDrmLicense));
-        license.close();
-        return true;
+        return static_cast<bool>(license.read(reinterpret_cast<char *>(&license_buf), sizeof(SceNpDrmLicense)));
     }
 
     return false;
@@ -65,7 +91,15 @@ static bool open_license(const fs::path &license_path, SceNpDrmLicense &license_
 bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
     SceNpDrmLicense license_buf;
     if (open_license(license_path, license_buf)) {
-        emuenv.license_content_id = license_buf.content_id;
+        const auto end = std::find(std::begin(license_buf.content_id), std::end(license_buf.content_id), '\0');
+        emuenv.license_content_id.assign(std::begin(license_buf.content_id), end);
+        if (emuenv.license_content_id.size() != 36 || emuenv.license_content_id[6] != '-' || emuenv.license_content_id[16] != '_' || emuenv.license_content_id[19] != '-'
+            || !std::all_of(emuenv.license_content_id.begin(), emuenv.license_content_id.end(), [](unsigned char c) {
+                   return (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_';
+               })) {
+            LOG_ERROR("License has an invalid content ID: {}", license_path);
+            return false;
+        }
         emuenv.license_title_id = emuenv.license_content_id.substr(7, 9);
         const auto dst_path{ emuenv.vita_fs_path / "ux0/license" / emuenv.license_title_id };
         fs::create_directories(dst_path);
@@ -79,7 +113,7 @@ bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
             } else
                 LOG_ERROR("Fail copy license file to: {}", license_dst_path);
         } else
-            LOG_ERROR("Source and destination license is same at: {}", license_path);
+            return true;
     } else
         LOG_ERROR("License file is corrupted at: {}", license_path);
 
@@ -112,7 +146,8 @@ void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::st
 }
 
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
-    if (!validate_zrif(zRIF)) {
+    std::array<uint8_t, 512> license{};
+    if (!decode_zrif(zRIF, license)) {
         LOG_ERROR("Invalid zRIF key provided");
         return false;
     }
@@ -127,8 +162,18 @@ bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
         return false;
     }
 
-    // Convert zRIF to RIF
-    zrif2rif(zRIF, temp_file);
+    if (!temp_file.write(reinterpret_cast<const char *>(license.data()), license.size())) {
+        LOG_ERROR("Failed to write temporary license file at: {}", temp_license_path);
+        temp_file.close();
+        fs::remove(temp_license_path);
+        return false;
+    }
+    temp_file.close();
+    if (!temp_file) {
+        LOG_ERROR("Failed to finish temporary license file at: {}", temp_license_path);
+        fs::remove(temp_license_path);
+        return false;
+    }
     auto res = copy_license(emuenv, temp_license_path);
     fs::remove(temp_license_path);
     return res;

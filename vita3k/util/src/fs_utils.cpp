@@ -22,7 +22,25 @@
 
 #include <chrono>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
 namespace fs_utils {
+
+bool is_plain_component(const fs::path &path) {
+    std::error_code ec;
+    const auto status = fs::symlink_status(path, ec);
+    if (ec || !fs::exists(status) || fs::is_symlink(status))
+        return false;
+#ifdef _WIN32
+    const DWORD attributes = GetFileAttributesW(path.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_REPARSE_POINT))
+        return false;
+#endif
+    return true;
+}
 
 fs::path construct_file_name(const fs::path &base_path, const fs::path &folder_path, const fs::path &file_name, const fs::path &extension) {
     // std's operator/ replaces on a rooted rhs and adds a separator for an empty one, unlike Boost
@@ -49,6 +67,15 @@ std::time_t to_time_t(const fs::file_time_type time) {
     const auto sys_time = fs::file_time_type::clock::to_sys(time);
 #endif
     return std::chrono::system_clock::to_time_t(std::chrono::time_point_cast<std::chrono::system_clock::duration>(sys_time));
+}
+
+fs::file_time_type to_file_time(const std::time_t time) {
+    const auto sys_time = std::chrono::system_clock::from_time_t(time);
+#ifdef _MSVC_STL_VERSION
+    return std::chrono::clock_cast<fs::file_time_type::clock>(sys_time);
+#else
+    return fs::file_time_type::clock::from_sys(sys_time);
+#endif
 }
 
 std::string path_to_utf8(const fs::path &path) {

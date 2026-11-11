@@ -51,16 +51,16 @@ SceInt32 SyncPrimitive::check_name(const char *name, SceUInt32 attr) {
 // * Simple events *
 // *****************
 
-Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data)
+Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data, bool create_event)
     : SyncPrimitive(attr, name)
     , auto_reset(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
     , waiters(attr)
-    , pattern(init_pattern | SCE_KERNEL_EVENT_CREATE)
+    , pattern(init_pattern | (create_event ? SCE_KERNEL_EVENT_CREATE : 0))
     , last_user_data(init_user_data) {}
 
 // The create event comes with the creating thread's user data, like the other system events
-SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator)
-    : WithUidClass(attr, name, init_pattern, system_event_user_data(creator)) {}
+SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator, bool create_event)
+    : WithUidClass(attr, name, init_pattern, system_event_user_data(creator), create_event) {}
 
 SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern) {
     if (const SceInt32 error = check_name(name, attr))

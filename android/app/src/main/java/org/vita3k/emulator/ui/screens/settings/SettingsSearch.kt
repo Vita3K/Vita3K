@@ -137,6 +137,8 @@ internal fun rememberSettingsSearchEntries(
         if (!isPerApp) {
             add(entry(SettingsCategory.Interface, R.string.settings_emulator_ui_language, R.string.settings_emulator_ui_language_desc, scope = SettingsScope.Global, keywords = "interface ui app language locale"))
             add(entry(SettingsCategory.Emulator, R.string.settings_emulator_storage_folder, R.string.settings_emulator_storage_folder_desc, scope = SettingsScope.Global, keywords = "storage folder path data directory"))
+            add(entry(SettingsCategory.Emulator, R.string.settings_identity_title, R.string.settings_identity_description, scope = SettingsScope.Global, keywords = "savedata identity sfo account openpsid"))
+            add(entry(SettingsCategory.Emulator, R.string.settings_identity_reset, R.string.settings_identity_reset_confirm, scope = SettingsScope.Global, keywords = "savedata identity reset account openpsid"))
             add(entry(SettingsCategory.Emulator, R.string.settings_emulator_show_compile_shaders, R.string.settings_emulator_show_compile_shaders_desc, scope = SettingsScope.Global))
             add(entry(SettingsCategory.Emulator, R.string.settings_emulator_check_updates, R.string.settings_emulator_check_updates_desc, scope = SettingsScope.Global))
             add(entry(SettingsCategory.Emulator, R.string.settings_emulator_archive_log, R.string.settings_emulator_archive_log_desc, scope = SettingsScope.Global))

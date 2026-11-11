@@ -65,6 +65,20 @@ Please see [`building.md`](./building.md).
 Check our [quickstart guide](https://vita3k.org/quickstart) to make sure your computer meets the minimum requirements to run Vita3K.  
 Don't forget to have your graphics driver up to date and to install the [Visual C++ 2015-2022 Redistributable](https://aka.ms/vs/17/release/VC_redist.x64.exe) if you are a Windows user.  
 
+New experimental PFS saves use a generated OpenPSID and the account ID from the emulated registry.
+You can import the OpenPSID and account ID from a savedata `param.sfo` in the emulator storage
+settings while no application is running. This requires an accessible SFO; encrypted CMA backup
+archives are not imported directly. The selected SFO is parsed but not authenticated by the import.
+On Android, the Compose settings can read the SFO through the system document picker.
+The adjacent reset action generates a new OpenPSID and clears the registry account ID. Both
+operations delete `ux0/id.dat` if present so the Vita shell can recreate it. They require all
+applications to be closed; changing identity can make existing saves inaccessible.
+The OpenPSID and identity backups are stored in `ux0/data/vita3k`, while the account ID is stored
+in `vd0/registry/system.dreg`. Existing identities are migrated without deleting their old files;
+keep both locations and any old identity backups private and back them up with your saves. Existing
+saves are not converted, and importing an account ID does not activate PSN login. Transfer to a
+physical Vita may require reassignment and has not yet been verified on hardware.
+
 ## Bugs and issues
 The project is in an early stage, so please be mindful when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
 

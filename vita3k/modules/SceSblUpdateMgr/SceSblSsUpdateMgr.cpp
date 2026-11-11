@@ -15,7 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/module.h>
+#include "SceSblSsUpdateMgr.h"
+#include <modules/system_version.h>
 
 EXPORT(int, sceSblUsAllocateBuffer) {
     return UNIMPLEMENTED();
@@ -37,8 +38,12 @@ EXPORT(int, sceSblUsGetExtractSpackage) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblUsGetSpkgInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceSblUsGetSpkgInfo, int package_type, SceSblUsSpkgInfo *info) {
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    LOG_DEBUG("package type: {}", package_type);
+    info->version = EMULATED_SYSTEM_VERSION | 0x11;
+    return STUBBED("Using compatibility system version 3.74");
 }
 
 EXPORT(int, sceSblUsGetStatus) {

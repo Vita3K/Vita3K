@@ -26,6 +26,7 @@
 
 #include <util/log.h>
 
+#include <iosfwd>
 #include <map>
 #include <string>
 
@@ -58,6 +59,7 @@ struct License {
 };
 
 bool validate_zrif(const std::string &zRIF);
+std::string rif2zrif(std::ifstream &binfile);
 bool copy_license(EmuEnvState &emuenv, const fs::path &license_path);
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF);
 void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::string &content_id);

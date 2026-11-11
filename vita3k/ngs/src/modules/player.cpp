@@ -48,11 +48,6 @@ void PlayerModule::on_state_change(const MemState &mem, ModuleData &data, const 
         logical->adpcm_buffer.clear();
 
         std::memset(&logical->adpcm_history, 0, sizeof(logical->adpcm_history));
-    } else if (data.parent->is_keyed_off) {
-        state->current_buffer = params->start_buffer;
-        state->current_byte_position_in_buffer = params->start_bytes;
-        logical->current_loop_count = 0;
-        logical->rate_resampler.reset();
     }
 }
 
@@ -101,6 +96,8 @@ void PlayerModule::set_default_preset(const MemState &mem, ModuleData &data) {
 }
 
 bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+    Voice *const voice = data.parent;
+    VoiceScheduler *const scheduler = &voice->rack->system->voice_scheduler;
     SceNgsPlayerParams *params = data.get_parameters<SceNgsPlayerParams>(mem);
     SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
     PlayerLogicalState *logical = data.get_logical_state<PlayerLogicalState>();
@@ -165,7 +162,8 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                     // we are done
                     finished = true;
                     scheduler_lock.lock();
-                    voice_lock.lock();
+                    if (!scheduler->relock_voice_after_callback(voice, voice_lock))
+                        return false;
                     break;
                 } else {
                     data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_SWAPPED_BUFFER, prev_index,
@@ -177,7 +175,8 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
             }
 
             scheduler_lock.lock();
-            voice_lock.lock();
+            if (!scheduler->relock_voice_after_callback(voice, voice_lock))
+                return false;
         }
 
         runtime->decoder->source_channels = params->channels;

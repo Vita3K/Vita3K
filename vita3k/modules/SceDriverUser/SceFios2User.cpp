@@ -46,8 +46,10 @@ std::string to_debug_str<SceFiosOverlayResolveMode>(const MemState &mem, SceFios
 
 EXPORT(int, sceFiosOverlayAddForProcess02, SceUID processId, SceFiosProcessOverlay *pOverlay, SceFiosOverlayID *pOutID) {
     TRACY_FUNC(sceFiosOverlayAddForProcess02, processId, pOverlay, pOutID);
-    if (pOverlay->type != SCE_FIOS_OVERLAY_TYPE_OPAQUE)
-        LOG_WARN("Using unimplemented overlay type {}.", fmt::underlying(pOverlay->type));
+    if (pOverlay->type > SCE_FIOS_OVERLAY_TYPE_WRITABLE) {
+        LOG_WARN("Invalid overlay type {}.", fmt::underlying(pOverlay->type));
+        return static_cast<int>(0x8082001au);
+    }
 
     *pOutID = create_overlay(emuenv.io, pOverlay);
 
@@ -108,7 +110,11 @@ EXPORT(int, sceFiosOverlayResolveSync02) {
 
 EXPORT(int, sceFiosOverlayResolveWithRangeSync02, SceUID processId, SceFiosOverlayResolveMode resolveFlag, const char *pInPath, char *pOutPath, SceUInt32 maxPath, SceUInt32 min_order, SceUInt32 max_order) {
     TRACY_FUNC(sceFiosOverlayResolveWithRangeSync02, processId, resolveFlag, pInPath, pOutPath, maxPath, min_order, max_order);
-    const std::string resolved = resolve_path(emuenv.io, pInPath, min_order, max_order);
+    if (resolveFlag != SCE_FIOS_OVERLAY_RESOLVE_FOR_READ && resolveFlag != SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE)
+        return static_cast<int>(0x80820020u);
+    const std::string resolved = resolve_path(emuenv.io, pInPath, emuenv.vita_fs_path, resolveFlag == SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE, min_order, max_order);
+    if (resolved.size() >= maxPath)
+        return static_cast<int>(0x80820018u);
     strncpy(pOutPath, resolved.c_str(), maxPath);
 
     return SCE_FIOS_OK;

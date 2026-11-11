@@ -278,6 +278,34 @@ static std::string transform_installed_app_id(std::string &value, const fs::path
     return {};
 }
 
+static std::string transform_installed_app_path(std::string &value, const fs::path &vita_fs_path) {
+    const auto separator = value.find(':');
+    if (separator == std::string::npos)
+        return transform_installed_app_id(value, vita_fs_path / "ux0" / "app");
+
+    if (value == "vs0:vsh/shell") {
+        std::error_code error;
+        const bool exists = fs::is_regular_file(vita_fs_path / "vs0" / "vsh" / "shell" / "shell.self", error);
+        if (error)
+            return "Failed to inspect shell executable: " + error.message();
+        return exists ? std::string{} : "Shell executable not found";
+    }
+
+    const std::string device = value.substr(0, separator);
+    const std::string prefix = device + ":app/";
+    if ((device != "ux0" && device != "vs0" && device != "pd0") || !value.starts_with(prefix))
+        return "Expected an application path such as ux0:app/TITLE_ID or vs0:app/TITLE_ID";
+
+    std::string app_id = value.substr(prefix.size());
+    if (app_id.empty() || app_id == "." || app_id == ".." || app_id.find_first_of("/\\:") != std::string::npos)
+        return "Invalid application path " + value;
+    const auto error = transform_installed_app_id(app_id, vita_fs_path / device / "app");
+    if (!error.empty())
+        return error;
+    value = prefix + app_id;
+    return {};
+}
+
 static fs::path check_path(const fs::path &output_path) {
     if (output_path.filename() != "config.yml") {
         if (!output_path.has_extension()) // assume it is a folder
@@ -389,8 +417,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         ->default_str("")->group("Input");
     input->add_option("--load-app-list,-a", command_line.load_app_list, "Starts the emulator with load app list.")
        ->default_val(false)->group("Input");
-    const std::map<std::string, Frontend> frontends{ { "qt", Frontend::qt }, { "sdl", Frontend::sdl } };
-    input->add_option("--frontend", command_line.frontend, "Frontend to use: qt for the full interface, sdl for a plain window that runs the app given by -r and quits with it")
+    const std::map<std::string, Frontend> frontends{ { "qt", Frontend::qt }, { "imgui", Frontend::imgui }, { "sdl", Frontend::sdl } };
+    input->add_option("--frontend", command_line.frontend, "Frontend to use: qt for the configured full interface, imgui to force ImGui, or sdl for a basic SDL game selector (or directly run the app given by -r)")
         ->transform(CLI::CheckedTransformer(frontends, CLI::ignore_case))->default_str("qt")->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
@@ -400,8 +428,14 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         },
         "installed app title ID"
     };
-    input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->transform(installed_app_transformer)->group("Input");
+    const CLI::Validator installed_app_path_transformer{
+        [&cfg](std::string &value) {
+            return transform_installed_app_path(value, cfg.get_vita_fs_path());
+        },
+        "installed app ID or device path"
+    };
+    input->add_option("--installed-path,-r", command_line.run_app_path, "Installed app ID or device path to run (e.g. vs0:app/NPXS10015)")
+        ->default_str({})->transform(installed_app_path_transformer)->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
@@ -510,11 +544,9 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
-        static constexpr std::array LIST_LOG_LEVEL = SPDLOG_LEVEL_NAMES;
 
         LOG_INFO_IF(cfg.content_path, "input-content-path: {}", cfg.content_path->string());
         LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
-        LOG_INFO("log-level: {}", LIST_LOG_LEVEL[cfg.log_level]);
         LOG_INFO_IF(cfg.log_active_shaders, "log-active-shaders: enabled");
         LOG_INFO_IF(cfg.log_uniforms, "log-uniforms: enabled");
     }

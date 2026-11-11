@@ -18,12 +18,14 @@
 #pragma once
 
 #include <compat/state.h>
+
 #include <filesystem>
 #include <optional>
 #include <span>
 #include <string>
 
 namespace compat {
+
 std::optional<UpdateInfo> parse_ver_resp(const CompatState &state, const std::string &body);
 bool load_from_disk(CompatState &state, const std::filesystem::path &cache_path);
 CompatibilityState get_app_compat(const CompatState &state, const std::string &title_id);

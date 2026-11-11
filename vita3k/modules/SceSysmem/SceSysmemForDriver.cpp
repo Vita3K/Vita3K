@@ -463,8 +463,11 @@ EXPORT(int, ksceKernelMemRangeRetainWithPerm) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelMemcpyKernelToUser) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelMemcpyKernelToUser, Ptr<void> dst, Ptr<const void> src, SceSize len) {
+    if (!dst || !src)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    std::memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return 0;
 }
 
 EXPORT(int, ksceKernelMemcpyKernelToUserForPid) {

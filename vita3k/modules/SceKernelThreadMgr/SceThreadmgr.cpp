@@ -18,6 +18,7 @@
 #include "SceThreadmgr.h"
 #include <modules/module_parent.h>
 
+#include <io/state.h>
 #include <kernel/callback.h>
 #include <kernel/state.h>
 #include <kernel/sync_primitives.h>
@@ -86,6 +87,11 @@ static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID 
     if (timeout)
         *timeout = time_left;
     return result;
+}
+
+static bool uses_legacy_event_flag_uid_rules(EmuEnvState &emuenv) {
+    const SceProcessParam *param = emuenv.kernel.process_param.get(emuenv.mem);
+    return param && param->magic == '2PSP' && param->version != 0 && event_flag_legacy_uid_rules(param->fw_version);
 }
 
 // Waits on an event flag.
@@ -424,7 +430,7 @@ EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pI
 
 EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFlagInfo> pInfo) {
     TRACY_FUNC(_sceKernelGetEventFlagInfo, evfId, pInfo);
-    const EventFlagPtr eventflag = emuenv.kernel.objects.find<EventFlag>(evfId);
+    const auto [eventflag, opened] = emuenv.kernel.objects.find_event_flag_reference<EventFlag>(evfId);
     SceKernelEventFlagInfo full;
     if (!eventflag || eventflag->info(full) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
@@ -436,6 +442,9 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
     if (info->size > sizeof(*info))
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
+    full.evfId = evfId;
+    if (opened)
+        full.attr |= 0x00080000U;
     write_info(info, full);
 
     return SCE_KERNEL_OK;
@@ -1310,7 +1319,9 @@ EXPORT(int, sceKernelCloseCond, SceUID condition_variable_id) {
 
 EXPORT(int, sceKernelCloseEventFlag, SceUID evfId) {
     TRACY_FUNC(sceKernelCloseEventFlag, evfId);
-    return UNIMPLEMENTED();
+    if (!emuenv.kernel.objects.remove_event_flag_reference(evfId, thread_id, true, uses_legacy_event_flag_uid_rules(emuenv)))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCloseMsgPipe) {
@@ -1400,21 +1411,33 @@ static bool is_user_priority(int priority) {
 
 // The attributes sceKernelCreateThread takes
 constexpr SceUInt32 THREAD_CREATE_ATTRS = SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 | SCE_KERNEL_THREAD_ATTR_NOUSE_VFP | SCE_KERNEL_THREAD_ATTR_VM | SCE_KERNEL_THREAD_ATTR_USER;
+constexpr SceUInt32 SHELL_THREAD_ATTR_UNKNOWN_02000000 = 0x02000000U;
 
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);
+    const bool is_shell = emuenv.io.app_path == "vs0:vsh/shell";
+    const bool is_firmware_app = is_shell || emuenv.io.app_path.starts_with("vs0:app/");
+    const bool shell_priority = is_shell && init_priority > SCE_KERNEL_LOWEST_PRIORITY_USER && init_priority <= 255;
+    const SceUInt32 allowed_attrs = THREAD_CREATE_ATTRS | (is_firmware_app ? SHELL_THREAD_ATTR_UNKNOWN_02000000 : 0U);
+    const SceUInt32 allowed_cpu_mask = SCE_KERNEL_CPU_MASK_USER_ALL | (is_shell ? SCE_KERNEL_CPU_MASK_SYSTEM : 0U);
     if (!name)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
     if (!entry)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    if (init_priority != SCE_KERNEL_CURRENT_THREAD_PRIORITY && !is_user_priority(init_priority))
+    if (init_priority != SCE_KERNEL_CURRENT_THREAD_PRIORITY && !is_user_priority(init_priority) && !shell_priority) {
+        LOG_WARN("Thread '{}' rejected: invalid priority {}", name, init_priority);
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
+    }
     if (options->stack_size <= 0)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_STACK_SIZE);
-    if (options->cpu_affinity_mask & ~SCE_KERNEL_CPU_MASK_USER_ALL)
+    if (options->cpu_affinity_mask & ~allowed_cpu_mask) {
+        LOG_WARN("Thread '{}' rejected: invalid CPU affinity {}", name, log_hex(options->cpu_affinity_mask));
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CPU_AFFINITY_MASK);
-    if (options->attr & ~THREAD_CREATE_ATTRS)
+    }
+    if (options->attr & ~allowed_attrs) {
+        LOG_WARN("Thread '{}' rejected: invalid attributes {}", name, log_hex(options->attr));
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
+    }
     // The new thread starts at the creating thread's current priority
     if (init_priority == SCE_KERNEL_CURRENT_THREAD_PRIORITY)
         init_priority = emuenv.kernel.get_thread(thread_id)->get_priority();
@@ -1422,6 +1445,12 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
     const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), init_priority, options->cpu_affinity_mask, options->stack_size, options->attr);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
+    if (shell_priority)
+        LOG_WARN("Shell thread '{}' created with experimental priority {}", name, init_priority);
+    if (is_firmware_app && (options->attr & SHELL_THREAD_ATTR_UNKNOWN_02000000))
+        LOG_WARN("Firmware thread '{}' created with attribute 0x02000000; its effect is not emulated", name);
+    if (is_shell && (options->cpu_affinity_mask & SCE_KERNEL_CPU_MASK_SYSTEM))
+        LOG_INFO("Shell thread '{}' created with system CPU affinity {}", name, log_hex(options->cpu_affinity_mask));
     return thread->id;
 }
 
@@ -1495,7 +1524,7 @@ EXPORT(int, sceKernelDeleteCond, SceUID condition_variable_id) {
 
 EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
     TRACY_FUNC(sceKernelDeleteEventFlag, event_id);
-    if (!emuenv.kernel.objects.remove<EventFlag>(event_id, thread_id))
+    if (!emuenv.kernel.objects.remove_event_flag_reference(event_id, thread_id, false, uses_legacy_event_flag_uid_rules(emuenv)))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
 
     return SCE_KERNEL_OK;
@@ -1697,7 +1726,22 @@ EXPORT(SceUID, sceKernelOpenCond, Ptr<const char> pName) {
 
 EXPORT(SceUID, sceKernelOpenEventFlag, Ptr<const char> pName) {
     TRACY_FUNC(sceKernelOpenEventFlag, pName);
-    return open_by_name<EventFlag>(emuenv, export_name, pName);
+    if (!pName)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    char name_copy[SCE_UID_NAMELEN + 1];
+    const int name_length = copy_guest_string(emuenv.mem, pName, name_copy);
+    if (name_length < 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (name_length > SCE_UID_NAMELEN)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+
+    const SceUID uid = emuenv.kernel.get_next_uid();
+    if (!emuenv.kernel.objects.open_event_flag_reference<EventFlag>(uid, [=](const EventFlag &evf) {
+            return (evf.attr & SCE_KERNEL_ATTR_OPENABLE) && strncmp(evf.name, name_copy, sizeof(evf.name)) == 0;
+        }))
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
+
+    return uid;
 }
 
 EXPORT(SceUID, sceKernelOpenMsgPipe, Ptr<const char> pName) {

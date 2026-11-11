@@ -19,6 +19,7 @@
 #include "SceSysmemForDriver.h"
 
 #include <emuenv/state.h>
+#include <io/state.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
 #include <mem/functions.h>
@@ -140,30 +141,50 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     TRACY_FUNC(sceKernelAllocMemBlock, pName, type, size, optp);
     if (!pName)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    const auto reject = [&](SceInt32 error, const char *reason) {
+        LOG_WARN("sceKernelAllocMemBlock: rejecting '{}' type={} size={} options={} error={} reason={}",
+            pName, log_hex(type), size, optp != nullptr, log_hex(error), reason);
+    };
     if (optp) {
         constexpr SceSize OPT_SIZES[] = { 0x14, 0x38, 0x3C, 0x40 };
         // An app can't choose an address, a physical address or a base block
         constexpr SceUInt32 ALLOWED_ATTRS = SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT | SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_ENABLE_OPEN
             | SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_PHYCONT;
+        const bool firmware_unknown_attr = (emuenv.io.app_path == "vs0:vsh/shell" || emuenv.io.app_path.starts_with("vs0:app/"))
+            && (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_0x20);
+        const SceUInt32 allowed_attrs = ALLOWED_ATTRS | (firmware_unknown_attr ? SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_0x20 : 0U);
         if (!std::ranges::contains(OPT_SIZES, optp->size))
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
         // The last word of the largest option must be 0
-        if (optp->size == sizeof(SceKernelAllocMemBlockOpt) && optp->reserved[9] != 0)
+        if (optp->size == sizeof(SceKernelAllocMemBlockOpt) && optp->reserved[9] != 0) {
+            LOG_WARN("sceKernelAllocMemBlock: option size={} reserved[9]={}", optp->size, log_hex(optp->reserved[9]));
+            reject(SCE_KERNEL_ERROR_INVALID_ARGUMENT, "nonzero reserved option");
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-        if (optp->attr & ~ALLOWED_ATTRS)
+        }
+        if (optp->attr & ~allowed_attrs) {
+            LOG_WARN("sceKernelAllocMemBlock: option size={} attributes={}", optp->size, log_hex(optp->attr));
+            reject(SCE_KERNEL_ERROR_INVALID_ARGUMENT, "unsupported option attributes");
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        }
+        if (firmware_unknown_attr)
+            LOG_WARN("sceKernelAllocMemBlock: firmware block '{}' uses attribute 0x20; its effect is not emulated", pName);
     }
     if (const SceInt32 error = type_error(type))
         return RET_ERROR(error);
-    if (const SceInt32 error = size_error(type, size))
+    if (const SceInt32 error = size_error(type, size)) {
+        reject(error, "invalid block size");
         return RET_ERROR(error);
+    }
 
     // Build kernel opts from user opts
     SceKernelAllocMemBlockOptKernel k_opt = {};
     k_opt.size = sizeof(k_opt);
     if (optp && (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT)) {
-        if (const SceInt32 error = alignment_error(type, optp->alignment))
+        if (const SceInt32 error = alignment_error(type, optp->alignment)) {
+            LOG_WARN("sceKernelAllocMemBlock: option alignment={}", log_hex(optp->alignment));
+            reject(error, "invalid alignment");
             return RET_ERROR(error);
+        }
         k_opt.attr |= SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT;
         k_opt.alignment = optp->alignment;
     }

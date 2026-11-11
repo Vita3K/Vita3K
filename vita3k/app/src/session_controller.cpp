@@ -27,13 +27,17 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <motion/state.h>
+#include <overlay/display_manager.h>
 #include <renderer/functions.h>
 #include <util/log.h>
+#include <v3kn/friend.h>
+#include <v3kn/state.h>
 
 namespace app {
 
-AppSessionController::AppSessionController(EmuEnvState &emuenv)
-    : emuenv(emuenv) {
+AppSessionController::AppSessionController(EmuEnvState &emuenv, const bool preserve_renderer)
+    : emuenv(emuenv)
+    , preserve_renderer(preserve_renderer) {
 }
 
 bool AppSessionController::has_active_session() const {
@@ -48,6 +52,10 @@ bool AppSessionController::is_paused() const {
     return active_pause_reasons.load(std::memory_order_acquire) != 0;
 }
 
+bool AppSessionController::should_show_pause_overlay() const {
+    return is_running() && show_pause_overlay(active_pause_reasons.load(std::memory_order_acquire));
+}
+
 bool AppSessionController::begin_launch(const AppLaunchRequest &launch_request, const bool update_last_time_used) {
     std::lock_guard<std::mutex> lock(mutex);
     const AppSessionPhase phase = current_phase.load(std::memory_order_relaxed);
@@ -60,7 +68,26 @@ bool AppSessionController::begin_launch(const AppLaunchRequest &launch_request, 
     if (!setup_game_launch(emuenv, launch_request.app_path, update_last_time_used))
         return false;
 
+    // A preserved renderer survives app shutdown, including its pause flag.
+    // Start every app from a clean runtime state rather than carrying the
+    // previous session's Menu/User pause into the new renderer and input path.
+    LOG_DEBUG("Resetting pause state before launch '{}': reasons=0x{:x}, kernel_paused={}, renderer_paused={}, drop_inputs={}",
+        launch_request.app_path,
+        active_pause_reasons.load(std::memory_order_relaxed),
+        emuenv.kernel.is_threads_paused(),
+        emuenv.renderer && emuenv.renderer->paused.load(std::memory_order_relaxed),
+        emuenv.drop_inputs);
+    if (emuenv.kernel.is_threads_paused())
+        emuenv.kernel.set_threads_paused(false);
+    emuenv.drop_inputs = false;
+    emuenv.ctrl.overlay_input_intercepted.store(false, std::memory_order_relaxed);
+    if (emuenv.renderer)
+        emuenv.renderer->paused.store(false, std::memory_order_relaxed);
+
     active_launch_request = launch_request;
+    active_launch_request.app_path = emuenv.io.app_path;
+    if (active_launch_request.app_path == "vs0:vsh/shell" && active_launch_request.self_path.empty())
+        active_launch_request.self_path = "shell.self";
     renderer_initialized = false;
     runtime_initialized = false;
     active_pause_reasons.store(0, std::memory_order_release);
@@ -79,12 +106,15 @@ bool AppSessionController::initialize_renderer(renderer::FrameHost &frame) {
 
     frame_host = frame;
 
-    if (!renderer::init(frame, emuenv.renderer,
-            emuenv.backend_renderer, emuenv.cfg, emuenv.get_root_paths())) {
-        return false;
+    if (!preserve_renderer || !emuenv.renderer) {
+        if (!renderer::init(frame, emuenv.renderer,
+                emuenv.backend_renderer, emuenv.cfg, emuenv.get_root_paths())) {
+            return false;
+        }
     }
 
     emuenv.renderer->app_session_controller = *this;
+    emuenv.renderer->screenshot_callback = [this] { take_screenshot(emuenv); };
 
     apply_renderer_config(emuenv);
     renderer_initialized = true;
@@ -133,6 +163,7 @@ bool AppSessionController::load_and_run() {
     frame_host->get().finalize_render_thread_start();
 
     set_phase(AppSessionPhase::Running);
+    v3kn::set_friend_now_playing(emuenv.v3kn.friends_state, emuenv.io.title_id, emuenv.current_app_title);
     return true;
 }
 
@@ -215,15 +246,22 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
 
     const bool needs_renderer_cleanup = renderer_was_initialized || active_frame_host.has_value();
 
+    if (app_started)
+        v3kn::set_friend_now_playing(emuenv.v3kn.friends_state, {}, {});
+
     if (runtime_was_initialized) {
         if (app_started && reason != AppSessionStopReason::LaunchFailure)
             update_app_time_used(emuenv, emuenv.io.app_path);
 
-        shutdown_app_runtime(emuenv);
-        reset_app_state(emuenv);
+        shutdown_app_runtime(emuenv, preserve_renderer);
+        reset_app_state(emuenv, reason != AppSessionStopReason::FrontendShutdown);
         destroy(emuenv);
     } else if (renderer_was_initialized) {
-        if (emuenv.renderer) {
+        if (preserve_renderer && emuenv.renderer) {
+            emuenv.renderer->cleanup(true);
+            emuenv.renderer->overlay_manager = nullptr;
+            emuenv.overlay_manager.reset();
+        } else if (emuenv.renderer) {
             emuenv.renderer->cleanup();
             emuenv.renderer.reset();
         }
@@ -232,7 +270,7 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
         abort_game_launch(emuenv);
     }
 
-    if (needs_renderer_cleanup && active_frame_host)
+    if (needs_renderer_cleanup && active_frame_host && !preserve_renderer)
         active_frame_host->get().destroy_render_context();
 
     emuenv.motion.clear_device_motion_support();

@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 LIBRARY(SceAudiodec)
+LIBRARY(SceAppMgr)
 LIBRARY(SceFiber)
 LIBRARY(taihen)
 LIBRARY(SceSharedFb)

@@ -48,12 +48,14 @@
 #include <overlay/input.h>
 #include <overlay/trophy_notification.h>
 #include <packages/sfo.h>
-#include <regmgr/state.h>
+#include <regmgr/functions.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
 #include <touch/state.h>
+#include <vfs/mounts.h>
 
+#include <interface.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -77,6 +79,13 @@
 
 #include <algorithm>
 #include <fstream>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace app {
 
@@ -230,6 +239,9 @@ static Config::CurrentConfig get_runtime_current_config_after_save(
             break;
         case config::RestartRequiredSetting::DisableMaskBit:
             runtime_current.disable_mask_bit = previous_current.disable_mask_bit;
+            break;
+        case config::RestartRequiredSetting::ThreadScheduler:
+            runtime_current.thread_scheduler = previous_current.thread_scheduler;
             break;
         }
     }
@@ -458,6 +470,13 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
+    regmgr::init_regmgr(state.regmgr, state.vita_fs_path);
+    try {
+        recover_savedata_identity(state.regmgr, state.vita_fs_path);
+    } catch (const std::runtime_error &error) {
+        LOG_ERROR("Cannot recover savedata identity at startup: {}", error.what());
+    }
+
 #if USE_DISCORD
     if (state.cfg.discord_rich_presence && discordrpc::init()) {
         discordrpc::update_presence();
@@ -473,7 +492,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     return true;
 }
 
-void shutdown_app_runtime(EmuEnvState &state) {
+void shutdown_app_runtime(EmuEnvState &state, const bool preserve_renderer) {
     state.audio.stop_all_ports();
 
     gxm::shutdown(state);
@@ -489,6 +508,7 @@ void shutdown_app_runtime(EmuEnvState &state) {
 
     state.renderer->preclose_action();
     renderer::stop_render_thread(*state.renderer);
+    state.renderer->overlay_manager = nullptr;
     gxm::destroy_all_contexts(state, true);
     gxm::destroy_all_render_targets(state, true);
     state.gxm.deinit();
@@ -508,6 +528,7 @@ void shutdown_app_runtime(EmuEnvState &state) {
     state.net.deinit();
 
     io_deinit(state.io);
+    pfsmgr::clear_application_mounts(state.io);
 
     state.camera.deinit();
 
@@ -525,20 +546,19 @@ void shutdown_app_runtime(EmuEnvState &state) {
 
     state.app_info = {};
 
-    state.regmgr.system_dreg.clear();
-    state.regmgr.system_dreg_path.clear();
-    state.regmgr.reg_category_template.clear();
-    state.regmgr.reg_template.clear();
-
     state.kernel.deinit(state.mem);
 
-    state.renderer->cleanup();
-    state.renderer.reset();
+    if (preserve_renderer) {
+        state.renderer->cleanup(true);
+    } else {
+        state.renderer->cleanup();
+        state.renderer.reset();
+    }
 
     deinit_mem(state.mem);
 }
 
-void reset_app_state(EmuEnvState &state) {
+void reset_app_state(EmuEnvState &state, const bool update_discord_presence) {
     app::reset_perf_metrics(state);
 
     state.app_path.clear();
@@ -556,7 +576,7 @@ void reset_app_state(EmuEnvState &state) {
     set_current_config(state, "");
 
 #if USE_DISCORD
-    if (state.cfg.discord_rich_presence)
+    if (update_discord_presence && state.cfg.discord_rich_presence)
         discordrpc::update_presence();
 #endif
 
