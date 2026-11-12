@@ -262,6 +262,8 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             hooks.on_launch(launch_request.app_path);
 
         SDL_WindowFlags window_flags = 0;
+        if (emuenv.cfg.fullscreen || emuenv.cfg.boot_apps_full_screen)
+            window_flags |= SDL_WINDOW_FULLSCREEN;
 #ifndef __ANDROID__
         window_flags |= SDL_WINDOW_RESIZABLE;
 #endif
