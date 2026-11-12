@@ -18,6 +18,7 @@
 #include <mem/allocator.h>
 
 #include <algorithm>
+#include <atomic>
 #include <bit>
 #include <limits>
 
@@ -39,6 +40,14 @@ void BitmapAllocator::reset() {
     words.clear();
 }
 
+// Frees (or_mode) or allocates the slots in mask, atomically since free_slot_count runs without the lock
+static void fill_word(std::uint32_t &word, const std::uint32_t mask, const bool or_mode) {
+    if (or_mode)
+        std::atomic_ref(word).fetch_or(mask, std::memory_order_relaxed);
+    else
+        std::atomic_ref(word).fetch_and(~mask, std::memory_order_relaxed);
+}
+
 int BitmapAllocator::force_fill(const std::uint32_t offset, const std::uint32_t size, const bool or_mode) {
     std::uint32_t *word = words.data() + (offset >> 5);
     const std::uint32_t set_bit = offset & 31;
@@ -48,11 +57,7 @@ int BitmapAllocator::force_fill(const std::uint32_t offset, const std::uint32_t 
         // The bit we need to allocate is in single word
         const std::uint32_t mask = size == 32 ? 0xFFFFFFFFU : ((~(0xFFFFFFFFU >> size)) >> set_bit);
 
-        if (or_mode) {
-            *word |= mask;
-        } else {
-            *word &= ~mask;
-        }
+        fill_word(*word, mask, or_mode);
 
         return std::min<int>(size, (words.size() << 5) - set_bit);
     }
@@ -61,11 +66,7 @@ int BitmapAllocator::force_fill(const std::uint32_t offset, const std::uint32_t 
     std::uint32_t mask = 0xFFFFFFFFU >> set_bit;
 
     while (end_bit > 0 && (word != words.data() + words.size())) {
-        if (or_mode) {
-            *word |= mask;
-        } else {
-            *word &= ~mask;
-        }
+        fill_word(*word, mask, or_mode);
 
         word += 1;
         if (end_bit < 32)
@@ -112,7 +113,8 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, std::uint32
     // Slots are numbered from the most significant bit, so a run of free slots is a
     // run of leading ones once the already visited bits have been shifted out.
     const auto visible_from = [this](const std::uint32_t bit) {
-        return static_cast<std::uint32_t>(words[bit >> 5] << (bit & 31));
+        const std::uint32_t word = std::atomic_ref(words[bit >> 5]).load(std::memory_order_relaxed);
+        return static_cast<std::uint32_t>(word << (bit & 31));
     };
 
     while (cursor < total_bits) {
@@ -200,7 +202,8 @@ int BitmapAllocator::free_slot_count(const std::uint32_t offset, const std::uint
 
         const int left_shift = start_bit & 31;
         const int right_shift = (31 - (next_end_bit - 1) & 31);
-        const std::uint32_t word_to_scan = words[start_bit >> 5] << left_shift >> right_shift >> left_shift;
+        const std::uint32_t word = std::atomic_ref(const_cast<std::uint32_t &>(words[start_bit >> 5])).load(std::memory_order_relaxed);
+        const std::uint32_t word_to_scan = word << left_shift >> right_shift >> left_shift;
         free_count += std::popcount(word_to_scan);
 
         start_bit = next_end_bit;
