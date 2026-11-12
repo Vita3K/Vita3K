@@ -1521,9 +1521,11 @@ EXPORT(SceInt32, sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadInf
     return CALL_EXPORT(_sceKernelGetThreadInfo, threadId, pInfo);
 }
 
-EXPORT(int, sceKernelGetThreadRunStatus) {
-    TRACY_FUNC(sceKernelGetThreadRunStatus);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetThreadRunStatus, SceKernelThreadRunStatus *status) {
+    TRACY_FUNC(sceKernelGetThreadRunStatus, status);
+    // The kernel gets the size apart, 0 without a struct
+    const SceSize size = status ? status->size : 0;
+    return CALL_EXPORT(_sceKernelGetThreadRunStatus, status, &size);
 }
 
 EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time) {

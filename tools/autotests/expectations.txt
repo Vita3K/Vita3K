@@ -691,7 +691,7 @@ thread_for_vm_errors            pass
 thread_fpscr                    pass
 thread_id_registers             pass
 thread_info                     pass
-thread_info_fields              fail     # thread info's run time, the last CPU is 0 since threads ignore their core, sceKernelGetThreadRunStatus
+thread_info_fields              fail     # thread info's run time, the last CPU is 0 since threads ignore their core
 thread_info_sizes               pass
 thread_lifecycle                fail     # starting with more arguments than the stack holds
 thread_limit_release            fail     # thread creates aren't refused at the Vita's limit, which gives 0x8002450D
@@ -707,10 +707,10 @@ thread_ready_status             fail     # a thread that can run but doesn't rep
 thread_restart                  fail     # the stack free size of a thread started again
 thread_run_clocks               fail     # the run clocks don't count the time a thread spins
 thread_run_order                fail     # threads ignore their core and priority
-thread_run_status               fail     # sceKernelGetThreadRunStatus
-thread_run_status_cores         fail     # sceKernelGetThreadRunStatus gives the wrong entry, process and priority on both cores
-thread_run_status_in_handler    fail     # sceKernelGetThreadRunStatus is unimplemented
-thread_run_status_waiting_thread fail     # sceKernelGetThreadRunStatus is unimplemented
+thread_run_status               pass
+thread_run_status_cores         fail     # threads ignore their core, so sceKernelGetThreadRunStatus fills only the caller's entry, on core 0
+thread_run_status_in_handler    pass
+thread_run_status_waiting_thread pass
 thread_self_calls               fail     # StartThread with the thread's own UID and GetThreadExitStatus with UID 0 or its own UID give other errors than 0x80028022
 thread_signal                   pass
 thread_signal_timeout           pass
