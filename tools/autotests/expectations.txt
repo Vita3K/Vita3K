@@ -189,6 +189,7 @@ display                         crash    # display size, framebuffer pitch check
 display_framebuf_blocks         fail     # no framebuffer base alignment check
 display_framebuf_free           skip     # whether the renderer crashes on a freed framebuffer depends on timing
 display_framebuf_set_freed      skip     # a framebuffer where a block was freed is taken, whether the renderer crashes on it depends on timing
+end_wait_cb_notify_then_end     skip     # threads ignore their core and priority, so whether the waiter and the target already ran when their status is read is a race
 end_wait_claim_races            fail     # threads ignore their core and priority, so a timed out waiter has already ended
 end_wait_cycle                  pass
 end_wait_during_end_handler     fail     # end waiters are woken before the END handler runs
