@@ -21,14 +21,13 @@
 
 #include <vector>
 
-struct Item {
+struct Item : IntrusiveLink<Item> {
+    explicit Item(int value)
+        : value(value) {}
     int value;
-    IntrusiveLink<Item> first;
-    IntrusiveLink<Item> second;
 };
 
-using List = IntrusiveList<Item, &Item::first>;
-using OtherList = IntrusiveList<Item, &Item::second>;
+using List = IntrusiveList<Item>;
 
 static std::vector<int> values(const List &list) {
     std::vector<int> result;
@@ -37,47 +36,66 @@ static std::vector<int> values(const List &list) {
     return result;
 }
 
-TEST(IntrusiveList, InsertAndRemove) {
-    Item a{ 1 }, b{ 2 }, c{ 3 };
+TEST(IntrusiveList, Empty) {
     List list;
     EXPECT_TRUE(list.empty());
+    EXPECT_EQ(list.size(), 0u);
+    EXPECT_EQ(list.begin(), list.end());
+}
 
-    list.push_back(a);
-    list.push_back(c);
+TEST(IntrusiveList, InsertPositions) {
+    Item a{ 1 }, b{ 2 }, c{ 3 }, d{ 4 };
+    List list;
+    list.push_back(b);
+    list.insert(list.begin(), a);
+    list.insert(list.end(), d);
     auto pos = list.begin();
     ++pos;
-    list.insert(pos, b);
-    EXPECT_EQ(values(list), (std::vector{ 1, 2, 3 }));
-    EXPECT_EQ(list.size(), 3u);
-
-    EXPECT_TRUE(list.remove(b));
-    EXPECT_FALSE(list.remove(b));
-    EXPECT_FALSE(b.first.linked());
-    EXPECT_EQ(values(list), (std::vector{ 1, 3 }));
-
-    list.insert(list.begin(), b);
-    EXPECT_EQ(list.front().value, 2);
+    ++pos;
+    list.insert(pos, c);
+    EXPECT_EQ(values(list), (std::vector{ 1, 2, 3, 4 }));
+    EXPECT_EQ(list.size(), 4u);
+    EXPECT_EQ(list.front().value, 1);
 
     // Removing through a post-incremented iterator keeps the iterator valid
     auto it = list.begin();
     while (it != list.end())
-        EXPECT_TRUE(list.remove(*it++));
+        list.remove(*it++);
     EXPECT_TRUE(list.empty());
 }
 
-TEST(IntrusiveList, TwoLinksOnOneItem) {
+TEST(IntrusiveList, Remove) {
+    Item a{ 1 }, b{ 2 }, c{ 3 }, d{ 4 };
+    List list;
+    for (Item *item : { &a, &b, &c, &d })
+        list.push_back(*item);
+
+    list.remove(b);
+    EXPECT_FALSE(b.linked());
+    EXPECT_EQ(values(list), (std::vector{ 1, 3, 4 }));
+    list.remove(a);
+    EXPECT_EQ(values(list), (std::vector{ 3, 4 }));
+    list.remove(d);
+    EXPECT_EQ(values(list), (std::vector{ 3 }));
+    list.remove(c);
+    EXPECT_TRUE(list.empty());
+    EXPECT_EQ(list.size(), 0u);
+}
+
+TEST(IntrusiveList, Linked) {
     Item a{ 1 }, b{ 2 };
-    List first;
-    OtherList second;
-    first.push_back(a);
-    second.push_back(b);
-    second.push_back(a);
+    List list;
+    list.push_back(a);
+    EXPECT_TRUE(a.linked());
+    EXPECT_FALSE(b.linked());
 
-    EXPECT_TRUE(first.remove(a));
-    EXPECT_FALSE(a.first.linked());
-    EXPECT_TRUE(a.second.linked());
-    EXPECT_EQ(second.front().value, 2);
+    // Removing a T that is in no list does nothing
+    list.remove(b);
+    EXPECT_EQ(list.size(), 1u);
+    EXPECT_EQ(values(list), (std::vector{ 1 }));
 
-    EXPECT_TRUE(second.remove(a));
-    EXPECT_TRUE(second.remove(b));
+    list.remove(a);
+    list.remove(a);
+    EXPECT_FALSE(a.linked());
+    EXPECT_TRUE(list.empty());
 }
