@@ -1,7 +1,7 @@
 add_library(
 	ctrl
 	STATIC
-	include/ctrl/ctrl.h
+	include/ctrl/ctrl/state.h
 	include/ctrl/functions.h
 	include/ctrl/state.h
 	src/ctrl.cpp
