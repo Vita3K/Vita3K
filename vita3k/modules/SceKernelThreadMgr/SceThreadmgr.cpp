@@ -1683,23 +1683,42 @@ EXPORT(SceInt32, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg)
     return SCE_KERNEL_OK;
 }
 
-// Finds the openable object of type T with this name and returns its UID
-template <KernelObjectClass T>
-static SceUID open_by_name(EmuEnvState &emuenv, const char *export_name, Ptr<const char> name) {
+// Finds the openable object of any class with this guest name, or returns the error for the name
+static SceInt32 find_by_name(EmuEnvState &emuenv, Ptr<const char> name, std::shared_ptr<KernelObject> &object) {
     if (!name)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     char name_copy[SCE_UID_NAMELEN + 1];
     const int name_length = copy_guest_string(emuenv.mem, name, name_copy);
     if (name_length < 0)
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+        return SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS;
     if (name_length > SCE_UID_NAMELEN)
-        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
-    const auto found = emuenv.kernel.objects.find_if<T>([&](const T &object) {
-        return (object.attr & SCE_KERNEL_ATTR_OPENABLE) && strncmp(object.name, name_copy, sizeof(object.name)) == 0;
-    });
-    if (!found)
-        return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
-    return found->uid;
+        return SCE_KERNEL_ERROR_UID_NAME_TOO_LONG;
+    object = emuenv.kernel.objects.find_openable(name_copy);
+    if (!object)
+        return SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME;
+    return SCE_KERNEL_OK;
+}
+
+// Opens the T with this name. The thread manager finds the name and checks the class itself
+template <KernelObjectClass T>
+static SceUID open_by_name(EmuEnvState &emuenv, const char *export_name, Ptr<const char> name) {
+    std::shared_ptr<KernelObject> object;
+    if (const SceInt32 error = find_by_name(emuenv, name, object))
+        return RET_ERROR(error);
+    if (object->get_uid_class() != T::uid_class)
+        return RET_ERROR(SCE_KERNEL_ERROR_DIFFERENT_UID_CLASS);
+    return object->uid;
+}
+
+// Opens the T with this name. Sysmem finds the name and checks the class in one call
+template <KernelObjectClass T>
+static SceUID sysmem_open_by_name(EmuEnvState &emuenv, const char *export_name, Ptr<const char> name) {
+    std::shared_ptr<KernelObject> object;
+    if (const SceInt32 error = find_by_name(emuenv, name, object))
+        return RET_ERROR(error);
+    if (object->get_uid_class() != T::uid_class)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID_CLASS);
+    return object->uid;
 }
 
 EXPORT(SceUID, sceKernelOpenCond, Ptr<const char> pName) {
@@ -1714,7 +1733,7 @@ EXPORT(SceUID, sceKernelOpenEventFlag, Ptr<const char> pName) {
 
 EXPORT(SceUID, sceKernelOpenMsgPipe, Ptr<const char> pName) {
     TRACY_FUNC(sceKernelOpenMsgPipe, pName);
-    return open_by_name<MsgPipe>(emuenv, export_name, pName);
+    return sysmem_open_by_name<MsgPipe>(emuenv, export_name, pName);
 }
 
 EXPORT(SceUID, sceKernelOpenMutex, Ptr<const char> pName) {
@@ -1739,7 +1758,7 @@ EXPORT(SceUID, sceKernelOpenSema, Ptr<const char> pName) {
 
 EXPORT(SceUID, sceKernelOpenSimpleEvent, Ptr<const char> pName) {
     TRACY_FUNC(sceKernelOpenSimpleEvent, pName);
-    const SceUID uid = open_by_name<SimpleEvent>(emuenv, export_name, pName);
+    const SceUID uid = sysmem_open_by_name<SimpleEvent>(emuenv, export_name, pName);
     if (uid < 0)
         return uid;
     // A delete that came first wins, as if the name wasn't found
@@ -1751,7 +1770,7 @@ EXPORT(SceUID, sceKernelOpenSimpleEvent, Ptr<const char> pName) {
 
 EXPORT(SceUID, sceKernelOpenTimer, Ptr<const char> pName) {
     TRACY_FUNC(sceKernelOpenTimer, pName);
-    return open_by_name<Timer>(emuenv, export_name, pName);
+    return sysmem_open_by_name<Timer>(emuenv, export_name, pName);
 }
 
 EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {

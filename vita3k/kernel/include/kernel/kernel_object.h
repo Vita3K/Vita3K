@@ -54,6 +54,8 @@ public:
     virtual ~KernelObject() = default;
     // Returns the class reported by sceKernelGetThreadmgrUIDClass.
     virtual UidClass get_uid_class() const = 0;
+    // Whether open calls find the object by its name.
+    virtual bool is_openable() const { return false; }
 
     SceUID uid{};
     char name[SCE_UID_NAMELEN + 1] = {};
@@ -119,6 +121,16 @@ public:
         const std::lock_guard<std::mutex> lock(mutex);
         const auto it = objects.find(uid);
         return it == objects.end() ? nullptr : it->second;
+    }
+
+    // Returns the openable object with this name, of any class, or null.
+    [[nodiscard]] std::shared_ptr<KernelObject> find_openable(const char *name) const {
+        const std::lock_guard<std::mutex> lock(mutex);
+        for (const auto &[_, obj] : objects) {
+            if (obj->is_openable() && strncmp(obj->name, name, sizeof(obj->name)) == 0)
+                return obj;
+        }
+        return nullptr;
     }
 
     // Returns the T with this UID, or null.
