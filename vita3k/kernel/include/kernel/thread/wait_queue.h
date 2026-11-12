@@ -38,15 +38,13 @@ using ThreadStatePtr = std::shared_ptr<ThreadState>;
 template <typename Entry>
 class WaitQueue {
 public:
-    struct Waiter {
+    struct Waiter : IntrusiveLink<Waiter> {
         ThreadStatePtr thread;
         // Taken when the wait starts, the queue is not reordered if it changes
         int priority = 0;
         Entry entry;
         // Set by a waker that decided the outcome of the wait
         std::optional<SceInt32> result;
-        // The waiter's place in the queue
-        IntrusiveLink<Waiter> link;
     };
 
     // How the queue orders its waiters
@@ -183,5 +181,5 @@ private:
     }
 
     bool by_priority = false;
-    IntrusiveList<Waiter, &Waiter::link> waiters;
+    IntrusiveList<Waiter> waiters;
 };
