@@ -38,6 +38,6 @@ public:
     void free(const std::uint32_t offset, const std::uint32_t size);
     void reset();
 
-    // Count free bits in [offset, offset_end) (exclusive)
+    // Count free bits in [offset, offset_end) (exclusive), safe while another thread allocates or frees
     int free_slot_count(const std::uint32_t offset, const std::uint32_t offset_end) const;
 };
