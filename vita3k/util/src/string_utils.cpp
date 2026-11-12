@@ -24,16 +24,20 @@
 #include <codecvt>
 #include <locale>
 #include <ranges>
+#include <type_traits>
 
 namespace string_utils {
 
+// wchar_t is 16-bit UTF-16 on Windows, where code points above U+FFFF need a surrogate pair
+using WideCodecvt = std::conditional_t<sizeof(wchar_t) == 2, std::codecvt_utf8_utf16<wchar_t>, std::codecvt_utf8<wchar_t>>;
+
 std::wstring utf_to_wide(const std::string &str) {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+    std::wstring_convert<WideCodecvt> myconv;
     return myconv.from_bytes(str);
 }
 
 std::string wide_to_utf(const std::wstring &str) {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+    std::wstring_convert<WideCodecvt> myconv;
     return myconv.to_bytes(str);
 }
 

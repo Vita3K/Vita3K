@@ -30,9 +30,10 @@ if(NOT ANDROID)
 	add_executable(
 		util-tests
 		tests/intrusive_list_tests.cpp
+		tests/string_utils_tests.cpp
 	)
 
 	target_include_directories(util-tests PRIVATE include)
-	target_link_libraries(util-tests PRIVATE googletest)
+	target_link_libraries(util-tests PRIVATE googletest util)
 	add_test(NAME util COMMAND util-tests)
 endif()
