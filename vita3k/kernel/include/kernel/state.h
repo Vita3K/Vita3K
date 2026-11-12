@@ -114,11 +114,6 @@ struct KernelState {
     unsigned int tls_psize = 0;
     unsigned int tls_msize = 0;
 
-    Ptr<const void> thread_event_start = Ptr<const void>(0);
-    Address thread_event_start_arg = 0;
-    Ptr<const void> thread_event_end = Ptr<const void>(0);
-    Address thread_event_end_arg = 0;
-
     // Thread manager objects other than threads, by UID
     KernelObjects objects;
 
@@ -192,8 +187,7 @@ struct KernelState {
     // Kill all guest threads and block until they have exited. Must only be called from a host thread.
     void process_exit();
     std::function<void(int, std::optional<AppLaunchRequest>)> process_exit_callback;
-    // Request process exit. Safe to call from a guest thread. Returns immediately.
-    // The registered process_exit_callback is invoked to notify the host layer.
+    // Ends the app from any thread without waiting, with no thread mutex or object lock held
     void request_process_exit(int res, std::optional<AppLaunchRequest> relaunch = std::nullopt);
 
     void set_memory_watch(bool enabled);

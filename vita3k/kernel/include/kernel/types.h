@@ -34,6 +34,8 @@
 
 #define SCE_KERNEL_THREAD_EVENT_TYPE_START 0x04
 #define SCE_KERNEL_THREAD_EVENT_TYPE_END 0x08
+// The target of a thread event handler that runs for every thread of the process
+#define SCE_KERNEL_THREAD_ID_PROCESS_ALL_ID 0x10027
 
 #define SCE_KERNEL_GAME_DEFAULT_PRIORITY_ACTUAL 160
 

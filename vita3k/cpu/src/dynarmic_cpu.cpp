@@ -94,6 +94,7 @@ static constexpr bool LOG_INVALID_ACCESS = false;
 static constexpr Dynarmic::HaltReason HALT_STOP = Dynarmic::HaltReason::UserDefined1;
 static constexpr Dynarmic::HaltReason HALT_RETURN = Dynarmic::HaltReason::UserDefined2;
 static constexpr Dynarmic::HaltReason HALT_BREAKPOINT = Dynarmic::HaltReason::UserDefined3;
+static constexpr Dynarmic::HaltReason HALT_FAULT = Dynarmic::HaltReason::UserDefined4;
 static constexpr Dynarmic::HaltReason HALT_IMPORT = Dynarmic::HaltReason::UserDefined8;
 
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
@@ -236,8 +237,9 @@ public:
             cpu.set_pc(cpu.is_thumb_mode() ? pc | 1 : pc);
             break;
         case Dynarmic::A32::Exception::NoExecuteFault:
-            LOG_CRITICAL("PC is 0x{:x}, stopping thread {}\n{}", pc, cpu.thread_id, cpu.get_context().description());
-            [[fallthrough]];
+            LOG_CRITICAL("PC is 0x{:x} in thread {}, ending the app\n{}", pc, cpu.thread_id, cpu.get_context().description());
+            cpu.jit->HaltExecution(HALT_FAULT);
+            break;
         case Dynarmic::A32::Exception::WaitForInterrupt:
             cpu.jit->HaltExecution(HALT_RETURN);
             break;
@@ -324,6 +326,8 @@ GuestExit DynarmicCPU::run(RunMode mode) {
     // The NID is the word after the SVC. A stepped SVC reports the debugger stop with it.
     if (Dynarmic::Has(reason, HALT_IMPORT))
         return { GuestExit::Kind::import, *Ptr<uint32_t>(get_pc() + 4).get(mem), step };
+    if (Dynarmic::Has(reason, HALT_FAULT))
+        return { GuestExit::Kind::fault };
     // A run that halted stopped at the return address, and a step never returns
     if (!step && Dynarmic::Has(reason, HALT_RETURN))
         return { GuestExit::Kind::returned, get_reg(0) };

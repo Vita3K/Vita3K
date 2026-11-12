@@ -100,6 +100,8 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
 
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
     const std::lock_guard<std::mutex> thread_lock(thread_mutex);
+    if (running_event_handlers)
+        return SCE_KERNEL_ERROR_ILLEGAL_CONTEXT;
     if (status != ThreadStatus::dormant)
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     run_start_callback = run_entry_callback;
@@ -134,14 +136,22 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
 }
 
 void ThreadState::exit(SceInt32 status) {
-    const std::lock_guard<std::mutex> lock(thread_mutex);
-    request_ending(Ending::exit);
-    returned_value = static_cast<uint32_t>(status);
+    request_exit(Ending::exit, status);
 }
 
 void ThreadState::exit_delete(SceInt32 status) {
-    const std::lock_guard<std::mutex> lock(thread_mutex);
-    request_ending(Ending::exit_delete);
+    request_exit(Ending::exit_delete, status);
+}
+
+void ThreadState::request_exit(Ending how, SceInt32 status) {
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    if (callback_depth > 0 || running_event_handlers) {
+        lock.unlock();
+        LOG_CRITICAL("Thread {} exited inside a callback or a thread event handler, ending the app", id);
+        kernel.request_process_exit(0);
+        return;
+    }
+    request_ending(how);
     returned_value = static_cast<uint32_t>(status);
 }
 
@@ -197,20 +207,16 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
     // The thread is ending. One that ran ends here: an exit leaves it dormant, while a delete
     // makes it gone for guest calls before its end waiters wake.
     if (status != ThreadStatus::dormant && status != ThreadStatus::deleted) {
-        if (ending != Ending::remove && kernel.thread_event_end) {
-            // The thread is RUNNING here, since wait() puts it back to RUNNING. The handler runs
-            // guest code on it, which a pending ending would end at once, and an exit in the
-            // handler must not change the exit status.
-            const uint32_t old_returned_value = returned_value;
+        if (ending != Ending::remove) {
+            // The thread is RUNNING here, since wait() puts it back to RUNNING. The END handlers run
+            // guest code on it, which a pending ending would end at once. They see NOT_DORMANT as
+            // the exit status, and an exit in a handler doesn't change it.
+            const uint32_t exit_status = std::exchange(returned_value, SCE_KERNEL_ERROR_NOT_DORMANT);
             const Ending old_ending = ending;
             set_ending(Ending::none);
-            lock.unlock();
-            const int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
-            if (ret != 0)
-                LOG_WARN("Thread end event handler returned {}", log_hex(ret));
-            lock.lock();
-            returned_value = old_returned_value;
-            // Keep a stronger request made while the handler ran, like a teardown's remove
+            run_event_handlers(lock, SCE_KERNEL_THREAD_EVENT_TYPE_END);
+            returned_value = exit_status;
+            // Keep a stronger request made while the handlers ran, like a teardown's remove
             request_ending(old_ending);
         }
 
@@ -255,14 +261,9 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         if (exiting())
             return std::nullopt;
 
-        // The thread start event runs once per start
-        if (std::exchange(run_start_callback, false) && kernel.thread_event_start) {
-            lock.unlock();
-            const int ret = run_callback(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg });
-            if (ret != 0)
-                LOG_WARN("Thread start event handler returned {}", log_hex(ret));
-            lock.lock();
-        }
+        // The START handlers run once per start
+        if (std::exchange(run_start_callback, false))
+            run_event_handlers(lock, SCE_KERNEL_THREAD_EVENT_TYPE_START);
 
         // After the start event, which runs as a nested call, so this level's own value is published
         stopped_after_kernel_call = after_kernel_call;
@@ -297,6 +298,10 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
             break;
         case GuestExit::Kind::returned:
             break;
+        case GuestExit::Kind::fault:
+            // A fault in guest code ends the app, and the loop top then ends this thread
+            kernel.request_process_exit(0);
+            break;
         }
         // A host fault on protected guest memory, in guest code or in the import's host code
         if (const std::optional<Address> fault = cpu->take_abort())
@@ -317,7 +322,7 @@ std::optional<uint32_t> ThreadState::enter_guest(std::unique_lock<std::mutex> &l
     return run_guest(lock, true);
 }
 
-uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
+std::optional<uint32_t> ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(thread_mutex);
     const CPUContext caller = cpu->get_context();
     const std::optional<uint32_t> returned = enter_guest(lock, caller, fn, args);
@@ -329,11 +334,10 @@ uint32_t ThreadState::call_guest(Address fn, std::initializer_list<uint32_t> arg
     ctx.set_pc(caller.get_pc() | caller.thumb());
     ctx.cpsr = caller.cpsr;
     cpu->set_context(ctx);
-    // A call the thread's end cut short returns the exit status
-    return returned.value_or(returned_value);
+    return returned;
 }
 
-uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
+std::optional<uint32_t> ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> args) {
     std::unique_lock<std::mutex> lock(thread_mutex);
     CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
@@ -350,7 +354,7 @@ uint32_t ThreadState::run_callback(Address fn, std::initializer_list<uint32_t> a
     cpu->set_context(saved);
     cpu->set_tpidruro(tpidruro);
     tls_slot(TLS_VFP_EXCEPTION) = vfp_exception;
-    return returned.value_or(returned_value);
+    return returned;
 }
 
 void ThreadState::dispatch_abort(Address fault_addr) {
@@ -626,18 +630,20 @@ SceUInt32 ThreadState::process_callbacks() {
         }
         const Callback::Notification notification = std::exchange(cb->pending, {});
         ++cb->running_count;
+        ++callback_depth;
         lock.unlock();
-        const uint32_t ret = run_callback(cb->cb_func.address(),
+        const std::optional<uint32_t> ret = run_callback(cb->cb_func.address(),
             { static_cast<uint32_t>(notification.notifier_id), notification.count, static_cast<uint32_t>(notification.arg), cb->userdata.address() });
         ++processed;
         lock.lock();
         --cb->running_count;
-        // A callback that exits the thread ends the pass, and the thread's end deletes its callbacks
-        // with their notifications. The call then gives the exit status, not a return value.
+        --callback_depth;
+        // An end of the app during the callback ends the pass, and the thread's end deletes its
+        // callbacks with their notifications. A call cut short only comes with an end.
         const bool ending = exiting();
         // A nonzero return deletes the callback. A delete during the run takes effect once the last
         // run ends.
-        if (!ending && ret != 0)
+        if (!ending && *ret != 0)
             cb->deleted = true;
         const bool remove_now = cb->deleted && cb->running_count == 0;
         lock.unlock();
@@ -647,6 +653,31 @@ SceUInt32 ThreadState::process_callbacks() {
             break;
     }
     return processed;
+}
+
+bool ThreadState::in_event_handler() const {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    return running_event_handlers;
+}
+
+void ThreadState::run_event_handlers(std::unique_lock<std::mutex> &lock, SceUInt32 type) {
+    lock.unlock();
+    // The handlers in UID order, which is the registration order
+    SceUID last = 0;
+    while (const auto handler = kernel.objects.find_if<ThreadEventHandler>([&](const ThreadEventHandler &h) { return h.uid > last && h.runs_for(id, type); })) {
+        last = handler->uid;
+        // A release or an unregister since the pick skips the handler
+        if (!handler->claim_run())
+            continue;
+        // Set before the handler calls, so with no handler a start racing this one gets NOT_DORMANT
+        lock.lock();
+        running_event_handlers = true;
+        lock.unlock();
+        // A nonzero return unregisters the handler, and its UID stays
+        handler->end_run(run_callback(handler->handler, { type, static_cast<uint32_t>(id), 0, handler->common }));
+    }
+    lock.lock();
+    running_event_handlers = false;
 }
 
 SceKernelThreadInfo ThreadState::info() {

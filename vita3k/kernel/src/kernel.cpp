@@ -33,6 +33,8 @@
 #include <SDL3/SDL_mutex.h>
 #include <SDL3/SDL_thread.h>
 
+#include <utility>
+
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
 
@@ -205,6 +207,13 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 }
 
 void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> relaunch) {
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        if (std::exchange(process_exiting, true))
+            return;
+        for (auto &[_, thread] : threads)
+            thread->remove();
+    }
     if (process_exit_callback)
         process_exit_callback(res, std::move(relaunch));
 }
@@ -266,11 +275,6 @@ void KernelState::deinit(MemState &mem) {
     tls_address = Ptr<const void>(0);
     tls_psize = 0;
     tls_msize = 0;
-
-    thread_event_start = Ptr<const void>(0);
-    thread_event_start_arg = 0;
-    thread_event_end = Ptr<const void>(0);
-    thread_event_end_arg = 0;
 
     codec_blocks.clear();
 

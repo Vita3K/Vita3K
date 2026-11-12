@@ -47,6 +47,8 @@ struct GuestExit {
         import,
         // A request_stop(), a breakpoint or a finished step
         stopped,
+        // Guest code fetched from memory it may not run
+        fault,
     };
     Kind kind;
     uint32_t value = 0;

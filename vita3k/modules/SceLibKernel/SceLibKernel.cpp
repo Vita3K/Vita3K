@@ -1337,9 +1337,8 @@ EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 
 EXPORT(int, sceKernelExitProcess, int res) {
     TRACY_FUNC(sceKernelExitProcess, res);
+    // Every thread stops at once, the caller too
     emuenv.kernel.request_process_exit(res);
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    thread->exit(res);
     return SCE_KERNEL_OK;
 }
 
@@ -1715,7 +1714,7 @@ EXPORT(SceInt32, sceKernelReceiveMsgPipeVectorCB, SceUID msgPipeId, const MsgPip
     return receive_msg_pipe_vector(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, true);
 }
 
-EXPORT(int, sceKernelRegisterThreadEventHandler, const char *name, SceUID thread_mask, SceUInt32 mask, Ptr<const void> handler, Address common) {
+EXPORT(int, sceKernelRegisterThreadEventHandler, Ptr<const char> name, SceUID thread_mask, SceUInt32 mask, Ptr<const void> handler, Address common) {
     TRACY_FUNC(sceKernelRegisterThreadEventHandler, name, thread_mask, mask, handler, common);
     sceKernelRegisterThreadEventHandlerOpt handler_opt = {
         .handler = handler,
