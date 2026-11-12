@@ -261,7 +261,10 @@ EXPORT(SceUID, _sceKernelCreateEventFlag, const char *pName, SceUInt32 attr, Sce
 
 EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const char *name, SceUInt attr, Ptr<SceKernelCreateLwCond_opt> opt) {
     TRACY_FUNC(_sceKernelCreateLwCond, workarea, name, attr, opt);
-    const auto assoc_mutex_uid = opt.get(emuenv.mem)->workarea_mutex.get(emuenv.mem)->uid;
+    const Ptr<SceKernelLwMutexWork> mutex_work = opt.get(emuenv.mem)->workarea_mutex;
+    if (!workarea || !mutex_work)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    const auto assoc_mutex_uid = mutex_work.get(emuenv.mem)->uid;
 
     if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
         return RET_ERROR(error);
