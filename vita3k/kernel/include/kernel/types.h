@@ -1055,6 +1055,16 @@ struct SceKernelThreadInfo {
     SceInt32 reserved;
 };
 
+struct SceKernelThreadRunStatus {
+    SceSize size;
+    // The thread each core runs
+    struct {
+        SceUID processId;
+        SceUID threadId;
+        SceInt32 priority;
+    } cpuInfo[4];
+};
+
 struct SceKernelThreadCpuRegisterInfo {
     SceSize size;
     SceUInt32 cpsr;

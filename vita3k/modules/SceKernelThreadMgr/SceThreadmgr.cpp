@@ -751,9 +751,20 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetThreadRunStatus) {
-    TRACY_FUNC(_sceKernelGetThreadRunStatus);
-    return UNIMPLEMENTED();
+// Fills only the caller's core, the other entries keep what the caller passed since Vita3K doesn't know what those cores run
+EXPORT(SceInt32, _sceKernelGetThreadRunStatus, SceKernelThreadRunStatus *status, const SceSize *size) {
+    TRACY_FUNC(_sceKernelGetThreadRunStatus, status, size);
+    if (!status || !size)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    if (*size > sizeof(*status))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+    const SceKernelThreadInfo info = emuenv.kernel.get_thread(thread_id)->info();
+    SceKernelThreadRunStatus record{};
+    memcpy(&record, status, *size);
+    record.size = sizeof(record);
+    record.cpuInfo[info.lastExecutedCpuId] = { info.processId, thread_id, info.currentPriority };
+    memcpy(status, &record, *size);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetTimerBase) {
