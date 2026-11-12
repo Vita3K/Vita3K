@@ -227,16 +227,18 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
         kernel.objects.for_each<RWLock>([&](RWLock &rwlock) { rwlock.release_ended_writer(*this); });
         kernel.objects.for_each<EventFlag>([&](EventFlag &flag) { flag.release_ended_holder(*this); });
         // The callbacks the thread created end with it, with their pending notifications
-        while (const CallbackPtr cb = kernel.objects.find_if<Callback>([&](const Callback &c) { return c.thread_id == id; }))
-            kernel.objects.remove<Callback>(cb->uid, id);
+        lock.lock();
+        while (!callbacks.empty())
+            close_callback(callbacks.front());
+        lock.unlock();
         // The end waiters see the status and the exit status together. Both locks stay held until
         // they are woken, so a start can't come in between.
         const auto end_guard = this->lock();
         lock.lock();
         update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
-        end_waiters.wake_if([&](auto &waiter) {
-            if (waiter.entry.exit_status)
-                *waiter.entry.exit_status = static_cast<SceInt32>(returned_value);
+        waiters.wake_if([&](auto &waiter) {
+            if (waiter.wait_request().out_status)
+                *waiter.wait_request().out_status = static_cast<SceInt32>(returned_value);
             return true;
         });
     }
@@ -406,7 +408,7 @@ SceInt32 ThreadState::delay_until(Deadline deadline, bool callbacks) {
     if (callbacks && has_pending_callbacks())
         return r;
     while (r == SCE_KERNEL_OK) {
-        r = wait({ .type = SCE_KERNEL_WAITTYPE_DELAY, .callbacks = callbacks }, deadline);
+        r = wait({ .type = wait_type(SCE_KERNEL_WAITTYPE_DELAY, callbacks) }, deadline);
         if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             r = run_callbacks();
     }
@@ -426,7 +428,7 @@ SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
         {
             // A signal wait sleeps with a callback pending, only a notify during the sleep ends it
             std::unique_lock<std::mutex> lock(thread_mutex);
-            r = sleep(lock, { SCE_KERNEL_WAITTYPE_SIGNAL, SCE_KERNEL_SIGNAL_WAIT_ID, callbacks }, deadline);
+            r = sleep(lock, { wait_type(SCE_KERNEL_WAITTYPE_SIGNAL, callbacks), SCE_KERNEL_SIGNAL_WAIT_ID }, deadline);
         }
         writeback_timeout(timeout, deadline);
         if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
@@ -517,20 +519,29 @@ SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32
     auto guard = lock();
     // An ended run gives its exit status at once with the timeout as it was. No callback runs after
     // the wait, and a thread is never deleted from the object table.
-    return wait_loop(end_waiters, guard, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id, callbacks }, EndWaitEntry{ exit_status }, timeout, CallbacksCheck::on_delete, [&](EndWaitEntry &entry, SceInt32) -> std::optional<SceInt32> {
-        const std::lock_guard<std::mutex> thread_lock(thread_mutex);
-        if (status != ThreadStatus::dormant && status != ThreadStatus::deleted)
-            return std::nullopt;
-        if (entry.exit_status)
-            *entry.exit_status = static_cast<SceInt32>(returned_value);
-        return SCE_KERNEL_OK;
-    });
+    const SceUInt32 type = wait_type(SCE_KERNEL_WAITTYPE_WAITTHEND, callbacks);
+    const Deadline deadline = deadline_from(timeout);
+    while (true) {
+        if (const SceInt32 r = run_wait_callbacks(guard, *waiter, callbacks))
+            return r;
+        {
+            const std::lock_guard<std::mutex> thread_lock(thread_mutex);
+            if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
+                if (exit_status)
+                    *exit_status = static_cast<SceInt32>(returned_value);
+                return SCE_KERNEL_OK;
+            }
+        }
+        const SceInt32 result = Waitable::wait(waiters, guard, *waiter, type, { .out_status = exit_status }, deadline, timeout);
+        if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+            return result;
+    }
 }
 
 SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(thread_mutex);
     // A callback already pending ends a wait with callbacks at once, unless the deadline passed
-    if (!wait_result && target.callbacks && callback_pending && std::chrono::steady_clock::now() < deadline)
+    if (!wait_result && (target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && callback_pending && std::chrono::steady_clock::now() < deadline)
         wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     return sleep(lock, target, deadline);
 }
@@ -579,7 +590,7 @@ void ThreadState::notify_callback(Callback &cb, SceInt32 arg) {
     // Every notify reaches the owner, also one of a deleted callback that still runs, and ends a wait
     // with callbacks
     callback_pending = true;
-    if (wait_target.callbacks && !wait_result)
+    if ((wait_target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && !wait_result)
         wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     cv.notify_all();
 }
@@ -594,16 +605,26 @@ Callback::Notification ThreadState::callback_notifications(const Callback &cb) {
     return cb.pending;
 }
 
-bool ThreadState::delete_callback(Callback &cb, SceUID deleter) {
-    std::unique_lock<std::mutex> lock(thread_mutex);
+SceUID ThreadState::add_callback(const CallbackPtr &cb) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    const SceUID uid = kernel.objects.add(cb, kernel.get_next_uid());
+    callbacks.push_back(*cb);
+    return uid;
+}
+
+bool ThreadState::delete_callback(Callback &cb) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
     if (std::exchange(cb.deleted, true))
         return false;
-    // A run going on keeps the UID, and the end of the last run removes it
-    const bool remove_now = cb.running_count == 0;
-    lock.unlock();
-    if (remove_now)
-        kernel.objects.remove<Callback>(cb.uid, deleter);
+    // A run going on keeps the callback, and the end of its last run closes it
+    if (cb.running_count == 0)
+        close_callback(cb);
     return true;
+}
+
+void ThreadState::close_callback(Callback &cb) {
+    callbacks.remove(cb);
+    kernel.objects.remove<Callback>(cb.uid, id);
 }
 
 bool ThreadState::has_pending_callbacks() {
@@ -616,27 +637,24 @@ SceUInt32 ThreadState::process_callbacks() {
     // The pass clears the flag first, so a notify during the pass leaves it set
     if (!std::exchange(callback_pending, false))
         return 0;
-    lock.unlock();
     SceUInt32 processed = 0;
-    SceUID last = 0;
-    // The thread's callbacks in UID order, which is their creation order. The next one is looked up
-    // after each run, so a pass inside a callback can't disturb this one.
-    while (const CallbackPtr cb = kernel.objects.find_if<Callback>([&](const Callback &c) { return c.uid > last && c.thread_id == id; })) {
-        last = cb->uid;
-        lock.lock();
-        if (cb->deleted || cb->pending.count == 0) {
-            lock.unlock();
+    // The thread's callbacks in creation order
+    for (auto it = callbacks.begin(); it != callbacks.end();) {
+        Callback &cb = *it;
+        if (cb.deleted || cb.pending.count == 0) {
+            ++it;
             continue;
         }
-        const Callback::Notification notification = std::exchange(cb->pending, {});
-        ++cb->running_count;
+        const Callback::Notification notification = std::exchange(cb.pending, {});
+        // The run keeps the callback listed and its UID valid
+        ++cb.running_count;
         ++callback_depth;
         lock.unlock();
-        const std::optional<uint32_t> ret = run_callback(cb->cb_func.address(),
-            { static_cast<uint32_t>(notification.notifier_id), notification.count, static_cast<uint32_t>(notification.arg), cb->userdata.address() });
+        const std::optional<uint32_t> ret = run_callback(cb.cb_func.address(),
+            { static_cast<uint32_t>(notification.notifier_id), notification.count, static_cast<uint32_t>(notification.arg), cb.userdata.address() });
         ++processed;
         lock.lock();
-        --cb->running_count;
+        --cb.running_count;
         --callback_depth;
         // An end of the app during the callback ends the pass, and the thread's end deletes its
         // callbacks with their notifications. A call cut short only comes with an end.
@@ -644,11 +662,11 @@ SceUInt32 ThreadState::process_callbacks() {
         // A nonzero return deletes the callback. A delete during the run takes effect once the last
         // run ends.
         if (!ending && *ret != 0)
-            cb->deleted = true;
-        const bool remove_now = cb->deleted && cb->running_count == 0;
-        lock.unlock();
-        if (remove_now)
-            kernel.objects.remove<Callback>(cb->uid, id);
+            cb.deleted = true;
+        // The next one is read after the run, since a pass inside the callback may have closed it
+        ++it;
+        if (cb.deleted && cb.running_count == 0)
+            close_callback(cb);
         if (ending)
             break;
     }
@@ -662,20 +680,32 @@ bool ThreadState::in_event_handler() const {
 
 void ThreadState::run_event_handlers(std::unique_lock<std::mutex> &lock, SceUInt32 type) {
     lock.unlock();
-    // The handlers in UID order, which is the registration order
-    SceUID last = 0;
-    while (const auto handler = kernel.objects.find_if<ThreadEventHandler>([&](const ThreadEventHandler &h) { return h.uid > last && h.runs_for(id, type); })) {
-        last = handler->uid;
-        // A release or an unregister since the pick skips the handler
-        if (!handler->claim_run())
+    std::unique_lock<std::mutex> list_lock(kernel.thread_event_handlers_mutex);
+    for (auto it = kernel.thread_event_handlers.begin(); it != kernel.thread_event_handlers.end();) {
+        ThreadEventHandler &handler = *it;
+        if (!handler.runs_for(id, type)) {
+            ++it;
             continue;
+        }
+        // The run keeps the handler alive and listed
+        const ThreadEventHandlerPtr running = handler.shared_from_this();
+        ++handler.runs;
+        list_lock.unlock();
         // Set before the handler calls, so with no handler a start racing this one gets NOT_DORMANT
         lock.lock();
         running_event_handlers = true;
         lock.unlock();
-        // A nonzero return unregisters the handler, and its UID stays
-        handler->end_run(run_callback(handler->handler, { type, static_cast<uint32_t>(id), 0, handler->common }));
+        const std::optional<uint32_t> ret = run_callback(handler.handler, { type, static_cast<uint32_t>(id), 0, handler.common });
+        list_lock.lock();
+        --handler.runs;
+        // A nonzero return deletes the handler, and its UID stays
+        if (ret && *ret != 0)
+            handler.deleted = true;
+        ++it;
+        if (handler.deleted && handler.runs == 0)
+            kernel.thread_event_handlers.remove(handler);
     }
+    list_lock.unlock();
     lock.lock();
     running_event_handlers = false;
 }
@@ -698,7 +728,7 @@ SceKernelThreadInfo ThreadState::info() {
     const bool ready = status == ThreadStatus::waiting && !host_waiting && wait_over();
     const WaitTarget reported = ready ? WaitTarget{} : wait_target;
     info.status = ready ? SCE_KERNEL_THREAD_STATUS_READY : std::to_underlying(shown_status());
-    info.waitType = reported.callbacks ? reported.type | SCE_KERNEL_WAITTYPE_CB_BIT : reported.type;
+    info.waitType = reported.type;
     info.waitId = reported.id;
     info.exitStatus = returned_value;
     info.fNotifyCallback = callback_pending ? 1 : 0;

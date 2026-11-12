@@ -32,10 +32,6 @@ enum SceDisplayPixelFormat {
     SCE_DISPLAY_PIXELFORMAT_A8B8G8R8 = 0x00000000U
 };
 
-struct VBlankWaitEntry {
-    uint64_t target_vcount;
-};
-
 struct DisplayFrameInfo {
     Ptr<const void> base;
     uint32_t pitch = 0;
@@ -69,7 +65,7 @@ struct DisplayState {
     std::atomic<bool> imgui_render{ true };
     std::atomic<bool> fullscreen{ false };
     std::atomic<std::uint64_t> vblank_count{ 0 };
-    WaitQueue<VBlankWaitEntry> vblank_waiters;
+    WaitQueue vblank_waiters;
     std::atomic<uint64_t> last_setframe_vblank_count = 0;
     // The UIDs of the callbacks to notify at each vblank start
     std::set<SceUID> vblank_callbacks{};
