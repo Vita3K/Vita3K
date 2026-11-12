@@ -107,7 +107,14 @@ void set_keyboard_active(bool active) {
 
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
     jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+    if (!env || !activity)
+        return;
+
     jclass clazz = env->GetObjectClass(activity);
+    if (!clazz) {
+        env->DeleteLocalRef(activity);
+        return;
+    }
     jmethodID method_id = env->GetMethodID(clazz, "setKeyboardActive", "(Z)V");
     if (method_id)
         env->CallVoidMethod(activity, method_id, static_cast<jboolean>(active));

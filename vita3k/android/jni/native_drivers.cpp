@@ -168,7 +168,15 @@ Java_org_vita3k_emulator_NativeLib_getInstalledCustomDrivers(JNIEnv *env, jclass
     const auto drivers = driver_root ? list_installed_custom_drivers(*driver_root) : std::vector<std::string>{};
 
     jclass string_class = env->FindClass("java/lang/String");
+    if (!string_class)
+        return nullptr;
+
     jobjectArray result = env->NewObjectArray(static_cast<jsize>(drivers.size()), string_class, nullptr);
+    if (!result) {
+        env->DeleteLocalRef(string_class);
+        return nullptr;
+    }
+    env->DeleteLocalRef(string_class);
     for (jsize index = 0; index < static_cast<jsize>(drivers.size()); ++index) {
         jstring value = env->NewStringUTF(drivers[index].c_str());
         env->SetObjectArrayElement(result, index, value);
@@ -233,8 +241,9 @@ Java_org_vita3k_emulator_NativeLib_removeCustomDriver(JNIEnv *env, jclass, jstri
         return JNI_FALSE;
 
     const std::string driver_name = jstring_to_string(env, driver_name_str);
-    if (driver_name.empty()) {
-        LOG_ERROR("Refusing to remove a custom driver with an empty name");
+    if (driver_name.empty() || driver_name == "." || driver_name == ".."
+        || driver_name.find('/') != std::string::npos || driver_name.find('\\') != std::string::npos) {
+        LOG_ERROR("Refusing to remove a custom driver with an unsafe name: {}", driver_name);
         return JNI_FALSE;
     }
 
