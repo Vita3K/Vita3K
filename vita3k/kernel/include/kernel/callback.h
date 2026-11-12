@@ -19,13 +19,13 @@
 
 #include <kernel/kernel_object.h>
 #include <kernel/types.h>
+#include <util/intrusive_list.h>
 
 #include <memory>
-#include <optional>
 
-// A callback a thread created, which only that thread runs. Its notifications and runs are guarded
-// by the owner's mutex, and the owner's callback calls change them.
-class Callback final : public WithUidClass<KernelObject, UidClass::callback> {
+// A callback a thread created, which only that thread runs. Its notifications, runs and link in the
+// owner's list are guarded by the owner's mutex, and the owner's callback calls change them.
+class Callback final : public WithUidClass<KernelObject, UidClass::callback>, public IntrusiveLink<Callback> {
 public:
     // The notifications since the callback last ran, which its function receives
     struct Notification {
@@ -57,19 +57,14 @@ private:
 
 using CallbackPtr = std::shared_ptr<Callback>;
 
-// A registered thread event handler, run on the threads of target for the event types in mask
-class ThreadEventHandler final : public WithUidClass<KernelObject, UidClass::thread_event> {
+// A registered thread event handler, run on the threads of target for the event types in mask. Its
+// deleted flag, its runs and its link in the kernel's list are guarded by the list's mutex.
+class ThreadEventHandler final : public WithUidClass<KernelObject, UidClass::thread_event>, public IntrusiveLink<ThreadEventHandler>, public std::enable_shared_from_this<ThreadEventHandler> {
 public:
     ThreadEventHandler(const char *name, SceUID target, SceUInt32 mask, Address handler, Address common);
 
-    // Whether the handler runs on the thread for an event of type. With the lock held.
+    // Whether the handler runs on the thread for an event of type
     bool runs_for(SceUID thread_id, SceUInt32 type) const;
-    // Starts a run of the handler. False if it was released or unregistered.
-    bool claim_run();
-    // Ends a run of the handler. A nonzero return releases it, a call cut short doesn't.
-    void end_run(std::optional<uint32_t> ret);
-    // Releases the handler for an unregister. False if a run released it and no run of it is left.
-    bool release();
 
     // A thread UID, or SCE_KERNEL_THREAD_ID_PROCESS_ALL_ID for every thread of the process
     const SceUID target;
@@ -77,10 +72,11 @@ public:
     const Address handler;
     const Address common;
 
-private:
-    // Set by a run that returned nonzero, which unregisters it. Its UID stays with its class once
-    // no run of it is left.
-    bool released = false;
+    // Set by an unregister or by a run that returned nonzero. No new run starts, and the handler
+    // is unlisted once no run of it is left.
+    bool deleted = false;
     // The runs of the handler going on, on any thread
     int runs = 0;
 };
+
+using ThreadEventHandlerPtr = std::shared_ptr<ThreadEventHandler>;

@@ -240,7 +240,7 @@ EXPORT(SceInt32, _sceKernelCancelTimer, SceUID timerId, SceUInt32 *pNumWaitThrea
 
 EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam) {
     TRACY_FUNC(_sceKernelCreateCond, pName, attr, mutexId, pOptParam);
-    if (const SceInt32 error = SyncPrimitive::check_name(pName, attr))
+    if (const SceInt32 error = Waitable::check_name(pName, attr))
         return RET_ERROR(error);
     const MutexPtr mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexId);
     if (!mutex)
@@ -266,7 +266,7 @@ EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const cha
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const auto assoc_mutex_uid = mutex_work.get(emuenv.mem)->uid;
 
-    if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
+    if (const SceInt32 error = Waitable::check_name(name, attr))
         return RET_ERROR(error);
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(assoc_mutex_uid);
     if (!mutex)
@@ -351,7 +351,7 @@ EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, Sc
 
 EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint32_t *opt_params) {
     TRACY_FUNC(_sceKernelCreateTimer, name, attr, opt_params);
-    if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
+    if (const SceInt32 error = Waitable::check_name(name, attr))
         return RET_ERROR(error);
 
     const auto timer = std::make_shared<Timer>(attr, name, thread_id);
@@ -967,7 +967,7 @@ EXPORT(SceUID, _sceKernelRegisterThreadEventHandler, Ptr<const char> name, SceUI
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     if (!is_valid_addr(emuenv.mem, opt->handler.address() & ~1))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    return emuenv.kernel.objects.add(std::make_shared<ThreadEventHandler>(name_copy, target, mask, opt->handler.address(), opt->common), emuenv.kernel.get_next_uid());
+    return emuenv.kernel.register_thread_event_handler(std::make_shared<ThreadEventHandler>(name_copy, target, mask, opt->handler.address(), opt->common));
 }
 
 EXPORT(int, _sceKernelSendMsgPipeVector) {
@@ -1409,7 +1409,8 @@ EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Pt
     if (!is_valid_addr(emuenv.mem, callbackFunc.address() & ~1))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    return emuenv.kernel.objects.add(std::make_shared<Callback>(thread_id, name_copy, callbackFunc, pCommon), emuenv.kernel.get_next_uid());
+    const CallbackPtr cb = std::make_shared<Callback>(thread_id, name_copy, callbackFunc, pCommon);
+    return emuenv.kernel.get_thread(thread_id)->add_callback(cb);
 }
 
 // Whether a game may create a thread with this priority, absolute or relative to the default one
@@ -1502,7 +1503,7 @@ EXPORT(int, sceKernelDeleteCallback, SceUID callbackId) {
     const ThreadStatePtr owner = emuenv.kernel.get_thread(cb->thread_id);
     if (!owner)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    if (!owner->delete_callback(*cb, thread_id))
+    if (!owner->delete_callback(*cb))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
     return 0;
 }
@@ -1981,9 +1982,9 @@ EXPORT(SceInt32, sceKernelUnregisterThreadEventHandler, SceUID uid) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_EVENT_ID);
     if (emuenv.kernel.get_thread(thread_id)->in_event_handler())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CONTEXT);
-    // A registration a run released keeps its UID once no run of it is left, but no call finds it
+    // A handler deleted by its own return value keeps its UID, but no call finds it
     const auto handler = emuenv.kernel.objects.find<ThreadEventHandler>(uid);
-    if (!handler || !handler->release() || !emuenv.kernel.objects.remove<ThreadEventHandler>(uid, thread_id))
+    if (!handler || !emuenv.kernel.unregister_thread_event_handler(*handler) || !emuenv.kernel.objects.remove<ThreadEventHandler>(uid, thread_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_EVENT_ID);
     return SCE_KERNEL_OK;
 }

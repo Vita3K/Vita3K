@@ -84,7 +84,7 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             }
 
             display.vblank_waiters.wake_if([&](auto &waiter) {
-                return waiter.entry.target_vcount <= display.vblank_count;
+                return waiter.wait_request().vcount <= display.vblank_count;
             });
         }
         const auto time_ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -103,12 +103,26 @@ void wait_vblank(DisplayState &display, const ThreadStatePtr &wait_thread, const
     }
 
     std::unique_lock<std::mutex> lock(display.mutex);
-
-    if (target_vcount <= display.vblank_count)
-        return;
-
-    // Nothing runs after the wait, so a thread exiting during it needs no handling here
-    (void)display.vblank_waiters.wait(lock, wait_thread, { .type = SCE_KERNEL_WAITTYPE_EVENT, .callbacks = is_cb }, { target_vcount }, Deadline::max());
+    // The thread leaves the queue to run its callbacks, and queues again after them if its vblank
+    // hasn't come yet. Nothing runs after the wait, so a thread exiting during it just returns.
+    while (target_vcount > display.vblank_count) {
+        display.vblank_waiters.push(*wait_thread, { .vcount = target_vcount });
+        SceInt32 r;
+        // Ignore stray wakeups, like one left over from an earlier wait
+        do {
+            lock.unlock();
+            r = wait_thread->wait({ .type = wait_type(SCE_KERNEL_WAITTYPE_EVENT, is_cb) }, Deadline::max());
+            lock.lock();
+        } while (!wait_thread->ender_result && r == SCE_KERNEL_OK);
+        display.vblank_waiters.remove(*wait_thread);
+        if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
+            lock.unlock();
+            r = wait_thread->run_callbacks();
+            lock.lock();
+        }
+        if (r != SCE_KERNEL_OK)
+            return;
+    }
 }
 
 static void reset_swapchain_cycle(DisplayState &display, Address sync_object) {

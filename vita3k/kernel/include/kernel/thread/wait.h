@@ -25,14 +25,44 @@ using Deadline = std::chrono::steady_clock::time_point;
 
 // What a waiting thread is blocked on, as sceKernelGetThreadInfo reports it.
 struct WaitTarget {
-    // One of SCE_KERNEL_WAITTYPE_*, or 0 if not waiting
+    // One of SCE_KERNEL_WAITTYPE_*, or 0 if not waiting, with SCE_KERNEL_WAITTYPE_CB_BIT for a wait
+    // with callbacks
     SceUInt32 type = 0;
     // UID of the object waited on, or -1 if there is none, like for a delay
     SceUID id = -1;
-    // The wait is the variant with callbacks, which runs notified callbacks and reports its type
-    // with the callback bit
-    bool callbacks = false;
 };
+
+struct MsgPipeSender;
+struct MsgPipeReceiver;
+
+// What a waiting thread asked for, which the wakers of the object it waits on read
+struct WaitRequest {
+    // The semaphore count it needs, or the mutex lock count it takes
+    SceInt32 count = 0;
+    // An rwlock write lock
+    bool write = false;
+    // The event or event flag bits it waits for
+    SceUInt32 pattern = 0;
+    // The event flag wait mode
+    SceUInt32 mode = 0;
+    // Where the event or event flag bits go, or null
+    SceUInt32 *out_pattern = nullptr;
+    // Where the event user data goes, or null
+    SceUInt64 *out_user_data = nullptr;
+    // Where the exit status of the thread it waits for goes, or null
+    SceInt32 *out_status = nullptr;
+    // The message pipe transfer of a send, or null
+    MsgPipeSender *sender = nullptr;
+    // The message pipe transfer of a receive, or null
+    MsgPipeReceiver *receiver = nullptr;
+    // The vblank count a display wait waits for
+    uint64_t vcount = 0;
+};
+
+// Returns the wait type with the callback bit if callbacks is set.
+constexpr SceUInt32 wait_type(SceUInt32 type, bool callbacks) {
+    return callbacks ? type | SCE_KERNEL_WAITTYPE_CB_BIT : type;
+}
 
 // Converts a guest timeout in microseconds into a deadline. A null timeout waits forever.
 inline Deadline deadline_from(const SceUInt32 *timeout) {

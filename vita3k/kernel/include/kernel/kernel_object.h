@@ -56,39 +56,11 @@ public:
     virtual UidClass get_uid_class() const = 0;
     // Whether open calls find the object by its name.
     virtual bool is_openable() const { return false; }
+    // Ends what the object is doing when the thread deleter deletes it, which happens once
+    virtual void on_delete(SceUID deleter) {}
 
     SceUID uid{};
     char name[SCE_UID_NAMELEN + 1] = {};
-
-protected:
-    // Locks the object, which guards its fields. The lock is empty if the object was deleted. Only
-    // the object's own methods take it.
-    [[nodiscard]] std::unique_lock<std::mutex> lock() const {
-        std::unique_lock<std::mutex> guard(mutex);
-        if (deleted)
-            guard.unlock();
-        return guard;
-    }
-
-    // Ends what the object is doing when the thread deleter deletes it. Runs once, with the lock held.
-    virtual void on_delete(SceUID deleter) {}
-
-    // Whether the object was deleted. With the lock held.
-    bool was_deleted() const { return deleted; }
-
-private:
-    friend class KernelObjects;
-
-    // Marks the object deleted by the thread deleter and runs on_delete().
-    void mark_deleted(SceUID deleter) {
-        const std::lock_guard<std::mutex> guard(mutex);
-        assert(!deleted);
-        deleted = true;
-        on_delete(deleter);
-    }
-
-    mutable std::mutex mutex;
-    bool deleted = false;
 };
 
 // Base of a kernel object type with a single class, which uid_class names.
@@ -143,8 +115,8 @@ public:
         return std::static_pointer_cast<T>(it->second);
     }
 
-    // Removes the T with this UID, so no later lookup finds it, then marks it deleted by the thread
-    // deleter. Returns false if there is none.
+    // Removes the T with this UID, so no later lookup finds it, then runs its on_delete() for the
+    // thread deleter. Returns false if there is none.
     template <KernelObjectClass T>
     bool remove(SceUID uid, SceUID deleter) {
         std::shared_ptr<KernelObject> obj;
@@ -156,32 +128,18 @@ public:
             obj = std::move(objects.extract(it).mapped());
         }
         // Without the table lock, so lookups never wait for on_delete()
-        obj->mark_deleted(deleter);
+        obj->on_delete(deleter);
         return true;
     }
 
-    // Returns the first T, in UID order, that pick accepts, or null. pick runs with the table and the object locked.
-    template <KernelObjectClass T>
-    [[nodiscard]] std::shared_ptr<T> find_if(std::predicate<const T &> auto pick) const {
-        const std::lock_guard<std::mutex> lock(mutex);
-        for (const auto &[_, obj] : objects) {
-            if (obj->get_uid_class() != T::uid_class)
-                continue;
-            const std::lock_guard<std::mutex> obj_lock(obj->mutex);
-            if (pick(static_cast<const T &>(*obj)))
-                return std::static_pointer_cast<T>(obj);
-        }
-        return nullptr;
-    }
-
-    // Calls fn on every T, in UID order, with the table locked. No T is deleted meanwhile, and fn
-    // locks the ones it reads.
+    // Calls fn on every T, in UID order. The table isn't locked while fn runs, so fn can meet a T
+    // deleted meanwhile, and fn locks the ones it reads.
     template <KernelObjectClass T>
     void for_each(std::invocable<T &> auto fn) const {
-        const std::lock_guard<std::mutex> lock(mutex);
-        for (const auto &[_, obj] : objects) {
-            if (obj->get_uid_class() == T::uid_class)
-                fn(static_cast<T &>(*obj));
+        SceUID last = 0;
+        while (const std::shared_ptr<KernelObject> obj = next<T>(last)) {
+            last = obj->uid;
+            fn(static_cast<T &>(*obj));
         }
     }
 
@@ -203,6 +161,18 @@ private:
         return it;
     }
 
+    // Returns the first T with a UID above last, or null.
+    template <KernelObjectClass T>
+    std::shared_ptr<KernelObject> next(SceUID last) const {
+        const std::lock_guard<std::mutex> lock(mutex);
+        for (auto it = objects.upper_bound(last); it != objects.end(); ++it) {
+            if (it->second->get_uid_class() == T::uid_class)
+                return it->second;
+        }
+        return nullptr;
+    }
+
+    // Held for one step on the table only, so it can be taken under any other kernel lock
     mutable std::mutex mutex;
     Map objects;
 };

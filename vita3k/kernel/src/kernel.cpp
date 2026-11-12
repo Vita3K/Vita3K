@@ -230,6 +230,23 @@ void KernelState::process_exit() {
     thread_deleted_cond.wait(lock, [this] { return threads.empty(); });
 }
 
+SceUID KernelState::register_thread_event_handler(const ThreadEventHandlerPtr &handler) {
+    const std::lock_guard<std::mutex> lock(thread_event_handlers_mutex);
+    const SceUID uid = objects.add(handler, get_next_uid());
+    thread_event_handlers.push_back(*handler);
+    return uid;
+}
+
+bool KernelState::unregister_thread_event_handler(ThreadEventHandler &handler) {
+    const std::lock_guard<std::mutex> lock(thread_event_handlers_mutex);
+    if (!handler.linked())
+        return false;
+    handler.deleted = true;
+    if (handler.runs == 0)
+        thread_event_handlers.remove(handler);
+    return true;
+}
+
 void KernelState::set_threads_paused(bool paused) {
     const std::lock_guard<std::mutex> lock(mutex);
     if (threads_paused == paused)
@@ -251,6 +268,11 @@ void KernelState::deinit(MemState &mem) {
     process_exit();
     threads.clear();
 
+    {
+        const std::lock_guard<std::mutex> lock(thread_event_handlers_mutex);
+        while (!thread_event_handlers.empty())
+            thread_event_handlers.remove(thread_event_handlers.front());
+    }
     objects.clear();
 
     loaded_modules.clear();

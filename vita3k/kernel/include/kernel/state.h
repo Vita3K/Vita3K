@@ -184,6 +184,16 @@ struct KernelState {
     // them run again
     void set_threads_suspended(bool suspended);
 
+    // Adds handler to the objects and the list under a new UID and returns the UID
+    SceUID register_thread_event_handler(const ThreadEventHandlerPtr &handler);
+    // Deletes handler, false if it is no longer listed. A handler still running is unlisted when
+    // its last run ends.
+    bool unregister_thread_event_handler(ThreadEventHandler &handler);
+
+    // The registered thread event handlers in registration order. A handler stays listed while it runs.
+    std::mutex thread_event_handlers_mutex;
+    IntrusiveList<ThreadEventHandler> thread_event_handlers;
+
     // Kill all guest threads and block until they have exited. Must only be called from a host thread.
     void process_exit();
     std::function<void(int, std::optional<AppLaunchRequest>)> process_exit_callback;
