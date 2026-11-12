@@ -30,6 +30,8 @@ public:
 
     const SceUInt32 attr;
 
+    bool is_openable() const override { return attr & SCE_KERNEL_ATTR_OPENABLE; }
+
 protected:
     SyncPrimitive(SceUInt32 attr, const char *name);
 

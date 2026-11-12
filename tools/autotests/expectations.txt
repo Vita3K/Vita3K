@@ -460,7 +460,7 @@ mutex_recursive_partial_unlock_waiter pass
 mutex_rwlock_create_options     fail     # rwlock creates accept option sizes that the Vita rejects with 0x8002000B
 mutex_waiter_counts             pass
 mutex_waits                     pass
-name_lookup                     fail     # opening gives the object's own UID, opening objects of another type or that aren't openable
+name_lookup                     fail     # opening gives the object's own UID, openable names aren't unique, a condition variable takes the openable attribute
 narrow_mask_onto_equal_core     fail     # threads ignore their core
 nonblocking_wait_preempt        fail     # threads ignore their core and priority
 nonobject_wait_priority_change  fail     # threads ignore their priority, so a woken thread below the main thread runs at once
