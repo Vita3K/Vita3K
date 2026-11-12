@@ -284,7 +284,7 @@ lock_calls_callback_runs        pass
 lock_failed_at_once_state       pass
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
-lw_cond_errors                  fail     # create checks of the attribute, a NULL mutex and a NULL work area, a signal to thread 0
+lw_cond_errors                  fail     # create checks of the attribute, a signal to thread 0
 lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back isn't requeued on a priority change
 lw_cond_semantics               pass
 lw_cond_work_words              fail     # the lightweight mutex work area's wait count word isn't written
