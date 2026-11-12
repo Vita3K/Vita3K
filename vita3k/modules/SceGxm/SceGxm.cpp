@@ -1983,7 +1983,7 @@ EXPORT(void, sceGxmColorSurfaceSetScaleMode, SceGxmColorSurface *surface, SceGxm
 
 EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmContext> *context) {
     TRACY_FUNC(sceGxmCreateContext, params, context);
-    if (!params || !context)
+    if (!params || !context || !params->hostMem)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     if (params->hostMemSize < sizeof(SceGxmContext)) {
