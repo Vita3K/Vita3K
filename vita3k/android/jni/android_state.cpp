@@ -34,31 +34,81 @@ AndroidSessionState &android_session_state() {
 }
 
 EmuEnvState *get_emuenv() {
-    return android_session_state().emuenv.get();
+    std::lock_guard<std::mutex> lock(session_state.state_mutex);
+    return session_state.emuenv.get();
+}
+
+const EmuEnvState *get_emuenv_const() {
+    std::lock_guard<std::mutex> lock(session_state.state_mutex);
+    return session_state.emuenv.get();
 }
 
 app::AppSessionController *get_app_session_controller() {
-    return android_session_state().app_session_controller.get();
+    std::lock_guard<std::mutex> lock(session_state.state_mutex);
+    return session_state.app_session_controller.get();
+}
+
+const app::AppSessionController *get_app_session_controller_const() {
+    std::lock_guard<std::mutex> lock(session_state.state_mutex);
+    return session_state.app_session_controller.get();
 }
 
 Root &get_root_paths() {
-    return android_session_state().root_paths;
+    std::lock_guard<std::mutex> lock(session_state.state_mutex);
+    return session_state.root_paths;
+}
+
+const Root &get_root_paths_const() {
+    std::lock_guard<std::mutex> lock(session_state.state_mutex);
+    return session_state.root_paths;
 }
 
 std::string jstring_to_string(JNIEnv *env, jstring str) {
+#ifdef __ANDROID__
+    if (!env || !str)
+        return {};
+
     const char *utf = env->GetStringUTFChars(str, nullptr);
+    if (!utf)
+        return {};
+
     std::string result(utf);
     env->ReleaseStringUTFChars(str, utf);
     return result;
+#else
+    (void)env;
+    (void)str;
+    return {};
+#endif
 }
 
+#ifdef __ANDROID__
 ScopedJniCallback::ScopedJniCallback(JNIEnv *env, jobject callback_obj, const char *method_name, const char *method_sig)
     : env_(env) {
-    env->GetJavaVM(&java_vm_);
+    if (!env || !callback_obj || !method_name || !method_sig)
+        return;
+
+    if (env->GetJavaVM(&java_vm_) != JNI_OK)
+        return;
+
     callback_ = env->NewGlobalRef(callback_obj);
+    if (!callback_)
+        return;
+
     jclass callback_class = env->GetObjectClass(callback_obj);
+    if (!callback_class) {
+        env->DeleteGlobalRef(callback_);
+        callback_ = nullptr;
+        return;
+    }
+
     method_ = env->GetMethodID(callback_class, method_name, method_sig);
     env->DeleteLocalRef(callback_class);
+
+    if (!method_) {
+        env->DeleteGlobalRef(callback_);
+        callback_ = nullptr;
+    }
 }
 
 ScopedJniCallback::~ScopedJniCallback() {
@@ -67,6 +117,7 @@ ScopedJniCallback::~ScopedJniCallback() {
 
     JNIEnv *env = nullptr;
     bool attached = false;
+
     const jint result = java_vm_->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (result == JNI_EDETACHED) {
         attached = java_vm_->AttachCurrentThread(&env, nullptr) == JNI_OK;
@@ -84,10 +135,13 @@ ScopedJniCallback::~ScopedJniCallback() {
 }
 
 void ScopedJniCallback::call_progress(int percent, const char *status) const {
-    if (!callback_ || !method_ || !env_)
+    if (!callback_ || !method_ || !env_ || !status)
         return;
 
     jstring jstatus = env_->NewStringUTF(status);
+    if (!jstatus)
+        return;
+
     env_->CallVoidMethod(callback_, method_, static_cast<jint>(percent), jstatus);
     env_->DeleteLocalRef(jstatus);
 
@@ -96,8 +150,26 @@ void ScopedJniCallback::call_progress(int percent, const char *status) const {
         env_->ExceptionClear();
     }
 }
+#else
+ScopedJniCallback::ScopedJniCallback(JNIEnv *env, jobject callback_obj, const char *method_name, const char *method_sig) {
+    (void)env;
+    (void)callback_obj;
+    (void)method_name;
+    (void)method_sig;
+}
+
+ScopedJniCallback::~ScopedJniCallback() = default;
+
+void ScopedJniCallback::call_progress(int percent, const char *status) const {
+    (void)percent;
+    (void)status;
+}
+#endif
 
 std::optional<app::AppEntry> find_app_by_title_id(const std::string &title_id) {
+    if (title_id.empty())
+        return std::nullopt;
+
     auto *emuenv = get_emuenv();
     if (!emuenv)
         return std::nullopt;
@@ -106,6 +178,7 @@ std::optional<app::AppEntry> find_app_by_title_id(const std::string &title_id) {
     const auto it = std::ranges::find_if(apps, [&](const app::AppEntry &app) {
         return app.title_id == title_id;
     });
+
     if (it == apps.end())
         return std::nullopt;
 
@@ -118,6 +191,7 @@ bool remove_path_if_exists(const fs::path &path) {
 
     try {
         fs::remove_all(path);
+        LOG_INFO("Removed '{}'", path.string());
         return true;
     } catch (const std::exception &error) {
         LOG_WARN("Failed to remove '{}': {}", path.string(), error.what());
@@ -126,8 +200,12 @@ bool remove_path_if_exists(const fs::path &path) {
 }
 
 uint32_t get_app_action_availability_mask(const std::string &title_id) {
+    if (title_id.empty())
+        return 0;
+
     auto *emuenv = get_emuenv();
     auto *controller = get_app_session_controller();
+
     if (!emuenv)
         return 0;
 
@@ -138,14 +216,16 @@ uint32_t get_app_action_availability_mask(const std::string &title_id) {
     if (has_app && (!controller || !controller->has_active_session()))
         mask |= ACTION_DELETE_APPLICATION;
 
-    if (has_app && !app->savedata.empty() && fs::exists(emuenv->vita_fs_path / "ux0/user" / emuenv->io.user_id / "savedata" / app->savedata))
+    if (has_app && !app->savedata.empty()
+        && fs::exists(emuenv->vita_fs_path / "ux0/user" / emuenv->io.user_id / "savedata" / app->savedata))
         mask |= ACTION_DELETE_SAVE_DATA;
 
     if (fs::exists(emuenv->vita_fs_path / "ux0/patch" / title_id)
         || fs::exists(emuenv->shared_path / "patch" / title_id))
         mask |= ACTION_DELETE_PATCH;
 
-    if (has_app && !app->addcont.empty() && fs::exists(emuenv->vita_fs_path / "ux0/addcont" / app->addcont))
+    if (has_app && !app->addcont.empty()
+        && fs::exists(emuenv->vita_fs_path / "ux0/addcont" / app->addcont))
         mask |= ACTION_DELETE_DLC;
 
     if (fs::exists(emuenv->vita_fs_path / "ux0/license" / title_id))
