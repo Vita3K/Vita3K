@@ -43,7 +43,7 @@ callback_exit_delete_check      pass
 callback_exit_delete_delay      pass
 callback_function_memory        fail     # a callback create takes a function in a USER_RW block or on the stack
 callback_info                   pass
-callback_info_fields            fail     # callbacks registered to simple events aren't notified by its sets
+callback_info_fields            pass
 callback_info_size_order        pass
 callback_inner_nonobject_waits  pass
 callback_inner_same_object      pass
@@ -53,13 +53,13 @@ callback_limit                  fail     # no callback limit, Vita3K makes 4096 
 callback_names                  pass
 callback_nesting                pass
 callback_nesting_depth          pass
-callback_notify_burst           fail     # a callback notified many times before it runs counts fewer notifies
+callback_notify_burst           pass
 callback_notify_cross_core      fail     # threads ignore their core and priority, so a notified thread above the spinner doesn't stop it
 callback_notify_departure_more  pass
 callback_notify_departure_state skip     # threads ignore their core and priority, so whether the notified waiter already ran when the main thread looks is a race
 callback_notify_during_run      pass
 callback_notify_equal_priority  skip     # threads ignore their core and priority, so whether a notify switches to the waiter is a race
-callback_notify_id_mixed        fail     # callbacks registered to simple events aren't notified by its sets
+callback_notify_id_mixed        pass
 callback_notify_preempt         skip     # threads ignore their core and priority, so whether the callback runs inside the notify is a race
 callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
 callback_notify_then_release_more skip     # a notified waiter leaves the queue only when its thread runs, so whether the object still counts it right after the notify is a race
@@ -189,6 +189,17 @@ display                         crash    # display size, framebuffer pitch check
 display_framebuf_blocks         fail     # no framebuffer base alignment check
 display_framebuf_free           skip     # whether the renderer crashes on a freed framebuffer depends on timing
 display_framebuf_set_freed      skip     # a framebuffer where a block was freed is taken, whether the renderer crashes on it depends on timing
+display_setframebuf_cb_notify   pass
+display_vblank_cb_display_callback pass
+display_vblank_cb_inner_sema    fail     # a display wait returns right after its callbacks when its vblank passed meanwhile, without waiting for the next one
+display_vblank_cb_inner_wait    fail     # a display wait inside a callback counts from the outer wait, and the outer wait returns right after its callbacks
+display_vblank_cb_inner_wait_cb fail     # a display wait inside a callback counts from the outer wait, and the outer wait returns right after its callbacks
+display_vblank_cb_long_callback fail     # a display wait returns right after its callbacks when its vblank passed meanwhile, without waiting for the next one
+display_vblank_cb_notify        fail     # threads ignore their core and priority, so the notified waiter already runs when its status is read
+display_vblank_cb_notify_after_wake fail     # a callback notified after the vblank woke the waiter never runs inside the wait
+display_vblank_multi_cb_notify  fail     # a display wait returns right after its callbacks when its vblank passed meanwhile, without waiting for the next one
+display_vblank_pending_no_cb    pass
+display_vblank_wait_info        fail     # a display wait reports no wait id
 end_wait_cb_notify_then_end     skip     # threads ignore their core and priority, so whether the waiter and the target already ran when their status is read is a race
 end_wait_claim_races            fail     # threads ignore their core and priority, so a timed out waiter has already ended
 end_wait_cycle                  pass
@@ -199,8 +210,8 @@ end_waiter_priority_change      skip     # threads ignore their core and priorit
 event_bit_mask                  pass
 event_bits                      pass
 event_call_error_order          fail     # a bad mode with pattern 0 gives 0x80020005 where the Vita gives 0x80020010
-event_callback_cancel_rearm     fail     # callbacks registered to a simple event aren't notified by its sets
-event_callback_two_events       fail     # callbacks registered to a simple event aren't notified by its sets
+event_callback_cancel_rearm     pass
+event_callback_two_events       pass
 event_edges                     pass
 event_flag                      pass
 event_flag_delete_bits          pass
@@ -218,8 +229,8 @@ event_flag_wake_release         fail     # a woken thread isn't READY before it 
 event_info_multi_wait_nodes     fail     # sceKernelWaitMultipleEvents
 event_info_partial_wakes        pass
 event_initial_user_data         pass
-event_notify_callback           fail     # callbacks registered to simple events
-event_notify_multi_wait         fail     # callbacks registered to simple events aren't notified by its sets, and sceKernelWaitMultipleEvents
+event_notify_callback           pass
+event_notify_multi_wait         fail     # waiting on several events
 event_notify_other_waits        fail     # a notify on one event leaves other waits and their callbacks in the wrong state
 event_set_walk_before_dispatch  fail     # event flag waiters wake out of FIFO order when the flag is set
 event_take_past_queue           pass
@@ -431,7 +442,7 @@ msgpipe_wake_time_left          skip     # a pipe waiter writes its own time lef
 msgpipe_zero_bytes              pass
 msgpipe_zero_pattern_wait       fail     # a pipe isn't an event
 mspace                          fail     # sceClib memory space info
-multi_events                    fail     # waiting on several events, callbacks registered to events
+multi_events                    fail     # waiting on several events
 multi_events_and_delete         fail     # sceKernelWaitMultipleEvents, deleted events and the wait type and UID
 multi_events_and_pulse          fail     # sceKernelWaitMultipleEvents
 multi_events_callback_copies    fail     # sceKernelWaitMultipleEvents
@@ -586,7 +597,7 @@ simple_event_errors             pass
 simple_event_info               pass
 simple_event_null_pointers      pass
 simple_event_open_close_bits    pass
-simple_event_open_close_notify_arg fail     # callbacks registered to a simple event aren't notified by its open and close
+simple_event_open_close_notify_arg pass
 simple_event_preempt_counter    fail     # thread info's preempt counters stay 0
 simple_event_wait_null          pass
 simple_event_waiter_patterns    fail     # a raised waiter in a simple event priority queue gets the wrong cancel count and results
@@ -745,9 +756,9 @@ timeout_threshold               skip     # timing, which short timeouts end at o
 timeouts                        pass
 timer                           pass
 timer_base_remaining            pass
-timer_callback                  fail     # callbacks registered to timers
-timer_callback_lifecycle_args   fail     # a timer callback never runs after the open, so its notifies and argument are missing
-timer_callback_other_wait       fail     # a timer callback doesn't run on the thread that waits again, and its notify data is wrong
+timer_callback                  fail     # a timer's events reach its registered callbacks only when something reads the timer, there is no timer service
+timer_callback_lifecycle_args   fail     # a timer's open and close don't notify its registered callbacks
+timer_callback_other_wait       fail     # a timer's events reach its registered callbacks only when something reads the timer, there is no timer service
 timer_cancel_clear_valid        fail     # timer cancel and clear leave the waiter results and the waiting count wrong
 timer_cancel_with_set_pattern   fail     # event calls don't take timer UIDs
 timer_clear_mask_pattern        pass

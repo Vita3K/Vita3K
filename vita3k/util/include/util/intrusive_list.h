@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cstddef>
 #include <iterator>
+#include <memory>
 #include <type_traits>
 
 // A T's place in one IntrusiveList, a base class of the T. A node in no list points at itself.
@@ -158,4 +159,46 @@ public:
 private:
     IntrusiveLink<T> head;
     std::size_t count = 0;
+};
+
+// An intrusive list that owns the objects on it. The caller locks it.
+template <class T>
+class UniqueList {
+public:
+    // Destroys every object still on the list
+    ~UniqueList() {
+        while (!list.empty())
+            remove(list.front());
+    }
+
+    // Whether no object is on the list
+    bool empty() const {
+        return list.empty();
+    }
+
+    // The objects in list order
+    auto begin() {
+        return list.begin();
+    }
+
+    // The end of the objects in list order
+    auto end() {
+        return list.end();
+    }
+
+    // Links object before position and takes it over
+    void insert(typename IntrusiveList<T>::iterator position, std::unique_ptr<T> object) {
+        assert(object);
+        list.insert(position, *object.release());
+    }
+
+    // Takes object, which must be on the list, off it and gives it back to the caller
+    std::unique_ptr<T> remove(T &object) {
+        assert(object.linked());
+        list.remove(object);
+        return std::unique_ptr<T>(&object);
+    }
+
+private:
+    IntrusiveList<T> list;
 };

@@ -186,7 +186,54 @@ SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 i
 void Event::end_waits(SceUID deleter) {
     // The waits for the delete event get it with the deleting thread's user data, then the others end
     fire(SCE_KERNEL_EVENT_DELETE, system_event_user_data(deleter), true);
+    notify_callbacks(SCE_KERNEL_EVENT_DELETE);
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+}
+
+SceInt32 Event::register_callback(KernelState &kernel, CallbackRef callback, SceUID notify_id) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    // After the registrations of the same callback
+    auto pos = registrations.begin();
+    while (pos != registrations.end() && pos->callback->uid <= callback->uid)
+        ++pos;
+    registrations.insert(pos, std::make_unique<CallbackRegistration>(kernel, std::move(callback), notify_id));
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 Event::unregister_callback(SceUID callback_id) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    for (CallbackRegistration &registration : registrations) {
+        if (registration.callback->uid == callback_id) {
+            registrations.remove(registration);
+            return SCE_KERNEL_OK;
+        }
+    }
+    return SCE_KERNEL_ERROR_CALLBACK_NOT_REGISTERED;
+}
+
+SceInt32 Event::unregister_callbacks() {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    while (!registrations.empty())
+        registrations.remove(*registrations.begin());
+    return SCE_KERNEL_OK;
+}
+
+void Event::notify_callbacks(SceInt32 arg) {
+    for (auto it = registrations.begin(); it != registrations.end();) {
+        CallbackRegistration &registration = *it;
+        ++it;
+        Callback &callback = *registration.callback;
+        // A callback whose owner is gone, or that was closed, is dropped
+        const ThreadStateRef owner = registration.kernel.get_thread(callback.thread_id);
+        if (!owner || !owner->notify_callback(callback, arg, registration.notify_id))
+            registrations.remove(registration);
+    }
 }
 
 SceInt32 Event::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
@@ -257,11 +304,28 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
     return SCE_KERNEL_OK;
 }
 
+SceInt32 SimpleEvent::set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+    if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
+        return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
+    if (set_pattern == 0)
+        return SCE_KERNEL_OK;
+
+    // The waiters get the bits before the callbacks are notified
+    fire(set_pattern, user_data, is_set);
+    notify_callbacks(notify_arg);
+    return SCE_KERNEL_OK;
+}
+
 SceInt32 SimpleEvent::set_system_event(SceUInt32 event, SceUInt64 user_data) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     fire(event, user_data, true);
+    // The callbacks get the event's bit as the argument
+    notify_callbacks(event);
     return SCE_KERNEL_OK;
 }
 
@@ -390,13 +454,14 @@ void Timer::catch_up() {
     if (next_event > now)
         return;
     fire(SCE_KERNEL_EVENT_TIMER, 0, !is_pulse);
+    notify_callbacks(0);
     // A one shot event leaves the queue but stays armed, so a start or a set time can queue it again
     if (!is_repeat) {
         next_event = std::numeric_limits<uint64_t>::max();
         return;
     }
     // A repeating event is due again an interval after it was due. With nobody waiting, the events
-    // it missed meanwhile change nothing, so they are skipped.
+    // it missed meanwhile are skipped, so its callbacks get one notification for all of them.
     const uint64_t interval = std::max(event_interval, TIMER_EVENT_FLOOR);
     uint64_t next = next_event + interval;
     if (waiters.empty() && next <= now)
@@ -682,7 +747,7 @@ void Mutex::set_owner(ThreadState &thread) {
     if (owner_thread)
         owner_thread->remove_held(*this);
     owner_thread = &thread;
-    thread.add_held(MutexRef(this));
+    thread.add_held(MutexRef::from(*this));
 }
 
 void Mutex::clear_owner() {
@@ -946,7 +1011,7 @@ void RWLock::set_write_owner(ThreadState &thread) {
     if (write_owner)
         write_owner->remove_held(*this);
     write_owner = &thread;
-    thread.add_held(RWLockRef(this));
+    thread.add_held(RWLockRef::from(*this));
 }
 
 void RWLock::clear_write_owner() {
@@ -1427,7 +1492,7 @@ void EventFlag::drop_hold() {
 void EventFlag::set_holder(ThreadState &thread) {
     assert(!holder);
     holder = &thread;
-    thread.add_held(EventFlagRef(this));
+    thread.add_held(EventFlagRef::from(*this));
 }
 
 void EventFlag::clear_holder() {
