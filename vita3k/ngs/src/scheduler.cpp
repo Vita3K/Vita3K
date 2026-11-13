@@ -139,10 +139,11 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
         memset(voice->products, 0, sizeof(voice->products));
 
-        bool finished = false;
+        const bool keyed_off = voice->state == VOICE_STATE_FINALIZING;
+        bool finished = keyed_off;
         uint32_t finished_module = 0;
 
-        for (size_t i = 0; i < voice->rack->modules.size(); i++) {
+        for (size_t i = 0; !keyed_off && i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
                 if (voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock)) {
                     finished = true;
