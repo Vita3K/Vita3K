@@ -494,7 +494,7 @@ void shutdown_app_runtime(EmuEnvState &state) {
     state.gxm.deinit();
     state.overlay_manager.reset();
 
-    state.display.deinit();
+    state.display.deinit(state.kernel);
 
     state.netctl.deinit();
 

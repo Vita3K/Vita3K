@@ -55,8 +55,6 @@ struct WaitRequest {
     MsgPipeSender *sender = nullptr;
     // The message pipe transfer of a receive, or null
     MsgPipeReceiver *receiver = nullptr;
-    // The vblank count a display wait waits for
-    uint64_t vcount = 0;
 };
 
 // Returns the wait type with the callback bit if callbacks is set.

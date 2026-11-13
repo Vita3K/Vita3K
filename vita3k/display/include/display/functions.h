@@ -26,7 +26,11 @@ struct EmuEnvState;
 struct DisplayFrameInfo;
 
 void start_sync_thread(EmuEnvState &emuenv);
-void wait_vblank(DisplayState &display, ThreadState &wait_thread, const uint64_t target_vcount, const bool is_cb);
+// Waits for count vblanks counted from where the thread's last display wait at this callback depth
+// ended, and always for at least one
+SceInt32 wait_vblank_start(EmuEnvState &emuenv, ThreadState &thread, int count, bool callbacks);
+// Waits until the vblank count reaches target
+SceInt32 wait_until_vblank(EmuEnvState &emuenv, ThreadState &thread, uint64_t target, bool callbacks);
 // if the result is not nullptr, contain the predicted frame (pointer needs to be freed later)
 DisplayFrameInfo *predict_next_image(EmuEnvState &emuenv, Address sync_object);
 void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame);

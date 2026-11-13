@@ -319,6 +319,14 @@ SceInt32 SimpleEvent::set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 u
     return SCE_KERNEL_OK;
 }
 
+void SimpleEvent::pulse_and_notify(SceUInt32 pattern, SceInt32 notify_arg) {
+    const auto guard = lock();
+    if (!guard)
+        return;
+    fire(pattern, 0, false);
+    notify_callbacks(notify_arg);
+}
+
 SceInt32 SimpleEvent::set_system_event(SceUInt32 event, SceUInt64 user_data) {
     const auto guard = lock();
     if (!guard)

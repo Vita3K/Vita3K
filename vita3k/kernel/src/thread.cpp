@@ -524,12 +524,6 @@ ThreadState::HostWait::~HostWait() {
     }
 }
 
-uint64_t ThreadState::next_display_wait(uint64_t next_vblank, int vcount) {
-    const std::lock_guard<std::mutex> lock(thread_mutex);
-    last_vblank_waited = std::max(next_vblank, last_vblank_waited + vcount);
-    return last_vblank_waited;
-}
-
 SceInt32 ThreadState::wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks) {
     auto guard = lock();
     // An ended run gives its exit status at once with the timeout as it was. No callback runs after

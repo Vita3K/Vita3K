@@ -116,6 +116,8 @@ struct KernelState {
 
     // Thread manager objects other than threads, by UID
     KernelObjects objects;
+    // The objects the kernel made for itself, which no guest UID reaches
+    KernelObjects kernel_objects;
 
     ThreadStateRefs threads;
     void *jni_env;
