@@ -34,6 +34,7 @@ void VKState::wait_thread_function(const MemState &mem) {
     // try to wait for multiple fences at the same time if possible
     std::vector<vk::Fence> fences;
 
+    // returns false if the fences could not be waited for (shutdown or error)
     auto wait_for_fences = [&]() {
         while (!fences.empty()) {
             // timeout so we can check for shutdown
@@ -41,20 +42,21 @@ void VKState::wait_thread_function(const MemState &mem) {
             if (result == vk::Result::eSuccess) {
                 // don't reset them
                 fences.clear();
-                return;
+                return true;
             }
             if (result == vk::Result::eTimeout) {
                 if (request_queue.is_aborted()) {
                     fences.clear();
-                    return;
+                    return false;
                 }
                 continue;
             }
             LOG_ERROR("Could not wait for fences.");
             assert(false);
             fences.clear();
-            return;
+            return false;
         }
+        return true;
     };
 
     while (true) {
@@ -109,6 +111,20 @@ void VKState::wait_thread_function(const MemState &mem) {
                            wait_for_fences();
 
                            surface_cache.perform_post_surface_sync(mem, request.cache_info);
+                       },
+                       [&](DepthStencilSyncRequest &request) {
+                           // only write guest memory once the GPU copy is known to be complete
+                           const bool gpu_done = wait_for_fences();
+                           if (!request.readback)
+                               return;
+                           if (gpu_done) {
+                               VKSurfaceCache::perform_post_depth_stencil_sync(mem, *request.readback);
+                               // last access done: the renderer thread may reuse the buffer
+                               request.readback->state.store(DepthStencilReadbackState::Free, std::memory_order_release);
+                           } else {
+                               // the copy may still be running: never reuse the buffer
+                               request.readback->state.store(DepthStencilReadbackState::Abandoned, std::memory_order_release);
+                           }
                        },
                        [&](SyncSignalRequest &request) {
                            wait_for_fences();
@@ -623,8 +639,14 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     resolve_visibility_queries();
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
+    std::shared_ptr<DepthStencilReadback> ds_readback;
     if (state.features.enable_memory_mapping && !state.disable_surface_sync && submit)
         surface_info = state.surface_cache.perform_surface_sync();
+    // Unlike color surface sync, this is not a speed hack target: it only runs when
+    // the game explicitly forces the depth-stencil store, and only copies the stencil.
+    if (state.features.enable_memory_mapping && submit)
+        ds_readback = state.surface_cache.perform_depth_stencil_sync(record.depth_stencil_surface,
+            render_target->width, render_target->height, render_cmd);
 
     prerender_cmd.end();
     render_cmd.end();
@@ -676,6 +698,10 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         if (surface_info && surface_info->need_post_surface_sync) {
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
+
+        // a push refused by the aborted queue drops the request while the copy may be running
+        if (ds_readback && !state.request_queue.push(DepthStencilSyncRequest{ ds_readback }))
+            ds_readback->state.store(DepthStencilReadbackState::Abandoned, std::memory_order_relaxed);
 
         if (notif1.address || notif2.address) {
             // notifications last
