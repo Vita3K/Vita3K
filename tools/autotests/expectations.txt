@@ -189,6 +189,17 @@ display                         crash    # display size, framebuffer pitch check
 display_framebuf_blocks         fail     # no framebuffer base alignment check
 display_framebuf_free           skip     # whether the renderer crashes on a freed framebuffer depends on timing
 display_framebuf_set_freed      skip     # a framebuffer where a block was freed is taken, whether the renderer crashes on it depends on timing
+display_setframebuf_cb_notify   pass
+display_vblank_cb_display_callback pass
+display_vblank_cb_inner_sema    fail     # a display wait returns right after its callbacks when its vblank passed meanwhile, without waiting for the next one
+display_vblank_cb_inner_wait    fail     # a display wait inside a callback counts from the outer wait, and the outer wait returns right after its callbacks
+display_vblank_cb_inner_wait_cb fail     # a display wait inside a callback counts from the outer wait, and the outer wait returns right after its callbacks
+display_vblank_cb_long_callback fail     # a display wait returns right after its callbacks when its vblank passed meanwhile, without waiting for the next one
+display_vblank_cb_notify        fail     # threads ignore their core and priority, so the notified waiter already runs when its status is read
+display_vblank_cb_notify_after_wake fail     # a callback notified after the vblank woke the waiter never runs inside the wait
+display_vblank_multi_cb_notify  fail     # a display wait returns right after its callbacks when its vblank passed meanwhile, without waiting for the next one
+display_vblank_pending_no_cb    pass
+display_vblank_wait_info        fail     # a display wait reports no wait id
 end_wait_cb_notify_then_end     skip     # threads ignore their core and priority, so whether the waiter and the target already ran when their status is read is a race
 end_wait_claim_races            fail     # threads ignore their core and priority, so a timed out waiter has already ended
 end_wait_cycle                  pass
