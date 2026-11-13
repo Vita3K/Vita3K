@@ -20,6 +20,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <np/common.h>
+#include <np/state.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNpCommon);
@@ -50,16 +51,20 @@ struct SceNpAuthRequestParameter {
 
 EXPORT(int, sceNpAuthCreateStartRequest, const SceNpAuthRequestParameter *param) {
     TRACY_FUNC(sceNpAuthCreateStartRequest, param);
-    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
-    // todo: this callback function should be called from sceNpCheckCallback
-    STUBBED("Immediately call ticket callback");
-    thread->call_guest(param->ticketCb.address(), { 1, 1, param->cbArg.address() });
-    return 1;
+    STUBBED("Ticket callback is called from sceNpCheckCallback");
+    auto &auth = emuenv.np.auth_state;
+    const std::lock_guard<std::mutex> lock(auth.access_mutex);
+    const SceInt32 id = auth.next_request_id++;
+    auth.requests.emplace(id, NpAuthRequest{ param->ticketCb.address(), param->cbArg.address() });
+    return id;
 }
 
-EXPORT(int, sceNpAuthDestroyRequest) {
-    TRACY_FUNC(sceNpAuthDestroyRequest);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpAuthDestroyRequest, SceInt32 id) {
+    TRACY_FUNC(sceNpAuthDestroyRequest, id);
+    auto &auth = emuenv.np.auth_state;
+    const std::lock_guard<std::mutex> lock(auth.access_mutex);
+    auth.requests.erase(id);
+    return 0;
 }
 
 EXPORT(int, sceNpAuthGetEntitlementById) {
@@ -94,6 +99,9 @@ EXPORT(int, sceNpAuthInit) {
 
 EXPORT(int, sceNpAuthTerm) {
     TRACY_FUNC(sceNpAuthTerm);
+    auto &auth = emuenv.np.auth_state;
+    const std::lock_guard<std::mutex> lock(auth.access_mutex);
+    auth.requests.clear();
     return UNIMPLEMENTED();
 }
 
