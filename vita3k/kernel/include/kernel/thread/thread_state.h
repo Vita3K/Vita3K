@@ -37,6 +37,9 @@ using ThreadStateRef = Ref<ThreadState>;
 struct KernelState;
 class Callback;
 using CallbackRef = Ref<Callback>;
+class EventFlag;
+class Mutex;
+class RWLock;
 
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
@@ -69,6 +72,8 @@ struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, publ
 
     // A dormant thread with its stack and TLS, which runs on cpu
     ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUStatePtr cpu, const char *name, Address entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr);
+    // A thread only goes away once its end gave back what it held
+    ~ThreadState() override;
 
     // The thread's current wait, guarded by the lock of the object it waits on
     // What it asked for, which the wakers read. Only queueing the thread sets it.
@@ -169,6 +174,14 @@ struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, publ
     SceUInt32 process_callbacks();
     // Returns whether a callback of this thread was notified since its last callback pass
     bool has_pending_callbacks();
+
+    // What the thread holds, which its end gives back. Called with the object's lock held.
+    void add_held(Ref<EventFlag> flag);
+    void remove_held(EventFlag &flag);
+    void add_held(Ref<Mutex> mutex);
+    void remove_held(Mutex &mutex);
+    void add_held(Ref<RWLock> rwlock);
+    void remove_held(RWLock &rwlock);
 
     // Thread event handlers
     // Whether the thread runs its thread event handlers.
@@ -311,6 +324,12 @@ private:
     int callback_depth = 0;
     // The thread's callbacks in creation order, including one whose delete is in progress
     RefList<Callback> callbacks;
+
+    // What the thread holds, each list in the order it took them: its event flag holds, its heavy
+    // mutexes and its write locks
+    RefList<EventFlag> held_flags;
+    RefList<Mutex> held_mutexes;
+    RefList<RWLock> held_rwlocks;
 
     // ForVM suspend
     // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet

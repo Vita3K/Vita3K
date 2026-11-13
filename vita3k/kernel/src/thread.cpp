@@ -98,12 +98,17 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     }
 }
 
+ThreadState::~ThreadState() {
+    assert(held_flags.empty() && held_mutexes.empty() && held_rwlocks.empty());
+}
+
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
     const std::lock_guard<std::mutex> thread_lock(thread_mutex);
     if (running_event_handlers)
         return SCE_KERNEL_ERROR_ILLEGAL_CONTEXT;
     if (status != ThreadStatus::dormant)
         return SCE_KERNEL_ERROR_NOT_DORMANT;
+    assert(held_flags.empty() && held_mutexes.empty() && held_rwlocks.empty());
     run_start_callback = run_entry_callback;
     returned_value = SCE_KERNEL_ERROR_NOT_DORMANT;
     // Vita3K runs every thread as CPU 0, and a later start keeps the CPU fields
@@ -220,14 +225,24 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
             request_ending(old_ending);
         }
 
-        lock.unlock();
-        // A mutex or a write lock the thread still holds goes to its next waiter, and the
-        // event flags it holds are free again
-        kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) { mutex.release_ended_owner(*this); });
-        kernel.objects.for_each<RWLock>([&](RWLock &rwlock) { rwlock.release_ended_writer(*this); });
-        kernel.objects.for_each<EventFlag>([&](EventFlag &flag) { flag.release_ended_holder(*this); });
+        // The event flags the thread holds are free again, and its mutexes and write locks go to
+        // their next waiters. Each release unlists the object, unless a cancel or a delete already did.
+        while (const Ref<EventFlag> flag = held_flags.front()) {
+            lock.unlock();
+            flag->release_if_held_by(*this);
+            lock.lock();
+        }
+        while (const Ref<Mutex> mutex = held_mutexes.front()) {
+            lock.unlock();
+            mutex->release_if_owned_by(*this);
+            lock.lock();
+        }
+        while (const Ref<RWLock> rwlock = held_rwlocks.front()) {
+            lock.unlock();
+            rwlock->release_if_write_locked_by(*this);
+            lock.lock();
+        }
         // The callbacks the thread created end with it, with their pending notifications
-        lock.lock();
         while (!callbacks.empty())
             close_callback(*callbacks.begin());
         lock.unlock();
@@ -625,6 +640,39 @@ void ThreadState::close_callback(Callback &cb) {
     // The list's reference keeps cb alive until its UID is gone
     const CallbackRef listed = callbacks.remove(cb);
     kernel.objects.remove<Callback>(cb.uid, id);
+}
+
+void ThreadState::add_held(Ref<EventFlag> flag) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    held_flags.push_back(std::move(flag));
+}
+
+void ThreadState::remove_held(EventFlag &flag) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    [[maybe_unused]] const Ref<EventFlag> listed = held_flags.remove(flag);
+    assert(listed);
+}
+
+void ThreadState::add_held(Ref<Mutex> mutex) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    held_mutexes.push_back(std::move(mutex));
+}
+
+void ThreadState::remove_held(Mutex &mutex) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    [[maybe_unused]] const Ref<Mutex> listed = held_mutexes.remove(mutex);
+    assert(listed);
+}
+
+void ThreadState::add_held(Ref<RWLock> rwlock) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    held_rwlocks.push_back(std::move(rwlock));
+}
+
+void ThreadState::remove_held(RWLock &rwlock) {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    [[maybe_unused]] const Ref<RWLock> listed = held_rwlocks.remove(rwlock);
+    assert(listed);
 }
 
 bool ThreadState::has_pending_callbacks() {
