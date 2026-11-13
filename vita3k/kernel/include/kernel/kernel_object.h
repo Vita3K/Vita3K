@@ -111,7 +111,7 @@ public:
         const auto it = lookup<T>(uid);
         if (it == objects.end())
             return nullptr;
-        return Ref<T>(static_cast<T *>(it->second.get()));
+        return Ref<T>::from(static_cast<T &>(*it->second));
     }
 
     // Removes the T with this UID, so no later lookup finds it, then runs its on_delete() for the

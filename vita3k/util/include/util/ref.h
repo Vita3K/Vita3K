@@ -39,7 +39,7 @@ private:
     template <class T>
     friend class Ref;
 
-    std::atomic<uint32_t> refs{ 0 };
+    std::atomic<uint32_t> refs{ 1 };
 };
 
 // A counted reference to an object. T can be an incomplete type where a Ref is only named, and
@@ -54,11 +54,13 @@ public:
     Ref(std::nullptr_t) {}
 
     // A new reference to object, which something else must keep alive during the call
-    explicit Ref(T *object)
+    [[nodiscard]] static Ref from(T &object)
         requires std::derived_from<T, RefCounted>
-        : ptr(object) {
-        assert(ptr);
-        retain();
+    {
+        Ref ref;
+        ref.ptr = &object;
+        ref.retain();
+        return ref;
     }
 
     // Another reference to the object of other
@@ -99,7 +101,7 @@ public:
     [[nodiscard]] static Ref make(Args &&...args)
         requires std::derived_from<T, RefCounted>
     {
-        return Ref(new T(std::forward<Args>(args)...));
+        return adopt(new T(std::forward<Args>(args)...));
     }
 
     // The object, or null
@@ -204,7 +206,7 @@ public:
     Ref<T> front() {
         if (list.empty())
             return nullptr;
-        return Ref<T>(&list.front());
+        return Ref<T>::from(list.front());
     }
 
     // Links object at the end and takes its reference over

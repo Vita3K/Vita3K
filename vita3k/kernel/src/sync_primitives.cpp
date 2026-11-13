@@ -747,7 +747,7 @@ void Mutex::set_owner(ThreadState &thread) {
     if (owner_thread)
         owner_thread->remove_held(*this);
     owner_thread = &thread;
-    thread.add_held(MutexRef(this));
+    thread.add_held(MutexRef::from(*this));
 }
 
 void Mutex::clear_owner() {
@@ -1011,7 +1011,7 @@ void RWLock::set_write_owner(ThreadState &thread) {
     if (write_owner)
         write_owner->remove_held(*this);
     write_owner = &thread;
-    thread.add_held(RWLockRef(this));
+    thread.add_held(RWLockRef::from(*this));
 }
 
 void RWLock::clear_write_owner() {
@@ -1492,7 +1492,7 @@ void EventFlag::drop_hold() {
 void EventFlag::set_holder(ThreadState &thread) {
     assert(!holder);
     holder = &thread;
-    thread.add_held(EventFlagRef(this));
+    thread.add_held(EventFlagRef::from(*this));
 }
 
 void EventFlag::clear_holder() {
