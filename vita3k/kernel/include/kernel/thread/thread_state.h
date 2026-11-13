@@ -53,6 +53,14 @@ enum class ThreadStatus : SceUInt32 {
 // A thread, which its end waiters wait on like on any waitable object, and which is itself linked
 // in the wait queue of what it waits on. Lock order: the object's lock, which guards the end
 // waiters, then thread_mutex, then the thread_mutex of an end waiter it wakes.
+// Where a thread's display waits count from: the vblank count its last display wait ended on, one
+// for each depth of display waits inside callbacks
+struct DisplayWaitBases {
+    uint64_t bases[7] = {};
+    // How many of the thread's display waits are going on
+    uint32_t depth = 0;
+};
+
 struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, public IntrusiveLink<ThreadState> {
 private:
     friend class Ref<ThreadState>;
@@ -159,9 +167,8 @@ public:
     private:
         ThreadState &thread;
     };
-    // The vblank a display wait for vcount vblanks ends on: vcount after the one the thread's last
-    // display wait ended on, and at least next_vblank. The next display wait counts from it.
-    uint64_t next_display_wait(uint64_t next_vblank, int vcount);
+    // Only the thread itself touches it
+    DisplayWaitBases display_waits;
 
     // Callbacks this thread created
     // Lists cb, which this thread creates, under a new UID and returns the UID
@@ -320,8 +327,6 @@ private:
     std::optional<SceInt32> wait_result;
     // A sceKernelSendSignal is pending for this thread.
     bool signal_pending = false;
-    // The vblank the thread's last display wait ended on
-    uint64_t last_vblank_waited = 0;
 
     // Callbacks
     // A callback of this thread was notified since the start of the last callback pass
