@@ -212,7 +212,8 @@ public:
         list.push_back(*object.release_ownership());
     }
 
-    // Takes object off the list and returns the list's reference to it, or nothing if it isn't on it
+    // Takes object off the list and returns the list's reference to it, or nothing if it isn't on a
+    // list. object must not be on another list.
     Ref<T> remove(T &object) {
         if (!object.linked())
             return nullptr;

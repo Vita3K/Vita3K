@@ -206,7 +206,8 @@ public:
     void release_if_owned_by(ThreadState &thread);
 
 protected:
-    // Makes thread the owner, and lists a heavy mutex in what it holds. The lock must be held.
+    // Makes thread the owner, and lists a heavy mutex in what it holds. The lock must be held, except
+    // while the mutex is created.
     void set_owner(ThreadState &thread);
     // Leaves the mutex with no owner and unlists it. The lock must be held.
     void clear_owner();
