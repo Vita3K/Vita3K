@@ -229,7 +229,7 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
         // The callbacks the thread created end with it, with their pending notifications
         lock.lock();
         while (!callbacks.empty())
-            close_callback(callbacks.front());
+            close_callback(*callbacks.begin());
         lock.unlock();
         // The end waiters see the status and the exit status together. Both locks stay held until
         // they are woken, so a start can't come in between.
@@ -607,7 +607,7 @@ Callback::Notification ThreadState::callback_notifications(const Callback &cb) {
 
 SceUID ThreadState::add_callback(CallbackRef cb) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    callbacks.push_back(*cb);
+    callbacks.push_back(cb);
     return kernel.objects.add(std::move(cb), kernel.get_next_uid());
 }
 
@@ -622,7 +622,8 @@ bool ThreadState::delete_callback(Callback &cb) {
 }
 
 void ThreadState::close_callback(Callback &cb) {
-    callbacks.remove(cb);
+    // The list's reference keeps cb alive until its UID is gone
+    const CallbackRef listed = callbacks.remove(cb);
     kernel.objects.remove<Callback>(cb.uid, id);
 }
 
@@ -686,8 +687,7 @@ void ThreadState::run_event_handlers(std::unique_lock<std::mutex> &lock, SceUInt
             ++it;
             continue;
         }
-        // The run keeps the handler alive and listed
-        const ThreadEventHandlerRef running(&handler);
+        // The run keeps the handler listed, and the list keeps it alive
         ++handler.runs;
         list_lock.unlock();
         // Set before the handler calls, so with no handler a start racing this one gets NOT_DORMANT

@@ -310,7 +310,7 @@ private:
     // The callback runs going on, nested ones too
     int callback_depth = 0;
     // The thread's callbacks in creation order, including one whose delete is in progress
-    IntrusiveList<Callback> callbacks;
+    RefList<Callback> callbacks;
 
     // ForVM suspend
     // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <util/intrusive_list.h>
+
 #include <atomic>
 #include <cassert>
 #include <concepts>
@@ -134,6 +136,9 @@ private:
     template <class U>
     friend class Ref;
 
+    template <class U>
+    friend class RefList;
+
     // Adds this reference to the object's count
     void retain() noexcept {
         if (ptr)
@@ -160,5 +165,54 @@ private:
         return std::exchange(ptr, nullptr);
     }
 
+    // Takes over a reference given up with release_ownership()
+    [[nodiscard]] static Ref adopt(T *object) noexcept {
+        Ref ref;
+        ref.ptr = object;
+        return ref;
+    }
+
     T *ptr = nullptr;
+};
+
+// An intrusive list that holds one reference to each object on it. The caller locks it.
+template <class T>
+class RefList {
+public:
+    // Drops the reference to every object still on the list
+    ~RefList() {
+        while (!list.empty())
+            remove(*list.begin());
+    }
+
+    // Whether no object is on the list
+    bool empty() const {
+        return list.empty();
+    }
+
+    // The objects in list order
+    auto begin() {
+        return list.begin();
+    }
+
+    // The end of the objects in list order
+    auto end() {
+        return list.end();
+    }
+
+    // Links object at the end and takes its reference over
+    void push_back(Ref<T> object) {
+        list.push_back(*object.release_ownership());
+    }
+
+    // Takes object off the list and returns the list's reference to it, or nothing if it isn't on it
+    Ref<T> remove(T &object) {
+        if (!object.linked())
+            return nullptr;
+        list.remove(object);
+        return Ref<T>::adopt(&object);
+    }
+
+private:
+    IntrusiveList<T> list;
 };

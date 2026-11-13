@@ -236,7 +236,7 @@ void KernelState::process_exit() {
 
 SceUID KernelState::register_thread_event_handler(ThreadEventHandlerRef handler) {
     const std::lock_guard<std::mutex> lock(thread_event_handlers_mutex);
-    thread_event_handlers.push_back(*handler);
+    thread_event_handlers.push_back(handler);
     return objects.add(std::move(handler), get_next_uid());
 }
 
@@ -274,7 +274,7 @@ void KernelState::deinit(MemState &mem) {
     {
         const std::lock_guard<std::mutex> lock(thread_event_handlers_mutex);
         while (!thread_event_handlers.empty())
-            thread_event_handlers.remove(thread_event_handlers.front());
+            thread_event_handlers.remove(*thread_event_handlers.begin());
     }
     objects.clear();
 
