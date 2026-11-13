@@ -27,6 +27,7 @@
 #include <map>
 #include <mutex>
 #include <string_view>
+#include <type_traits>
 
 // Thread manager object classes, with the values sceKernelGetThreadmgrUIDClass reports
 enum class UidClass : SceUInt32 {
@@ -49,17 +50,17 @@ class KernelObject;
 
 // A kernel object type with a single class, given by its static uid_class.
 template <typename T>
-concept KernelObjectClass = std::derived_from<T, KernelObject> && requires {
+concept KernelObjectClass = std::derived_from<T, KernelObject> && std::is_final_v<T> && requires {
     { T::uid_class } -> std::convertible_to<UidClass>;
 };
 
 // A kernel object that guest code refers to by UID.
 class KernelObject : public RefCounted {
 public:
-    // The object as a T, or null if it is of another class
+    // Whether the object is a T
     template <KernelObjectClass T>
-    T *as() {
-        return get_uid_class() == T::uid_class ? static_cast<T *>(this) : nullptr;
+    bool is() const {
+        return get_uid_class() == T::uid_class;
     }
 
     // Returns the class reported by sceKernelGetThreadmgrUIDClass.
@@ -77,6 +78,14 @@ protected:
         std::ranges::copy(std::string_view(name, strnlen(name, SCE_UID_NAMELEN)), this->name);
     }
 };
+
+// A reference to object as a T, or nothing if it is of another class or there is no object
+template <KernelObjectClass T>
+[[nodiscard]] Ref<T> ref_cast(const Ref<KernelObject> &object) {
+    if (!object || !object->template is<T>())
+        return nullptr;
+    return Ref<T>::from(static_cast<T &>(*object));
+}
 
 // Base of a kernel object type with a single class, which uid_class names.
 template <std::derived_from<KernelObject> Base, UidClass C>
@@ -122,8 +131,7 @@ public:
         const std::lock_guard<std::mutex> lock(mutex);
         // The reference is taken with the table locked, so the object can't go away before it
         const auto it = objects.find(uid);
-        T *const object = it == objects.end() ? nullptr : it->second->template as<T>();
-        return object ? Ref<T>::from(*object) : nullptr;
+        return it == objects.end() ? nullptr : ref_cast<T>(it->second);
     }
 
     // Removes the T with this UID, so no later lookup finds it, then runs its on_delete() for the
@@ -134,7 +142,7 @@ public:
         {
             const std::lock_guard<std::mutex> lock(mutex);
             const auto it = objects.find(uid);
-            if (it == objects.end() || !it->second->template as<T>())
+            if (it == objects.end() || !it->second->template is<T>())
                 return false;
             obj = std::move(objects.extract(it).mapped());
         }
@@ -150,7 +158,7 @@ public:
         SceUID last = 0;
         while (const Ref<KernelObject> obj = next<T>(last)) {
             last = obj->uid;
-            fn(*obj->template as<T>());
+            fn(*ref_cast<T>(obj));
         }
     }
 
@@ -168,7 +176,7 @@ private:
     Ref<KernelObject> next(SceUID last) const {
         const std::lock_guard<std::mutex> lock(mutex);
         for (auto it = objects.upper_bound(last); it != objects.end(); ++it) {
-            if (it->second->template as<T>())
+            if (it->second->template is<T>())
                 return it->second;
         }
         return nullptr;
