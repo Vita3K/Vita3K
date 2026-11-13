@@ -80,7 +80,7 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             for (const SceUID uid : display.vblank_callbacks) {
                 const CallbackRef cb = emuenv.kernel.objects.find<Callback>(uid);
                 if (const ThreadStateRef owner = cb ? emuenv.kernel.get_thread(cb->thread_id) : nullptr)
-                    owner->notify_callback(*cb, 0);
+                    owner->notify_callback(*cb, 0, SCE_UID_INVALID_UID);
             }
 
             display.vblank_waiters.wake_if([&](auto &waiter) {

@@ -161,8 +161,9 @@ struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, publ
     // Callbacks this thread created
     // Lists cb, which this thread creates, under a new UID and returns the UID
     SceUID add_callback(CallbackRef cb);
-    // Notifies cb directly with arg and wakes a wait with callbacks
-    void notify_callback(Callback &cb, SceInt32 arg);
+    // Notifies cb with arg from notifier_id and wakes a wait with callbacks, or returns false if cb
+    // is closed
+    bool notify_callback(Callback &cb, SceInt32 arg, SceUID notifier_id);
     // Drops cb's pending notifications
     void cancel_callback(Callback &cb);
     // cb's pending notifications

@@ -35,9 +35,18 @@ struct SceKernelWaitMultipleEventsOpt {
     Ptr<SceUInt32> timeout;
 };
 
+// The user data and the notify argument, packed in a struct by the user wrappers of
+// sceKernelSetEventWithNotifyCallback and sceKernelPulseEventWithNotifyCallback
+struct SceKernelEventNotifyOpt {
+    SceUInt64 user_data;
+    SceInt32 notify_arg;
+};
+
 DECL_EXPORT(SceInt32, _sceKernelWaitMultipleEvents, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt);
 DECL_EXPORT(SceInt32, _sceKernelWaitMultipleEventsCB, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt);
 
+DECL_EXPORT(SceInt32, _sceKernelSetEventWithNotifyCallback, SceUID event_id, SceUInt32 set_pattern, const SceKernelEventNotifyOpt *opt);
+DECL_EXPORT(SceInt32, _sceKernelPulseEventWithNotifyCallback, SceUID event_id, SceUInt32 set_pattern, const SceKernelEventNotifyOpt *opt);
 DECL_EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam);
 DECL_EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pInfo);
 DECL_EXPORT(int, _sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus);

@@ -38,6 +38,19 @@ constexpr SceUInt64 system_event_user_data(SceUID thread_id) {
     return (static_cast<SceUInt64>(thread_id) << 32) | static_cast<SceUInt32>(PROCESS_ID);
 }
 
+// A callback registered to an event, with the notify ID its function gets
+struct CallbackRegistration : IntrusiveLink<CallbackRegistration> {
+    CallbackRegistration(KernelState &kernel, CallbackRef callback, SceUID notify_id)
+        : kernel(kernel)
+        , callback(std::move(callback))
+        , notify_id(notify_id) {}
+
+    // The kernel that finds the callback's owner thread
+    KernelState &kernel;
+    const CallbackRef callback;
+    const SceUID notify_id;
+};
+
 // The event part of simple events and timers: a bit pattern, the user data of the last set, and the
 // waits for bits of the pattern.
 class Event : public Waitable {
@@ -53,6 +66,13 @@ public:
     SceInt32 get_pattern(SceUInt32 &result);
     // Fills info with what the event's info reports, or returns UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 info(SceKernelEventInfo &info);
+    // Registers callback, which the event's notifications then reach with notify_id. One callback can
+    // be registered more than once.
+    SceInt32 register_callback(KernelState &kernel, CallbackRef callback, SceUID notify_id);
+    // Removes the first registration of the callback
+    SceInt32 unregister_callback(SceUID callback_id);
+    // Removes every registration
+    SceInt32 unregister_callbacks();
 
 protected:
     Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
@@ -71,10 +91,15 @@ protected:
     void fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     // Gives the event's bits to the waits they match.
     void serve() override;
+    // Notifies the registered callbacks with arg and drops the ones that are gone. The lock must be
+    // held.
+    void notify_callbacks(SceInt32 arg);
 
     // Guarded by the lock
     SceUInt32 pattern;
     SceUInt64 last_user_data;
+    // In callback UID order
+    UniqueList<CallbackRegistration> registrations;
 };
 
 class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
@@ -86,6 +111,8 @@ public:
 
     SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
+    // Sets or pulses the bits, then notifies the registered callbacks with notify_arg
+    SceInt32 set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg);
     // Sets one of the system events, like the open event, with user_data for its waiters, or returns
     // UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);

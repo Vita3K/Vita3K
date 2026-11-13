@@ -597,9 +597,11 @@ void ThreadState::wake() {
     cv.notify_all();
 }
 
-void ThreadState::notify_callback(Callback &cb, SceInt32 arg) {
+bool ThreadState::notify_callback(Callback &cb, SceInt32 arg, SceUID notifier_id) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    cb.pending.notifier_id = SCE_UID_INVALID_UID;
+    if (!cb.linked())
+        return false;
+    cb.pending.notifier_id = notifier_id;
     cb.pending.arg = arg;
     ++cb.pending.count;
     // Every notify reaches the owner, also one of a deleted callback that still runs, and ends a wait
@@ -608,6 +610,7 @@ void ThreadState::notify_callback(Callback &cb, SceInt32 arg) {
     if ((wait_target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && !wait_result)
         wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
     cv.notify_all();
+    return true;
 }
 
 void ThreadState::cancel_callback(Callback &cb) {
