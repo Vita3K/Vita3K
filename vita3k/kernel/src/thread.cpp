@@ -515,14 +515,14 @@ uint64_t ThreadState::next_display_wait(uint64_t next_vblank, int vcount) {
     return last_vblank_waited;
 }
 
-SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks) {
+SceInt32 ThreadState::wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks) {
     auto guard = lock();
     // An ended run gives its exit status at once with the timeout as it was. No callback runs after
     // the wait, and a thread is never deleted from the object table.
     const SceUInt32 type = wait_type(SCE_KERNEL_WAITTYPE_WAITTHEND, callbacks);
     const Deadline deadline = deadline_from(timeout);
     while (true) {
-        if (const SceInt32 r = run_wait_callbacks(guard, *waiter, callbacks))
+        if (const SceInt32 r = run_wait_callbacks(guard, waiter, callbacks))
             return r;
         {
             const std::lock_guard<std::mutex> thread_lock(thread_mutex);
@@ -532,7 +532,7 @@ SceInt32 ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32
                 return SCE_KERNEL_OK;
             }
         }
-        const SceInt32 result = Waitable::wait(waiters, guard, *waiter, type, { .out_status = exit_status }, deadline, timeout);
+        const SceInt32 result = Waitable::wait(waiters, guard, waiter, type, { .out_status = exit_status }, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return result;
     }
@@ -605,11 +605,10 @@ Callback::Notification ThreadState::callback_notifications(const Callback &cb) {
     return cb.pending;
 }
 
-SceUID ThreadState::add_callback(const CallbackPtr &cb) {
+SceUID ThreadState::add_callback(CallbackRef cb) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    const SceUID uid = kernel.objects.add(cb, kernel.get_next_uid());
     callbacks.push_back(*cb);
-    return uid;
+    return kernel.objects.add(std::move(cb), kernel.get_next_uid());
 }
 
 bool ThreadState::delete_callback(Callback &cb) {
@@ -688,7 +687,7 @@ void ThreadState::run_event_handlers(std::unique_lock<std::mutex> &lock, SceUInt
             continue;
         }
         // The run keeps the handler alive and listed
-        const ThreadEventHandlerPtr running = handler.shared_from_this();
+        const ThreadEventHandlerRef running(&handler);
         ++handler.runs;
         list_lock.unlock();
         // Set before the handler calls, so with no handler a start racing this one gets NOT_DORMANT

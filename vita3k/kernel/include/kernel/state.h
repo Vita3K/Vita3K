@@ -53,10 +53,10 @@ struct KernelModule {
 };
 using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 
-using ThreadStatePtr = std::shared_ptr<ThreadState>;
+using ThreadStateRef = Ref<ThreadState>;
 using CodecEngineBlocks = std::map<SceUID, CodecEngineBlock>;
 using SlotToAddress = std::map<SceUID, Ptr<Ptr<void>>>;
-using ThreadStatePtrs = std::map<SceUID, ThreadStatePtr>;
+using ThreadStateRefs = std::map<SceUID, ThreadStateRef>;
 using SceKernelModuleInfoPtrs = std::map<SceUID, SceKernelModulePtr>;
 using ExportNids = unordered_map_fast<uint32_t, Address>;
 // A NID hashes the function name alone, so same-named exports from different libraries collide.
@@ -117,7 +117,7 @@ struct KernelState {
     // Thread manager objects other than threads, by UID
     KernelObjects objects;
 
-    ThreadStatePtrs threads;
+    ThreadStateRefs threads;
     void *jni_env;
     void *jni_activity;
 
@@ -170,9 +170,9 @@ struct KernelState {
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
     // Creates a dormant thread with these creation arguments, attr without
     // SCE_KERNEL_THREAD_ATTR_USER, or returns null
-    ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr);
+    ThreadStateRef create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr);
 
-    ThreadStatePtr get_thread(SceUID thread_id);
+    ThreadStateRef get_thread(SceUID thread_id);
 
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
@@ -185,7 +185,7 @@ struct KernelState {
     void set_threads_suspended(bool suspended);
 
     // Adds handler to the objects and the list under a new UID and returns the UID
-    SceUID register_thread_event_handler(const ThreadEventHandlerPtr &handler);
+    SceUID register_thread_event_handler(ThreadEventHandlerRef handler);
     // Deletes handler, false if it is no longer listed. A handler still running is unlisted when
     // its last run ends.
     bool unregister_thread_event_handler(ThreadEventHandler &handler);

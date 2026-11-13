@@ -232,7 +232,7 @@ static QString owner_string(KernelState &kernel, SceUID owner_id) {
     if (!owner_id)
         return DebugWidget::tr("not owned");
     const QString uid = QStringLiteral("0x%1").arg(owner_id, 8, 16, QLatin1Char('0')).toUpper();
-    const ThreadStatePtr owner = kernel.get_thread(owner_id);
+    const ThreadStateRef owner = kernel.get_thread(owner_id);
     return owner ? QStringLiteral("%1 (%2)").arg(QString::fromUtf8(owner->name), uid) : uid;
 }
 
@@ -371,7 +371,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
         return;
 
     const SceUID thread_id = static_cast<SceUID>(item->data(0, Qt::UserRole).toUInt());
-    ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
     if (!thread) {
         QMessageBox::warning(this, tr("Thread Not Found"),
             tr("Thread 0x%1 no longer exists.").arg(thread_id, 8, 16, QLatin1Char('0')));

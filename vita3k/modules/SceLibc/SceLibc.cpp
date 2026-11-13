@@ -966,7 +966,7 @@ EXPORT(int, printf, const char *format, module::vargs args) {
     // TODO: add args to tracy func
     std::vector<char> buffer(1024);
 
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
@@ -1127,7 +1127,7 @@ EXPORT(int, snprintf, char *s, size_t n, const char *format, module::vargs args)
     // TODO: add args to tracy func
     TRACY_FUNC(snprintf, s, n, format);
 
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
     return utils::snprintf(s, n, format, *(thread->cpu), emuenv.mem, args);
 }
 
