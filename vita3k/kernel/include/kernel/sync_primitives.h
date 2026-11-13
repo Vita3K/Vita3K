@@ -551,3 +551,7 @@ private:
 };
 
 using MsgPipeRef = Ref<MsgPipe>;
+
+// Only the concrete classes are kernel object classes, not the ones they share
+static_assert(KernelObjectClass<HeavyMutex> && KernelObjectClass<LwMutex> && !KernelObjectClass<Mutex>);
+static_assert(KernelObjectClass<SimpleEvent> && KernelObjectClass<Timer> && !KernelObjectClass<Event>);
