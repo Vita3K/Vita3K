@@ -103,9 +103,11 @@ protected:
 };
 
 class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
-public:
+    friend class Ref<SimpleEvent>;
+
     SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator);
 
+public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
 
@@ -123,9 +125,11 @@ using SimpleEventRef = Ref<SimpleEvent>;
 using EventRef = Ref<Event>;
 
 class Timer final : public WithUidClass<Event, UidClass::timer> {
-public:
+    friend class Ref<Timer>;
+
     Timer(SceUInt32 attr, const char *name, SceUID creator);
 
+public:
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
     SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 start();
@@ -181,11 +185,13 @@ private:
 using TimerRef = Ref<Timer>;
 
 class Semaphore final : public WithUidClass<Waitable, UidClass::semaphore> {
+    friend class Ref<Semaphore>;
+
+    Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val);
+
 public:
     const SceInt32 init_val;
     const SceInt32 max;
-
-    Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val);
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val);
@@ -219,7 +225,6 @@ public:
     // It's reported, not applied yet.
     const int ceiling;
 
-    Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea = {});
     // Returns the error for arguments the caller can't use, or 0. Kernel callers may use more attributes.
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count, const SceKernelMutexOptParam *opt, bool kernel);
 
@@ -233,6 +238,8 @@ public:
     void release_if_owned_by(ThreadState &thread);
 
 protected:
+    Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea = {});
+
     // Makes thread the owner, and lists a heavy mutex in what it holds. The lock must be held, except
     // while the mutex is created.
     void set_owner(ThreadState &thread);
@@ -262,18 +269,22 @@ private:
 };
 
 class LwMutex final : public WithUidClass<Mutex, UidClass::lw_mutex> {
-public:
+    friend class Ref<LwMutex>;
+
     using WithUidClass::WithUidClass;
 
+public:
     // Fills info with what the lightweight mutex's info reports, or returns UNKNOWN_LW_MUTEX_ID if it
     // was deleted.
     SceInt32 info(SceKernelLwMutexInfo &info) const;
 };
 
 class HeavyMutex final : public WithUidClass<Mutex, UidClass::mutex> {
-public:
+    friend class Ref<HeavyMutex>;
+
     HeavyMutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling);
 
+public:
     // Fills info with what the mutex's info reports, or returns UNKNOWN_MUTEX_ID if it was deleted.
     SceInt32 info(SceKernelMutexInfo &info) const;
 };
@@ -281,9 +292,11 @@ public:
 using MutexRef = Ref<Mutex>;
 
 class RWLock final : public WithUidClass<Waitable, UidClass::rw_lock>, public IntrusiveLink<RWLock> {
-public:
+    friend class Ref<RWLock>;
+
     RWLock(SceUInt32 attr, const char *name);
 
+public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr);
 
@@ -326,11 +339,13 @@ private:
 using RWLockRef = Ref<RWLock>;
 
 class EventFlag final : public WithUidClass<Waitable, UidClass::event_flag>, public IntrusiveLink<EventFlag> {
+    friend class Ref<EventFlag>;
+
+    EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
+
 public:
     // The pattern the event flag was created with, for its info
     const SceUInt32 init_pattern;
-
-    EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr);
@@ -402,12 +417,13 @@ public:
 
     const MutexRef associated_mutex;
 
-    Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex);
-
     SceInt32 wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 signal(SignalTarget target);
     // Returns how many threads wait on the condition variable, 0 once it was deleted.
     SceUInt32 num_waiters() const;
+
+protected:
+    Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex);
 
 private:
     void end_waits(SceUID deleter) override;
@@ -415,9 +431,11 @@ private:
 };
 
 class LwCond final : public WithUidClass<Condvar, UidClass::lw_cond> {
-public:
+    friend class Ref<LwCond>;
+
     LwCond(SceUInt32 attr, const char *name, MutexRef associated_mutex, Ptr<SceKernelLwCondWork> workarea);
 
+public:
     // Fills info with what the lightweight condition variable's info reports, or returns
     // UNKNOWN_LW_COND_ID if it was deleted.
     SceInt32 info(SceKernelLwCondInfo &info) const;
@@ -426,9 +444,11 @@ public:
 };
 
 class HeavyCond final : public WithUidClass<Condvar, UidClass::cond> {
-public:
+    friend class Ref<HeavyCond>;
+
     using WithUidClass::WithUidClass;
 
+public:
     // Fills info with what the condition variable's info reports, or returns UNKNOWN_COND_ID if it was
     // deleted.
     SceInt32 info(SceKernelCondInfo &info) const;
@@ -482,9 +502,11 @@ struct MsgPipeReceiver : MsgPipeTransfer {
 };
 
 class MsgPipe final : public WithUidClass<Waitable, UidClass::msg_pipe> {
-public:
+    friend class Ref<MsgPipe>;
+
     MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size);
 
+public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size);
 
