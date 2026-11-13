@@ -17,6 +17,10 @@
 
 #include <module/module.h>
 
+enum SceNpErrorCode : uint32_t {
+    SCE_NP_ERROR_SIGNED_OUT = 0x80550006,
+};
+
 EXPORT(int, sceNpCommerce2AbortReq) {
     return UNIMPLEMENTED();
 }
@@ -34,7 +38,8 @@ EXPORT(int, sceNpCommerce2CreateSessionGetResult) {
 }
 
 EXPORT(int, sceNpCommerce2CreateSessionStart) {
-    return UNIMPLEMENTED();
+    // Without a PSN server no session can be created; failing here keeps games from reading unfilled results.
+    return RET_ERROR(SCE_NP_ERROR_SIGNED_OUT);
 }
 
 EXPORT(int, sceNpCommerce2DestroyCtx) {
