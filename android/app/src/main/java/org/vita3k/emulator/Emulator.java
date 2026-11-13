@@ -573,9 +573,6 @@ public class Emulator extends SDLActivity
                 mSurface.requestFocus();
             }
 
-            NativeImeState imeState = sessionViewModel != null ? sessionViewModel.getImeState() : null;
-            boolean dialogActive = imeState != null && imeState.getDialogActive();
-
             boolean dismissedInNative = false;
             try {
                 dismissedInNative = NativeLib.INSTANCE.dismissIme();
@@ -585,7 +582,7 @@ public class Emulator extends SDLActivity
             restoreImeAfterPauseMenu = false;
             suppressImeHiddenHandler = true;
 
-            if (dismissedInNative && dialogActive) {
+            if (dismissedInNative) {
                 imeDismissedByUser = true;
                 applyKeyboardOverlayState(false);
                 return;
