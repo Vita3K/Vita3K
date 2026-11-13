@@ -23,6 +23,7 @@
 #include <kernel/types.h>
 #include <kernel/waitable.h>
 #include <util/byte_ring_buffer.h>
+#include <util/intrusive_list.h>
 
 #include <expected>
 #include <limits>
@@ -183,7 +184,7 @@ private:
 
 using SemaphoreRef = Ref<Semaphore>;
 
-class Mutex : public Waitable {
+class Mutex : public Waitable, public IntrusiveLink<Mutex> {
 public:
     const SceInt32 init_count;
     const Ptr<SceKernelLwMutexWork> workarea;
@@ -201,10 +202,15 @@ public:
     SceInt32 try_acquire(MemState &mem, ThreadState &thread, SceInt32 count);
     SceInt32 release(MemState &mem, ThreadState &thread, SceInt32 unlock_count);
     SceInt32 cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
-    // Gives the mutex to its next waiter if thread, which is ending, owns it.
-    void release_ended_owner(const ThreadState &thread);
+    // Gives a heavy mutex to its next waiter if thread, which is ending, still owns it.
+    void release_if_owned_by(ThreadState &thread);
 
 protected:
+    // Makes thread the owner, and lists a heavy mutex in what it holds. The lock must be held.
+    void set_owner(ThreadState &thread);
+    // Leaves the mutex with no owner and unlists it. The lock must be held.
+    void clear_owner();
+
     // Guarded by the lock, read by the info of each kind of mutex
     SceInt32 lock_count;
     // The UID of the thread that holds it, or 0. A UID and not the thread, since a lightweight mutex
@@ -212,6 +218,9 @@ protected:
     SceUID owner;
 
 private:
+    // The owner of a heavy mutex, which lists it, or null
+    ThreadState *owner_thread = nullptr;
+
     void end_waits(SceUID deleter) override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
     // Returns ILLEGAL_COUNT for a lock or unlock count the mutex can't take, or SCE_KERNEL_OK
@@ -235,7 +244,7 @@ public:
 
 class HeavyMutex final : public WithUidClass<Mutex, UidClass::mutex> {
 public:
-    using WithUidClass::WithUidClass;
+    HeavyMutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling);
 
     // Fills info with what the mutex's info reports, or returns UNKNOWN_MUTEX_ID if it was deleted.
     SceInt32 info(SceKernelMutexInfo &info) const;
@@ -243,7 +252,7 @@ public:
 
 using MutexRef = Ref<Mutex>;
 
-class RWLock final : public WithUidClass<Waitable, UidClass::rw_lock> {
+class RWLock final : public WithUidClass<Waitable, UidClass::rw_lock>, public IntrusiveLink<RWLock> {
 public:
     RWLock(SceUInt32 attr, const char *name);
 
@@ -257,9 +266,9 @@ public:
     SceInt32 release_read(ThreadState &thread);
     SceInt32 release_write(ThreadState &thread);
     SceInt32 cancel(ThreadState &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
-    // Releases the write lock if thread, which is ending, holds it. A read lock stays held, like on
+    // Releases the write lock if thread, which is ending, still holds it. A read lock stays held, like on
     // a Vita.
-    void release_ended_writer(const ThreadState &thread);
+    void release_if_write_locked_by(ThreadState &thread);
     // Fills info with what the rwlock's info reports, or returns UNKNOWN_RW_LOCK_ID if it was deleted.
     SceInt32 info(SceKernelRWLockInfo &info) const;
 
@@ -270,6 +279,10 @@ private:
     SceInt32 release(ThreadState &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
     SceInt32 try_take(ThreadState &thread, bool is_write);
+    // Makes thread the writer and lists the lock in what it holds. The lock must be held.
+    void set_write_owner(ThreadState &thread);
+    // Leaves the lock with no writer and unlists it. The lock must be held.
+    void clear_write_owner();
     // Gives the lock to the waiters that get it next: every waiting reader while no writer holds or
     // waits for it, or else the first waiting writer once nobody holds it.
     void serve() override;
@@ -278,13 +291,13 @@ private:
     // The read locks of every reader, or the writer's count. Readers aren't tracked one by one, like
     // on a Vita, so any thread may read unlock while readers hold it.
     SceInt32 lock_count = 0;
-    // The UID of the thread that holds the write lock, or 0
-    SceUID write_owner = 0;
+    // The thread that holds the write lock, or null
+    ThreadState *write_owner = nullptr;
 };
 
 using RWLockRef = Ref<RWLock>;
 
-class EventFlag final : public WithUidClass<Waitable, UidClass::event_flag> {
+class EventFlag final : public WithUidClass<Waitable, UidClass::event_flag>, public IntrusiveLink<EventFlag> {
 public:
     // The pattern the event flag was created with, for its info
     const SceUInt32 init_pattern;
@@ -303,8 +316,8 @@ public:
     SceInt32 cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads);
     // Fills info with what the event flag's info reports, or returns UNKNOWN_EVF_ID if it was deleted.
     SceInt32 info(SceKernelEventFlagInfo &info) const;
-    // Drops the holds of thread, which is ending.
-    void release_ended_holder(const ThreadState &thread);
+    // Drops the holds on the flag if thread, which is ending, still has them.
+    void release_if_held_by(ThreadState &thread);
 
 private:
     void end_waits(SceUID deleter) override;
@@ -322,6 +335,10 @@ private:
     void wait_end(ThreadState &thread, SceInt32 result) override;
     // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
     void drop_hold();
+    // Makes thread the holder and lists the flag in what it holds. The lock must be held.
+    void set_holder(ThreadState &thread);
+    // Leaves the flag with no holder and unlists it. The lock must be held.
+    void clear_holder();
 
     // Guarded by the lock
     SceUInt32 flags;
@@ -330,7 +347,7 @@ private:
     // bits, when a cancel or delete wakes it, or when it times out in the queue. A wait that ends
     // before sleeping without getting the bits, like one with a timeout of 0, keeps its hold until
     // the thread ends or the flag is deleted.
-    SceUID holder = 0;
+    ThreadState *holder = nullptr;
     int holds = 0;
 };
 

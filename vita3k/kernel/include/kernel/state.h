@@ -192,7 +192,7 @@ struct KernelState {
 
     // The registered thread event handlers in registration order. A handler stays listed while it runs.
     std::mutex thread_event_handlers_mutex;
-    IntrusiveList<ThreadEventHandler> thread_event_handlers;
+    RefList<ThreadEventHandler> thread_event_handlers;
 
     // Kill all guest threads and block until they have exited. Must only be called from a host thread.
     void process_exit();

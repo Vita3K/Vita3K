@@ -641,6 +641,12 @@ Mutex::Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateR
     , lock_count(init_count)
     , owner(init_count > 0 && thread ? thread->id : 0) {}
 
+HeavyMutex::HeavyMutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling)
+    : WithUidClass(attr, name, init_count, thread, ceiling) {
+    if (owner)
+        set_owner(*thread);
+}
+
 SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count, const SceKernelMutexOptParam *opt, bool kernel) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
@@ -666,7 +672,25 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
 
 void Mutex::end_waits(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    clear_owner();
+}
+
+void Mutex::set_owner(ThreadState &thread) {
+    owner = thread.id;
+    if (lightweight() || owner_thread == &thread)
+        return;
+    if (owner_thread)
+        owner_thread->remove_held(*this);
+    owner_thread = &thread;
+    thread.add_held(MutexRef(this));
+}
+
+void Mutex::clear_owner() {
     owner = 0;
+    if (!owner_thread)
+        return;
+    owner_thread->remove_held(*this);
+    owner_thread = nullptr;
 }
 
 SceInt32 Mutex::try_take(MemState &mem, ThreadState &thread, SceInt32 count) {
@@ -707,7 +731,7 @@ SceInt32 Mutex::try_take(MemState &mem, ThreadState &thread, SceInt32 count) {
     // Take ownership!
 
     lock_count += count;
-    owner = thread.id;
+    set_owner(thread);
     update_workarea(mem);
 
     return SCE_KERNEL_OK;
@@ -812,19 +836,19 @@ SceInt32 Mutex::release(MemState &mem, ThreadState &thread, SceInt32 unlock_coun
 
     lock_count -= unlock_count;
     if (lock_count == 0)
-        owner = 0;
+        clear_owner();
     serve();
     update_workarea(mem);
 
     return SCE_KERNEL_OK;
 }
 
-void Mutex::release_ended_owner(const ThreadState &thread) {
+void Mutex::release_if_owned_by(ThreadState &thread) {
     const auto guard = lock();
-    if (!guard || owner != thread.id)
+    if (!guard || owner_thread != &thread)
         return;
     lock_count = 0;
-    owner = 0;
+    clear_owner();
     serve();
 }
 
@@ -833,7 +857,7 @@ void Mutex::serve() {
         return;
     if (ThreadState *const waiter = waiters.front()) {
         lock_count = waiter->wait_request().count;
-        owner = waiter->id;
+        set_owner(*waiter);
         waiters.wake(*waiter);
     }
 }
@@ -851,7 +875,10 @@ SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_w
 
     const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     lock_count = new_count;
-    owner = new_count > 0 ? thread.id : 0;
+    if (new_count > 0)
+        set_owner(thread);
+    else
+        clear_owner();
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
@@ -910,11 +937,28 @@ SceInt32 RWLock::check_create(const char *name, SceUInt32 attr) {
 
 void RWLock::end_waits(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    clear_write_owner();
+}
+
+void RWLock::set_write_owner(ThreadState &thread) {
+    if (write_owner == &thread)
+        return;
+    if (write_owner)
+        write_owner->remove_held(*this);
+    write_owner = &thread;
+    thread.add_held(RWLockRef(this));
+}
+
+void RWLock::clear_write_owner() {
+    if (!write_owner)
+        return;
+    write_owner->remove_held(*this);
+    write_owner = nullptr;
 }
 
 SceInt32 RWLock::try_take(ThreadState &thread, bool is_write) {
     // The writer may take the write lock again only if the lock is recursive
-    if (is_write && write_owner == thread.id) {
+    if (is_write && write_owner == &thread) {
         if (!(attr & SCE_KERNEL_RW_LOCK_ATTR_RECURSIVE))
             return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
         lock_count++;
@@ -932,7 +976,7 @@ SceInt32 RWLock::try_take(ThreadState &thread, bool is_write) {
 
     lock_count++;
     if (is_write)
-        write_owner = thread.id;
+        set_write_owner(thread);
     return SCE_KERNEL_OK;
 }
 
@@ -942,7 +986,7 @@ SceInt32 RWLock::acquire(ThreadState &thread, bool is_write, SceUInt32 *timeout,
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
     // The writer locking again succeeds or fails at once, without callbacks. A reader asking for a
     // write lock waits, since readers aren't tracked individually.
-    if (write_owner == thread.id)
+    if (write_owner == &thread)
         return try_take(thread, is_write);
 
     const SceUInt32 type = wait_type(SCE_KERNEL_WAITTYPE_RW_LOCK, callbacks);
@@ -955,7 +999,7 @@ SceInt32 RWLock::acquire(ThreadState &thread, bool is_write, SceUInt32 *timeout,
         if (!write_owner && (is_write ? lock_count == 0 : waiters.empty())) {
             lock_count++;
             if (is_write)
-                write_owner = thread.id;
+                set_write_owner(thread);
             return SCE_KERNEL_OK;
         }
         const SceInt32 result = Waitable::wait(waiters, guard, thread, type, { .write = is_write }, deadline, timeout);
@@ -1003,7 +1047,7 @@ SceInt32 RWLock::release(ThreadState &thread, bool is_write) {
 
     if (is_write) {
         // Only the writer may write unlock
-        if (write_owner != thread.id)
+        if (write_owner != &thread)
             return SCE_KERNEL_ERROR_RW_LOCK_NOT_OWNED;
     } else {
         if (write_owner)
@@ -1013,19 +1057,17 @@ SceInt32 RWLock::release(ThreadState &thread, bool is_write) {
     }
 
     if (--lock_count == 0)
-        write_owner = 0;
+        clear_write_owner();
     serve();
     return SCE_KERNEL_OK;
 }
 
-void RWLock::release_ended_writer(const ThreadState &thread) {
+void RWLock::release_if_write_locked_by(ThreadState &thread) {
     const auto guard = lock();
-    if (!guard)
-        return;
-    if (write_owner != thread.id)
+    if (!guard || write_owner != &thread)
         return;
     lock_count = 0;
-    write_owner = 0;
+    clear_write_owner();
     serve();
 }
 
@@ -1039,7 +1081,7 @@ SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
     std::ranges::copy(name, info.name);
     info.attr = attr;
     info.lockCount = lock_count;
-    info.writeOwnerId = write_owner;
+    info.writeOwnerId = write_owner ? write_owner->id : 0;
     SceUInt32 writers = 0;
     for (const ThreadState &waiter : waiters) {
         if (waiter.wait_request().write)
@@ -1060,7 +1102,7 @@ void RWLock::serve() {
     if (!writer) {
         lock_count += static_cast<SceInt32>(waiters.wake_all());
     } else if (lock_count == 0) {
-        write_owner = writer->id;
+        set_write_owner(*writer);
         lock_count = 1;
         waiters.wake(*writer);
     }
@@ -1078,7 +1120,10 @@ SceInt32 RWLock::cancel(ThreadState &thread, SceUInt32 *num_read_wait_threads, S
     // The lock is reset, and only the calling thread may hold it afterwards
     const bool write_locked = flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK;
     lock_count = write_locked ? 1 : 0;
-    write_owner = write_locked ? thread.id : 0;
+    if (write_locked)
+        set_write_owner(thread);
+    else
+        clear_write_owner();
 
     if (num_read_wait_threads)
         *num_read_wait_threads = nb_readers;
@@ -1362,7 +1407,7 @@ SceInt32 EventFlag::check_wait(SceUInt32 pattern, SceUInt32 wait_mode) {
 
 void EventFlag::end_waits(SceUID) {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
-    holder = 0;
+    clear_holder();
     holds = 0;
 }
 
@@ -1376,11 +1421,24 @@ void EventFlag::wait_end(ThreadState &thread, SceInt32 result) {
 
 void EventFlag::drop_hold() {
     if (holds > 0 && --holds == 0)
-        holder = 0;
+        clear_holder();
+}
+
+void EventFlag::set_holder(ThreadState &thread) {
+    assert(!holder);
+    holder = &thread;
+    thread.add_held(EventFlagRef(this));
+}
+
+void EventFlag::clear_holder() {
+    if (!holder)
+        return;
+    holder->remove_held(*this);
+    holder = nullptr;
 }
 
 bool EventFlag::held_by_other(SceUID thread_id) const {
-    return holds > 0 && holder != thread_id;
+    return holds > 0 && holder->id != thread_id;
 }
 
 SceInt32 EventFlag::try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
@@ -1422,10 +1480,8 @@ SceInt32 EventFlag::wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_
         return SCE_KERNEL_ERROR_EVF_MULTI;
 
     // A flag without SCE_EVENT_WAITMULTIPLE is held while the wait lasts, take() releases it
-    if (!(attr & SCE_EVENT_WAITMULTIPLE)) {
-        holder = thread.id;
-        ++holds;
-    }
+    if (!(attr & SCE_EVENT_WAITMULTIPLE) && holds++ == 0)
+        set_holder(thread);
     const SceUInt32 type = wait_type(SCE_KERNEL_WAITTYPE_EVENTFLAG, callbacks);
     const WaitRequest request{ .pattern = pattern, .mode = wait_mode, .out_pattern = out_bits };
     const Deadline deadline = deadline_from(timeout);
@@ -1462,12 +1518,12 @@ SceInt32 EventFlag::poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mod
     return try_take(thread_id, pattern, wait_mode, out_bits);
 }
 
-void EventFlag::release_ended_holder(const ThreadState &thread) {
+void EventFlag::release_if_held_by(ThreadState &thread) {
     const auto guard = lock();
-    if (!guard || holder != thread.id)
+    if (!guard || holder != &thread)
         return;
-    holder = 0;
     holds = 0;
+    clear_holder();
 }
 
 SceInt32 EventFlag::set(SceUInt32 pattern) {
