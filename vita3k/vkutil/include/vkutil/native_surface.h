@@ -18,5 +18,6 @@
 #pragma once
 
 #ifdef __APPLE__
+// Main-thread calls prepare/resize the layer; render-thread calls only retrieve it.
 extern "C" void *get_metal_layer_from_view(void *nsview);
 #endif
