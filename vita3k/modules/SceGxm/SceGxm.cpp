@@ -894,7 +894,7 @@ std::string to_debug_str<SceGxmTransferFlags>(const MemState &mem, SceGxmTransfe
 
 static void display_entry_thread(EmuEnvState &emuenv) {
     auto &display_queue = emuenv.gxm.display_queue;
-    const ThreadStatePtr display_thread = emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread);
+    const ThreadStateRef display_thread = emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread);
     if (!display_thread) {
         LOG_CRITICAL("display_thread not found. thid:{}", emuenv.gxm.display_queue_thread);
         return;
@@ -953,7 +953,7 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
         return Ptr<void>();
     }
 
-    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+    const ThreadStateRef thread = kernel.get_thread(thread_id);
     const Address final_size_addr = thread->cpu->stack_alloc(4);
 
     const std::optional<uint32_t> result = thread->call_guest(callback.address(), { userdata.address(), size, final_size_addr });
@@ -2914,8 +2914,8 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     // A slot stays occupied until its callback returns, like the firmware
     emuenv.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
 
-    const ThreadStatePtr main_thread = emuenv.kernel.get_thread(thread_id);
-    const ThreadStatePtr display_queue_thread = emuenv.kernel.create_thread(emuenv.mem, "SceGxmDisplayQueue", emuenv.gxm.params.displayQueueCallback, SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, 0);
+    const ThreadStateRef main_thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStateRef display_queue_thread = emuenv.kernel.create_thread(emuenv.mem, "SceGxmDisplayQueue", emuenv.gxm.params.displayQueueCallback, SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, 0);
     if (!display_queue_thread) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }

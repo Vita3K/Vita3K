@@ -524,9 +524,9 @@ static std::string stop_reply(SceUID thread_id) {
     return "T05thread:" + to_hex(thread_id) + ";";
 }
 
-static std::vector<ThreadStatePtr> list_threads(EmuEnvState &state) {
+static std::vector<ThreadStateRef> list_threads(EmuEnvState &state) {
     const auto guard = std::lock_guard(state.kernel.mutex);
-    std::vector<ThreadStatePtr> threads;
+    std::vector<ThreadStateRef> threads;
     for (const auto &[_, thread] : state.kernel.threads)
         threads.push_back(thread);
     return threads;
@@ -551,7 +551,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             SceUID thread_id = colon == std::string::npos ? 0 : static_cast<SceUID>(parse_hex(text.substr(colon + 1)));
             if (thread_id <= 0)
                 thread_id = state.gdb.current_thread;
-            const ThreadStatePtr thread = state.kernel.get_thread(thread_id);
+            const ThreadStateRef thread = state.kernel.get_thread(thread_id);
             if (!thread)
                 return "E00";
 
@@ -569,7 +569,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             state.kernel.set_threads_suspended(false);
 
             // Wait until some thread hits a breakpoint
-            ThreadStatePtr stopped;
+            ThreadStateRef stopped;
             while (!stopped) {
                 auto lock = std::unique_lock(state.kernel.mutex);
 
@@ -593,7 +593,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
             // Stop the world. A thread inside a kernel call stops when the call returns.
             state.kernel.set_threads_suspended(true);
-            for (const ThreadStatePtr &thread : list_threads(state))
+            for (const ThreadStateRef &thread : list_threads(state))
                 thread->wait_until_not_running();
 
             state.gdb.current_thread = stopped->id;

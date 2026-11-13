@@ -264,7 +264,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     };
     addrinfo *result = { 0 };
 
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
 
     auto ret = getaddrinfo(parsed.hostname.c_str(), port.c_str(), &hints, &result);
     if (ret < 0) {

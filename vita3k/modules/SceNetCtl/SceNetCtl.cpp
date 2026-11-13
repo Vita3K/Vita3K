@@ -489,7 +489,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
 
     // TODO: Check if the network is connected
     if (emuenv.net.state != 1) {

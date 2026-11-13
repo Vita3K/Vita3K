@@ -83,23 +83,23 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
 
-    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
+    SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     // Sets one of the system events, like the open event, with user_data for its waiters, or returns
     // UNKNOWN_EVENT_ID if it was deleted.
     SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
 };
 
-using SimpleEventPtr = std::shared_ptr<SimpleEvent>;
+using SimpleEventRef = Ref<SimpleEvent>;
 
-using EventPtr = std::shared_ptr<Event>;
+using EventRef = Ref<Event>;
 
 class Timer final : public WithUidClass<Event, UidClass::timer> {
 public:
     Timer(SceUInt32 attr, const char *name, SceUID creator);
 
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
-    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
+    SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 start();
     SceInt32 stop();
     SceInt32 cancel(SceUInt32 *num_wait_threads) override;
@@ -150,7 +150,7 @@ private:
     uint64_t event_interval = 0;
 };
 
-using TimerPtr = std::shared_ptr<Timer>;
+using TimerRef = Ref<Timer>;
 
 class Semaphore final : public WithUidClass<Waitable, UidClass::semaphore> {
 public:
@@ -162,8 +162,8 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val);
 
-    SceInt32 wait(const ThreadStatePtr &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
-    SceInt32 poll(const ThreadStatePtr &thread, SceInt32 need_count);
+    SceInt32 wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
+    SceInt32 poll(ThreadState &thread, SceInt32 need_count);
     SceInt32 signal(SceInt32 count);
     SceInt32 cancel(SceInt32 set_count, SceUInt32 *num_wait_threads);
     // Fills info with what the semaphore's info reports, or returns UNKNOWN_SEMA_ID if it was deleted.
@@ -173,7 +173,7 @@ private:
     void end_waits(SceUID deleter) override;
     // Takes need_count if the count covers it and no waiter is queued ahead of thread. The lock
     // must be held.
-    bool try_take(const ThreadStatePtr &thread, SceInt32 need_count);
+    bool try_take(ThreadState &thread, SceInt32 need_count);
     // Gives the count to the waits it covers, in queue order up to the first it doesn't.
     void serve() override;
 
@@ -181,7 +181,7 @@ private:
     SceInt32 val;
 };
 
-using SemaphorePtr = std::shared_ptr<Semaphore>;
+using SemaphoreRef = Ref<Semaphore>;
 
 class Mutex : public Waitable {
 public:
@@ -191,16 +191,16 @@ public:
     // It's reported, not applied yet.
     const int ceiling;
 
-    Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea = {});
+    Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea = {});
     // Returns the error for arguments the caller can't use, or 0. Kernel callers may use more attributes.
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count, const SceKernelMutexOptParam *opt, bool kernel);
 
-    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks);
+    SceInt32 acquire(MemState &mem, ThreadState &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks);
     // Relocks the mutex after a condition variable wait, without a timeout.
-    SceInt32 relock(MemState &mem, const ThreadStatePtr &thread, bool callbacks);
-    SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
-    SceInt32 release(MemState &mem, const ThreadStatePtr &thread, SceInt32 unlock_count);
-    SceInt32 cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
+    SceInt32 relock(MemState &mem, ThreadState &thread, bool callbacks);
+    SceInt32 try_acquire(MemState &mem, ThreadState &thread, SceInt32 count);
+    SceInt32 release(MemState &mem, ThreadState &thread, SceInt32 unlock_count);
+    SceInt32 cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
     // Gives the mutex to its next waiter if thread, which is ending, owns it.
     void release_ended_owner(const ThreadState &thread);
 
@@ -217,7 +217,7 @@ private:
     // Returns ILLEGAL_COUNT for a lock or unlock count the mutex can't take, or SCE_KERNEL_OK
     SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
-    SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
+    SceInt32 try_take(MemState &mem, ThreadState &thread, SceInt32 count);
     // Gives a free mutex to the first waiter, if there is one.
     void serve() override;
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
@@ -241,7 +241,7 @@ public:
     SceInt32 info(SceKernelMutexInfo &info) const;
 };
 
-using MutexPtr = std::shared_ptr<Mutex>;
+using MutexRef = Ref<Mutex>;
 
 class RWLock final : public WithUidClass<Waitable, UidClass::rw_lock> {
 public:
@@ -250,13 +250,13 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr);
 
-    SceInt32 acquire_read(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
-    SceInt32 acquire_write(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
-    SceInt32 try_acquire_read(const ThreadStatePtr &thread);
-    SceInt32 try_acquire_write(const ThreadStatePtr &thread);
-    SceInt32 release_read(const ThreadStatePtr &thread);
-    SceInt32 release_write(const ThreadStatePtr &thread);
-    SceInt32 cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
+    SceInt32 acquire_read(ThreadState &thread, SceUInt32 *timeout, bool callbacks);
+    SceInt32 acquire_write(ThreadState &thread, SceUInt32 *timeout, bool callbacks);
+    SceInt32 try_acquire_read(ThreadState &thread);
+    SceInt32 try_acquire_write(ThreadState &thread);
+    SceInt32 release_read(ThreadState &thread);
+    SceInt32 release_write(ThreadState &thread);
+    SceInt32 cancel(ThreadState &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
     // Releases the write lock if thread, which is ending, holds it. A read lock stays held, like on
     // a Vita.
     void release_ended_writer(const ThreadState &thread);
@@ -265,11 +265,11 @@ public:
 
 private:
     void end_waits(SceUID deleter) override;
-    SceInt32 acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
-    SceInt32 try_acquire(const ThreadStatePtr &thread, bool is_write);
-    SceInt32 release(const ThreadStatePtr &thread, bool is_write);
+    SceInt32 acquire(ThreadState &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
+    SceInt32 try_acquire(ThreadState &thread, bool is_write);
+    SceInt32 release(ThreadState &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
-    SceInt32 try_take(const ThreadStatePtr &thread, bool is_write);
+    SceInt32 try_take(ThreadState &thread, bool is_write);
     // Gives the lock to the waiters that get it next: every waiting reader while no writer holds or
     // waits for it, or else the first waiting writer once nobody holds it.
     void serve() override;
@@ -282,7 +282,7 @@ private:
     SceUID write_owner = 0;
 };
 
-using RWLockPtr = std::shared_ptr<RWLock>;
+using RWLockRef = Ref<RWLock>;
 
 class EventFlag final : public WithUidClass<Waitable, UidClass::event_flag> {
 public:
@@ -296,7 +296,7 @@ public:
     // Returns the error a poll or wait for pattern with wait_mode gets, or SCE_KERNEL_OK
     static SceInt32 check_wait(SceUInt32 pattern, SceUInt32 wait_mode);
 
-    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
+    SceInt32 wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
     SceInt32 set(SceUInt32 pattern);
     SceInt32 clear(SceUInt32 pattern);
@@ -334,7 +334,7 @@ private:
     int holds = 0;
 };
 
-using EventFlagPtr = std::shared_ptr<EventFlag>;
+using EventFlagRef = Ref<EventFlag>;
 
 class Condvar : public Waitable {
 public:
@@ -355,11 +355,11 @@ public:
             , thread_id(thread_id) {}
     };
 
-    const MutexPtr associated_mutex;
+    const MutexRef associated_mutex;
 
-    Condvar(SceUInt32 attr, const char *name, MutexPtr associated_mutex);
+    Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex);
 
-    SceInt32 wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
+    SceInt32 wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 signal(SignalTarget target);
     // Returns how many threads wait on the condition variable, 0 once it was deleted.
     SceUInt32 num_waiters() const;
@@ -371,7 +371,7 @@ private:
 
 class LwCond final : public WithUidClass<Condvar, UidClass::lw_cond> {
 public:
-    LwCond(SceUInt32 attr, const char *name, MutexPtr associated_mutex, Ptr<SceKernelLwCondWork> workarea);
+    LwCond(SceUInt32 attr, const char *name, MutexRef associated_mutex, Ptr<SceKernelLwCondWork> workarea);
 
     // Fills info with what the lightweight condition variable's info reports, or returns
     // UNKNOWN_LW_COND_ID if it was deleted.
@@ -389,7 +389,7 @@ public:
     SceInt32 info(SceKernelCondInfo &info) const;
 };
 
-using CondvarPtr = std::shared_ptr<Condvar>;
+using CondvarRef = Ref<Condvar>;
 
 // One piece of a message pipe transfer, a buffer in guest memory
 struct MsgPipeVector {
@@ -445,11 +445,11 @@ public:
 
     // Both move the bytes of the pieces in order, waiting until a FULL call moved all of them or an
     // ASAP call any. The size moved so far is kept in size, which may be null.
-    SceInt32 receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
-    SceInt32 send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
+    SceInt32 receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
+    SceInt32 send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks);
     // Both move what they can at once, without waiting
-    SceInt32 try_receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
-    SceInt32 try_send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
+    SceInt32 try_receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
+    SceInt32 try_send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size);
     SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
     // Fills info with what the message pipe's info reports, or returns UNKNOWN_MSG_PIPE_ID if it was
     // deleted.
@@ -483,4 +483,4 @@ private:
     ByteRingBuffer data_buffer;
 };
 
-using MsgPipePtr = std::shared_ptr<MsgPipe>;
+using MsgPipeRef = Ref<MsgPipe>;

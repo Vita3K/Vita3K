@@ -164,7 +164,7 @@ CallResult call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID 
         return (*fn)(emuenv, cpu, thread_id);
 
     if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
-        const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+        const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
         LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
         if (!LOG_UNK_NIDS_ALWAYS)
             emuenv.missing_nids.insert(nid);
@@ -331,7 +331,7 @@ uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sc
         SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
         SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
         // module_start is always called from new thread
-        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, 0);
+        const ThreadStateRef module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, 0);
 
         const uint32_t ret = module_thread->start_and_wait(args, argp.cast<void>());
         module_thread->remove();
@@ -355,7 +355,7 @@ uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sce
         SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
         SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
         // module_stop is always called from new thread
-        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_stop, priority, affinity, stack_size, 0);
+        const ThreadStateRef module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_stop, priority, affinity, stack_size, 0);
 
         const uint32_t ret = module_thread->start_and_wait(args, argp.cast<void>());
         module_thread->remove();

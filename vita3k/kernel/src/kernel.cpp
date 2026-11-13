@@ -27,7 +27,6 @@
 
 #include <cpu/state.h>
 #include <mem/ptr.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 
 #include <SDL3/SDL_mutex.h>
@@ -56,7 +55,7 @@ void CorenumAllocator::set_max_core_count(const std::size_t max) {
 struct ThreadParams {
     KernelState *kernel = nullptr;
     // Passed in rather than looked up, since the guest may delete the thread before it starts
-    ThreadStatePtr thread;
+    ThreadStateRef thread;
     SDL_Semaphore *host_may_destroy_params = nullptr;
 };
 
@@ -64,7 +63,7 @@ static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SignalSemaphore(params.host_may_destroy_params);
-    ThreadStatePtr thread = std::move(params.thread);
+    ThreadStateRef thread = std::move(params.thread);
 #ifdef TRACY_ENABLE
     if (thread->name[0] != '\0') {
         tracy::SetThreadName(thread->name);
@@ -79,7 +78,7 @@ static int SDLCALL thread_function(void *data) {
     const SceUID id = thread->id;
     const int processor_id = thread->cpu->processor_id;
     // release our reference first so the erase below destroys the ThreadState before process_exit() is woken
-    thread.reset();
+    thread = nullptr;
 
     {
         std::lock_guard<std::mutex> lock(params.kernel->mutex);
@@ -149,15 +148,20 @@ uint64_t KernelState::process_time_at(uint64_t clock_time) const {
     return clock_time - (start_tick - base_tick.tick);
 }
 
-ThreadStatePtr KernelState::get_thread(SceUID thread_id) {
-    const ThreadStatePtr thread = lock_and_find(thread_id, threads, mutex);
+ThreadStateRef KernelState::get_thread(SceUID thread_id) {
+    ThreadStateRef thread;
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        if (const auto it = threads.find(thread_id); it != threads.end())
+            thread = it->second;
+    }
     // A deleted thread stays in threads until its host thread ends, but guest calls can't find it
     if (thread && thread->get_status() == ThreadStatus::deleted)
         return nullptr;
     return thread;
 }
 
-ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr) {
+ThreadStateRef KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr) {
     const SceUID id = get_next_uid();
     int core_num = corenum_allocator.new_corenum();
     if (core_num < 0) {
@@ -171,7 +175,7 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     cpu->return_pc = halt_instruction.get() | 1;
     cpu->set_log_code(debugger.watch_code);
     cpu->set_log_mem(debugger.watch_memory);
-    ThreadStatePtr thread = std::make_shared<ThreadState>(id, *this, mem, std::move(cpu), name, entry_point.address(), init_priority, affinity_mask, stack_size, attr);
+    ThreadStateRef thread = Ref<ThreadState>::make(id, *this, mem, std::move(cpu), name, entry_point.address(), init_priority, affinity_mask, stack_size, attr);
 
     {
         const std::lock_guard<std::mutex> lock(mutex);
@@ -198,7 +202,7 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
     Ptr<Ptr<void>> address(0);
     // magic numbers taken from decompiled source. There is 0x400 unused bytes of unknown usage
     if (key <= 0x100 && key >= 0) {
-        const ThreadStatePtr thread = get_thread(thread_id);
+        const ThreadStateRef thread = get_thread(thread_id);
         address = thread->tls.get_ptr<Ptr<void>>() + key;
     } else {
         LOG_ERROR("Wrong tls slot index. TID:{} index:{}", thread_id, key);
@@ -230,11 +234,10 @@ void KernelState::process_exit() {
     thread_deleted_cond.wait(lock, [this] { return threads.empty(); });
 }
 
-SceUID KernelState::register_thread_event_handler(const ThreadEventHandlerPtr &handler) {
+SceUID KernelState::register_thread_event_handler(ThreadEventHandlerRef handler) {
     const std::lock_guard<std::mutex> lock(thread_event_handlers_mutex);
-    const SceUID uid = objects.add(handler, get_next_uid());
     thread_event_handlers.push_back(*handler);
-    return uid;
+    return objects.add(std::move(handler), get_next_uid());
 }
 
 bool KernelState::unregister_thread_event_handler(ThreadEventHandler &handler) {

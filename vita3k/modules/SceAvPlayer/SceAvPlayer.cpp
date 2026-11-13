@@ -226,9 +226,9 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
     return buffer;
 }
 
-static void run_event_callback(EmuEnvState &emuenv, const ThreadStatePtr &thread, const PlayerPtr &player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
+static void run_event_callback(EmuEnvState &emuenv, ThreadState &thread, const PlayerPtr &player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
     if (player_info->event_manager.event_callback) {
-        thread->call_guest(player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
+        thread.call_guest(player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     }
 }
 
@@ -281,8 +281,8 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
     }
 
     player_info->player.queue(file_path.string());
-    run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); // may be important for sound
-    run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_READY, 0, Ptr<void>(0));
+    run_event_callback(emuenv, *thread, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); // may be important for sound
+    run_event_callback(emuenv, *thread, player_info, SCE_AVPLAYER_STATE_READY, 0, Ptr<void>(0));
     return 0;
 }
 
@@ -290,7 +290,7 @@ EXPORT(int, sceAvPlayerClose, SceUID player_handle) {
     const auto state = emuenv.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
     const auto thread = emuenv.kernel.get_thread(thread_id);
-    run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));
+    run_event_callback(emuenv, *thread, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));
     std::lock_guard<std::mutex> lock(state->mutex);
     state->players.erase(player_handle);
     return 0;
@@ -476,7 +476,7 @@ EXPORT(int, sceAvPlayerPause, SceUID player_handle) {
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
     player_info->paused = true;
     const auto thread = emuenv.kernel.get_thread(thread_id);
-    run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_PAUSE, 0, Ptr<void>(0));
+    run_event_callback(emuenv, *thread, player_info, SCE_AVPLAYER_STATE_PAUSE, 0, Ptr<void>(0));
     return 0;
 }
 
@@ -489,7 +489,7 @@ EXPORT(int, sceAvPlayerResume, SceUID player_handle) {
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
     if (!player_info->paused) {
         const auto thread = emuenv.kernel.get_thread(thread_id);
-        run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_PLAY, 0, Ptr<void>(0));
+        run_event_callback(emuenv, *thread, player_info, SCE_AVPLAYER_STATE_PLAY, 0, Ptr<void>(0));
     }
     player_info->paused = false;
     return 0;
@@ -514,7 +514,7 @@ EXPORT(int, sceAvPlayerStart, SceUID player_handle) {
         player_info->player.pop_video();
     }
     const auto thread = emuenv.kernel.get_thread(thread_id);
-    run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_PLAY, 0, Ptr<void>(0));
+    run_event_callback(emuenv, *thread, player_info, SCE_AVPLAYER_STATE_PLAY, 0, Ptr<void>(0));
     return 0;
 }
 
@@ -523,6 +523,6 @@ EXPORT(int, sceAvPlayerStop, SceUID player_handle) {
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
     player_info->player.free_video();
     const auto thread = emuenv.kernel.get_thread(thread_id);
-    run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));
+    run_event_callback(emuenv, *thread, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));
     return 0;
 }

@@ -33,10 +33,10 @@
 #include <string>
 
 struct ThreadState;
-using ThreadStatePtr = std::shared_ptr<ThreadState>;
+using ThreadStateRef = Ref<ThreadState>;
 struct KernelState;
 class Callback;
-using CallbackPtr = std::shared_ptr<Callback>;
+using CallbackRef = Ref<Callback>;
 
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
@@ -126,7 +126,7 @@ struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, publ
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant or deleted, then writes its exit status to
     // exit_status. The time left is written back to timeout after every sleep.
-    [[nodiscard]] SceInt32 wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks);
+    [[nodiscard]] SceInt32 wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks);
     // sleep(), but a callback already pending ends a wait with callbacks at once with NOTIFY_CALLBACK,
     // and the caller then runs it with run_callbacks(). A stale wake can end it early, so callers must
     // recheck their condition.
@@ -155,7 +155,7 @@ struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, publ
 
     // Callbacks this thread created
     // Lists cb, which this thread creates, under a new UID and returns the UID
-    SceUID add_callback(const CallbackPtr &cb);
+    SceUID add_callback(CallbackRef cb);
     // Notifies cb directly with arg and wakes a wait with callbacks
     void notify_callback(Callback &cb, SceInt32 arg);
     // Drops cb's pending notifications

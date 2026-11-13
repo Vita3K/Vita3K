@@ -21,8 +21,6 @@
 #include <kernel/types.h>
 #include <util/intrusive_list.h>
 
-#include <memory>
-
 // A callback a thread created, which only that thread runs. Its notifications, runs and link in the
 // owner's list are guarded by the owner's mutex, and the owner's callback calls change them.
 class Callback final : public WithUidClass<KernelObject, UidClass::callback>, public IntrusiveLink<Callback> {
@@ -55,11 +53,11 @@ private:
     bool deleted = false;
 };
 
-using CallbackPtr = std::shared_ptr<Callback>;
+using CallbackRef = Ref<Callback>;
 
 // A registered thread event handler, run on the threads of target for the event types in mask. Its
 // deleted flag, its runs and its link in the kernel's list are guarded by the list's mutex.
-class ThreadEventHandler final : public WithUidClass<KernelObject, UidClass::thread_event>, public IntrusiveLink<ThreadEventHandler>, public std::enable_shared_from_this<ThreadEventHandler> {
+class ThreadEventHandler final : public WithUidClass<KernelObject, UidClass::thread_event>, public IntrusiveLink<ThreadEventHandler> {
 public:
     ThreadEventHandler(const char *name, SceUID target, SceUInt32 mask, Address handler, Address common);
 
@@ -79,4 +77,4 @@ public:
     int runs = 0;
 };
 
-using ThreadEventHandlerPtr = std::shared_ptr<ThreadEventHandler>;
+using ThreadEventHandlerRef = Ref<ThreadEventHandler>;

@@ -78,8 +78,8 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
 
             // Notify Vblank callback in each VBLANK start, skipping the deleted ones
             for (const SceUID uid : display.vblank_callbacks) {
-                const CallbackPtr cb = emuenv.kernel.objects.find<Callback>(uid);
-                if (const ThreadStatePtr owner = cb ? emuenv.kernel.get_thread(cb->thread_id) : nullptr)
+                const CallbackRef cb = emuenv.kernel.objects.find<Callback>(uid);
+                if (const ThreadStateRef owner = cb ? emuenv.kernel.get_thread(cb->thread_id) : nullptr)
                     owner->notify_callback(*cb, 0);
             }
 
@@ -97,27 +97,23 @@ void start_sync_thread(EmuEnvState &emuenv) {
     emuenv.display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(emuenv));
 }
 
-void wait_vblank(DisplayState &display, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb) {
-    if (!wait_thread) {
-        return;
-    }
-
+void wait_vblank(DisplayState &display, ThreadState &wait_thread, const uint64_t target_vcount, const bool is_cb) {
     std::unique_lock<std::mutex> lock(display.mutex);
     // The thread leaves the queue to run its callbacks, and queues again after them if its vblank
     // hasn't come yet. Nothing runs after the wait, so a thread exiting during it just returns.
     while (target_vcount > display.vblank_count) {
-        display.vblank_waiters.push(*wait_thread, { .vcount = target_vcount });
+        display.vblank_waiters.push(wait_thread, { .vcount = target_vcount });
         SceInt32 r;
         // Ignore stray wakeups, like one left over from an earlier wait
         do {
             lock.unlock();
-            r = wait_thread->wait({ .type = wait_type(SCE_KERNEL_WAITTYPE_EVENT, is_cb) }, Deadline::max());
+            r = wait_thread.wait({ .type = wait_type(SCE_KERNEL_WAITTYPE_EVENT, is_cb) }, Deadline::max());
             lock.lock();
-        } while (!wait_thread->ender_result && r == SCE_KERNEL_OK);
-        display.vblank_waiters.remove(*wait_thread);
+        } while (!wait_thread.ender_result && r == SCE_KERNEL_OK);
+        display.vblank_waiters.remove(wait_thread);
         if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
             lock.unlock();
-            r = wait_thread->run_callbacks();
+            r = wait_thread.run_callbacks();
             lock.lock();
         }
         if (r != SCE_KERNEL_OK)

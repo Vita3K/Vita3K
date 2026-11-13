@@ -18,13 +18,13 @@
 #pragma once
 
 #include <kernel/types.h>
+#include <util/ref.h>
 
 #include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstring>
 #include <map>
-#include <memory>
 #include <mutex>
 #include <string_view>
 
@@ -46,12 +46,11 @@ enum class UidClass : SceUInt32 {
 };
 
 // A kernel object that guest code refers to by UID.
-class KernelObject {
+class KernelObject : public RefCounted {
 public:
     explicit KernelObject(const char *name) {
         std::ranges::copy(std::string_view(name, strnlen(name, SCE_UID_NAMELEN)), this->name);
     }
-    virtual ~KernelObject() = default;
     // Returns the class reported by sceKernelGetThreadmgrUIDClass.
     virtual UidClass get_uid_class() const = 0;
     // Whether open calls find the object by its name.
@@ -80,7 +79,7 @@ concept KernelObjectClass = std::derived_from<T, KernelObject> && std::same_as<d
 class KernelObjects {
 public:
     // Adds obj under uid. Returns uid.
-    SceUID add(std::shared_ptr<KernelObject> obj, SceUID uid) {
+    SceUID add(Ref<KernelObject> obj, SceUID uid) {
         assert(uid > 0);
         obj->uid = uid;
         const std::lock_guard<std::mutex> lock(mutex);
@@ -89,14 +88,14 @@ public:
     }
 
     // Returns the object with this UID, of any class, or null.
-    [[nodiscard]] std::shared_ptr<KernelObject> find(SceUID uid) const {
+    [[nodiscard]] Ref<KernelObject> find(SceUID uid) const {
         const std::lock_guard<std::mutex> lock(mutex);
         const auto it = objects.find(uid);
         return it == objects.end() ? nullptr : it->second;
     }
 
     // Returns the openable object with this name, of any class, or null.
-    [[nodiscard]] std::shared_ptr<KernelObject> find_openable(const char *name) const {
+    [[nodiscard]] Ref<KernelObject> find_openable(const char *name) const {
         const std::lock_guard<std::mutex> lock(mutex);
         for (const auto &[_, obj] : objects) {
             if (obj->is_openable() && strncmp(obj->name, name, sizeof(obj->name)) == 0)
@@ -107,19 +106,19 @@ public:
 
     // Returns the T with this UID, or null.
     template <KernelObjectClass T>
-    [[nodiscard]] std::shared_ptr<T> find(SceUID uid) const {
+    [[nodiscard]] Ref<T> find(SceUID uid) const {
         const std::lock_guard<std::mutex> lock(mutex);
         const auto it = lookup<T>(uid);
         if (it == objects.end())
             return nullptr;
-        return std::static_pointer_cast<T>(it->second);
+        return Ref<T>(static_cast<T *>(it->second.get()));
     }
 
     // Removes the T with this UID, so no later lookup finds it, then runs its on_delete() for the
     // thread deleter. Returns false if there is none.
     template <KernelObjectClass T>
     bool remove(SceUID uid, SceUID deleter) {
-        std::shared_ptr<KernelObject> obj;
+        Ref<KernelObject> obj;
         {
             const std::lock_guard<std::mutex> lock(mutex);
             const auto it = lookup<T>(uid);
@@ -137,7 +136,7 @@ public:
     template <KernelObjectClass T>
     void for_each(std::invocable<T &> auto fn) const {
         SceUID last = 0;
-        while (const std::shared_ptr<KernelObject> obj = next<T>(last)) {
+        while (const Ref<KernelObject> obj = next<T>(last)) {
             last = obj->uid;
             fn(static_cast<T &>(*obj));
         }
@@ -150,7 +149,7 @@ public:
     }
 
 private:
-    using Map = std::map<SceUID, std::shared_ptr<KernelObject>>;
+    using Map = std::map<SceUID, Ref<KernelObject>>;
 
     // Returns the entry of the T with this UID, or end(). mutex must be held.
     template <KernelObjectClass T>
@@ -163,7 +162,7 @@ private:
 
     // Returns the first T with a UID above last, or null.
     template <KernelObjectClass T>
-    std::shared_ptr<KernelObject> next(SceUID last) const {
+    Ref<KernelObject> next(SceUID last) const {
         const std::lock_guard<std::mutex> lock(mutex);
         for (auto it = objects.upper_bound(last); it != objects.end(); ++it) {
             if (it->second->get_uid_class() == T::uid_class)
