@@ -54,6 +54,13 @@ enum class ThreadStatus : SceUInt32 {
 // in the wait queue of what it waits on. Lock order: the object's lock, which guards the end
 // waiters, then thread_mutex, then the thread_mutex of an end waiter it wakes.
 struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, public IntrusiveLink<ThreadState> {
+private:
+    friend class Ref<ThreadState>;
+
+    // A dormant thread with its stack and TLS, which runs on cpu
+    ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUStatePtr cpu, const char *name, Address entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr);
+
+public:
     // Fixed when the thread is created
     const SceUID id;
     const Address entry_point;
@@ -70,8 +77,6 @@ struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, publ
     const int init_priority;
     const SceInt32 init_affinity_mask;
 
-    // A dormant thread with its stack and TLS, which runs on cpu
-    ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUStatePtr cpu, const char *name, Address entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr);
     // A thread only goes away once its end gave back what it held
     ~ThreadState() override;
 

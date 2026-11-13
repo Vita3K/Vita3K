@@ -48,9 +48,6 @@ enum class UidClass : SceUInt32 {
 // A kernel object that guest code refers to by UID.
 class KernelObject : public RefCounted {
 public:
-    explicit KernelObject(const char *name) {
-        std::ranges::copy(std::string_view(name, strnlen(name, SCE_UID_NAMELEN)), this->name);
-    }
     // Returns the class reported by sceKernelGetThreadmgrUIDClass.
     virtual UidClass get_uid_class() const = 0;
     // Whether open calls find the object by its name.
@@ -60,6 +57,11 @@ public:
 
     SceUID uid{};
     char name[SCE_UID_NAMELEN + 1] = {};
+
+protected:
+    explicit KernelObject(const char *name) {
+        std::ranges::copy(std::string_view(name, strnlen(name, SCE_UID_NAMELEN)), this->name);
+    }
 };
 
 // Base of a kernel object type with a single class, which uid_class names.
