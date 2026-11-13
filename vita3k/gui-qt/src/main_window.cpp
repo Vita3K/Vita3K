@@ -1022,6 +1022,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         abort_boot(tr("Failed to initialise the renderer."));
         return {};
     }
+    emuenv.renderer->set_fullscreen(m_game_window->visibility() == QWindow::FullScreen);
 
     m_game_window->setTitle(tr("%1 (%2) | Initializing...")
             .arg(QString::fromStdString(emuenv.current_app_title),

@@ -161,6 +161,11 @@ GameWindow::GameWindow(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_set
     const auto &cc = emuenv.cfg.current_config;
     m_title_backend_renderer = cc.backend_renderer;
     sync_native_window_preferences();
+
+    connect(this, &QWindow::visibilityChanged, this, [this](QWindow::Visibility visibility) {
+        if (m_emuenv.renderer)
+            m_emuenv.renderer->set_fullscreen(visibility == QWindow::FullScreen);
+    });
 }
 
 GameWindow::~GameWindow() {
