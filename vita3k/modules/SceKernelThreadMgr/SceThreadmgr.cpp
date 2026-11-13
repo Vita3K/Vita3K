@@ -1730,7 +1730,7 @@ static SceUID open_by_name(EmuEnvState &emuenv, const char *export_name, Ptr<con
     Ref<KernelObject> object;
     if (const SceInt32 error = find_by_name(emuenv, name, object))
         return RET_ERROR(error);
-    if (object->get_uid_class() != T::uid_class)
+    if (!object->as<T>())
         return RET_ERROR(SCE_KERNEL_ERROR_DIFFERENT_UID_CLASS);
     return object->uid;
 }
@@ -1741,7 +1741,7 @@ static SceUID sysmem_open_by_name(EmuEnvState &emuenv, const char *export_name, 
     Ref<KernelObject> object;
     if (const SceInt32 error = find_by_name(emuenv, name, object))
         return RET_ERROR(error);
-    if (object->get_uid_class() != T::uid_class)
+    if (!object->as<T>())
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID_CLASS);
     return object->uid;
 }
