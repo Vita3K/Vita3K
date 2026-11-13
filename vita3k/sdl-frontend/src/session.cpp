@@ -287,7 +287,9 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             break;
         }
 
-        SDL_SetStringProperty(window_props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "Vita3K");
+        const auto title_str = fmt::format("{} ({})", emuenv.current_app_title, launch_request.app_path);
+
+        SDL_SetStringProperty(window_props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title_str.c_str());
         SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, 960);
         SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, 544);
         SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, window_flags);
