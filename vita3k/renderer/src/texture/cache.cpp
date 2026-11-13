@@ -283,6 +283,73 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
     uint16_t max_mip_text = std::bit_width(std::min(width, height));
     return std::min(true_mip, max_mip_text);
 }
+
+// must walk the same layout as upload_texture
+uint32_t texture_source_size(const SceGxmTexture &texture) {
+    const auto texture_type = texture.texture_type();
+    const bool is_cube = (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
+    const uint32_t width = gxm::get_width(texture);
+    const uint32_t height = gxm::get_height(texture);
+    const uint32_t total_mip = get_upload_mip(texture.true_mip_count(), width, height);
+    if (total_mip <= 1 && !is_cube)
+        return gxm::texture_size_first_mip(texture);
+
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(gxm::get_format(texture));
+    const uint32_t bpp = gxm::bits_per_pixel(base_format);
+
+    uint32_t face_total_count = 1;
+    uint32_t face_align_bytes = 4;
+    if (is_cube) {
+        face_total_count = 6;
+
+        if (texture.mip_count != 0xF) {
+            const bool twok_align_cond1 = width >= 32 && height >= 32 && (bpp <= 8 || gxm::is_block_compressed_format(base_format));
+            const bool twok_align_cond2 = width >= 16 && height >= 16 && (bpp == 16 || bpp == 32);
+            const bool twok_align_cond3 = width >= 8 && height >= 8 && bpp == 64;
+
+            if (twok_align_cond1 || twok_align_cond2 || twok_align_cond3)
+                face_align_bytes = 2048;
+        }
+    }
+
+    uint32_t layout_width = width;
+    uint32_t layout_height = height;
+    if (texture.mip_count != 0xF || texture_type != SCE_GXM_TEXTURE_LINEAR) {
+        layout_width = next_power_of_two(width);
+        layout_height = next_power_of_two(height);
+    }
+
+    auto [block_width, block_height] = gxm::get_block_size(base_format);
+    const uint32_t block_size = (block_width * block_height * bpp) / 8;
+    const uint32_t block_shift = std::bit_width(block_width * block_height) - 1;
+
+    uint32_t align_width = block_width;
+    uint32_t align_height = block_height;
+    if (texture_type == SCE_GXM_TEXTURE_LINEAR) {
+        align_width = std::max(align_width, 8U);
+    } else if (texture_type == SCE_GXM_TEXTURE_TILED) {
+        align_width = std::max(align_width, 32U);
+        align_height = std::max(align_height, 32U);
+    }
+
+    // cubes with mips are laid out as if all possible mips were there
+    const bool all_mips = is_cube && texture.mip_count != 0xF;
+
+    uint32_t size = 0;
+    for (uint32_t face = 0; face < face_total_count; face++) {
+        uint32_t mip_width = layout_width;
+        uint32_t mip_height = layout_height;
+        for (uint32_t mip = 0; mip_width > 0 && mip_height > 0 && (mip < total_mip || all_mips); mip++) {
+            const uint32_t nb_pixels = align(mip_width, align_width) * align(mip_height, align_height);
+            size += (nb_pixels >> block_shift) * block_size;
+            mip_width /= 2;
+            mip_height /= 2;
+        }
+        size = align(size, face_align_bytes);
+    }
+
+    return size;
+}
 } // namespace texture
 
 using namespace texture;
