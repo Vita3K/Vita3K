@@ -1,4 +1,4 @@
-﻿// Vita3K emulator project
+// Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -49,8 +49,8 @@ struct SceMotionState {
     SceFVector3 angularVelocity; //!<  Stores the angular velocity readings
     SceUInt8 reserve1[12]; //!<  Reserved data
     SceFQuaternion deviceQuat; //!<  Device orientation as a Quaternion <x,y,z,w>
-    SceUMatrix4 rotationMatrix; //!<  Device orientation as a rotation matrix
-    SceUMatrix4 nedMatrix; //!<  Magnetic North rotation matrix Col0: North Col1: East Col2: Down
+    SceFMatrix4 rotationMatrix; //!<  Device orientation as a rotation matrix
+    SceFMatrix4 nedMatrix; //!<  Magnetic North rotation matrix Col0: North Col1: East Col2: Down
     SceUInt8 reserve2[4]; //!<  Reserved data
     SceFVector3 basicOrientation; //!< Basic orientation of the device
     SceUInt64 hostTimestamp; //!< Time at which the sampled data packet is received from the device

@@ -32,6 +32,28 @@ uint64_t PlayerState::get_framerate_microseconds() {
     return 1000000ull * rational.den / rational.num;
 }
 
+static uint64_t to_milliseconds(int64_t time, AVRational time_base) {
+    if (time == AV_NOPTS_VALUE || time < 0)
+        return 0;
+    return av_rescale_q(time, time_base, AVRational{ 1, 1000 });
+}
+
+uint64_t PlayerState::get_duration_ms(int32_t stream_id) {
+    if (!format || stream_id < 0)
+        return 0;
+    const AVStream *stream = format->streams[stream_id];
+    if (stream->duration != AV_NOPTS_VALUE)
+        return to_milliseconds(stream->duration, stream->time_base);
+    return to_milliseconds(format->duration, AVRational{ 1, AV_TIME_BASE });
+}
+
+uint64_t PlayerState::get_start_time_ms(int32_t stream_id) {
+    if (!format || stream_id < 0)
+        return 0;
+    const AVStream *stream = format->streams[stream_id];
+    return to_milliseconds(stream->start_time, stream->time_base);
+}
+
 DecoderSize PlayerState::get_size() {
     if (video_context)
         return { { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) } };

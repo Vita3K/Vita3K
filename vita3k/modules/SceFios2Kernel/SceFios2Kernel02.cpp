@@ -21,17 +21,16 @@
 TRACY_MODULE_NAME(SceFios2Kernel);
 
 struct sceFiosKernelOverlayResolveWithRangeSync02_opt {
-    Ptr<char> pOutPath;
-    SceSize maxPath;
-    char loOrderFilter;
-    char hiOrderFilter;
-    char reserved1;
-    char reserved2;
-    int reserved3;
-    int reserved4;
-    int reserved5;
-    int reserved6;
+    Ptr<char> out_path;
+    SceSize max_path;
+    SceUInt8 min_order;
+    SceUInt8 max_order;
+    SceUInt8 reserved0[2];
+    SceUInt32 reserved1;
+    SceSize out_path_buffer_size;
+    SceUInt32 reserved2[2];
 };
+static_assert(sizeof(sceFiosKernelOverlayResolveWithRangeSync02_opt) == 0x1C);
 
 EXPORT(int, sceFiosKernelOverlayAddForProcess02) {
     return UNIMPLEMENTED();
@@ -64,7 +63,7 @@ EXPORT(int, sceFiosKernelOverlayResolveSync02) {
 EXPORT(int, sceFiosKernelOverlayResolveWithRangeSync02, SceUID pid, int resolveFlag, const char *pInPath, sceFiosKernelOverlayResolveWithRangeSync02_opt *opt) {
     TRACY_FUNC(sceFiosKernelOverlayResolveWithRangeSync02, pid, resolveFlag, pInPath, opt);
     STUBBED("Using strncpy");
-    strncpy(opt->pOutPath.get(emuenv.mem), pInPath, opt->maxPath);
+    strncpy(opt->out_path.get(emuenv.mem), pInPath, opt->max_path);
 
     return 0;
 }

@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#define SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX KB(5)
+#define SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX 5000U
 #define SCE_HTTP_USERNAME_MAX_SIZE 256
 #define SCE_HTTP_PASSWORD_MAX_SIZE 256
 
@@ -148,7 +148,7 @@ enum SceHttpsFlags : unsigned int {
 };
 
 struct SceHttpUriElement {
-    bool opaque; // always false, http uses //
+    SceBool opaque; // always false, http uses //
     Ptr<char> scheme; // http/https
     Ptr<char> username;
     Ptr<char> password;
@@ -191,7 +191,7 @@ enum SceHttpErrorCode : uint32_t {
     SCE_HTTP_ERROR_NO_CONTENT_LENGTH = 0x80431071,
     SCE_HTTP_ERROR_CHUNK_ENC = 0x80431072,
     SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER = 0x80431073,
-    SCE_HTTP_ERROR_SSL = 0x80431073,
+    SCE_HTTP_ERROR_SSL = 0x80431075,
     SCE_HTTP_ERROR_ABORTED = 0x80431080,
     SCE_HTTP_ERROR_UNKNOWN = 0x80431081,
 
