@@ -75,20 +75,30 @@ EXPORT(int, sceNpCheckCallback) {
         thread->call_guest(np_callback.pc, { static_cast<uint32_t>(state), 0, np_callback.data });
     }
 
-    std::vector<std::pair<SceInt32, NpAuthRequest>> auth_ready;
+    auto &auth = emuenv.np.auth_state;
+    std::vector<SceInt32> auth_ready;
     {
-        auto &auth = emuenv.np.auth_state;
         const std::lock_guard<std::mutex> lock(auth.access_mutex);
         for (auto &[id, request] : auth.requests) {
             if (request.pending) {
                 request.pending = false;
-                auth_ready.emplace_back(id, request);
+                auth_ready.push_back(id);
             }
         }
     }
-    // No real ticket is issued; report a 1-byte ticket as success.
-    for (const auto &[id, request] : auth_ready)
+    for (const SceInt32 id : auth_ready) {
+        NpAuthRequest request;
+        {
+            // An earlier callback may have destroyed this request.
+            const std::lock_guard<std::mutex> lock(auth.access_mutex);
+            const auto it = auth.requests.find(id);
+            if (it == auth.requests.end())
+                continue;
+            request = it->second;
+        }
+        // No real ticket is issued; report a 1-byte ticket as success.
         thread->call_guest(request.ticket_cb, { static_cast<uint32_t>(id), 1, request.cb_arg });
+    }
 
     return STUBBED("Stub");
 }
