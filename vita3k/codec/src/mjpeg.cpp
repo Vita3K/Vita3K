@@ -216,7 +216,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
 
     ret = avcodec_receive_packet(context, pkt);
     if (ret < 0) {
-        av_packet_unref(pkt);
+        av_packet_free(&pkt);
         av_frame_free(&frame);
         avcodec_free_context(&context);
         return ret;
@@ -227,7 +227,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     AVBSFContext *bsf_ctx = nullptr;
     ret = av_bsf_alloc(bsf, &bsf_ctx);
     if (ret < 0) {
-        av_packet_unref(pkt);
+        av_packet_free(&pkt);
         av_frame_free(&frame);
         avcodec_free_context(&context);
         return ret;
@@ -237,7 +237,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     ret = av_bsf_init(bsf_ctx);
     if (ret < 0) {
         av_bsf_free(&bsf_ctx);
-        av_packet_unref(pkt);
+        av_packet_free(&pkt);
         av_frame_free(&frame);
         avcodec_free_context(&context);
         return ret;
@@ -246,7 +246,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     ret = av_bsf_send_packet(bsf_ctx, pkt);
     if (ret < 0) {
         av_bsf_free(&bsf_ctx);
-        av_packet_unref(pkt);
+        av_packet_free(&pkt);
         av_frame_free(&frame);
         avcodec_free_context(&context);
         return ret;
@@ -260,7 +260,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     }
 
     av_bsf_free(&bsf_ctx);
-    av_packet_unref(pkt);
+    av_packet_free(&pkt);
     av_frame_free(&frame);
     avcodec_free_context(&context);
     if (size > max_size || ret < 0) {

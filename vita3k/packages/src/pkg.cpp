@@ -104,16 +104,19 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
 
     if (byte_swap(pkg_header.magic) != 0x7F504b47 && byte_swap(ext_header.magic) != 0x7F657874) {
         LOG_ERROR("Not a valid pkg file!");
+        fclose(infile);
         return false;
     }
 
     if (pkg_size < byte_swap(pkg_header.total_size)) {
         LOG_ERROR("The pkg file is too small");
+        fclose(infile);
         return false;
     }
 
     if (pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(pkg_header.file_count) * 32) {
         LOG_ERROR("The pkg file is too small");
+        fclose(infile);
         return false;
     }
 
@@ -163,6 +166,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         break;
     default:
         LOG_ERROR("Unsupported content type: {}", content_type);
+        fclose(infile);
         return false;
         break;
     }
@@ -183,6 +187,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         break;
     default:
         LOG_ERROR("Unknown encryption key");
+        fclose(infile);
         return false;
         break;
     }
@@ -281,6 +286,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         if (pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset) + byte_swap(entry.name_size) || pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(entry.data_offset) + byte_swap(entry.data_size)) {
             LOG_ERROR("The pkg file size is too small, possibly corrupted");
             evp_cleanup();
+            fclose(infile);
             return false;
         }
         const auto file_count = static_cast<float>(byte_swap(pkg_header.file_count));

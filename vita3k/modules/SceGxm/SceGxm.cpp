@@ -1642,6 +1642,8 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
     deferredContext->state.fragment_ring_buffer_used = 0;
     deferredContext->state.vertex_ring_buffer_used = 0;
 
+    // a previous call may have failed after allocating the list
+    delete deferredContext->curr_command_list;
     deferredContext->curr_command_list = new SceGxmCommandList();
 
     if (!deferredContext->make_new_alloc_space(emuenv.kernel, emuenv.mem, thread_id)) {
