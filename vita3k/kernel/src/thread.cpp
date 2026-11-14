@@ -251,7 +251,7 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
         const auto end_guard = this->lock();
         lock.lock();
         update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
-        waiters.wake_if([&](auto &waiter) {
+        wake_waiters_if([&](auto &waiter) {
             if (waiter.wait_request().out_status)
                 *waiter.wait_request().out_status = static_cast<SceInt32>(returned_value);
             return true;
@@ -541,7 +541,7 @@ SceInt32 ThreadState::wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_st
                 return SCE_KERNEL_OK;
             }
         }
-        const SceInt32 result = Waitable::wait(waiters, guard, waiter, type, { .out_status = exit_status }, deadline, timeout);
+        const SceInt32 result = Waitable::wait(guard, waiter, type, { .out_status = exit_status }, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return result;
     }

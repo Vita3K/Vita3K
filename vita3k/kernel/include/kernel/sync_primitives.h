@@ -19,7 +19,6 @@
 
 #include <kernel/kernel_object.h>
 #include <kernel/thread/thread_state.h>
-#include <kernel/thread/wait_queue.h>
 #include <kernel/types.h>
 #include <kernel/waitable.h>
 #include <util/byte_ring_buffer.h>

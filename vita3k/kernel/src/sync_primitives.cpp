@@ -45,54 +45,53 @@ static bool by_priority(SceUInt32 attr, const WaitRequest &request) {
     return attr & SCE_KERNEL_ATTR_TH_PRIO;
 }
 
-ThreadState *WaitQueue::front() {
-    return threads.empty() ? nullptr : &threads.front();
+ThreadState *Waitable::first_waiter() {
+    return waiters.empty() ? nullptr : &waiters.front();
 }
 
-bool WaitQueue::first_for(int priority) const {
-    if (threads.empty())
+bool Waitable::first_for(int priority) const {
+    if (waiters.empty())
         return true;
     // Lower value is higher priority, and equal priorities keep FIFO order
-    return (attr & SCE_KERNEL_ATTR_TH_PRIO) && threads.front().queued_priority > priority;
+    return (attr & SCE_KERNEL_ATTR_TH_PRIO) && waiters.front().queued_priority > priority;
 }
 
-void WaitQueue::wake(ThreadState &thread, SceInt32 result) {
+void Waitable::wake_waiter(ThreadState &thread, SceInt32 result) {
     thread.ender_result = result;
-    remove(thread);
+    unqueue(thread);
     thread.wake();
 }
 
-std::size_t WaitQueue::wake_all(SceInt32 result) {
-    return wake_if([](ThreadState &) { return true; }, result);
+std::size_t Waitable::wake_waiters(SceInt32 result) {
+    return wake_waiters_if([](ThreadState &) { return true; }, result);
 }
 
-void WaitQueue::push(ThreadState &thread, const WaitRequest &request) {
+void Waitable::queue(ThreadState &thread, const WaitRequest &request) {
     assert(!thread.linked());
     thread.request = request;
     thread.ender_result.reset();
     thread.queued_priority = thread.get_priority();
-    auto pos = threads.end();
+    auto pos = waiters.end();
     if (by_priority(attr, request)) {
         // Lower value is higher priority, equal priorities keep FIFO order
-        pos = threads.begin();
-        while (pos != threads.end() && pos->queued_priority <= thread.queued_priority)
+        pos = waiters.begin();
+        while (pos != waiters.end() && pos->queued_priority <= thread.queued_priority)
             ++pos;
         // A thread whose place is the front goes right behind a head that keeps its place, so it
         // lands ahead of the threads already behind that head, whatever their priority
-        if (pos == threads.begin() && pos != threads.end() && keeps_place(pos->wait_request()))
+        if (pos == waiters.begin() && pos != waiters.end() && keeps_place(pos->wait_request()))
             ++pos;
     }
-    threads.insert(pos, thread);
+    waiters.insert(pos, thread);
 }
 
-void WaitQueue::remove(ThreadState &thread) {
-    threads.remove(thread);
+void Waitable::unqueue(ThreadState &thread) {
+    waiters.remove(thread);
 }
 
 Waitable::Waitable(SceUInt32 attr, const char *name)
     : KernelObject(name)
-    , attr(attr)
-    , waiters(attr) {}
+    , attr(attr) {}
 
 void Waitable::on_delete(SceUID deleter) {
     const std::lock_guard<std::mutex> guard(mutex);
@@ -113,7 +112,7 @@ SceInt32 Waitable::run_wait_callbacks(std::unique_lock<std::mutex> &lock, Thread
     return r;
 }
 
-SceInt32 Waitable::wait(WaitQueue &queue, std::unique_lock<std::mutex> &lock, ThreadState &thread, SceUInt32 type, const WaitRequest &request, Deadline deadline, SceUInt32 *timeout) {
+SceInt32 Waitable::wait(std::unique_lock<std::mutex> &lock, ThreadState &thread, SceUInt32 type, const WaitRequest &request, Deadline deadline, SceUInt32 *timeout) {
     const bool callbacks = type & SCE_KERNEL_WAITTYPE_CB_BIT;
     if (std::chrono::steady_clock::now() >= deadline) {
         writeback_timeout(timeout, deadline);
@@ -122,7 +121,7 @@ SceInt32 Waitable::wait(WaitQueue &queue, std::unique_lock<std::mutex> &lock, Th
     // A callback already pending leaves the timeout as it was
     if (callbacks && thread.has_pending_callbacks())
         return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
-    queue.push(thread, request);
+    queue(thread, request);
     const WaitTarget target{ type, uid };
     SceInt32 result;
     // Ignore stray wakeups, like one left over from an earlier wait
@@ -140,7 +139,7 @@ SceInt32 Waitable::wait(WaitQueue &queue, std::unique_lock<std::mutex> &lock, Th
             return SCE_KERNEL_ERROR_THREAD_STOPPED;
         return *ended;
     }
-    queue.remove(thread);
+    unqueue(thread);
     wait_end(thread, result);
     serve();
     return result;
@@ -192,7 +191,7 @@ void Event::end_waits(SceUID deleter) {
     // The waits for the delete event get it with the deleting thread's user data, then the others end
     fire(SCE_KERNEL_EVENT_DELETE, system_event_user_data(deleter), true);
     notify_callbacks(SCE_KERNEL_EVENT_DELETE);
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 SceInt32 Event::register_callback(KernelState &kernel, CallbackRef callback, SceUID notify_id) {
@@ -273,7 +272,7 @@ SceInt32 SimpleEvent::wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt3
         // If the bits are taken right after a callback notify, the wait returns NOTIFY_CALLBACK
         if (try_take(wait_pattern, result_pattern, user_data) == SCE_KERNEL_OK)
             return wait_result(result, result_pattern);
-        result = Waitable::wait(waiters, guard, thread, type, { .pattern = wait_pattern, .out_pattern = result_pattern, .out_user_data = user_data }, deadline, timeout);
+        result = Waitable::wait(guard, thread, type, { .pattern = wait_pattern, .out_pattern = result_pattern, .out_user_data = user_data }, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return wait_result(finish_wait(guard, thread, callbacks, result), result_pattern);
     }
@@ -358,7 +357,7 @@ void Event::fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
 }
 
 void Event::serve() {
-    waiters.wake_if([&](auto &waiter) {
+    wake_waiters_if([&](auto &waiter) {
         const WaitRequest &wait = waiter.wait_request();
         if (!(pattern & wait.pattern))
             return false;
@@ -396,7 +395,7 @@ SceInt32 Event::cancel(SceUInt32 *num_wait_threads) {
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     catch_up();
 
-    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
@@ -411,7 +410,7 @@ SceInt32 Event::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *nu
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
 
-    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
     // Every bit is replaced, the create event too, and no waiter is left to get them
     pattern = set_pattern;
     last_user_data = user_data;
@@ -486,7 +485,7 @@ void Timer::catch_up() {
 void Timer::queue_event(uint64_t deadline) {
     next_event = std::max(deadline, get_current_time() + TIMER_EVENT_FLOOR);
     // The first waiter sleeps until the old event time, so wake it to see the new one
-    if (ThreadState *const first = waiters.front())
+    if (ThreadState *const first = first_waiter())
         first->wake();
 }
 
@@ -547,11 +546,11 @@ SceInt32 Timer::sleep(std::unique_lock<std::mutex> &lock, ThreadState &thread, b
     // A callback already pending leaves the timeout as it was
     if (callbacks && thread.has_pending_callbacks())
         return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
-    waiters.push(thread, request);
+    queue(thread, request);
     const WaitTarget target{ wait_type(SCE_KERNEL_WAITTYPE_EVENT, callbacks), uid };
     SceInt32 result;
     while (true) {
-        const Deadline wake = waiters.front() == &thread ? std::min(deadline, event_deadline()) : deadline;
+        const Deadline wake = first_waiter() == &thread ? std::min(deadline, event_deadline()) : deadline;
         lock.unlock();
         result = thread.wait(target, wake);
         lock.lock();
@@ -568,7 +567,7 @@ SceInt32 Timer::sleep(std::unique_lock<std::mutex> &lock, ThreadState &thread, b
     writeback_timeout(timeout, deadline);
     if (thread.ender_result && result != SCE_KERNEL_ERROR_THREAD_STOPPED)
         return *thread.ender_result;
-    waiters.remove(thread);
+    unqueue(thread);
     serve();
     return result;
 }
@@ -576,7 +575,7 @@ SceInt32 Timer::sleep(std::unique_lock<std::mutex> &lock, ThreadState &thread, b
 void Timer::serve() {
     Event::serve();
     // The first waiter may be a new one, which now has to wake for the next event
-    if (ThreadState *const first = waiters.front())
+    if (ThreadState *const first = first_waiter())
         first->wake();
 }
 
@@ -695,7 +694,7 @@ SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
     catch_up();
 
-    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
     // The event set with sceKernelSetTimerEvent is canceled too, but the timer keeps running with
     // the event's interval and type
     armed = false;
@@ -749,7 +748,7 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
 }
 
 void Mutex::end_waits(SceUID) {
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
     clear_owner();
 }
 
@@ -841,11 +840,11 @@ SceInt32 Mutex::acquire(MemState &mem, ThreadState &thread, SceInt32 count, SceU
             break;
         // A heavy mutex also needs no waiter ahead of this thread. A mutex acquired by this
         // thread's callbacks still blocks this wait.
-        if (!owner && (lightweight() || waiters.first_for(thread.get_priority()))) {
+        if (!owner && (lightweight() || first_for(thread.get_priority()))) {
             r = try_take(mem, thread, count);
             break;
         }
-        r = Waitable::wait(waiters, guard, thread, type, { .count = count }, deadline, timeout);
+        r = Waitable::wait(guard, thread, type, { .count = count }, deadline, timeout);
         if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
             r = finish_wait(guard, thread, callbacks, r);
             break;
@@ -872,11 +871,11 @@ SceInt32 Mutex::relock(MemState &mem, ThreadState &thread, bool callbacks) {
         if (r != SCE_KERNEL_OK)
             break;
         // The same take as a lock
-        if (!owner && (lightweight() || waiters.first_for(thread.get_priority()))) {
+        if (!owner && (lightweight() || first_for(thread.get_priority()))) {
             r = try_take(mem, thread, 1);
             break;
         }
-        r = Waitable::wait(waiters, guard, thread, type, { .count = 1 }, Deadline::max(), nullptr);
+        r = Waitable::wait(guard, thread, type, { .count = 1 }, Deadline::max(), nullptr);
         if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
             // Only a delete runs the callbacks notified during the wait
             if (r == SCE_KERNEL_ERROR_WAIT_DELETE)
@@ -933,10 +932,10 @@ void Mutex::release_if_owned_by(ThreadState &thread) {
 void Mutex::serve() {
     if (owner)
         return;
-    if (ThreadState *const waiter = waiters.front()) {
+    if (ThreadState *const waiter = first_waiter()) {
         lock_count = waiter->wait_request().count;
         set_owner(*waiter);
-        waiters.wake(*waiter);
+        wake_waiter(*waiter);
     }
 }
 
@@ -951,7 +950,7 @@ SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_w
     if (new_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE))
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
-    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
     lock_count = new_count;
     if (new_count > 0)
         set_owner(thread);
@@ -1014,7 +1013,7 @@ SceInt32 RWLock::check_create(const char *name, SceUInt32 attr) {
 }
 
 void RWLock::end_waits(SceUID) {
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
     clear_write_owner();
 }
 
@@ -1044,7 +1043,7 @@ SceInt32 RWLock::try_take(ThreadState &thread, bool is_write) {
     }
 
     // A waiting writer goes before new readers
-    const bool writer_waits = waiters.find_if([](auto &waiter) { return waiter.wait_request().write; }) != nullptr;
+    const bool writer_waits = find_waiter([](auto &waiter) { return waiter.wait_request().write; }) != nullptr;
     if (!is_write && writer_waits)
         return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
@@ -1080,7 +1079,7 @@ SceInt32 RWLock::acquire(ThreadState &thread, bool is_write, SceUInt32 *timeout,
                 set_write_owner(thread);
             return SCE_KERNEL_OK;
         }
-        const SceInt32 result = Waitable::wait(waiters, guard, thread, type, { .write = is_write }, deadline, timeout);
+        const SceInt32 result = Waitable::wait(guard, thread, type, { .write = is_write }, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return finish_wait(guard, thread, callbacks, result);
     }
@@ -1176,13 +1175,13 @@ void RWLock::serve() {
 
     // Without a waiting writer every waiting reader gets in, also next to readers that hold the lock.
     // A waiting writer goes first, even before readers that waited longer, once nobody holds it.
-    auto *const writer = waiters.find_if([](auto &waiter) { return waiter.wait_request().write; });
+    auto *const writer = find_waiter([](auto &waiter) { return waiter.wait_request().write; });
     if (!writer) {
-        lock_count += static_cast<SceInt32>(waiters.wake_all());
+        lock_count += static_cast<SceInt32>(wake_waiters());
     } else if (lock_count == 0) {
         set_write_owner(*writer);
         lock_count = 1;
-        waiters.wake(*writer);
+        wake_waiter(*writer);
     }
 }
 
@@ -1192,8 +1191,8 @@ SceInt32 RWLock::cancel(ThreadState &thread, SceUInt32 *num_read_wait_threads, S
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
     const auto is_writer = [](auto &waiter) { return waiter.wait_request().write; };
-    const auto nb_writers = static_cast<SceUInt32>(waiters.wake_if(is_writer, SCE_KERNEL_ERROR_WAIT_CANCEL));
-    const auto nb_readers = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_writers = static_cast<SceUInt32>(wake_waiters_if(is_writer, SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_readers = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
 
     // The lock is reset, and only the calling thread may hold it afterwards
     const bool write_locked = flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK;
@@ -1232,7 +1231,7 @@ SceInt32 Semaphore::check_create(const char *name, SceUInt32 attr, SceInt32 init
 }
 
 void Semaphore::end_waits(SceUID) {
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 SceInt32 Semaphore::wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks) {
@@ -1249,7 +1248,7 @@ SceInt32 Semaphore::wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *ti
             return r;
         if (try_take(thread, need_count))
             return SCE_KERNEL_OK;
-        const SceInt32 result = Waitable::wait(waiters, guard, thread, type, { .count = need_count }, deadline, timeout);
+        const SceInt32 result = Waitable::wait(guard, thread, type, { .count = need_count }, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return finish_wait(guard, thread, callbacks, result);
     }
@@ -1267,7 +1266,7 @@ SceInt32 Semaphore::poll(ThreadState &thread, SceInt32 need_count) {
 
 bool Semaphore::try_take(ThreadState &thread, SceInt32 need_count) {
     // A waiter queued ahead goes first, even one the count doesn't cover yet
-    if (val < need_count || !waiters.first_for(thread.get_priority()))
+    if (val < need_count || !first_for(thread.get_priority()))
         return false;
     val -= need_count;
     return true;
@@ -1290,11 +1289,11 @@ SceInt32 Semaphore::signal(SceInt32 count) {
 }
 
 void Semaphore::serve() {
-    while (ThreadState *const waiter = waiters.front()) {
+    while (ThreadState *const waiter = first_waiter()) {
         if (val < waiter->wait_request().count)
             break;
         val -= waiter->wait_request().count;
-        waiters.wake(*waiter);
+        wake_waiter(*waiter);
     }
 }
 
@@ -1306,7 +1305,7 @@ SceInt32 Semaphore::cancel(SceInt32 set_count, SceUInt32 *num_wait_threads) {
     if (set_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
-    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
     if (set_count < 0) {
         val = init_val;
     } else {
@@ -1343,7 +1342,7 @@ Condvar::Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex)
 
 void Condvar::end_waits(SceUID) {
     // wait() maps this to the condition's own delete error
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, bool callbacks) {
@@ -1362,7 +1361,7 @@ SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, b
         r = run_wait_callbacks(guard, thread, callbacks);
         if (r != SCE_KERNEL_OK)
             break;
-        r = Waitable::wait(waiters, guard, thread, type, {}, deadline, timeout);
+        r = Waitable::wait(guard, thread, type, {}, deadline, timeout);
         if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
             // Only a delete runs the callbacks notified during the wait
             if (r == SCE_KERNEL_ERROR_WAIT_DELETE)
@@ -1402,16 +1401,16 @@ SceInt32 Condvar::signal(SignalTarget target) {
 
     if (target.type == SignalTarget::Type::Specific) {
         // Search for specified waiting thread
-        auto *waiter = waiters.find_if([&](auto &w) { return w.id == target.thread_id; });
+        auto *waiter = find_waiter([&](auto &w) { return w.id == target.thread_id; });
         if (!waiter)
             return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-        waiters.wake(*waiter);
+        wake_waiter(*waiter);
     } else if (target.type == SignalTarget::Type::Any) {
         // Wakes the first waiter in queue order
-        if (ThreadState *const waiter = waiters.front())
-            waiters.wake(*waiter);
+        if (ThreadState *const waiter = first_waiter())
+            wake_waiter(*waiter);
     } else {
-        waiters.wake_all();
+        wake_waiters();
     }
 
     return SCE_KERNEL_OK;
@@ -1484,7 +1483,7 @@ SceInt32 EventFlag::check_wait(SceUInt32 pattern, SceUInt32 wait_mode) {
 }
 
 void EventFlag::end_waits(SceUID) {
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
     clear_holder();
     holds = 0;
 }
@@ -1573,7 +1572,7 @@ SceInt32 EventFlag::wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_
         // A wait whose deadline is already gone returns these bits
         if (out_bits)
             *out_bits = flags;
-        r = Waitable::wait(waiters, guard, thread, type, request, deadline, timeout);
+        r = Waitable::wait(guard, thread, type, request, deadline, timeout);
         if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
             r = finish_wait(guard, thread, callbacks, r);
             break;
@@ -1631,7 +1630,7 @@ bool EventFlag::take(const WaitRequest &wait) {
 }
 
 void EventFlag::serve() {
-    waiters.wake_if([&](auto &waiter) { return take(waiter.wait_request()); });
+    wake_waiters_if([&](auto &waiter) { return take(waiter.wait_request()); });
 }
 
 SceInt32 EventFlag::clear(SceUInt32 pattern) {
@@ -1655,7 +1654,7 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
         drop_hold();
         return true;
     };
-    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_if(set_out_bits, SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_waiters_if(set_out_bits, SCE_KERNEL_ERROR_WAIT_CANCEL));
 
     flags = pattern;
 
@@ -1707,7 +1706,7 @@ static bool is_msg_pipe_mode(SceUInt32 wait_mode) {
 }
 
 void MsgPipe::end_waits(SceUID) {
-    waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 // The size of all the pieces together
@@ -1836,7 +1835,7 @@ bool MsgPipe::give(MsgPipeSender &sender) {
         // A FULL receive that still wants bytes stays the first one
         if (to.full && to.left > 0)
             break;
-        waiters.wake(*receiver);
+        wake_waiter(*receiver);
         if (sender.left == 0)
             break;
     }
@@ -1859,7 +1858,7 @@ bool MsgPipe::take(MsgPipeReceiver &receiver) {
         from.report();
         if (!from.done())
             break;
-        waiters.wake(*sender);
+        wake_waiter(*sender);
     }
     receiver.report();
     return receiver.done();
@@ -1881,7 +1880,7 @@ void MsgPipe::serve() {
             if (!request.sender->done())
                 return;
         }
-        waiters.wake(waiter);
+        wake_waiter(waiter);
     }
 }
 
@@ -1930,7 +1929,7 @@ SceInt32 MsgPipe::receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mod
         // The callbacks notified meanwhile run also after a receive that got its bytes
         if (done)
             return finish_wait(guard, thread, callbacks, SCE_KERNEL_OK);
-        const SceInt32 result = Waitable::wait(waiters, guard, thread, type, request, deadline, timeout);
+        const SceInt32 result = Waitable::wait(guard, thread, type, request, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return finish_wait(guard, thread, callbacks, result);
     }
@@ -1973,7 +1972,7 @@ SceInt32 MsgPipe::send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, 
         // The callbacks notified meanwhile run also after a send that moved its bytes
         if (done)
             return finish_wait(guard, thread, callbacks, SCE_KERNEL_OK);
-        const SceInt32 result = Waitable::wait(waiters, guard, thread, type, request, deadline, timeout);
+        const SceInt32 result = Waitable::wait(guard, thread, type, request, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return finish_wait(guard, thread, callbacks, result);
     }
@@ -2028,7 +2027,7 @@ SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receiv
             ++senders;
         else
             ++receivers;
-        waiters.wake(waiter, SCE_KERNEL_ERROR_WAIT_CANCEL);
+        wake_waiter(waiter, SCE_KERNEL_ERROR_WAIT_CANCEL);
     }
     data_buffer.Clear();
 
