@@ -190,6 +190,8 @@ display_framebuf_blocks         fail     # no framebuffer base alignment check
 display_framebuf_free           skip     # whether the renderer crashes on a freed framebuffer depends on timing
 display_framebuf_set_freed      skip     # a framebuffer where a block was freed is taken, whether the renderer crashes on it depends on timing
 display_setframebuf_cb_notify   pass
+display_setframebuf_cb_passed_target pass
+display_vblank_callback_registered_twice pass
 display_vblank_cb_display_callback pass
 display_vblank_cb_inner_sema    pass
 display_vblank_cb_inner_wait    pass

@@ -191,7 +191,7 @@ EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
 
     CallbackRef callback = emuenv.kernel.objects.find<Callback>(uid);
     if (!callback)
-        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
     const SimpleEventRef event = emuenv.kernel.kernel_objects.find<SimpleEvent>(emuenv.display.vblank_event);
     if (!event)
@@ -201,11 +201,16 @@ EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
 
 EXPORT(SceInt32, sceDisplayUnregisterVblankStartCallback, SceUID uid) {
     TRACY_FUNC(sceDisplayUnregisterVblankStartCallback, uid);
-    const SimpleEventRef event = emuenv.kernel.kernel_objects.find<SimpleEvent>(emuenv.display.vblank_event);
-    if (!event || event->unregister_callback(uid) < 0)
-        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
+    // A UID of any class passes, one that names no object does not
+    if (!emuenv.kernel.objects.find(uid))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
-    return 0;
+    const SimpleEventRef event = emuenv.kernel.kernel_objects.find<SimpleEvent>(emuenv.display.vblank_event);
+    if (!event)
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
+    if (const SceInt32 error = event->unregister_callback(uid))
+        return RET_ERROR(error);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBuf) {
