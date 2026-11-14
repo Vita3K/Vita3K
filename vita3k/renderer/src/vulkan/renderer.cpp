@@ -1058,6 +1058,12 @@ void VKState::cleanup() {
     if (gpu_request_wait_thread.joinable())
         gpu_request_wait_thread.join();
 
+    // callbacks that were never run still own their std::function
+    for (auto pending = request_queue.take_all(); !pending.empty(); pending.pop()) {
+        if (auto *callback = std::get_if<CallbackRequest>(&pending.front()))
+            delete callback->callback;
+    }
+
     context = nullptr;
 
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {

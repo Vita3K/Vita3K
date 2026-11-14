@@ -1209,6 +1209,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         return RET_ERROR(SCE_HTTP_ERROR_BAD_RESPONSE);
     }
 
+    delete[] req->second.res.responseRaw;
     req->second.res.responseRaw = reqResponse;
     req->second.res.body = reqResponse + resHeadersOnly.length() + strlen("\r\n\r\n");
 

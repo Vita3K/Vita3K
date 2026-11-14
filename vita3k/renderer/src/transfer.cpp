@@ -264,6 +264,8 @@ COMMAND(handle_transfer_downscale) {
 
     if (src->format != dst->format) {
         LOG_ERROR_ONCE("Unhandled format conversion from 0x{:0X} to 0x{:0X}", fmt::underlying(src->format), fmt::underlying(dst->format));
+        delete src;
+        delete dst;
         return;
     }
 
