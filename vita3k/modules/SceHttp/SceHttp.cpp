@@ -41,6 +41,7 @@
 #include <util/string_utils.h>
 #include <util/tracy.h>
 
+#include <memory>
 #include <string>
 #include <thread>
 
@@ -264,9 +265,18 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     };
     addrinfo *result = { 0 };
 
+    const auto close_socket = [sockfd]() {
+#ifdef _WIN32
+        closesocket(sockfd);
+#else
+        close(sockfd);
+#endif
+    };
+
     const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
 
     auto ret = getaddrinfo(parsed.hostname.c_str(), port.c_str(), &hints, &result);
+    const std::unique_ptr<addrinfo, decltype(&freeaddrinfo)> result_guard(result, freeaddrinfo);
     if (ret < 0) {
         if (!emuenv.cfg.http_enable) {
             LOG_WARN("getaddrinfo failed, but http is disabled, asume we still got it");
@@ -284,6 +294,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
         }
 
         LOG_ERROR("getaddrinfo({},{},...) = {}", url, port, ret);
+        close_socket();
         return RET_ERROR(SCE_HTTP_ERROR_RESOLVER_ENODNS);
     }
 
@@ -303,6 +314,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     ret = connect(sockfd, result->ai_addr, result->ai_addrlen);
     if (ret < 0) {
         LOG_ERROR("connect({},...) = {}, errno={}({})", sockfd, ret, errno, strerror(errno));
+        close_socket();
         return RET_ERROR(SCE_HTTP_ERROR_RESOLVER_ENOHOST);
     }
 
@@ -311,6 +323,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     if (isSecure) {
         if (!emuenv.http.sslInited) {
             LOG_ERROR("SSL not inited on secure connection");
+            close_socket();
             return RET_ERROR(SCE_HTTP_ERROR_SSL);
         }
 
@@ -323,8 +336,10 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
         if (err != 1) {
             int sslErr = SSL_get_error((SSL *)tmpl->second.ssl, err);
             LOG_ERROR("SSL_connect(...) = {}, SSLERR = {}", err, sslErr);
-            if (sslErr == SSL_ERROR_SSL)
+            if (sslErr == SSL_ERROR_SSL) {
+                close_socket();
                 return RET_ERROR(SCE_HTTP_ERROR_SSL);
+            }
         }
 
         long verify_flag = SSL_get_verify_result((SSL *)tmpl->second.ssl);
