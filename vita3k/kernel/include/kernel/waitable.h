@@ -36,10 +36,7 @@ public:
     void on_delete(SceUID deleter) final;
 
 protected:
-    // For an object whose SCE_KERNEL_ATTR_TH_PRIO bit orders its waiters
     Waitable(SceUInt32 attr, const char *name);
-    // For an object whose attr orders its waiters with other bits, like a message pipe
-    Waitable(SceUInt32 attr, WaitQueue::Order order, const char *name);
 
     // Locks the object's fields for its own methods, with an empty lock once it was deleted
     [[nodiscard]] std::unique_lock<std::mutex> lock() const {

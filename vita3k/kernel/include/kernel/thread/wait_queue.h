@@ -30,19 +30,16 @@ struct ThreadState;
 // the object's lock held. The threads are linked in place, so queueing allocates nothing.
 class WaitQueue {
 public:
-    // How the queue orders its waiters
-    enum class Order {
-        fifo,
-        priority,
-    };
-
-    WaitQueue() = default;
     explicit WaitQueue(SceUInt32 attr)
-        : by_priority(attr & SCE_KERNEL_ATTR_TH_PRIO) {}
-    explicit WaitQueue(Order order)
-        : by_priority(order == Order::priority) {}
+        : attr(attr) {}
 
     // The threads in queue order
+    auto begin() {
+        return threads.begin();
+    }
+    auto end() {
+        return threads.end();
+    }
     auto begin() const {
         return threads.begin();
     }
@@ -83,6 +80,7 @@ public:
     void remove(ThreadState &thread);
 
 private:
-    bool by_priority = false;
+    // The attr of the object, whose bits order the waiters
+    SceUInt32 attr;
     IntrusiveList<ThreadState> threads;
 };

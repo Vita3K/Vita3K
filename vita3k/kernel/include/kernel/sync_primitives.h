@@ -527,8 +527,11 @@ public:
 
 private:
     void end_waits(SceUID deleter) override;
-    // Carries on the first receiver's and the first sender's transfers until neither ends
+    // Carries on the waiters' transfers from the head, up to the first that doesn't end
     void serve() override;
+    // Returns the first waiting sender or receiver, or null
+    ThreadState *first_sender();
+    ThreadState *first_receiver();
     // Moves the sender's bytes to the waiting receivers, then puts the rest into the pipe. Returns
     // whether the sender is done.
     bool give(MsgPipeSender &sender);
@@ -544,12 +547,10 @@ private:
     // Copies n bytes from the sender to the receiver, and takes them from the sender unless the
     // receiver peeks
     static void copy(MsgPipeSender &sender, MsgPipeReceiver &receiver, SceSize n);
-    // Returns whether a new call goes ahead of the calls already waiting on its side
-    static bool goes_first(WaitQueue &side, int priority);
+    // Returns whether a new call with request goes ahead of the calls already waiting on its side
+    bool goes_first(const WaitRequest &request, int priority);
 
-    // Guarded by the lock. The senders wait in waiters. At most one side waits, except right after
-    // a waiter came back from its callbacks.
-    WaitQueue receivers;
+    // Guarded by the lock. Senders and receivers wait in the one queue.
     ByteRingBuffer data_buffer;
 };
 
