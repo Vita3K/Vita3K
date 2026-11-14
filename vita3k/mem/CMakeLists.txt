@@ -14,7 +14,7 @@ add_library(
 )
 
 target_include_directories(mem PUBLIC include)
-target_link_libraries(mem PUBLIC util)
+target_link_libraries(mem PUBLIC util tracy)
 
 if(NOT ANDROID)
 	add_executable(
