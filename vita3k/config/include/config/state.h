@@ -95,7 +95,7 @@ struct Config {
         bool import_textures = false;
         bool export_textures = false;
         bool export_as_png = false;
-        bool fps_hack = false;
+        int vblank_rate = 60;
         bool shader_cache = true;
         bool spirv_shader = false;
         bool texture_cache = true;
