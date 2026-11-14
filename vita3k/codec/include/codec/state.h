@@ -266,6 +266,8 @@ struct PlayerState {
 
     DecoderSize get_size();
     uint64_t get_framerate_microseconds();
+    uint64_t get_duration_ms(int32_t stream_id);
+    uint64_t get_start_time_ms(int32_t stream_id);
 
     void pop_video();
     void free_video();

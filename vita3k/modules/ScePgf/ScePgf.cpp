@@ -73,25 +73,16 @@ enum SceFontPixelFormatCode {
 
 struct SceFontNewLibParams {
     Ptr<void> userData;
-
     unsigned int numFonts;
-
-    // Cache system instance handle
-    Ptr<void> cache;
-
-    // Memory allocation functions (allocFunc, freeFunc)
-    Ptr<void> allocFunc;
-    Ptr<void> freeFunc;
-
-    // File access functions
+    Ptr<void> cacheData;
+    Ptr<void *(void *, unsigned int)> allocFunc;
+    Ptr<void(void *, void *)> freeFunc;
     Ptr<void> openFunc;
     Ptr<void> closeFunc;
     Ptr<void> readFunc;
     Ptr<void> seekFunc;
-    // Callback when error occurs
-    Ptr<void> onErrorFunc;
-    // Callback when reading ends
-    Ptr<void> whenDoneReadFunc;
+    Ptr<void> errorFunc;
+    Ptr<void> ioFinishFunc;
 };
 static_assert(sizeof(SceFontNewLibParams) == 0x2C);
 

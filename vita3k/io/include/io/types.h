@@ -66,14 +66,14 @@ typedef enum SceIoAccessMode {
     SCE_S_IROTH = 000004, //!< Others read permission
     SCE_S_IRWXO = 000007, //!< Others access rights mask
 
-    SCE_S_ISVTX = 0x0200, //!< Sticky
-    SCE_S_ISGID = 0x0400, //!< Set GID
-    SCE_S_ISUID = 0x0800, //!< Set UID
+    SCE_S_ISVTX = 000000, //!< Sticky
+    SCE_S_ISGID = 000000, //!< Set GID
+    SCE_S_ISUID = 000000, //!< Set UID
 
-    SCE_S_IFDIR = 0x1000, //!< Directory
-    SCE_S_IFREG = 0x2000, //!< Regular file
-    SCE_S_IFLNK = 0x4000, //!< Symbolic link
-    SCE_S_IFMT = 0xF000, //!< Format bits mask
+    SCE_S_IFDIR = 0010000, //!< Directory
+    SCE_S_IFREG = 0020000, //!< Regular file
+    SCE_S_IFLNK = 0040000, //!< Symbolic link
+    SCE_S_IFMT = 0170000, //!< Format bits mask
 } SceIoAccessMode;
 
 enum SceIoFileMode {
