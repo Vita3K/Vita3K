@@ -866,9 +866,7 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice *voice) {
     }
 
     // The next system update ends the voice and calls its finished callback, as games may hold their own locks here
-    voice->is_keyed_off = true;
-    if (!voice->rack->system->voice_scheduler.off(emuenv.mem, voice))
-        voice->is_keyed_off = false;
+    voice->rack->system->voice_scheduler.off(emuenv.mem, voice);
 
     return SCE_NGS_OK;
 }
