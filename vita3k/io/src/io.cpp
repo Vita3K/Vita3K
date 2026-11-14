@@ -665,7 +665,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &v
 #endif
 
     // report regular files as readable but not executable
-    statp->st_mode = SCE_S_IRUSR | SCE_S_IRGRP | SCE_S_IROTH;
+    statp->st_mode = SCE_S_IRUSR | SCE_S_IRSYS;
 
     if (fs::is_regular_file(file_path)) {
         statp->st_size = fs::file_size(file_path);
@@ -674,7 +674,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &v
     }
     if (fs::is_directory(file_path)) {
         statp->st_attr = SCE_SO_IFDIR;
-        statp->st_mode |= SCE_S_IFDIR | SCE_S_IXUSR | SCE_S_IXGRP | SCE_S_IXOTH;
+        statp->st_mode |= SCE_S_IFDIR | SCE_S_IXUSR | SCE_S_IXSYS;
     }
 
     __RtcTicksToPspTime(&statp->st_atime, last_access_time_ticks);
