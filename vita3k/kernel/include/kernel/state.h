@@ -212,4 +212,8 @@ private:
     bool threads_suspended = false;
     // The process is exiting, so a thread still being created ends as well
     bool process_exiting = false;
+
+public:
+    // Declared last so the service stops before the tables are destroyed.
+    TimerService timers;
 };

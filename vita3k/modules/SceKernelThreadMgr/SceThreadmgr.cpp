@@ -91,10 +91,8 @@ static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID 
     SceUInt32 *const timeout_copy = timeout ? &time_left : nullptr;
     const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
     SceInt32 result;
-    if (const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
+    if (const EventRef event = find_event(emuenv, event_id))
         result = event->wait(*thread, bit_pattern, pattern_copy, data_copy, timeout_copy, callbacks);
-    else if (const TimerRef timer = emuenv.kernel.objects.find<Timer>(event_id))
-        result = timer->wait(*thread, bit_pattern, pattern_copy, data_copy, timeout_copy, callbacks);
     else
         result = RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     if (result_pattern)
@@ -354,7 +352,7 @@ EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint3
     if (const SceInt32 error = Waitable::check_name(name, attr))
         return RET_ERROR(error);
 
-    const auto timer = Ref<Timer>::make(attr, name, thread_id);
+    const auto timer = Ref<Timer>::make(emuenv.kernel.timers, attr, name, thread_id);
     return emuenv.kernel.objects.add(timer, emuenv.kernel.get_next_uid());
 }
 

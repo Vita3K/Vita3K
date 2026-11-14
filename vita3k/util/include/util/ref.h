@@ -209,6 +209,11 @@ public:
         return Ref<T>::from(list.front());
     }
 
+    // Links object before position and takes its reference over.
+    void insert(typename IntrusiveList<T>::iterator position, Ref<T> object) {
+        list.insert(position, *object.release_ownership());
+    }
+
     // Links object at the end and takes its reference over
     void push_back(Ref<T> object) {
         list.push_back(*object.release_ownership());

@@ -95,6 +95,7 @@ KernelState::KernelState()
 }
 
 bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
+    timers.start();
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
@@ -269,6 +270,7 @@ void KernelState::set_threads_suspended(bool suspended) {
 
 void KernelState::deinit(MemState &mem) {
     process_exit();
+    timers.stop();
     threads.clear();
 
     {

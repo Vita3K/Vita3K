@@ -24,9 +24,11 @@
 #include <util/byte_ring_buffer.h>
 #include <util/intrusive_list.h>
 
+#include <condition_variable>
 #include <expected>
 #include <limits>
 #include <span>
+#include <thread>
 
 // The ID of the one process Vita3K runs
 constexpr SceUID PROCESS_ID = 1;
@@ -50,11 +52,15 @@ struct CallbackRegistration : IntrusiveLink<CallbackRegistration> {
     const SceUID notify_id;
 };
 
+class TimerService;
+
 // The event part of simple events and timers: a bit pattern, the user data of the last set, and the
 // waits for bits of the pattern.
 class Event : public Waitable {
 public:
     const bool auto_reset;
+
+    SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
 
     SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     SceInt32 clear(SceUInt32 clear_pattern);
@@ -77,9 +83,6 @@ protected:
     Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
 
     void end_waits(SceUID deleter) override;
-    // Brings the event up to date before an event operation looks at it. Called with the lock held.
-    // Only a timer has anything to do.
-    virtual void catch_up() {}
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     // Returns the guest's result of a wait, and gives a wait that a delete or a cancel ended the error
@@ -110,7 +113,6 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
 
-    SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     // Sets or pulses the bits, then notifies the registered callbacks with notify_arg
     SceInt32 set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg);
@@ -126,14 +128,14 @@ using SimpleEventRef = Ref<SimpleEvent>;
 
 using EventRef = Ref<Event>;
 
-class Timer final : public WithUidClass<Event, UidClass::timer> {
+class Timer final : public WithUidClass<Event, UidClass::timer>, public IntrusiveLink<Timer> {
     friend class Ref<Timer>;
+    friend class TimerService;
 
-    Timer(SceUInt32 attr, const char *name, SceUID creator);
+    Timer(TimerService &timers, SceUInt32 attr, const char *name, SceUID creator);
 
 public:
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
-    SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 start();
     SceInt32 stop();
     SceInt32 cancel(SceUInt32 *num_wait_threads) override;
@@ -152,20 +154,15 @@ public:
     SceInt32 timer_info(SceKernelTimerInfo &info);
 
 private:
-    // Fires the event if it is due: sets or pulses SCE_KERNEL_EVENT_TIMER, and queues a repeating
-    // event again an interval after it was due.
-    void catch_up() override;
-    // Queues the event to be due at the clock time deadline, and wakes the first waiter so it sees
-    // the new time. The lock must be held.
-    void queue_event(uint64_t deadline);
-    // Gives the event's bits to the waits they match, and wakes the first waiter left.
-    void serve() override;
-    // Sleeps in the queue once like Waitable::wait() and fires the next event for the first waiter.
-    [[nodiscard]] SceInt32 sleep(std::unique_lock<std::mutex> &lock, ThreadState &thread, bool callbacks, const WaitRequest &request, Deadline deadline, SceUInt32 *timeout);
-    // Returns when the next event is due, on the clock of wait deadlines. The lock must be held.
-    Deadline event_deadline() const;
+    // Fires an event still due by cutoff, then rearms a repeating event.
+    void expire(uint64_t cutoff);
+    void end_waits(SceUID deleter) override;
     // Returns how much time the timer counted. The lock must be held.
     uint64_t count() const;
+
+    TimerService &timers;
+    // Written with both locks held, read with either.
+    uint64_t deadline = 0;
 
     // Guarded by the lock
     bool is_started = false;
@@ -179,12 +176,36 @@ private:
     uint64_t stopped_count = 0;
     // The count the armed event is due at
     uint64_t schedule = 0;
-    // The clock time the next event is due, the maximum while none is queued
-    uint64_t next_event = std::numeric_limits<uint64_t>::max();
     uint64_t event_interval = 0;
 };
 
 using TimerRef = Ref<Timer>;
+
+// Armed timers in deadline order, fired by one host thread.
+class TimerService {
+public:
+    ~TimerService();
+    void start();
+    void stop();
+
+    // Called with the timer lock held. The service lock comes after it.
+    void arm(Timer &timer, uint64_t deadline);
+    void disarm(Timer &timer);
+    bool take_due(Timer &timer, uint64_t cutoff);
+
+private:
+    void run();
+    // Takes timer off the list if it is on it, and moves the batch on if it was next
+    void unlink(Timer &timer);
+
+    std::mutex mutex;
+    std::condition_variable wake;
+    RefList<Timer> timers;
+    // The next timer of the batch being fired, guarded by the lock
+    IntrusiveList<Timer>::iterator cursor = timers.end();
+    bool stopping = false;
+    std::thread thread;
+};
 
 class Semaphore final : public WithUidClass<Waitable, UidClass::semaphore> {
     friend class Ref<Semaphore>;

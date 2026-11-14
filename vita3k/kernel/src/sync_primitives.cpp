@@ -257,7 +257,7 @@ SceInt32 Event::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceU
     return SCE_KERNEL_OK;
 }
 
-SceInt32 SimpleEvent::wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
+SceInt32 Event::wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -290,7 +290,6 @@ SceInt32 Event::poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt6
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    catch_up();
     if (wait_pattern == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
 
@@ -380,7 +379,6 @@ SceInt32 Event::clear(SceUInt32 clear_pattern) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    catch_up();
     if (clear_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
 
@@ -393,7 +391,6 @@ SceInt32 Event::cancel(SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    catch_up();
 
     const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
     if (num_wait_threads)
@@ -406,7 +403,6 @@ SceInt32 Event::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *nu
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    catch_up();
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
 
@@ -424,7 +420,6 @@ SceInt32 Event::get_pattern(SceUInt32 &result) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    catch_up();
     result = pattern;
     return SCE_KERNEL_OK;
 }
@@ -433,7 +428,6 @@ SceInt32 Event::info(SceKernelEventInfo &info) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-    catch_up();
 
     info = {};
     info.eventId = uid;
@@ -449,51 +443,129 @@ SceInt32 Event::info(SceKernelEventInfo &info) {
 // * Timer *
 // *********
 
-inline uint64_t get_current_time() {
+inline uint64_t timer_clock() {
     return std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::high_resolution_clock::now().time_since_epoch())
         .count();
 }
 
-Timer::Timer(SceUInt32 attr, const char *name, SceUID creator)
-    : WithUidClass(attr, name, 0, system_event_user_data(creator)) {}
+Timer::Timer(TimerService &timers, SceUInt32 attr, const char *name, SceUID creator)
+    : WithUidClass(attr, name, 0, system_event_user_data(creator))
+    , timers(timers) {}
 
-// A timer event is due at least this long after it was queued or after the event before it
+// Minimum time until the worker starts its next batch.
 constexpr uint64_t TIMER_EVENT_FLOOR = 200;
+// Longest single wait of the worker, so a far deadline is waited for in steps
+constexpr uint64_t TIMER_MAX_WAIT = 1000000;
 
-void Timer::catch_up() {
-    const uint64_t now = get_current_time();
-    if (next_event > now)
+TimerService::~TimerService() {
+    stop();
+}
+
+void TimerService::start() {
+    thread = std::thread(&TimerService::run, this);
+}
+
+void TimerService::stop() {
+    {
+        const std::lock_guard<std::mutex> guard(mutex);
+        stopping = true;
+    }
+    wake.notify_one();
+    if (thread.joinable())
+        thread.join();
+    const std::lock_guard<std::mutex> guard(mutex);
+    stopping = false;
+    while (!timers.empty())
+        timers.remove(*timers.begin());
+}
+
+void TimerService::arm(Timer &timer, uint64_t deadline) {
+    const std::lock_guard<std::mutex> guard(mutex);
+    // The list's old reference goes, this one is linked again
+    TimerRef ref = Ref<Timer>::from(timer);
+    unlink(timer);
+    timer.deadline = deadline;
+    // After the timers due at the same time
+    auto pos = timers.begin();
+    while (pos != timers.end() && pos->deadline <= deadline)
+        ++pos;
+    const bool first = pos == timers.begin();
+    timers.insert(pos, std::move(ref));
+    if (first)
+        wake.notify_one();
+}
+
+void TimerService::disarm(Timer &timer) {
+    const std::lock_guard<std::mutex> guard(mutex);
+    unlink(timer);
+}
+
+bool TimerService::take_due(Timer &timer, uint64_t cutoff) {
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (!timer.linked() || timer.deadline > cutoff)
+        return false;
+    unlink(timer);
+    return true;
+}
+
+void TimerService::unlink(Timer &timer) {
+    if (!timer.linked())
+        return;
+    // A batch that would fire it next moves on
+    if (cursor != timers.end() && &*cursor == &timer)
+        ++cursor;
+    timers.remove(timer);
+}
+
+void TimerService::run() {
+    std::unique_lock<std::mutex> lock(mutex);
+    while (!stopping) {
+        if (timers.empty()) {
+            wake.wait(lock);
+            continue;
+        }
+        // The next batch starts at the first deadline, but never sooner than the floor from now
+        const uint64_t now = timer_clock();
+        const uint64_t first = timers.begin()->deadline;
+        const uint64_t wait = first > now ? std::min(first - now, TIMER_MAX_WAIT) : 0;
+        if (wake.wait_for(lock, std::chrono::microseconds(std::max(wait, TIMER_EVENT_FLOOR))) != std::cv_status::timeout)
+            continue;
+        // Fires the timers due by this time in list order. A repeat armed again in front of the
+        // cursor fires in the next batch, and a stop ends the batch.
+        const uint64_t cutoff = timer_clock();
+        for (auto it = timers.begin(); it != timers.end() && it->deadline <= cutoff && !stopping; it = cursor) {
+            cursor = std::next(it);
+            {
+                // The timer's lock comes before the list's, so the list is unlocked to take it
+                const TimerRef timer = Ref<Timer>::from(*it);
+                lock.unlock();
+                timer->expire(cutoff);
+            }
+            lock.lock();
+        }
+        cursor = timers.end();
+    }
+}
+
+void Timer::expire(uint64_t cutoff) {
+    const auto guard = lock();
+    // A delete, stop, cancel or new event since the service took the timer can leave nothing due
+    if (!guard || !timers.take_due(*this, cutoff))
         return;
     fire(SCE_KERNEL_EVENT_TIMER, 0, !is_pulse);
     notify_callbacks(0);
-    // A one shot event leaves the queue but stays armed, so a start or a set time can queue it again
-    if (!is_repeat) {
-        next_event = std::numeric_limits<uint64_t>::max();
+    // A one shot event stays armed, so a start or a set time arms it again
+    if (!is_repeat)
         return;
-    }
-    // A repeating event is due again an interval after it was due. With nobody waiting, the events
-    // it missed meanwhile are skipped, so its callbacks get one notification for all of them.
-    const uint64_t interval = std::max(event_interval, TIMER_EVENT_FLOOR);
-    uint64_t next = next_event + interval;
-    if (waiters.empty() && next <= now)
-        next += ((now - next) / interval + 1) * interval;
-    next_event = std::max(next, now + TIMER_EVENT_FLOOR);
-    schedule = next_event - base;
+    const uint64_t next = deadline + std::max(event_interval, TIMER_EVENT_FLOOR);
+    schedule = next - base;
+    timers.arm(*this, next);
 }
 
-void Timer::queue_event(uint64_t deadline) {
-    next_event = std::max(deadline, get_current_time() + TIMER_EVENT_FLOOR);
-    // The first waiter sleeps until the old event time, so wake it to see the new one
-    if (ThreadState *const first = first_waiter())
-        first->wake();
-}
-
-Deadline Timer::event_deadline() const {
-    if (next_event == std::numeric_limits<uint64_t>::max())
-        return Deadline::max();
-    const uint64_t now = get_current_time();
-    return std::chrono::steady_clock::now() + std::chrono::microseconds(next_event > now ? next_event - now : 0);
+void Timer::end_waits(SceUID deleter) {
+    timers.disarm(*this);
+    Event::end_waits(deleter);
 }
 
 SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats) {
@@ -502,7 +574,6 @@ SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repe
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
     if (type != SCE_KERNEL_TIMER_TYPE_SET_EVENT && type != SCE_KERNEL_TIMER_TYPE_PULSE_EVENT)
         return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
-    catch_up();
 
     is_pulse = type == SCE_KERNEL_TIMER_TYPE_PULSE_EVENT;
     is_repeat = repeats != 0;
@@ -511,72 +582,11 @@ SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repe
     schedule = count() + interval;
     // A stopped timer queues the event when it starts
     if (is_started)
-        queue_event(get_current_time() + interval);
+        timers.arm(*this, timer_clock() + interval);
     else
-        next_event = std::numeric_limits<uint64_t>::max();
+        timers.disarm(*this);
 
     return SCE_KERNEL_OK;
-}
-
-SceInt32 Timer::wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
-        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-
-    const Deadline deadline = deadline_from(timeout);
-    SceInt32 result = SCE_KERNEL_OK;
-    while (true) {
-        if (const SceInt32 r = run_wait_callbacks(guard, thread, callbacks))
-            return wait_result(r, result_pattern);
-        // Events that are already due fire before the take, so the waiter can't get an old pulse
-        catch_up();
-        if (try_take(wait_pattern, result_pattern, user_data) == SCE_KERNEL_OK)
-            return wait_result(result, result_pattern);
-        result = sleep(guard, thread, callbacks, { .pattern = wait_pattern, .out_pattern = result_pattern, .out_user_data = user_data }, deadline, timeout);
-        if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
-            return wait_result(finish_wait(guard, thread, callbacks, result), result_pattern);
-    }
-}
-
-SceInt32 Timer::sleep(std::unique_lock<std::mutex> &lock, ThreadState &thread, bool callbacks, const WaitRequest &request, Deadline deadline, SceUInt32 *timeout) {
-    if (std::chrono::steady_clock::now() >= deadline) {
-        writeback_timeout(timeout, deadline);
-        return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
-    }
-    // A callback already pending leaves the timeout as it was
-    if (callbacks && thread.has_pending_callbacks())
-        return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
-    queue(thread, request);
-    const WaitTarget target{ wait_type(SCE_KERNEL_WAITTYPE_EVENT, callbacks), uid };
-    SceInt32 result;
-    while (true) {
-        const Deadline wake = first_waiter() == &thread ? std::min(deadline, event_deadline()) : deadline;
-        lock.unlock();
-        result = thread.wait(target, wake);
-        lock.lock();
-        if (thread.ender_result || result == SCE_KERNEL_ERROR_NOTIFY_CALLBACK || result == SCE_KERNEL_ERROR_THREAD_STOPPED)
-            break;
-        // Woken because the next event is due, the schedule changed, or for no reason. The waiter
-        // stays queued.
-        catch_up();
-        if (thread.ender_result || std::chrono::steady_clock::now() >= deadline) {
-            result = SCE_KERNEL_ERROR_WAIT_TIMEOUT;
-            break;
-        }
-    }
-    writeback_timeout(timeout, deadline);
-    if (thread.ender_result && result != SCE_KERNEL_ERROR_THREAD_STOPPED)
-        return *thread.ender_result;
-    unqueue(thread);
-    serve();
-    return result;
-}
-
-void Timer::serve() {
-    Event::serve();
-    // The first waiter may be a new one, which now has to wake for the next event
-    if (ThreadState *const first = first_waiter())
-        first->wake();
 }
 
 SceInt32 Timer::start() {
@@ -586,15 +596,14 @@ SceInt32 Timer::start() {
 
     if (is_started)
         return 1;
-    catch_up();
 
     // The count goes on from where it stopped, and an armed event is due after the time it has left,
     // at once if it already fired
     is_started = true;
-    const uint64_t now = get_current_time();
+    const uint64_t now = timer_clock();
     base = now - stopped_count;
     if (armed)
-        queue_event(now + (schedule > stopped_count ? schedule - stopped_count : 0));
+        timers.arm(*this, now + (schedule > stopped_count ? schedule - stopped_count : 0));
 
     return SCE_KERNEL_OK;
 }
@@ -606,11 +615,10 @@ SceInt32 Timer::stop() {
 
     if (!is_started)
         return 0;
-    catch_up();
 
     stopped_count = count();
     is_started = false;
-    next_event = std::numeric_limits<uint64_t>::max();
+    timers.disarm(*this);
 
     return 1;
 }
@@ -619,16 +627,15 @@ std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
     const auto guard = lock();
     if (!guard)
         return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
-    catch_up();
 
     const uint64_t old_count = count();
     if (is_started) {
-        const uint64_t now = get_current_time();
+        const uint64_t now = timer_clock();
         base = now - new_time;
         // If the new time is before the armed event's time, the event is due when the count reaches
         // it again. Otherwise it stays due when it was.
         if (armed && new_time < schedule)
-            queue_event(now + (schedule - new_time));
+            timers.arm(*this, now + (schedule - new_time));
     } else {
         stopped_count = new_time;
     }
@@ -636,7 +643,7 @@ std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
 }
 
 uint64_t Timer::count() const {
-    return is_started ? get_current_time() - base : stopped_count;
+    return is_started ? timer_clock() - base : stopped_count;
 }
 
 SceInt32 Timer::get_time(uint64_t &time) const {
@@ -659,7 +666,6 @@ SceInt32 Timer::remaining_time(uint64_t &time) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
-    catch_up();
     if (!armed)
         return SCE_KERNEL_ERROR_EVENT_NOT_SET;
     time = schedule - count();
@@ -670,7 +676,6 @@ SceInt32 Timer::timer_info(SceKernelTimerInfo &info) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
-    catch_up();
 
     info = {};
     info.timerId = uid;
@@ -692,14 +697,13 @@ SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
-    catch_up();
 
     const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
     // The event set with sceKernelSetTimerEvent is canceled too, but the timer keeps running with
     // the event's interval and type
     armed = false;
     is_repeat = false;
-    next_event = std::numeric_limits<uint64_t>::max();
+    timers.disarm(*this);
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
