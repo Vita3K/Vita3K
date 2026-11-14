@@ -415,6 +415,7 @@ msgpipe_event_before_callbacks  fail     # a pipe isn't an event
 msgpipe_failed_sizes            pass
 msgpipe_info_event_waiter       fail     # a pipe isn't an event, and its info has no waiter attribute bit
 msgpipe_mixed_queue             fail     # a pipe isn't an event, and its info has no waiter attribute bit
+msgpipe_mixed_sides_sender_order fail     # a send to two waiting DONT_REMOVE receives completes only the first
 msgpipe_modes                   pass
 msgpipe_open_close_bits         fail     # a pipe isn't an event, and an opened UID doesn't keep the pipe alive after the creating UID's delete
 msgpipe_order                   pass
