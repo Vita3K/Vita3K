@@ -61,6 +61,7 @@ void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
 }
 
 bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
     if (voice->state != VOICE_STATE_AVAILABLE)
         return false;
 
@@ -75,11 +76,12 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
 }
 
 bool VoiceScheduler::pause(const MemState &mem, Voice *voice) {
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
     if (!voice->is_paused) {
         voice->is_paused = true;
 
-        // Remove from the list
-        if (voice->state == VOICE_STATE_ACTIVE || voice->state == VOICE_STATE_FINALIZING)
+        // Remove from the list, a keyed off voice stays so that the next update ends it
+        if (voice->state == VOICE_STATE_ACTIVE)
             deque_voice(voice);
         return true;
     }
@@ -88,25 +90,27 @@ bool VoiceScheduler::pause(const MemState &mem, Voice *voice) {
 }
 
 bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
     if (!voice->is_paused) {
         return false;
     }
 
     voice->is_paused = false;
 
-    if (voice->state == VOICE_STATE_ACTIVE || voice->state == VOICE_STATE_FINALIZING)
+    if (voice->state == VOICE_STATE_ACTIVE)
         deque_insert(mem, voice);
 
     return true;
 }
 
 bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
     if (voice->state != VOICE_STATE_ACTIVE && voice->state != VOICE_STATE_FINALIZING)
         return false;
 
+    voice->is_keyed_off = false;
     voice->transition(mem, VOICE_STATE_AVAILABLE);
-    if (!voice->is_paused)
-        deque_voice(voice);
+    deque_voice(voice);
 
     voice->is_paused = false;
 
@@ -114,10 +118,14 @@ bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
 }
 
 bool VoiceScheduler::off(const MemState &mem, Voice *voice) {
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
     if (voice->state != VOICE_STATE_ACTIVE)
         return false;
 
+    voice->is_keyed_off = true;
     voice->transition(mem, VOICE_STATE_FINALIZING);
+    if (voice->is_paused)
+        deque_insert(mem, voice);
 
     return true;
 }
@@ -139,10 +147,11 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
         memset(voice->products, 0, sizeof(voice->products));
 
-        bool finished = false;
+        const bool keyed_off = voice->state == VOICE_STATE_FINALIZING;
+        bool finished = keyed_off;
         uint32_t finished_module = 0;
 
-        for (size_t i = 0; i < voice->rack->modules.size(); i++) {
+        for (size_t i = 0; !keyed_off && i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
                 if (voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock)) {
                     finished = true;
