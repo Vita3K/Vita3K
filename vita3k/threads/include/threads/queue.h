@@ -116,6 +116,16 @@ public:
         return aborted.load(std::memory_order_relaxed);
     }
 
+    std::queue<T> take_all() {
+        std::queue<T> items;
+        {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            std::swap(queue_, items);
+        }
+        cond_.notify_all();
+        return items;
+    }
+
     void reset() {
         std::queue<T> empty;
         std::swap(queue_, empty);

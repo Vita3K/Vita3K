@@ -280,6 +280,16 @@ void PipelineCache::set_async_compilation(bool enable) {
                 thread.join();
         }
         worker_threads.clear();
+
+        // requests enqueued after the stop instructions were never compiled
+        CompileRequest *left;
+        while (pipeline_compile_queue.try_dequeue(left)) {
+            if (left == nullptr)
+                continue;
+            left->vertex_program_gxm->compile_threads_on.fetch_sub(1, std::memory_order_release);
+            left->fragment_program_gxm->compile_threads_on.fetch_sub(1, std::memory_order_release);
+            delete left;
+        }
     }
 }
 
