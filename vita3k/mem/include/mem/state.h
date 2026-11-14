@@ -25,6 +25,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 struct AllocMemPage {
     uint32_t allocated : 4;
@@ -41,6 +42,8 @@ using PageNameMap = std::map<int, std::string>;
 
 struct ProtectBlockInfo {
     uint32_t size = 0;
+    MemPerm perm = MemPerm::None;
+    bool cache_invalidation = false;
     ProtectCallback callback;
 };
 
@@ -70,8 +73,17 @@ struct MemState {
     uint32_t host_page_size = 0;
     Memory memory;
     AllocPageTable alloc_table;
+    // Protected by generation_mutex. Reusing an address gets a new identity.
+    std::map<Address, uint64_t> allocation_generations;
+    uint64_t next_allocation_generation = 0;
     BitmapAllocator allocator;
     ProtectSegmentTrees protect_tree;
+    struct ReadbackRegistration {
+        uint64_t begin, end;
+        std::weak_ptr<GpuReadbackWatch> watch;
+    };
+    // Independent of protect_tree: its existing callbacks and permissions survive.
+    std::vector<ReadbackRegistration> readback_watches;
 
     PageNameMap page_name_map;
 

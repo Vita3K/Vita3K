@@ -27,6 +27,7 @@ add_library(
 	src/vulkan/screen_filters.cpp
 	src/vulkan/screen_renderer.cpp
 	src/vulkan/surface_cache.cpp
+	src/vulkan/surface_readback.cpp
 	src/vulkan/sync_state.cpp
 	src/vulkan/texture.cpp
 

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gxm/types.h>
+#include <mem/functions.h>
 #include <mem/ptr.h>
 #include <renderer/gxm_types.h>
 #include <util/containers.h>
@@ -31,6 +32,7 @@ namespace renderer::vulkan {
 
 struct VKRenderTarget;
 struct VKState;
+struct VKContext;
 struct Viewport;
 using CallbackRequestFunction = std::function<void()>;
 
@@ -75,6 +77,11 @@ struct CastedTexture {
 };
 
 struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
+    // Identity of the guest allocation used to create this cached GPU image.
+    MemAllocationToken readback_allocation;
+    std::shared_ptr<GpuReadbackWatch> readback_watch;
+    const VKContext *readback_context = nullptr;
+    uint64_t readback_scene = 0;
     uint16_t width;
     uint16_t height;
     uint16_t original_width;
@@ -223,6 +230,9 @@ public:
 
     // If non-null, the return value must be sent as a PostSurfaceSyncRequest
     ColorSurfaceCacheInfo *perform_surface_sync();
+
+    // Synchronous fallback for linear byte/RGB565 surfaces without guest mapping.
+    bool readback_surface(MemState &mem, const SceGxmColorSurface &surface);
 
     // Called after the render has been done
     void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);

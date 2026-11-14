@@ -24,7 +24,9 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <iterator>
 #include <mutex>
+#include <new>
 #include <utility>
 
 #ifdef _WIN32
@@ -34,6 +36,10 @@
 #include <csignal>
 #include <sys/mman.h>
 #include <unistd.h>
+#endif
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
 #endif
 
 constexpr uint32_t STANDARD_PAGE_SIZE = KiB(4);
@@ -51,6 +57,10 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
 static void delete_memory(uint8_t *memory);
+static void cancel_readbacks_locked(MemState &state, uint64_t begin, uint64_t end);
+static void prune_readbacks_locked(MemState &state);
+static MemPerm readback_page_permission(const MemState &state, uint64_t page);
+static bool protect_checked(MemState &state, Address addr, uint32_t size, MemPerm perm);
 
 #ifdef _WIN32
 static std::string get_error_msg() {
@@ -182,10 +192,25 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     const uint32_t size = page_count * STANDARD_PAGE_SIZE;
     const Address addr = page_num * STANDARD_PAGE_SIZE;
 
+    // Publish allocation identity before changing permissions or page metadata.
+    // A host allocation failure must return the bitmap reservation to the pool.
+    try {
+        state.allocation_generations.emplace(addr, state.next_allocation_generation + 1);
+    } catch (const std::bad_alloc &) {
+        state.allocator.free(page_num, page_count);
+        return 0;
+    }
+    ++state.next_allocation_generation;
+
     const Address commit_start = align_down(addr, state.host_page_size);
     const Address commit_end = align(addr + size, state.host_page_size);
     const uint32_t commit_size = commit_end - commit_start;
     uint8_t *const commit_ptr = &state.memory[commit_start];
+    // An allocator permission change must not leave an older readback armed.
+    {
+        const std::lock_guard<std::mutex> lock(state.protect_mutex);
+        cancel_readbacks_locked(state, commit_start, uint64_t(commit_start) + commit_size);
+    }
 
     // Make memory chunk available to access
 #ifdef _WIN32
@@ -216,6 +241,8 @@ Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned
     size += alignment;
     const uint32_t page_count = align(size, STANDARD_PAGE_SIZE) / STANDARD_PAGE_SIZE;
     const Address addr = alloc_inner(state, start_addr / STANDARD_PAGE_SIZE, page_count, name, false);
+    if (!addr)
+        return 0;
     const Address align_addr = align(addr, alignment);
     const uint32_t page_num = addr / STANDARD_PAGE_SIZE;
     const uint32_t align_page_num = align_addr / STANDARD_PAGE_SIZE;
@@ -228,6 +255,11 @@ Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned
         page.allocated = 0;
         align_page.allocated = 1;
         align_page.size = page.size - remnant_front;
+        // Re-key the existing node: alignment must not introduce another
+        // potentially throwing host allocation after the guest pages commit.
+        auto generation = state.allocation_generations.extract(addr);
+        generation.key() = align_page_num * STANDARD_PAGE_SIZE;
+        state.allocation_generations.insert(std::move(generation));
     }
 
     return align_addr;
@@ -239,7 +271,7 @@ static void align_to_page(MemState &state, Address &addr, Address &size) {
     size = end - addr;
 }
 
-void unprotect_inner(MemState &state, Address addr, uint32_t size) {
+static void unprotect_unchecked(MemState &state, Address addr, uint32_t size) {
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
     }
@@ -261,7 +293,117 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
 #endif
 }
 
-void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
+// Retire software-cache registrations before opening their shared host pages.
+// Access/abort registrations are deliberately not invoked for collateral access.
+// Callbacks have the same mutex/no-renderer-wait contract as ordinary faults.
+// Erase and re-key existing nodes only: no temporary container or allocation in
+// the fault handler. Affected pages outside the requested opening are restored
+// from their remaining registrations rather than opened unconditionally.
+static unsigned retire_cache_protections_locked(MemState &state, uint64_t begin, uint64_t end, Address fault,
+    uint64_t &affected_begin, uint64_t &affected_end) {
+    // External page-table mappings may have noncontiguous backing. Preserve
+    // their existing path; this fix is for the original unmapped guest view.
+    if (state.use_page_table || begin >= end)
+        return 0;
+    unsigned retired = 0;
+    auto it = state.protect_tree.lower_bound(Address(end - 1));
+    while (it != state.protect_tree.end()) {
+        auto &segment = it->second;
+        if (uint64_t(it->first) + segment.size <= begin)
+            break;
+        bool changed = false;
+        for (auto block = segment.blocks.begin(); block != segment.blocks.end();) {
+            const auto block_begin = align_down(uint64_t(block->first), uint64_t(state.host_page_size));
+            const auto block_end = align(uint64_t(block->first) + block->second.size, uint64_t(state.host_page_size));
+            if (!block->second.cache_invalidation || block_begin >= end || block_end <= begin) {
+                ++block;
+                continue;
+            }
+            affected_begin = std::min(affected_begin, block_begin);
+            affected_end = std::max(affected_end, block_end);
+            // Opening the block permits future writes even for a read fault.
+            // Notify caches conservatively before discarding their registration.
+            block->second.callback(fault, true);
+            block = segment.blocks.erase(block);
+            ++retired;
+            changed = true;
+        }
+        auto next = std::next(it);
+        if (changed) {
+            if (segment.blocks.empty()) {
+                state.protect_tree.erase(it);
+            } else {
+                const auto first = segment.blocks.begin()->first;
+                uint64_t last = first;
+                auto perm = MemPerm::ReadWrite;
+                for (const auto &[address, block] : segment.blocks) {
+                    last = std::max(last, uint64_t(address) + block.size);
+                    perm = most_restrictive_perm(perm, block.perm);
+                }
+                segment.size = uint32_t(last - first);
+                segment.perm = perm;
+                auto node = state.protect_tree.extract(it);
+                node.key() = first;
+                state.protect_tree.insert(std::move(node));
+            }
+        }
+        it = next;
+    }
+    return retired;
+}
+
+static void restore_registered_permissions_locked(MemState &state, uint64_t begin, uint64_t end) {
+    if (begin >= end)
+        return;
+    uint64_t run_begin = begin;
+    auto permission = readback_page_permission(state, begin);
+    const uint64_t max_batch = align_down(uint64_t(UINT32_MAX), uint64_t(state.host_page_size));
+    for (uint64_t page = begin + state.host_page_size; page <= end; page += state.host_page_size) {
+        const auto next = page < end ? readback_page_permission(state, page) : permission;
+        if (page < end && next == permission && page - run_begin < max_batch)
+            continue;
+        if (!protect_checked(state, Address(run_begin), uint32_t(page - run_begin), permission)) {
+            LOG_CRITICAL("Could not restore collateral cache page permissions");
+            std::terminate();
+        }
+        run_begin = page;
+        permission = next;
+    }
+}
+
+static unsigned unprotect_with_cache_invalidation_locked(MemState &state, uint64_t begin, uint64_t end, Address fault) {
+    if (begin >= end)
+        return 0;
+    uint64_t affected_begin = begin, affected_end = end;
+    const unsigned retired = retire_cache_protections_locked(state, begin, end, fault, affected_begin, affected_end);
+    cancel_readbacks_locked(state, begin, end);
+    restore_registered_permissions_locked(state, affected_begin, begin);
+    restore_registered_permissions_locked(state, end, affected_end);
+    // Keep the uint32_t lower-level API valid even if registrations cover the
+    // entire 4GiB address space through overlapping host pages.
+    const uint64_t max_batch = align_down(uint64_t(UINT32_MAX), uint64_t(state.host_page_size));
+    while (begin < end) {
+        const auto size = std::min(end - begin, max_batch);
+        unprotect_unchecked(state, Address(begin), uint32_t(size));
+        begin += size;
+    }
+    return retired;
+}
+
+void unprotect_inner(MemState &state, Address addr, uint32_t size) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    if (state.use_page_table) {
+        // Select the backing with the original guest address. Rounding the
+        // address first can select a different external page-table mapping.
+        unprotect_unchecked(state, addr, size);
+        return;
+    }
+    unprotect_with_cache_invalidation_locked(state,
+        align_down(uint64_t(addr), uint64_t(state.host_page_size)),
+        align(uint64_t(addr) + size, uint64_t(state.host_page_size)), addr);
+}
+
+static bool protect_checked(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
     uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
 
     uint8_t *target = &addr_ptr[addr];
@@ -274,10 +416,16 @@ void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm p
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(aligned_start, aligned_size, (perm == MemPerm::None) ? PAGE_NOACCESS : ((perm == MemPerm::ReadOnly) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+    return ret != 0;
 #else
     const int ret = mprotect(aligned_start, aligned_size, (perm == MemPerm::None) ? PROT_NONE : ((perm == MemPerm::ReadOnly) ? PROT_READ : (PROT_READ | PROT_WRITE)));
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    return ret == 0;
 #endif
+}
+
+void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
+    protect_checked(state, addr, size, perm);
 }
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
@@ -310,19 +458,40 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         fmt::print("Access: {}\n", log_hex(vaddr));
     }
 
+    const uint64_t fault_page = align_down(uint64_t(vaddr), uint64_t(state.host_page_size));
+    bool watched_page = false;
+    for (const auto &registration : state.readback_watches) {
+        if (fault_page < registration.end && fault_page + state.host_page_size > registration.begin)
+            watched_page = true;
+    }
+    if (watched_page) {
+        cancel_readbacks_locked(state, fault_page, fault_page + state.host_page_size);
+        // A read trap added solely for readback needs no existing CPU callback.
+        // Restore the original strongest page permission, not unconditional RW.
+        MemPerm original = MemPerm::ReadWrite;
+        for (const auto &[start, segment] : state.protect_tree) {
+            if (uint64_t(start) < fault_page + state.host_page_size && uint64_t(start) + segment.size > fault_page)
+                original = most_restrictive_perm(original, segment.perm);
+        }
+        if (original == MemPerm::ReadWrite || (!write && original == MemPerm::ReadOnly))
+            return true;
+    }
+
     auto it = state.protect_tree.lower_bound(vaddr);
     if (it == state.protect_tree.end()) {
         // HACK: keep going
-        unprotect_inner(state, align_down(vaddr, state.host_page_size), state.host_page_size);
-        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        const auto begin = align_down(uint64_t(vaddr), uint64_t(state.host_page_size));
+        if (!unprotect_with_cache_invalidation_locked(state, begin, begin + state.host_page_size, vaddr))
+            LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
 
     ProtectSegmentInfo &info = it->second;
     if (vaddr < it->first || vaddr >= it->first + info.size) {
         // HACK: keep going
-        unprotect_inner(state, align_down(vaddr, state.host_page_size), state.host_page_size);
-        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
+        const auto begin = align_down(uint64_t(vaddr), uint64_t(state.host_page_size));
+        if (!unprotect_with_cache_invalidation_locked(state, begin, begin + state.host_page_size, vaddr))
+            LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
 
@@ -331,19 +500,31 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         block.callback(vaddr, write);
     }
 
-    unprotect_inner(state, it->first, info.size);
+    const auto original_address = it->first;
+    const auto original_size = info.size;
+    const auto begin = align_down(uint64_t(original_address), uint64_t(state.host_page_size));
+    const auto end = align(uint64_t(original_address) + original_size, uint64_t(state.host_page_size));
     state.protect_tree.erase(it);
+    if (state.use_page_table) {
+        unprotect_unchecked(state, original_address, original_size);
+        return true;
+    }
+    // Opening a logical segment can also release neighboring cache blocks and
+    // watches on the same host pages; retire those before exposing writable memory.
+    unprotect_with_cache_invalidation_locked(state, begin, end, vaddr);
 
     return true;
 }
 
-bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPerm perm, const ProtectCallback &callback) {
+static bool add_protect_impl(MemState &state, Address addr, const uint32_t size, const MemPerm perm, const ProtectCallback &callback, bool cache_invalidation) {
     const std::lock_guard<std::mutex> lock(state.protect_mutex);
     ProtectSegmentInfo protect(size, perm);
     align_to_page(state, addr, protect.size);
 
     ProtectBlockInfo block;
-    block.size = size;
+    block.size = protect.size;
+    block.perm = perm;
+    block.cache_invalidation = cache_invalidation;
     block.callback = callback;
 
     protect.blocks.emplace(addr, std::move(block));
@@ -372,10 +553,27 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         state.protect_tree.erase(it--);
     }
 
-    protect_inner(state, addr, protect.size, protect.perm);
-
+    const auto protected_size = protect.size;
+    const auto requested_permission = protect.perm;
     state.protect_tree.emplace(addr, std::move(protect));
+    if (state.readback_watches.empty()) {
+        protect_inner(state, addr, protected_size, requested_permission);
+    } else {
+        // A new texture/other registration must not weaken an active readback
+        // watch, including another logical segment on the same host page.
+        const uint64_t end = align(uint64_t(addr) + protected_size, uint64_t(state.host_page_size));
+        for (uint64_t page = align_down(uint64_t(addr), uint64_t(state.host_page_size)); page < end; page += state.host_page_size)
+            protect_inner(state, Address(page), state.host_page_size, readback_page_permission(state, page));
+    }
     return true;
+}
+
+bool add_protect(MemState &state, Address addr, uint32_t size, MemPerm perm, const ProtectCallback &callback) {
+    return add_protect_impl(state, addr, size, perm, callback, false);
+}
+
+bool add_cache_protect(MemState &state, Address addr, uint32_t size, MemPerm perm, const ProtectCallback &callback) {
+    return add_protect_impl(state, addr, size, perm, callback, true);
 }
 
 bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
@@ -435,7 +633,7 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
     {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
         auto prot_it = mem.protect_tree.lower_bound(mapping.address);
-        if (prot_it->first + prot_it->second.size <= mapping.address) {
+        if (prot_it == mem.protect_tree.end() || prot_it->first + prot_it->second.size <= mapping.address) {
             if (prot_it == mem.protect_tree.begin())
                 prot_it = mem.protect_tree.end();
             else
@@ -503,7 +701,13 @@ void free(MemState &state, Address address) {
     if (!page.allocated) {
         LOG_CRITICAL("Freeing unallocated page");
     }
+    {
+        const std::lock_guard<std::mutex> lock(state.protect_mutex);
+        cancel_readbacks_locked(state, uint64_t(page_num) * STANDARD_PAGE_SIZE,
+            uint64_t(page_num + page.size) * STANDARD_PAGE_SIZE);
+    }
     page.allocated = 0;
+    state.allocation_generations.erase(page_num * STANDARD_PAGE_SIZE);
 
     state.allocator.free(page_num, page.size);
     if (PAGE_NAME_TRACKING) {
@@ -574,10 +778,15 @@ void deinit_mem(MemState &state) {
     {
         const std::lock_guard<std::mutex> prot_lock(state.protect_mutex);
         state.protect_tree.clear();
+        for (const auto &registration : state.readback_watches)
+            if (auto watch = registration.watch.lock())
+                watch->invalidated = true;
+        state.readback_watches.clear();
     }
 
     state.memory.reset();
     state.alloc_table.reset();
+    state.allocation_generations.clear();
     state.allocator.reset();
     state.page_name_map.clear();
     state.page_table.reset();
@@ -679,3 +888,163 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 }
 
 #endif
+
+static MemAllocationToken allocation_for_range(const MemState &state, Address address, uint64_t length) {
+    if (!address || !length || length > UINT32_MAX || uint64_t(address) + length > UINT32_MAX)
+        return {};
+    auto allocation = state.allocation_generations.upper_bound(address);
+    if (allocation == state.allocation_generations.begin())
+        return {};
+    --allocation;
+    const uint32_t size = state.alloc_table[allocation->first / STANDARD_PAGE_SIZE].size * STANDARD_PAGE_SIZE;
+    if (uint64_t(address) + length > uint64_t(allocation->first) + size)
+        return {};
+    return { allocation->first, size, allocation->second };
+}
+
+MemAllocationToken capture_mem_allocation(MemState &state, Address address, uint64_t length) {
+    const std::lock_guard<std::mutex> lock(state.generation_mutex);
+    return allocation_for_range(state, address, length);
+}
+
+bool matches_mem_allocation(MemState &state, const MemAllocationToken &expected, Address address, uint64_t length) {
+    const std::lock_guard<std::mutex> lock(state.generation_mutex);
+    return expected && allocation_for_range(state, address, length) == expected;
+}
+
+// Called only with protect_mutex held. Never waits for CPU or renderer work.
+static MemPerm readback_page_permission(const MemState &state, uint64_t page) {
+    MemPerm permission = MemPerm::ReadWrite;
+    const uint64_t end = page + state.host_page_size;
+    for (auto it = state.protect_tree.lower_bound(Address(end - 1)); it != state.protect_tree.end(); ++it) {
+        if (uint64_t(it->first) + it->second.size <= page)
+            break;
+        permission = most_restrictive_perm(permission, it->second.perm);
+    }
+    for (const auto &registration : state.readback_watches)
+        if (page < registration.end && end > registration.begin)
+            if (auto watch = registration.watch.lock(); watch && !watch->invalidated)
+                permission = MemPerm::None;
+    return permission;
+}
+
+static void prune_readbacks_locked(MemState &state) {
+    for (auto it = state.readback_watches.begin(); it != state.readback_watches.end();) {
+        const auto watch = it->watch.lock();
+        if (watch && !watch->invalidated) {
+            ++it;
+            continue;
+        }
+        const auto begin = it->begin, end = it->end;
+        it = state.readback_watches.erase(it);
+        for (uint64_t page = begin; page < end; page += state.host_page_size) {
+            if (!protect_checked(state, Address(page), state.host_page_size, readback_page_permission(state, page))) {
+                // The guest permissions are unknowable; do not resume a fault
+                // or continue emulation with a possibly weakened shared page.
+                LOG_CRITICAL("Could not restore readback page permissions");
+                std::terminate();
+            }
+        }
+    }
+}
+
+static void cancel_readbacks_locked(MemState &state, uint64_t begin, uint64_t end) {
+    for (const auto &registration : state.readback_watches)
+        if (begin < registration.end && end > registration.begin)
+            if (auto watch = registration.watch.lock())
+                watch->invalidated = true;
+    prune_readbacks_locked(state);
+}
+
+bool gpu_readback_supported() {
+#ifdef __APPLE__
+    return true;
+#else
+    // A protected guest view must never be temporarily opened for readback.
+    // Add another backend only after its same-backing alias contract is tested.
+    return false;
+#endif
+}
+
+std::shared_ptr<GpuReadbackWatch> begin_gpu_readback_watch(MemState &state,
+    const MemAllocationToken &allocation, Address destination,
+    uint32_t row_bytes, uint32_t height, uint32_t stride) {
+    if (!gpu_readback_supported() || !destination || !row_bytes || !height || row_bytes > stride)
+        return {};
+    const uint64_t length = uint64_t(height - 1) * stride + row_bytes;
+    if (length > 64 * 1024 * 1024 || uint64_t(destination) + length > UINT32_MAX)
+        return {};
+    const std::lock_guard<std::mutex> generation_lock(state.generation_mutex);
+    const std::lock_guard<std::mutex> protection_lock(state.protect_mutex);
+    if (state.use_page_table || !allocation || allocation_for_range(state, destination, length) != allocation)
+        return {};
+    prune_readbacks_locked(state);
+    auto watch = std::make_shared<GpuReadbackWatch>();
+    watch->allocation = allocation;
+    watch->destination = destination;
+    watch->row_bytes = row_bytes;
+    watch->height = height;
+    watch->stride = stride;
+    const uint64_t begin = align_down(uint64_t(destination), uint64_t(state.host_page_size));
+    const uint64_t end = align(uint64_t(destination) + length, uint64_t(state.host_page_size));
+    state.readback_watches.push_back({ begin, end, watch });
+    if (!protect_checked(state, Address(begin), uint32_t(end - begin), MemPerm::None)) {
+        watch->invalidated = true;
+        prune_readbacks_locked(state);
+        return {};
+    }
+    return watch;
+}
+
+void finish_gpu_readback_watch(MemState &state, const std::shared_ptr<GpuReadbackWatch> &watch) {
+    if (!watch)
+        return;
+    const std::lock_guard<std::mutex> generation_lock(state.generation_mutex);
+    const std::lock_guard<std::mutex> protection_lock(state.protect_mutex);
+    watch->invalidated = true;
+    prune_readbacks_locked(state);
+}
+
+bool write_gpu_readback_rows(MemState &state, Address destination, const uint8_t *source,
+    uint32_t row_bytes, uint32_t height, uint32_t destination_stride,
+    const MemAllocationToken *expected, const GpuReadbackWatch *watch) {
+    if (!gpu_readback_supported() || !source || !destination || !row_bytes || !height || row_bytes > destination_stride)
+        return false;
+    const uint64_t length = uint64_t(height - 1) * destination_stride + row_bytes;
+    const uint64_t end = uint64_t(destination) + length;
+    if (length > 64 * 1024 * 1024 || end > UINT32_MAX)
+        return false;
+    const std::lock_guard<std::mutex> generation_lock(state.generation_mutex);
+    const std::lock_guard<std::mutex> protection_lock(state.protect_mutex);
+    if (state.use_page_table || !is_valid_addr_range(state, destination, uint32_t(end)))
+        return false;
+    if (expected && (!*expected || allocation_for_range(state, destination, length) != *expected))
+        return false;
+    if (watch && (watch->invalidated || !expected || watch->allocation != *expected || watch->destination != destination || watch->row_bytes != row_bytes || watch->height != height || watch->stride != destination_stride))
+        return false;
+#ifdef __APPLE__
+    const uint64_t begin_page = align_down(uint64_t(destination), uint64_t(state.host_page_size));
+    const uint64_t alias_size = align(end, uint64_t(state.host_page_size)) - begin_page;
+    mach_vm_address_t alias = 0;
+    vm_prot_t current = 0, maximum = 0;
+    if (mach_vm_remap(mach_task_self(), &alias, alias_size, 0, VM_FLAGS_ANYWHERE,
+            mach_task_self(), reinterpret_cast<mach_vm_address_t>(state.memory.get() + begin_page),
+            false, &current, &maximum, VM_INHERIT_NONE)
+        != KERN_SUCCESS)
+        return false;
+    struct AliasLease {
+        mach_vm_address_t address;
+        mach_vm_size_t size;
+        ~AliasLease() { mach_vm_deallocate(mach_task_self(), address, size); }
+    } lease{ alias, alias_size };
+    if (!(maximum & VM_PROT_WRITE)
+        || mach_vm_protect(mach_task_self(), alias, alias_size, false, VM_PROT_READ | VM_PROT_WRITE) != KERN_SUCCESS)
+        return false;
+    uint8_t *output = reinterpret_cast<uint8_t *>(alias) + (destination - begin_page);
+    for (uint32_t y = 0; y < height; ++y)
+        std::memcpy(output + uint64_t(y) * destination_stride, source + uint64_t(y) * row_bytes, row_bytes);
+    return true;
+#else
+    return false;
+#endif
+}
