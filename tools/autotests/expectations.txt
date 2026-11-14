@@ -759,9 +759,9 @@ timeout_threshold               skip     # timing, which short timeouts end at o
 timeouts                        pass
 timer                           pass
 timer_base_remaining            pass
-timer_callback                  fail     # a timer's events reach its registered callbacks only when something reads the timer, there is no timer service
+timer_callback                  pass
 timer_callback_lifecycle_args   fail     # a timer's open and close don't notify its registered callbacks
-timer_callback_other_wait       fail     # a timer's events reach its registered callbacks only when something reads the timer, there is no timer service
+timer_callback_other_wait       pass
 timer_cancel_clear_valid        fail     # timer cancel and clear leave the waiter results and the waiting count wrong
 timer_cancel_with_set_pattern   fail     # event calls don't take timer UIDs
 timer_clear_mask_pattern        pass
@@ -785,6 +785,7 @@ timer_repeat_argument_values    pass
 timer_repeat_auto_reset_missed  skip     # whether the second poll sees the next fire depends on how busy the host is between the polls
 timer_repeat_info_steps         pass
 timer_repeat_pulse_vs_set       pass
+timer_repeat_wrapping_interval  pass
 timer_requeue                   fail     # no requeue on a priority change
 timer_reset_event_running       pass
 timer_set_time_moves_event      pass
