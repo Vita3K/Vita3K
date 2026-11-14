@@ -22,7 +22,17 @@
 #include <emuenv/state.h>
 #include <util/fs.h>
 
+#ifdef __ANDROID__
 #include <jni.h>
+#else
+using JNIEnv = void;
+using jobject = void *;
+using jclass = void *;
+using jmethodID = void *;
+using jstring = void *;
+using JavaVM = void *;
+using jint = int;
+#endif
 
 #include <cstdint>
 #include <memory>
@@ -34,12 +44,18 @@ struct AndroidSessionState {
     std::unique_ptr<EmuEnvState> emuenv;
     std::unique_ptr<app::AppSessionController> app_session_controller;
     Root root_paths;
+    mutable std::mutex state_mutex;
 };
 
 AndroidSessionState &android_session_state();
+
 EmuEnvState *get_emuenv();
+const EmuEnvState *get_emuenv_const();
 app::AppSessionController *get_app_session_controller();
+const app::AppSessionController *get_app_session_controller_const();
+
 Root &get_root_paths();
+const Root &get_root_paths_const();
 
 std::string jstring_to_string(JNIEnv *env, jstring str);
 
@@ -47,6 +63,12 @@ class ScopedJniCallback {
 public:
     ScopedJniCallback(JNIEnv *env, jobject callback_obj, const char *method_name, const char *method_sig);
     ~ScopedJniCallback();
+
+    ScopedJniCallback(const ScopedJniCallback &) = delete;
+    ScopedJniCallback &operator=(const ScopedJniCallback &) = delete;
+
+    ScopedJniCallback(ScopedJniCallback &&) = delete;
+    ScopedJniCallback &operator=(ScopedJniCallback &&) = delete;
 
     void call_progress(int percent, const char *status) const;
 
