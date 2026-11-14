@@ -305,8 +305,9 @@ void stop_render_thread(State &state) {
         for (Command *cmd = list.first; cmd != nullptr;) {
             Command *next = cmd->next;
             destroy_command_payload(*cmd);
-            // commands of a context live in guest memory, only the generic ones are heap allocated
-            if (!list.context)
+            if (list.context)
+                list.context->free_func(cmd);
+            else
                 generic_command_free(cmd);
             cmd = next;
         }
