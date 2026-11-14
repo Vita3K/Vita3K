@@ -535,7 +535,7 @@ void free(MemState &state, Address address) {
 
 #ifdef TRACY_ENABLE
     if (TracyIsConnected) {
-        TracyFreeN(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), guest_memory_pool_name);
+        TracyFreeN(reinterpret_cast<void *>(static_cast<uintptr_t>(page_num) * STANDARD_PAGE_SIZE), guest_memory_pool_name);
         const uint64_t total_allocated = (static_cast<uint64_t>(state.allocator.max_offset) * STANDARD_PAGE_SIZE) - mem_available(state);
         TracyPlotConfig("Game Memory: Total Allocated", tracy::PlotFormatType::Memory, true, true, 0);
         TracyPlot("Game Memory: Total Allocated", static_cast<int64_t>(total_allocated));
