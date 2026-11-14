@@ -108,6 +108,7 @@ bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
     if (voice->state != VOICE_STATE_ACTIVE && voice->state != VOICE_STATE_FINALIZING)
         return false;
 
+    voice->is_keyed_off = false;
     voice->transition(mem, VOICE_STATE_AVAILABLE);
     deque_voice(voice);
 
