@@ -23,9 +23,12 @@
 
 #include <renderer/vulkan/types.h>
 
+#include <array>
 #include <config/state.h>
 #include <display/state.h>
 #include <functional>
+#include <mem/functions.h>
+#include <mem/state.h>
 #include <overlay/display_manager.h>
 #include <overlay/shader_precompile_progress.h>
 #include <util/log.h>
@@ -35,6 +38,7 @@
 
 #ifdef TRACY_ENABLE
 #include <tracy/Tracy.hpp>
+#include <util/tracy.h>
 #endif
 
 struct FeatureState;
@@ -76,6 +80,17 @@ static renderer::SyncWaitResult wait_cmd(MemState &mem, CommandList &command_lis
 }
 
 static void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
+#ifdef TRACY_ENABLE
+    TRACY_FUNC_COMMANDS(process_batch);
+    if (_tracy_activation_state) {
+        size_t cmd_count = 0;
+        for (Command *c = command_list.first; c != nullptr; c = c->next) {
+            cmd_count++;
+        }
+        ZoneTextF("Commands: %zu", cmd_count);
+    }
+#endif
+
     using CommandHandlerFunc = decltype(cmd_handle_set_context);
 
     const static std::map<CommandOpcode, CommandHandlerFunc *> handlers = {
@@ -131,16 +146,17 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
     } while (true);
 }
 
-void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms) {
+size_t process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms) {
     auto max_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() + max_wait_ms;
+    size_t batches_processed = 0;
 
     while (!state.should_display) {
         if (state.render_abort.load(std::memory_order_relaxed))
-            return;
+            return batches_processed;
 
         // overlay requested an async present
         if (state.async_flip_requested.load(std::memory_order_relaxed))
-            return;
+            return batches_processed;
 
         // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
         auto cmd_list = state.command_buffer_queue.top(3);
@@ -148,35 +164,44 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
         if (!cmd_list || !is_cmd_ready(mem, *cmd_list)) {
             // beginning of the game or homebrew not using gxm
             if (state.context == nullptr)
-                return;
+                return batches_processed;
 
             // keep the old behavior for opengl with vsync as it looks like the new one causes some issues
             if (state.current_backend == Backend::OpenGL && config.current_config.v_sync)
-                return;
+                return batches_processed;
 
             renderer::SyncWaitResult wait_result = renderer::SyncWaitResult::TimedOut;
             if (cmd_list)
                 wait_result = wait_cmd(mem, *cmd_list);
             if (!cmd_list || wait_result != renderer::SyncWaitResult::Ready) {
                 if (wait_result == renderer::SyncWaitResult::Shutdown)
-                    return;
+                    return batches_processed;
 
                 if (state.async_flip_requested.load(std::memory_order_relaxed))
-                    return;
+                    return batches_processed;
 
                 auto curr_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (curr_time >= max_time)
                     // display a frame even though the game is not diplaying anything
-                    return;
+                    return batches_processed;
 
                 // this mean the command is still not ready, check if we can display it again
                 continue;
             }
         }
 
+#ifdef TRACY_ENABLE
+        if (TracyIsConnected) {
+            TracyPlot("Command Queue Depth", static_cast<int64_t>(state.command_buffer_queue.size()));
+        }
+#endif
+
         state.command_buffer_queue.pop();
         process_batch(state, features, mem, config, *cmd_list);
+        batches_processed++;
     }
+
+    return batches_processed;
 }
 
 void reset_command_list(CommandList &command_list) {
@@ -245,6 +270,12 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
             state.swap_window();
         }
     }
+
+#ifdef TRACY_ENABLE
+    uint64_t last_vblank_count = display.vblank_count.load(std::memory_order_relaxed);
+    auto last_frame_time = std::chrono::steady_clock::now();
+#endif
+
     while (!state.render_abort.load(std::memory_order_relaxed)) {
 #ifdef TRACY_ENABLE
         ZoneScopedN("Game rendering");
@@ -252,7 +283,7 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         if (!state.set_current())
             break;
 
-        process_batches(state, state.features, mem, config, 500);
+        size_t batches_processed = process_batches(state, state.features, mem, config, 500);
 
         if (state.paused.load(std::memory_order_relaxed) && !config.current_config.v_sync)
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
@@ -279,6 +310,52 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         state.async_flip_requested.store(false, std::memory_order_relaxed);
 
 #ifdef TRACY_ENABLE
+        const uint64_t current_vblank = display.vblank_count.load(std::memory_order_relaxed);
+        const uint64_t delta_vblank = current_vblank - last_vblank_count;
+        last_vblank_count = current_vblank;
+
+        const auto now = std::chrono::steady_clock::now();
+        const double frame_time_ms = std::chrono::duration<double, std::milli>(now - last_frame_time).count();
+        last_frame_time = now;
+
+        if (TracyIsConnected) {
+            uint64_t total_mapped = 0;
+            {
+                const std::lock_guard<std::mutex> lock(mem.generation_mutex);
+                total_mapped = (static_cast<uint64_t>(mem.allocator.max_offset) * 4096U) - mem_available(mem);
+            }
+
+            TracyPlotConfig("Frame Time (ms)", tracy::PlotFormatType::Number, false, true, 0);
+            TracyPlotConfig("VBlanks / Frame", tracy::PlotFormatType::Number, true, false, 0);
+            TracyPlotConfig("Batches / Frame", tracy::PlotFormatType::Number, true, false, 0);
+            TracyPlotConfig("Game Memory: Total Allocated", tracy::PlotFormatType::Memory, true, true, 0);
+
+            TracyPlot("Frame Time (ms)", frame_time_ms);
+            TracyPlot("VBlanks / Frame", static_cast<int64_t>(delta_vblank));
+            TracyPlot("Batches / Frame", static_cast<int64_t>(batches_processed));
+            TracyPlot("Game Memory: Total Allocated", static_cast<int64_t>(total_mapped));
+
+            ZoneTextF("VBlanks: %llu | Batches: %zu | Frame Time: %.2f ms", static_cast<unsigned long long>(delta_vblank), batches_processed, frame_time_ms);
+
+            uint32_t width = 0, height = 0;
+            std::vector<uint32_t> frame_buf = state.dump_frame(display, width, height);
+            if (!frame_buf.empty() && width > 0 && height > 0) {
+                constexpr uint32_t image_width = 480;
+                constexpr uint32_t image_height = 272;
+                static std::array<uint32_t, image_width * image_height> frame_image;
+
+                // An upscaled dump can be too big, so always downscale it to 480x272
+                for (uint32_t y = 0; y < image_height; ++y) {
+                    const uint32_t source_y = y * height / image_height;
+                    for (uint32_t x = 0; x < image_width; ++x) {
+                        const uint32_t source_x = x * width / image_width;
+                        frame_image[y * image_width + x] = frame_buf[source_y * width + source_x] | 0xFF000000;
+                    }
+                }
+
+                FrameImage(frame_image.data(), image_width, image_height, 0, false);
+            }
+        }
         FrameMark;
 #endif
     }
