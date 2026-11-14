@@ -18,12 +18,16 @@
 #pragma once
 
 #include <kernel/kernel_object.h>
-#include <kernel/thread/wait_queue.h>
+#include <kernel/thread/wait.h>
 #include <kernel/types.h>
+#include <util/intrusive_list.h>
 
+#include <concepts>
 #include <mutex>
 
-// A kernel object threads can wait on, with the lock that guards its fields
+struct ThreadState;
+
+// A kernel object threads can wait on, with the lock that guards its fields and its waiters
 class Waitable : public KernelObject {
 public:
     // Returns the error for a name the guest can't use, or 0.
@@ -36,10 +40,7 @@ public:
     void on_delete(SceUID deleter) final;
 
 protected:
-    // For an object whose SCE_KERNEL_ATTR_TH_PRIO bit orders its waiters
     Waitable(SceUInt32 attr, const char *name);
-    // For an object whose attr orders its waiters with other bits, like a message pipe
-    Waitable(SceUInt32 attr, WaitQueue::Order order, const char *name);
 
     // Locks the object's fields for its own methods, with an empty lock once it was deleted
     [[nodiscard]] std::unique_lock<std::mutex> lock() const {
@@ -61,15 +62,33 @@ protected:
     // Runs the pending callbacks of a wait with callbacks and returns why it must end, or 0.
     [[nodiscard]] SceInt32 run_wait_callbacks(std::unique_lock<std::mutex> &lock, ThreadState &thread, bool callbacks);
 
-    // Sleeps in queue of this object once with request, which the wakers read, and returns how the
-    // wait ended, with the lock held.
-    [[nodiscard]] SceInt32 wait(WaitQueue &queue, std::unique_lock<std::mutex> &lock, ThreadState &thread, SceUInt32 type, const WaitRequest &request, Deadline deadline, SceUInt32 *timeout);
+    // Sleeps in the queue once with request, which the wakers read, and returns how the wait
+    // ended, with the lock held.
+    [[nodiscard]] SceInt32 wait(std::unique_lock<std::mutex> &lock, ThreadState &thread, SceUInt32 type, const WaitRequest &request, Deadline deadline, SceUInt32 *timeout);
 
     // Runs the callbacks notified during a wait that ended with result and returns the outcome.
     [[nodiscard]] SceInt32 finish_wait(std::unique_lock<std::mutex> &lock, ThreadState &thread, bool callbacks, SceInt32 result);
 
-    // The threads waiting on the object, guarded by the lock
-    WaitQueue waiters;
+    // The queue methods are called with the lock held
+    // Queues thread with request, which its wakers read.
+    void queue(ThreadState &thread, const WaitRequest &request);
+    // Takes thread off the queue if it is still on it.
+    void unqueue(ThreadState &thread);
+    // Returns the first waiter, or null.
+    ThreadState *first_waiter();
+    // Returns whether a new waiter of this priority would be first, ahead of every waiter.
+    bool first_for(int priority) const;
+    // Returns the first waiter pick accepts, or null.
+    ThreadState *find_waiter(std::predicate<ThreadState &> auto pick);
+    // Ends the wait of thread with result and takes it off the queue.
+    void wake_waiter(ThreadState &thread, SceInt32 result = SCE_KERNEL_OK);
+    // Ends the wait of every waiter pick accepts, in queue order, and returns how many.
+    std::size_t wake_waiters_if(std::predicate<ThreadState &> auto pick, SceInt32 result = SCE_KERNEL_OK);
+    // Ends the wait of every waiter with result and returns how many.
+    std::size_t wake_waiters(SceInt32 result = SCE_KERNEL_OK);
+
+    // The waiting threads in queue order, borrowed, guarded by the lock. Only queue() links one.
+    IntrusiveList<ThreadState> waiters;
 
 private:
     mutable std::mutex mutex;

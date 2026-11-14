@@ -227,7 +227,7 @@ public:
     SceInt32 get_vm_context(CPUContext &context, bool &in_kernel_call);
 
 private:
-    friend class WaitQueue;
+    friend class Waitable;
 
     WaitRequest request;
 
@@ -360,21 +360,21 @@ private:
     bool host_waiting = false;
 };
 
-ThreadState *WaitQueue::find_if(std::predicate<ThreadState &> auto pick) {
-    for (ThreadState &thread : threads) {
+ThreadState *Waitable::find_waiter(std::predicate<ThreadState &> auto pick) {
+    for (ThreadState &thread : waiters) {
         if (pick(thread))
             return &thread;
     }
     return nullptr;
 }
 
-std::size_t WaitQueue::wake_if(std::predicate<ThreadState &> auto pick, SceInt32 result) {
+std::size_t Waitable::wake_waiters_if(std::predicate<ThreadState &> auto pick, SceInt32 result) {
     std::size_t woken = 0;
-    for (auto it = threads.begin(); it != threads.end();) {
+    for (auto it = waiters.begin(); it != waiters.end();) {
         ThreadState &thread = *it++;
         if (!pick(thread))
             continue;
-        wake(thread, result);
+        wake_waiter(thread, result);
         ++woken;
     }
     return woken;
