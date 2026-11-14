@@ -297,6 +297,21 @@ void stop_render_thread(State &state) {
     if (state.render_thread && state.render_thread->joinable())
         state.render_thread->join();
     state.render_thread.reset();
+
+    // lists that were never processed still own the payloads of their commands
+    auto pending = state.command_buffer_queue.take_all();
+    for (; !pending.empty(); pending.pop()) {
+        CommandList &list = pending.front();
+        for (Command *cmd = list.first; cmd != nullptr;) {
+            Command *next = cmd->next;
+            destroy_command_payload(*cmd);
+            if (list.context)
+                list.context->free_func(cmd);
+            else
+                generic_command_free(cmd);
+            cmd = next;
+        }
+    }
     state.command_buffer_queue.reset();
 }
 

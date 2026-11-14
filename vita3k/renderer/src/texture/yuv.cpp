@@ -141,4 +141,5 @@ renderer::TextureCache::~TextureCache() {
         sws_freeContext(context);
         yuv_conversion_cache.sws_context = nullptr;
     }
+    free_dds_descriptor();
 }
