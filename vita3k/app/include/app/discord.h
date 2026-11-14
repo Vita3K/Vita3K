@@ -34,6 +34,10 @@ void clear_presence();
 
 void shutdown();
 
+// Call regularly from the frontend loop: follows the setting, retries to connect when Discord is not running and runs the callbacks.
+// Returns true when the connection has just been established.
+bool update_init_status(bool discord_rich_presence, bool *discord_rich_presence_old);
+
 void update_presence(const std::string &state = "", const std::string &details = "Idle", bool reset_timer = true);
 } // namespace discordrpc
 
