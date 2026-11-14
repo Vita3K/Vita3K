@@ -286,6 +286,8 @@ void PipelineCache::set_async_compilation(bool enable) {
         while (pipeline_compile_queue.try_dequeue(left)) {
             if (left == nullptr)
                 continue;
+            // back to "in the cache but not compiled" so the sentinel is neither destroyed nor looked up
+            *left->pipeline = nullptr;
             left->vertex_program_gxm->compile_threads_on.fetch_sub(1, std::memory_order_release);
             left->fragment_program_gxm->compile_threads_on.fetch_sub(1, std::memory_order_release);
             delete left;

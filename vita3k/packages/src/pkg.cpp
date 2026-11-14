@@ -40,6 +40,9 @@
 #include <util/bytes.h>
 #include <util/log.h>
 
+#include <cstdio>
+#include <memory>
+
 // Credits to mmozeiko https://github.com/mmozeiko/pkg2zip
 
 static void ctr_init(uint8_t *counter, uint8_t *iv, uint64_t n) {
@@ -84,7 +87,8 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, co
 }
 
 bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
-    FILE *infile = FOPEN(pkg_path.c_str(), "rb");
+    std::unique_ptr<FILE, decltype(&fclose)> infile_guard(FOPEN(pkg_path.c_str(), "rb"), fclose);
+    FILE *infile = infile_guard.get();
     if (!infile) {
         LOG_CRITICAL("Failed to load pkg file in path: {}", fs_utils::path_to_utf8(pkg_path));
         return false;
@@ -104,19 +108,16 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
 
     if (byte_swap(pkg_header.magic) != 0x7F504b47 && byte_swap(ext_header.magic) != 0x7F657874) {
         LOG_ERROR("Not a valid pkg file!");
-        fclose(infile);
         return false;
     }
 
     if (pkg_size < byte_swap(pkg_header.total_size)) {
         LOG_ERROR("The pkg file is too small");
-        fclose(infile);
         return false;
     }
 
     if (pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(pkg_header.file_count) * 32) {
         LOG_ERROR("The pkg file is too small");
-        fclose(infile);
         return false;
     }
 
@@ -166,7 +167,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         break;
     default:
         LOG_ERROR("Unsupported content type: {}", content_type);
-        fclose(infile);
         return false;
         break;
     }
@@ -187,7 +187,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         break;
     default:
         LOG_ERROR("Unknown encryption key");
-        fclose(infile);
         return false;
         break;
     }
@@ -212,7 +211,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     std::vector<uint8_t> sfo_buffer(sfo_size);
     if (fseek(infile, sfo_offset, SEEK_SET) != 0 || fread(sfo_buffer.data(), sfo_buffer.size(), 1, infile) != 1) {
         LOG_ERROR("Failed to read param.sfo from {}", fs_utils::path_to_utf8(pkg_path));
-        fclose(infile);
         evp_cleanup();
         return false;
     }
@@ -220,7 +218,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     if (!sfo::get_param_info(emuenv.app_info, sfo_buffer, emuenv.cfg.sys_lang)) {
         LOG_ERROR("The param.sfo in {} is invalid, not installing it", fs_utils::path_to_utf8(pkg_path));
         evp_cleanup();
-        fclose(infile);
         return false;
     }
 
@@ -229,7 +226,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     if (dest_id.empty() || (type == PkgType::PKG_TYPE_VITA_DLC && emuenv.app_info.app_content_id.size() <= 20)) {
         LOG_ERROR("The param.sfo in {} has no usable title or content ID, not installing it", fs_utils::path_to_utf8(pkg_path));
         evp_cleanup();
-        fclose(infile);
         return false;
     }
 
@@ -286,7 +282,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         if (pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset) + byte_swap(entry.name_size) || pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(entry.data_offset) + byte_swap(entry.data_size)) {
             LOG_ERROR("The pkg file size is too small, possibly corrupted");
             evp_cleanup();
-            fclose(infile);
             return false;
         }
         const auto file_count = static_cast<float>(byte_swap(pkg_header.file_count));
@@ -329,7 +324,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             outfile.close();
         }
     }
-    fclose(infile);
+    infile_guard.reset();
 
     evp_cleanup();
     fs::path title_id_src = path;
