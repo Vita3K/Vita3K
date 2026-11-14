@@ -136,7 +136,8 @@ cond_mutex_cancel_during_wait   pass
 cond_mutex_delete               pass
 cond_mutex_delete_wakes         fail     # a mutex delete ends its conditions' waits only at their timeout
 cond_owner_end_relock           pass
-cond_relock_callback_notify     fail     # threads ignore their core and priority, so a notified relocker above the notifier runs its callback after the notifier's next line
+cond_relock_callback_notify     pass
+cond_relock_callback_preempt    skip     # threads ignore their core and priority, so whether a notified relocker above the notifier runs its callback before the notifier's next line is a race
 cond_relock_cancel_mutex        pass
 cond_relock_notify_at_once      skip     # threads ignore their core and priority, so whether the notified heavy relocker already runs when the main thread reads its status is a race
 cond_relock_owned_cancel        pass
@@ -409,9 +410,11 @@ msgpipe_cancel_data_exist       fail     # a pipe isn't an event
 msgpipe_check_order             fail     # a count 0 vector send to an unknown or deleted pipe gives 0x8002000F, not 0x80028221
 msgpipe_check_order_null        crash    # a send with mode 0x200 and a NULL buffer crashes Vita3K
 msgpipe_create_types            pass
+msgpipe_data_exist_while_receive_waits fail     # a pipe isn't an event
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
 msgpipe_event_before_callbacks  fail     # a pipe isn't an event
+msgpipe_event_waiter_ahead_of_partial fail     # a pipe isn't an event
 msgpipe_failed_sizes            pass
 msgpipe_info_event_waiter       fail     # a pipe isn't an event, and its info has no waiter attribute bit
 msgpipe_mixed_queue             fail     # a pipe isn't an event, and its info has no waiter attribute bit
@@ -429,6 +432,7 @@ msgpipe_receive_spans_senders   pass
 msgpipe_receiver_leaves         pass
 msgpipe_receiver_requeue        fail     # no requeue on a priority change
 msgpipe_receivers_serve_three   pass
+msgpipe_rejoin_untouched_head   fail     # a receive that rejoins after a callback goes back in front of a receive that moved nothing
 msgpipe_ring_wrap               pass
 msgpipe_sender_head_leaves      pass
 msgpipe_sender_jump_ahead       pass
