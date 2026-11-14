@@ -78,8 +78,8 @@ bool VoiceScheduler::pause(const MemState &mem, Voice *voice) {
     if (!voice->is_paused) {
         voice->is_paused = true;
 
-        // Remove from the list
-        if (voice->state == VOICE_STATE_ACTIVE || voice->state == VOICE_STATE_FINALIZING)
+        // Remove from the list, a keyed off voice stays so that the next update ends it
+        if (voice->state == VOICE_STATE_ACTIVE)
             deque_voice(voice);
         return true;
     }
@@ -94,7 +94,7 @@ bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
 
     voice->is_paused = false;
 
-    if (voice->state == VOICE_STATE_ACTIVE || voice->state == VOICE_STATE_FINALIZING)
+    if (voice->state == VOICE_STATE_ACTIVE)
         deque_insert(mem, voice);
 
     return true;
@@ -105,8 +105,7 @@ bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
         return false;
 
     voice->transition(mem, VOICE_STATE_AVAILABLE);
-    if (!voice->is_paused)
-        deque_voice(voice);
+    deque_voice(voice);
 
     voice->is_paused = false;
 
@@ -118,6 +117,8 @@ bool VoiceScheduler::off(const MemState &mem, Voice *voice) {
         return false;
 
     voice->transition(mem, VOICE_STATE_FINALIZING);
+    if (voice->is_paused)
+        deque_insert(mem, voice);
 
     return true;
 }
