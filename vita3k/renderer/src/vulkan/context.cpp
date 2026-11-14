@@ -154,10 +154,36 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     }
     context.current_color_format = vk_format;
 
+    // Each scene must begin with the nominal render target size; previous scenes
+    // may have changed it for MSAA or a downscaled GXM color surface.
+    rt->width = rt->base_width;
+    rt->height = rt->base_height;
+    bool msaa_expanded = false;
     if (rt->multisample_mode && !context.record.color_surface.downscale) {
-        // using MSAA without downscaling, emulate this as best as we can by multiplying the width and height of the render target by 2
+        // MSAA without downscale uses a larger physical render target.
         rt->width *= 2;
         rt->height *= 2;
+        msaa_expanded = true;
+    }
+
+    // Celceta and other titles can render against a color surface half the
+    // nominal target size. Align the target and viewport/scissor to that surface.
+    context.surface_downscale = 1.0f;
+    if (color_surface_fin && context.record.color_surface.downscale && !msaa_expanded
+        && color_surface_fin->width && color_surface_fin->height) {
+        const float resolution = context.state.res_multiplier;
+        const uint32_t surface_width = static_cast<uint32_t>(color_surface_fin->width * resolution);
+        const uint32_t surface_height = static_cast<uint32_t>(color_surface_fin->height * resolution);
+        if (surface_width && surface_height
+            && rt->base_width >= surface_width * 2
+            && rt->base_height >= surface_height * 2) {
+            context.surface_downscale = 0.5f;
+            rt->width /= 2;
+            rt->height /= 2;
+            LOG_INFO_ONCE("GXM downscaled color surface: target {}x{} -> {}x{} (guest {}x{})",
+                rt->base_width, rt->base_height, rt->width, rt->height,
+                color_surface_fin->width, color_surface_fin->height);
+        }
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
