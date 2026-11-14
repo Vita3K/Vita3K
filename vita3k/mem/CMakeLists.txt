@@ -14,7 +14,12 @@ add_library(
 )
 
 target_include_directories(mem PUBLIC include)
-target_link_libraries(mem PUBLIC util tracy)
+
+target_link_libraries(mem PUBLIC util)
+
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+	target_link_libraries(mem PRIVATE tracy)
+endif()
 
 if(NOT ANDROID)
 	add_executable(
