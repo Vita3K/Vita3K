@@ -125,15 +125,23 @@ static SceInt32 wait_event_flag(EmuEnvState &emuenv, const char *export_name, Sc
     return result;
 }
 
+// Tells if a create's option pointer is set but its struct can't be read.
+template <typename T>
+static bool is_unreadable(const MemState &mem, Ptr<T> opt) {
+    return opt && !is_valid_addr_len(mem, opt.address(), sizeof(T));
+}
+
 EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, Ptr<SceKernelCreateLwMutex_opt> opt) {
     TRACY_FUNC(__sceKernelCreateLwMutex, workarea, name, attr, opt);
+    const Ptr<SceKernelLwMutexOptParam> opt_param = opt.get(emuenv.mem)->opt_param;
+    if (is_unreadable(emuenv.mem, opt_param))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
     if (!workarea)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    const Ptr<SceKernelLwMutexOptParam> opt_param = opt.get(emuenv.mem)->opt_param;
-    if (opt_param && !is_valid_addr(emuenv.mem, opt_param.address()))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (workarea.address() % 8)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ALIGNMENT);
     const int init_count = opt.get(emuenv.mem)->init_count;
-    if (const SceInt32 error = Mutex::check_create(name, attr, init_count, nullptr, false))
+    if (const SceInt32 error = LwMutex::check_create(name, attr, init_count, opt_param.get(emuenv.mem)))
         return RET_ERROR(error);
 
     const auto mutex = Ref<LwMutex>::make(attr, name, init_count, emuenv.kernel.get_thread(thread_id), SCE_KERNEL_LOWEST_PRIORITY_KERNEL, workarea);
@@ -240,7 +248,7 @@ EXPORT(SceInt32, _sceKernelCancelTimer, SceUID timerId, SceUInt32 *pNumWaitThrea
 
 EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam) {
     TRACY_FUNC(_sceKernelCreateCond, pName, attr, mutexId, pOptParam);
-    if (const SceInt32 error = Waitable::check_name(pName, attr))
+    if (const SceInt32 error = Condvar::check_create(pName, attr))
         return RET_ERROR(error);
     const MutexRef mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexId);
     if (!mutex)
@@ -250,9 +258,11 @@ EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID m
     return emuenv.kernel.objects.add(condvar, emuenv.kernel.get_next_uid());
 }
 
-EXPORT(SceUID, _sceKernelCreateEventFlag, const char *pName, SceUInt32 attr, SceUInt32 initPattern, const SceKernelEventFlagOptParam *pOptParam) {
+EXPORT(SceUID, _sceKernelCreateEventFlag, const char *pName, SceUInt32 attr, SceUInt32 initPattern, Ptr<const SceKernelEventFlagOptParam> pOptParam) {
     TRACY_FUNC(_sceKernelCreateEventFlag, pName, attr, initPattern, pOptParam);
-    if (const SceInt32 error = EventFlag::check_create(pName, attr))
+    if (is_unreadable(emuenv.mem, pOptParam))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (const SceInt32 error = EventFlag::check_create(pName, attr, pOptParam.get(emuenv.mem)))
         return RET_ERROR(error);
 
     const auto event = Ref<EventFlag>::make(attr, pName, initPattern);
@@ -266,7 +276,7 @@ EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const cha
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const auto assoc_mutex_uid = mutex_work.get(emuenv.mem)->uid;
 
-    if (const SceInt32 error = Waitable::check_name(name, attr))
+    if (const SceInt32 error = Condvar::check_create(name, attr))
         return RET_ERROR(error);
     const MutexRef mutex = emuenv.kernel.objects.find<LwMutex>(assoc_mutex_uid);
     if (!mutex)
@@ -298,7 +308,7 @@ static int resolve_priority(int priority, const ThreadState &caller) {
 
 EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, Ptr<SceKernelMutexOptParam> opt_param) {
     TRACY_FUNC(_sceKernelCreateMutex, name, attr, init_count, opt_param);
-    if (opt_param && !is_valid_addr_len(emuenv.mem, opt_param.address(), sizeof(SceKernelMutexOptParam)))
+    if (is_unreadable(emuenv.mem, opt_param))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
     const SceKernelMutexOptParam *opt = opt_param.get(emuenv.mem);
     if (const SceInt32 error = Mutex::check_create(name, attr, init_count, opt, false))
@@ -328,7 +338,10 @@ EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKern
 EXPORT(int, _sceKernelCreateSema, const char *name, SceUInt attr, int initVal, Ptr<SceKernelCreateSema_opt> opt) {
     TRACY_FUNC(_sceKernelCreateSema, name, attr, initVal, opt);
     const SceInt32 max_val = opt.get(emuenv.mem)->maxVal;
-    if (const SceInt32 error = Semaphore::check_create(name, attr, initVal, max_val))
+    const Ptr<SceKernelSemaOptParam> option = opt.get(emuenv.mem)->option;
+    if (is_unreadable(emuenv.mem, option))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (const SceInt32 error = Semaphore::check_create(name, attr, initVal, max_val, option.get(emuenv.mem)))
         return RET_ERROR(error);
 
     const auto semaphore = Ref<Semaphore>::make(attr, name, initVal, max_val);
@@ -340,18 +353,22 @@ EXPORT(int, _sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initV
     return CALL_EXPORT(_sceKernelCreateSema, name, attr, initVal, opt);
 }
 
-EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *pOptParam) {
+EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, Ptr<const SceKernelSimpleEventOptParam> pOptParam) {
     TRACY_FUNC(_sceKernelCreateSimpleEvent, name, attr, init_pattern, pOptParam);
-    if (const SceInt32 error = SimpleEvent::check_create(name, attr, init_pattern))
+    if (is_unreadable(emuenv.mem, pOptParam))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (const SceInt32 error = SimpleEvent::check_create(name, attr, init_pattern, pOptParam.get(emuenv.mem)))
         return RET_ERROR(error);
 
     const auto event = Ref<SimpleEvent>::make(attr, name, init_pattern, thread_id);
     return emuenv.kernel.objects.add(event, emuenv.kernel.get_next_uid());
 }
 
-EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint32_t *opt_params) {
+EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, Ptr<const uint32_t> opt_params) {
     TRACY_FUNC(_sceKernelCreateTimer, name, attr, opt_params);
-    if (const SceInt32 error = Waitable::check_name(name, attr))
+    if (is_unreadable(emuenv.mem, opt_params))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (const SceInt32 error = Timer::check_create(name, attr))
         return RET_ERROR(error);
 
     const auto timer = Ref<Timer>::make(emuenv.kernel.timers, attr, name, thread_id);

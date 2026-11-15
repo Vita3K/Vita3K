@@ -129,7 +129,7 @@ cond_callback_rejoin            pass
 cond_callback_takes_mutex       pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
 cond_error_time_left            fail     # a mutex delete ends its conditions' waits only at their timeout
-cond_errors                     fail     # signal to a thread errors, create attributes
+cond_errors                     fail     # signal to a thread errors
 cond_final_check_kinds          fail     # threads ignore their core and priority, so the waiter runs as soon as its wait ends, returns before the notify and runs the callback only at its check
 cond_info_after_mutex_delete    fail     # a condition's info still names its mutex after the mutex's delete
 cond_mutex_cancel_during_wait   pass
@@ -171,9 +171,9 @@ cpu_undefined_thumb             fail     # an undefined instruction is skipped a
 cpu_undefined_thumb32           fail     # an undefined instruction is skipped and the app goes on
 cpu_wfi_user                    fail     # a WFI ends the thread as if its function returned
 cpu_writeback_same_register     fail     # a load or store with writeback whose base is its data register does nothing, except a Thumb pre-indexed str
-create_attributes               fail     # the attributes condition variables, lightweight condition variables, timers and mutexes accept
-create_attrs                    fail     # the attribute bits each create accepts
-create_option_unreadable        fail     # creates check the name, the attribute and the work area before they read the option, and simple event and timer creates never read it
+create_attributes               pass
+create_attrs                    pass
+create_option_unreadable        pass
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
 delay_cb_early_return           pass
@@ -301,7 +301,7 @@ lock_failed_at_once_state       pass
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
 lw_cond_after_mutex_delete      fail     # a wait on a lightweight condition variable whose mutex was deleted returns 0x80028186 instead of the unknown lightweight mutex error
-lw_cond_errors                  fail     # create checks of the attribute, a signal to thread 0
+lw_cond_errors                  fail     # a signal to thread 0 gives 0x80028021
 lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back isn't requeued on a priority change
 lw_cond_semantics               pass
 lw_cond_work_words              fail     # the lightweight mutex work area's wait count word isn't written
@@ -312,18 +312,18 @@ lw_hand_built_work_edits        fail     # a count edit in a hand built work are
 lw_info_by_id_uid               fail     # the uid the lightweight condition variable info by UID reports
 lw_mutex                        pass
 lw_mutex_contention_stress      pass
-lw_mutex_create_check_order     fail     # lightweight mutex creates check their attributes, option size and work area in another order and with other errors
+lw_mutex_create_check_order     pass
 lw_mutex_errors                 pass
 lw_mutex_object_limit           fail     # no object limit on lightweight mutexes, Vita3K makes 4096 where the Vita stops at 2028
 lw_mutex_semantics              pass
 lw_mutex_user_paths             fail     # the lightweight mutex user paths: try lock checks, an unlock after a delete, bad UID words, the info size check
-lw_openable_attr_rejected       fail     # lightweight conditions and mutexes take the attribute 0x80
+lw_openable_attr_rejected       pass
 lw_recursive_count_limit        pass
 lw_wait_count_words             fail     # the lightweight mutex work area's wait count word isn't written
 lw_wait_count_words_more        fail     # a lightweight mutex's waiter count word stays 0 while threads wait on it
 lw_work                         pass
 lw_work_area_freed              fail     # info by UID on a freed work area returns 0 where the Vita gives 0x80028187
-lw_work_area_memory             fail     # misaligned lightweight work areas are accepted, the Vita refuses them with 0x80020007
+lw_work_area_memory             fail     # a read only work area is accepted where the Vita refuses the create with 0x80022005, and a delete through a read only view returns 0 instead of 0x80020006
 lw_work_area_unmapped           crash    # a freed block's base still counts as in a block, so a work area there crashes
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 lw_zero_sum_recursive_owner     fail     # a lightweight mutex try lock that wraps the recursive count isn't refused
@@ -778,7 +778,7 @@ timer_cancel_with_set_pattern   fail     # event calls don't take timer UIDs
 timer_clear_mask_pattern        pass
 timer_delete_event              pass
 timer_edges                     pass
-timer_errors                    fail     # a create takes any attribute
+timer_errors                    pass
 timer_event_interval_zero       pass
 timer_event_replaced_armed      pass
 timer_event_schedule_offset     pass
