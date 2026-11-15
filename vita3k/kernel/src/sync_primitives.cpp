@@ -1260,7 +1260,7 @@ SceInt32 Semaphore::wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *ti
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
-    if (need_count <= 0 || need_count > max)
+    if (need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
     const SceUInt32 type = wait_type(SCE_KERNEL_WAITTYPE_SEMAPHORE, callbacks);
@@ -1280,7 +1280,7 @@ SceInt32 Semaphore::poll(ThreadState &thread, SceInt32 need_count) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
-    if (need_count <= 0 || need_count > max)
+    if (need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
     return try_take(thread, need_count) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_SEMA_ZERO;
@@ -1299,8 +1299,6 @@ SceInt32 Semaphore::signal(SceInt32 count) {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
 
-    if (count < 0)
-        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
     if (count > max - val) {
         return SCE_KERNEL_ERROR_SEMA_OVF;
     }
@@ -1503,9 +1501,7 @@ SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr, const SceKern
     return SCE_KERNEL_OK;
 }
 
-SceInt32 EventFlag::check_wait(SceUInt32 pattern, SceUInt32 wait_mode) {
-    if (pattern == 0)
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+SceInt32 EventFlag::check_mode(SceUInt32 wait_mode) {
     if (wait_mode & ~(SCE_EVENT_WAITOR | SCE_EVENT_WAITCLEAR | SCE_EVENT_WAITCLEAR_PAT))
         return SCE_KERNEL_ERROR_ILLEGAL_MODE;
     // Only one way of clearing the bits after the wait
@@ -1583,8 +1579,11 @@ SceInt32 EventFlag::wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
-    if (const SceInt32 error = check_wait(pattern, wait_mode))
+    // A wait checks the mode before the pattern, a poll the other way round
+    if (const SceInt32 error = check_mode(wait_mode))
         return error;
+    if (pattern == 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     if (held_by_other(thread.id))
         return SCE_KERNEL_ERROR_EVF_MULTI;
 
@@ -1621,7 +1620,9 @@ SceInt32 EventFlag::poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mod
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
-    if (const SceInt32 error = check_wait(pattern, wait_mode))
+    if (pattern == 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    if (const SceInt32 error = check_mode(wait_mode))
         return error;
 
     return try_take(thread_id, pattern, wait_mode, out_bits);

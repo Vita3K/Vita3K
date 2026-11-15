@@ -214,7 +214,7 @@ end_wait_exit_preempt           fail     # threads ignore their priority, so the
 end_waiter_priority_change      skip     # threads ignore their core and priority, so end waiters woken together run in host order
 event_bit_mask                  pass
 event_bits                      pass
-event_call_error_order          fail     # a bad mode with pattern 0 gives 0x80020005 where the Vita gives 0x80020010
+event_call_error_order          pass
 event_callback_cancel_rearm     pass
 event_callback_two_events       pass
 event_edges                     pass
@@ -326,7 +326,7 @@ lw_work_area_freed              fail     # info by UID on a freed work area retu
 lw_work_area_memory             fail     # a read only work area is accepted where the Vita refuses the create with 0x80022005, and a delete through a read only view returns 0 instead of 0x80020006
 lw_work_area_unmapped           crash    # a freed block's base still counts as in a block, so a work area there crashes
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
-lw_zero_sum_recursive_owner     fail     # a lightweight mutex try lock that wraps the recursive count isn't refused
+lw_zero_sum_recursive_owner     pass
 main_thread_start               pass
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_access_by_type         fail     # writes to read only memory block types succeed where the Vita gives 0x80022005
@@ -580,7 +580,7 @@ self_lower_order                fail     # a thread that lowers itself doesn't g
 self_mask_change_busy_target    fail     # threads ignore their core, so a self affinity change onto a busy core returns at once
 self_mask_change_yield          fail     # a self affinity change to a new mask doesn't yield to the other thread
 self_priority_drop              fail     # threads ignore their core and priority
-sema_call_error_order           fail     # semaphore calls on a mutex UID give other errors than the Vita's 0x8002000F
+sema_call_error_order           pass
 sema_count_overflow             pass
 sema_errors                     pass
 sema_head_leaves                fail     # a head that leaves by a priority drop doesn't let the next waiter take
