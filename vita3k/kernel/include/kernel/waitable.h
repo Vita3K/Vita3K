@@ -66,6 +66,8 @@ protected:
     void queue(ThreadState &thread, const WaitRequest &request);
     // Takes thread off the queue with result if it is still on it.
     void unqueue(ThreadState &thread, SceInt32 result);
+    // Links thread behind every waiter of its queued priority or a higher one, and behind a head that keeps its place.
+    void insert_by_priority(ThreadState &thread);
     // Returns the first waiter, or null.
     ThreadState *first_waiter();
     // Returns whether a new waiter of this priority would be first, ahead of every waiter.
