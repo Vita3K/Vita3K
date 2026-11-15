@@ -813,10 +813,10 @@ timer_waiters                   pass
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority
 timer_zero_pattern_delete       pass
-tls                             crash    # TLS key 256 and slots by thread UID
+tls                             pass
 tls_blocks                      fail     # TLS isn't a memory block
 tls_process_id                  pass
-tls_slot5                       fail     # TLS slot 5 doesn't stop the lightweight mutex locks
+tls_slot5                       pass
 tls_start_slots                 pass
 uid                             pass
 uid_class                       pass

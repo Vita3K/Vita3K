@@ -200,15 +200,12 @@ ThreadStateRef KernelState::create_thread(MemState &mem, const char *name, Ptr<c
 }
 
 Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id, int key) {
-    Ptr<Ptr<void>> address(0);
-    // magic numbers taken from decompiled source. There is 0x400 unused bytes of unknown usage
-    if (key <= 0x100 && key >= 0) {
-        const ThreadStateRef thread = get_thread(thread_id);
-        address = thread->tls.get_ptr<Ptr<void>>() + key;
-    } else {
-        LOG_ERROR("Wrong tls slot index. TID:{} index:{}", thread_id, key);
-    }
-    return address;
+    if (key < 0 || key >= SCE_KERNEL_TLS_KEY_COUNT)
+        return Ptr<Ptr<void>>();
+    const ThreadStateRef thread = get_thread(thread_id);
+    if (!thread)
+        return Ptr<Ptr<void>>();
+    return thread->tls.get_ptr<Ptr<void>>() + key;
 }
 
 void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> relaunch) {

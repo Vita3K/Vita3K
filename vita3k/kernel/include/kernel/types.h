@@ -658,6 +658,9 @@ enum SceSysmoduleInternalModuleId : uint32_t {
 // The size of the kernel's part of a thread's TLS, below the part the guest sees
 #define SCE_KERNEL_TLS_SIZE 0x800
 
+// The number of TLS slots sceKernelGetTLSAddr gives an address for
+#define SCE_KERNEL_TLS_KEY_COUNT 0x100
+
 // Indexes in thread local storage (TLS) for system data. It is used mostly by libkernel.
 enum TlsItems {
     TLS_PROCESS_ID = 0, // unused, and 0 when a thread is created, as on a Vita
