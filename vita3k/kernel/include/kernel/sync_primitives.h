@@ -556,6 +556,9 @@ public:
     SceInt32 info(SceKernelMppInfo &info) const;
 
 private:
+    // Returns the size of the pieces together, or the error for a piece with no buffer or pieces past
+    // the capacity
+    std::expected<SceSize, SceInt32> check_pieces(std::span<const MsgPipeVector> pieces) const;
     void waiter_added(ThreadState &thread) override;
     bool queues_behind_head(const ThreadState &thread) const override;
     void wait_ended(ThreadState &thread, SceInt32 result) override;

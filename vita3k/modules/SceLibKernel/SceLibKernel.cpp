@@ -1676,53 +1676,55 @@ EXPORT(SceInt32, sceKernelPulseEventWithNotifyCallback, SceUID event_id, SceUInt
     return CALL_EXPORT(_sceKernelPulseEventWithNotifyCallback, event_id, set_pattern, &opt);
 }
 
-// Returns the error the pieces of a message pipe vector call get, or SCE_KERNEL_OK
-static SceInt32 check_msg_pipe_vector(const MsgPipeVector *vectors, SceUInt32 count) {
+// The modes each kind of message pipe call takes
+constexpr SceUInt32 MSG_PIPE_SEND_MODES = SCE_KERNEL_MSG_PIPE_MODE_FULL | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT;
+constexpr SceUInt32 MSG_PIPE_RECEIVE_MODES = MSG_PIPE_SEND_MODES | SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE;
+constexpr SceUInt32 MSG_PIPE_TRY_SEND_MODES = SCE_KERNEL_MSG_PIPE_MODE_FULL;
+constexpr SceUInt32 MSG_PIPE_TRY_RECEIVE_MODES = SCE_KERNEL_MSG_PIPE_MODE_FULL | SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE;
+
+// Returns the error the list and the mode of a message pipe call get, or SCE_KERNEL_OK
+static SceInt32 check_msg_pipe_args(const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceUInt32 modes) {
     if (!vectors)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     if (count == 0)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
-    for (SceUInt32 i = 0; i < count; i++) {
-        // Even an empty piece needs a buffer
-        if (!vectors[i].base)
-            return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
-    }
+    if (waitMode & ~modes)
+        return SCE_KERNEL_ERROR_ILLEGAL_MODE;
     return SCE_KERNEL_OK;
 }
 
-static SceInt32 receive_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, std::span<const MsgPipeVector> pieces, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout, bool callbacks) {
+static SceInt32 receive_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout, bool callbacks) {
+    // The UID must name an object of any class before the arguments are checked
+    if (!emuenv.kernel.objects.find(msgPipeId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    if (const SceInt32 error = check_msg_pipe_args(vectors, count, waitMode, MSG_PIPE_RECEIVE_MODES))
+        return RET_ERROR(error);
     const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
-    return msgpipe->receive(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, pieces, pResult, pTimeout, callbacks);
+    return msgpipe->receive(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, { vectors, count }, pResult, pTimeout, callbacks);
 }
 
 EXPORT(SceInt32, sceKernelReceiveMsgPipe, SceUID msgPipeId, Ptr<void> pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelReceiveMsgPipe, msgPipeId, pRecvBuf, recvSize, waitMode, pResult, pTimeout);
     const MsgPipeVector piece{ pRecvBuf, recvSize };
-    return receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, { &piece, 1 }, waitMode, pResult, pTimeout, false);
+    return receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, &piece, 1, waitMode, pResult, pTimeout, false);
 }
 
 EXPORT(SceInt32, sceKernelReceiveMsgPipeCB, SceUID msgPipeId, Ptr<void> pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelReceiveMsgPipeCB, msgPipeId, pRecvBuf, recvSize, waitMode, pResult, pTimeout);
     const MsgPipeVector piece{ pRecvBuf, recvSize };
-    return receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, { &piece, 1 }, waitMode, pResult, pTimeout, true);
-}
-
-static SceInt32 receive_msg_pipe_vector(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout, bool callbacks) {
-    if (const SceInt32 error = check_msg_pipe_vector(vectors, count))
-        return RET_ERROR(error);
-    return receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, { vectors, count }, waitMode, pResult, pTimeout, callbacks);
+    return receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, &piece, 1, waitMode, pResult, pTimeout, true);
 }
 
 EXPORT(SceInt32, sceKernelReceiveMsgPipeVector, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelReceiveMsgPipeVector, msgPipeId, vectors, count, waitMode, pResult, pTimeout);
-    return receive_msg_pipe_vector(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, false);
+    return receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, false);
 }
 
 EXPORT(SceInt32, sceKernelReceiveMsgPipeVectorCB, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelReceiveMsgPipeVectorCB, msgPipeId, vectors, count, waitMode, pResult, pTimeout);
-    return receive_msg_pipe_vector(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, true);
+    return receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, true);
 }
 
 EXPORT(int, sceKernelRegisterThreadEventHandler, Ptr<const char> name, SceUID thread_mask, SceUInt32 mask, Ptr<const void> handler, Address common) {
@@ -1734,39 +1736,38 @@ EXPORT(int, sceKernelRegisterThreadEventHandler, Ptr<const char> name, SceUID th
     return CALL_EXPORT(_sceKernelRegisterThreadEventHandler, name, thread_mask, mask, &handler_opt);
 }
 
-static SceInt32 send_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, std::span<const MsgPipeVector> pieces, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout, bool callbacks) {
+static SceInt32 send_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout, bool callbacks) {
+    // The UID must name an object of any class before the arguments are checked
+    if (!emuenv.kernel.objects.find(msgPipeId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    if (const SceInt32 error = check_msg_pipe_args(vectors, count, waitMode, MSG_PIPE_SEND_MODES))
+        return RET_ERROR(error);
     const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
-    return msgpipe->send(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, pieces, pResult, pTimeout, callbacks);
+    return msgpipe->send(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, { vectors, count }, pResult, pTimeout, callbacks);
 }
 
 EXPORT(SceInt32, sceKernelSendMsgPipe, SceUID msgPipeId, Ptr<const void> pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelSendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult, pTimeout);
     const MsgPipeVector piece{ pSendBuf.cast<void>(), sendSize };
-    return send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, { &piece, 1 }, waitMode, pResult, pTimeout, false);
+    return send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, &piece, 1, waitMode, pResult, pTimeout, false);
 }
 
 EXPORT(SceInt32, sceKernelSendMsgPipeCB, SceUID msgPipeId, Ptr<const void> pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelSendMsgPipeCB, msgPipeId, pSendBuf, sendSize, waitMode, pResult, pTimeout);
     const MsgPipeVector piece{ pSendBuf.cast<void>(), sendSize };
-    return send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, { &piece, 1 }, waitMode, pResult, pTimeout, true);
-}
-
-static SceInt32 send_msg_pipe_vector(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout, bool callbacks) {
-    if (const SceInt32 error = check_msg_pipe_vector(vectors, count))
-        return RET_ERROR(error);
-    return send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, { vectors, count }, waitMode, pResult, pTimeout, callbacks);
+    return send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, &piece, 1, waitMode, pResult, pTimeout, true);
 }
 
 EXPORT(SceInt32, sceKernelSendMsgPipeVector, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelSendMsgPipeVector, msgPipeId, vectors, count, waitMode, pResult, pTimeout);
-    return send_msg_pipe_vector(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, false);
+    return send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, false);
 }
 
 EXPORT(SceInt32, sceKernelSendMsgPipeVectorCB, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelSendMsgPipeVectorCB, msgPipeId, vectors, count, waitMode, pResult, pTimeout);
-    return send_msg_pipe_vector(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, true);
+    return send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult, pTimeout, true);
 }
 
 EXPORT(SceInt32, sceKernelSetEventWithNotifyCallback, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data, SceInt32 notify_arg) {
@@ -1871,42 +1872,44 @@ EXPORT(int, sceKernelTryLockLwMutex_16XX, Ptr<SceKernelLwMutexWork> workarea, in
     return CALL_EXPORT(sceKernelTryLockLwMutex, workarea, lock_count);
 }
 
-EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, Ptr<void> recv_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result) {
-    TRACY_FUNC(sceKernelTryReceiveMsgPipe, msgpipe_id, recv_buf, msg_size, wait_mode, result);
-    const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgpipe_id);
+static SceInt32 try_receive_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult) {
+    const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    if (const SceInt32 error = check_msg_pipe_args(vectors, count, waitMode, MSG_PIPE_TRY_RECEIVE_MODES))
+        return RET_ERROR(error);
+    return msgpipe->try_receive(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, { vectors, count }, pResult);
+}
+
+EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, Ptr<void> recv_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result) {
+    TRACY_FUNC(sceKernelTryReceiveMsgPipe, msgpipe_id, recv_buf, msg_size, wait_mode, result);
     const MsgPipeVector piece{ recv_buf, msg_size };
-    return msgpipe->try_receive(*emuenv.kernel.get_thread(thread_id), emuenv.mem, wait_mode, { &piece, 1 }, result);
+    return try_receive_msg_pipe(emuenv, export_name, thread_id, msgpipe_id, &piece, 1, wait_mode, result);
 }
 
 EXPORT(SceInt32, sceKernelTryReceiveMsgPipeVector, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult) {
     TRACY_FUNC(sceKernelTryReceiveMsgPipeVector, msgPipeId, vectors, count, waitMode, pResult);
-    if (const SceInt32 error = check_msg_pipe_vector(vectors, count))
-        return RET_ERROR(error);
+    return try_receive_msg_pipe(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult);
+}
+
+static SceInt32 try_send_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult) {
     const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
-    return msgpipe->try_receive(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, { vectors, count }, pResult);
+    if (const SceInt32 error = check_msg_pipe_args(vectors, count, waitMode, MSG_PIPE_TRY_SEND_MODES))
+        return RET_ERROR(error);
+    return msgpipe->try_send(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, { vectors, count }, pResult);
 }
 
 EXPORT(int, sceKernelTrySendMsgPipe, SceUID msgPipeId, Ptr<const void> pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult) {
     TRACY_FUNC(sceKernelTrySendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult);
-    const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
-    if (!msgpipe)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     const MsgPipeVector piece{ pSendBuf.cast<void>(), sendSize };
-    return msgpipe->try_send(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, { &piece, 1 }, pResult);
+    return try_send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, &piece, 1, waitMode, pResult);
 }
 
 EXPORT(SceInt32, sceKernelTrySendMsgPipeVector, SceUID msgPipeId, const MsgPipeVector *vectors, SceUInt32 count, SceUInt32 waitMode, SceSize *pResult) {
     TRACY_FUNC(sceKernelTrySendMsgPipeVector, msgPipeId, vectors, count, waitMode, pResult);
-    if (const SceInt32 error = check_msg_pipe_vector(vectors, count))
-        return RET_ERROR(error);
-    const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
-    if (!msgpipe)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
-    return msgpipe->try_send(*emuenv.kernel.get_thread(thread_id), emuenv.mem, waitMode, { vectors, count }, pResult);
+    return try_send_msg_pipe(emuenv, export_name, thread_id, msgPipeId, vectors, count, waitMode, pResult);
 }
 
 EXPORT(int, sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt) {
