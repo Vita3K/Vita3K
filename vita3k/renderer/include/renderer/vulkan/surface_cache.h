@@ -202,7 +202,7 @@ private:
     void destroy_surface(DepthStencilSurfaceCacheInfo &info);
 
     std::map<vk::Format, bool> mipmappable_formats;
-    uint32_t get_surface_mip_levels(vk::Format format);
+    uint32_t get_surface_mip_levels(vk::Format format, uint32_t width, uint32_t height);
     void generate_mipmaps(vkutil::Image &image, uint32_t mip_levels);
 
 public:

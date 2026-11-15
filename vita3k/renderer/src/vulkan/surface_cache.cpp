@@ -33,6 +33,8 @@
 extern "C" {
 #include <libswscale/swscale.h>
 
+#include <algorithm>
+#include <bit>
 #include <cmath>
 }
 
@@ -287,7 +289,7 @@ void VKSurfaceCache::cleanup() {
     last_written_surface = nullptr;
 }
 
-uint32_t VKSurfaceCache::get_surface_mip_levels(vk::Format format) {
+uint32_t VKSurfaceCache::get_surface_mip_levels(vk::Format format, uint32_t width, uint32_t height) {
     if (state.res_multiplier <= 1.0f)
         return 1;
 
@@ -301,7 +303,8 @@ uint32_t VKSurfaceCache::get_surface_mip_levels(vk::Format format) {
     if (!it->second)
         return 1;
 
-    return static_cast<uint32_t>(std::ceil(std::log2(state.res_multiplier))) + 1;
+    const uint32_t wanted = static_cast<uint32_t>(std::ceil(std::log2(state.res_multiplier))) + 1;
+    return std::min<uint32_t>(wanted, std::bit_width(std::max(width, height)));
 }
 
 void VKSurfaceCache::generate_mipmaps(vkutil::Image &image, uint32_t mip_levels) {
@@ -321,7 +324,7 @@ void VKSurfaceCache::generate_mipmaps(vkutil::Image &image, uint32_t mip_levels)
     };
 
     const vk::ImageMemoryBarrier start_barriers[] = {
-        level_barrier(0, 1, vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead),
+        level_barrier(0, 1, vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead),
         level_barrier(1, mip_levels - 1, vk::AccessFlags(), vk::AccessFlagBits::eTransferWrite)
     };
     cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer,
@@ -511,7 +514,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     vk::ImageUsageFlags surface_usages = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
     if (state.features.support_shader_interlock)
         surface_usages |= vk::ImageUsageFlagBits::eStorage;
-    info_added.mip_levels = get_surface_mip_levels(vk_format);
+    info_added.mip_levels = get_surface_mip_levels(vk_format, image.width, image.height);
     info_added.written_scene = context->scene_timestamp;
     info_added.mipmap_scene = 0;
     image.init_image(surface_usages, vkutil::default_comp_mapping, image_create_flags, image_info_pNext, info_added.mip_levels);
@@ -801,7 +804,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             else
                 resulting_swizzle = swizzle;
 
-            casted->mip_levels = get_surface_mip_levels(vk_format);
+            casted->mip_levels = get_surface_mip_levels(vk_format, casted->texture.width, casted->texture.height);
             casted->texture.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, resulting_swizzle, vk::ImageCreateFlags(), nullptr, casted->mip_levels);
             casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
             if (casted->mip_levels > 1) {

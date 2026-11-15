@@ -284,6 +284,17 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
 
+    if (context.self_sampling_needs_mipmaps) {
+        const TextureInfo &textures_used = gxm_fragment_program.renderer_data->textures_used;
+        for (const size_t index : context.self_sampling_indices) {
+            if ((index < SCE_GXM_MAX_TEXTURE_UNITS) && textures_used[index]) {
+                glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + index));
+                generate_surface_mipmaps(context.current_color_attachment, renderer.res_multiplier);
+                break;
+            }
+        }
+    }
+
     // The shader reads the color attachment whenever it uses the fragment color, so writes from the previous draws
     // must be made visible to it, native color or not
     bool color_synced = false;
@@ -326,7 +337,6 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     } else {
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
     }
-    context.color_attachment_mipmaps_ready = false;
 
     restore_state();
 
