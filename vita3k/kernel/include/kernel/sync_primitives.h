@@ -63,6 +63,9 @@ public:
     SceInt32 wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
 
     SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
+    SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
+    // Sets or pulses the bits, then notifies the registered callbacks with notify_arg
+    SceInt32 set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg);
     SceInt32 clear(SceUInt32 clear_pattern);
     virtual SceInt32 cancel(SceUInt32 *num_wait_threads);
     // Cancels the waits like cancel(), then replaces the whole pattern and the user data.
@@ -113,9 +116,6 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *opt);
 
-    SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
-    // Sets or pulses the bits, then notifies the registered callbacks with notify_arg
-    SceInt32 set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg);
     // Pulses bits of an event the kernel made, which aren't limited to the user defined ones, and
     // notifies the registered callbacks with notify_arg
     void pulse_and_notify(SceUInt32 pattern, SceInt32 notify_arg);

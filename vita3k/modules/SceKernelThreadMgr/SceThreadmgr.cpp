@@ -72,7 +72,7 @@ static int copy_guest_string(const MemState &mem, Ptr<const char> str, std::span
     return size;
 }
 
-// Finds a simple event or a timer, which are both events.
+// Finds a simple event, a timer or a message pipe, which are all events.
 static EventRef find_event(EmuEnvState &emuenv, SceUID event_id) {
     if (SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
         return event;
@@ -518,7 +518,7 @@ EXPORT(SceInt32, _sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_patt
     // The pattern reads 0 if the call fails
     if (get_pattern)
         *get_pattern = 0;
-    const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
+    const EventRef event = find_event(emuenv, event_id);
     SceUInt32 pattern;
     if (!event || event->get_pattern(pattern) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
@@ -973,7 +973,7 @@ EXPORT(SceInt32, _sceKernelPulseEventWithNotifyCallback, SceUID event_id, SceUIn
     TRACY_FUNC(_sceKernelPulseEventWithNotifyCallback, event_id, set_pattern, opt);
     if (!opt)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
+    const EventRef event = find_event(emuenv, event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse_and_notify(set_pattern, opt->user_data, false, opt->notify_arg);
@@ -1026,7 +1026,7 @@ EXPORT(SceInt32, _sceKernelSetEventWithNotifyCallback, SceUID event_id, SceUInt3
     TRACY_FUNC(_sceKernelSetEventWithNotifyCallback, event_id, set_pattern, opt);
     if (!opt)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
+    const EventRef event = find_event(emuenv, event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse_and_notify(set_pattern, opt->user_data, true, opt->notify_arg);
@@ -1877,7 +1877,7 @@ EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
 
 EXPORT(SceInt32, sceKernelPulseEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {
     TRACY_FUNC(sceKernelPulseEvent, event_id, set_pattern, user_data);
-    const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
+    const EventRef event = find_event(emuenv, event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse(set_pattern, user_data, false);
@@ -1916,7 +1916,7 @@ EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
 
 EXPORT(SceInt32, sceKernelSetEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {
     TRACY_FUNC(sceKernelSetEvent, event_id, set_pattern, user_data);
-    const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
+    const EventRef event = find_event(emuenv, event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse(set_pattern, user_data, true);

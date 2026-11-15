@@ -803,12 +803,12 @@ timer_set_time_moves_event      pass
 timer_set_time_stopped_start    pass
 timer_stop_start_time_left      pass
 timer_time_base_steps           pass
-timer_user_bits_event_calls     fail     # event calls don't take timer UIDs
+timer_user_bits_event_calls     pass
 timer_wait_no_event             pass
 timer_wait_pattern              pass
 timer_waiter_across_stop_start  pass
 timer_waiter_handoff            pass
-timer_waiter_patterns           fail     # a user bit set on a manual reset timer gives 0x80028201, the Vita gives 0
+timer_waiter_patterns           pass
 timer_waiters                   pass
 timer_wake_cores                fail     # threads ignore their core and priority
 timer_wake_order                fail     # threads ignore their core and priority
