@@ -234,7 +234,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
 
     if (both_side_fragment_program_disabled) {
-        sync_blending(context.record, mem);
+        sync_blending(context.record, features, mem);
     }
 
     context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;

@@ -427,11 +427,17 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     glActiveTexture(GL_TEXTURE0);
 }
 
-void sync_blending(const GxmRecordState &state, const MemState &mem) {
+void sync_blending(const GxmRecordState &state, const FeatureState &features, const MemState &mem) {
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         gxm_fragment_program.renderer_data.get());
+
+    if (features.should_use_shader_interlock() && gxm_fragment_program.program.get(mem)->is_frag_color_used()) {
+        // The shader stores the color through an image and has no output, what the color attachment would receive is undefined.
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        return;
+    }
 
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {
