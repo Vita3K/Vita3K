@@ -63,6 +63,9 @@
 // The CPSR a thread starts with: user mode and no flags
 #define SCE_KERNEL_THREAD_INITIAL_CPSR arm::CPSR_MODE_USR
 
+// The CPSR bits a ForVM context write keeps. It takes the other bits from the new value.
+#define SCE_KERNEL_VM_CONTEXT_CPSR_KEPT (arm::CPSR_M | arm::CPSR_F | arm::CPSR_I | arm::CPSR_A | arm::CPSR_RESERVED_23_20 | arm::CPSR_IT_1_0)
+
 // The words of the value the kernel puts in the d registers it doesn't keep for a thread
 #define SCE_KERNEL_VFP_REGISTER_FILL_LOW 0x7F80DEADU
 #define SCE_KERNEL_VFP_REGISTER_FILL_HIGH 0x7FF8DEADU
@@ -1079,6 +1082,7 @@ struct SceKernelThreadCpuRegisterInfo {
     SceUInt32 reg[arm::CORE_REG_COUNT];
     SceUInt32 tpidrurw;
     SceUInt32 teehbr;
+    // TLS slots 2 and 3, the stack's top and bottom
     SceUInt32 sb;
     SceUInt32 st;
 };

@@ -663,13 +663,13 @@ thread_change_attr              pass
 thread_change_cpu_count_never_ran fail     # thread info's CPU change count never grows
 thread_context_core_registers   pass
 thread_context_for_vm           pass
-thread_context_for_vm_error_order fail     # Get checks block sizes before the thread ID, Set skips the caller and VM checks and returns 0 without blocks
+thread_context_for_vm_error_order pass
 thread_context_never_ran        skip     # threads ignore their core and priority, so whether W runs before the suspend is a race
-thread_context_set_for_vm       fail     # sceKernelSetThreadContextForVM checks, its writes don't reach the thread
-thread_context_set_fpscr        fail     # sceKernelSetThreadContextForVM returns 0 but doesn't write the FPSCR, so the thread keeps its own rounding mode
-thread_context_set_frame        fail     # sceKernelSetThreadContextForVM writes no registers, so the read shows the old ones and the thread runs on past its wait
-thread_context_set_frame_registers fail     # sceKernelSetThreadContextForVM on a thread waiting in a kernel call doesn't send it to the new pc
-thread_context_tls_words        fail     # the context read puts 100000 in words 19 to 21, the write ignores them, and the resumed thread gets past its wait
+thread_context_set_for_vm       fail     # a d16 written into a waiting thread doesn't show in the next read, and the thread keeps its own d16 across the wait
+thread_context_set_fpscr        pass
+thread_context_set_frame        fail     # a thread whose call frame was written runs the new pc with all the written registers, on the Vita the landing doesn't run and the thread doesn't end
+thread_context_set_frame_registers fail     # after a write into the call frame r1 to r3 aren't 0xDEADBEEF and r4 to r11 keep the written values
+thread_context_tls_words        fail     # the resumed thread gets past its wait with the written words 20 and 21 in its TLS, on the Vita it stays SUSPENDED after the call
 thread_context_vfp              pass
 thread_cpu_fields               fail     # the CPU fields of thread info, threads ignore their core
 thread_create_attr              pass

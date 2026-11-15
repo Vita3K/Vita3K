@@ -225,9 +225,12 @@ public:
     // it, or an error for a dormant thread or a resume with no suspend.
     int vm_suspend();
     int vm_resume();
-    // Waits until a ForVM suspend has stopped the thread, then gets the context it stopped with and
-    // whether it stopped inside a kernel call. Returns NOT_SUSPENDED if no ForVM suspend holds it.
-    SceInt32 get_vm_context(CPUContext &context, bool &in_kernel_call);
+    // Waits until a ForVM suspend has stopped the thread, then reads the registers of the blocks
+    // given from the context it stopped with. Returns NOT_SUSPENDED if no ForVM suspend holds it.
+    SceInt32 get_vm_context(SceKernelThreadCpuRegisterInfo *cpu_info, SceKernelThreadVfpRegisterInfo *vfp_info);
+    // Waits until a ForVM suspend has stopped the thread, then writes the registers of the blocks
+    // given into the context it stopped with. Returns NOT_SUSPENDED if no ForVM suspend holds it.
+    SceInt32 set_vm_context(const SceKernelThreadCpuRegisterInfo *cpu_info, const SceKernelThreadVfpRegisterInfo *vfp_info);
 
 private:
     friend class Waitable;
@@ -260,6 +263,11 @@ private:
     // Whether something holds the thread before its guest code: the debugger, the emulator pause or
     // a ForVM suspend
     bool held() const;
+    // Waits with thread_mutex held through lock until a ForVM suspend has stopped the thread.
+    // Returns whether one still holds it.
+    bool wait_vm_stop(std::unique_lock<std::mutex> &lock);
+    // Whether the thread stopped inside a kernel call: waiting, or held on the way back from one
+    bool stopped_in_kernel_call() const { return status == ThreadStatus::waiting || (parked && stopped_after_kernel_call); }
     // Waits with thread_mutex held through lock until nothing holds the thread, parked meanwhile
     void stop_for_holds(std::unique_lock<std::mutex> &lock);
     // Whether the thread may run guest code now, or kernel code that changes its registers

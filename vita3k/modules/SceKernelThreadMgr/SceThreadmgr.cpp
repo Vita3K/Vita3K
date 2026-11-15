@@ -663,19 +663,32 @@ EXPORT(int, _sceKernelGetSystemTime) {
     return UNIMPLEMENTED();
 }
 
-// Returns the error for a register info of the given size, or 0
-static int register_info_size_error(SceSize size, SceSize expected) {
-    if (size < expected)
-        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
-    if (size > expected)
+// Returns the error for ForVM register blocks larger than the kernel copies in, or 0
+static int vm_block_sizes_error(const SceKernelThreadCpuRegisterInfo *cpu, const SceKernelThreadVfpRegisterInfo *vfp) {
+    if ((cpu && cpu->size > sizeof(*cpu)) || (vfp && vfp->size > sizeof(*vfp)))
         return SCE_KERNEL_ERROR_NO_MEMORY;
     return 0;
 }
 
-// Finds the thread a ForVM call may act on. Returns 0 or the error.
-static int vm_target(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id, ThreadStateRef &thread) {
+// Returns the error for a ForVM context call's thread ID that is the caller or names no object, or 0
+static int vm_uid_error(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id) {
     if (target_id == thread_id)
         return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    // Any object's UID gets past this, the thread lookup comes after the block checks
+    if (!emuenv.kernel.get_thread(target_id) && !emuenv.kernel.objects.find(target_id))
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    return 0;
+}
+
+// Returns the error for ForVM register blocks whose first word isn't their size, or 0
+static int vm_block_words_error(const SceKernelThreadCpuRegisterInfo *cpu, const SceKernelThreadVfpRegisterInfo *vfp) {
+    if ((cpu && cpu->size != sizeof(*cpu)) || (vfp && vfp->size != sizeof(*vfp)))
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+    return 0;
+}
+
+// Finds the VM thread a ForVM call acts on. Returns 0 or the error.
+static int vm_thread(EmuEnvState &emuenv, SceUID target_id, ThreadStateRef &thread) {
     thread = emuenv.kernel.get_thread(target_id);
     if (!thread)
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
@@ -684,55 +697,29 @@ static int vm_target(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id, Th
     return 0;
 }
 
+// Finds the thread a ForVM suspend or resume acts on, which may not be the caller. Returns 0 or the error.
+static int vm_target(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id, ThreadStateRef &thread) {
+    if (target_id == thread_id)
+        return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    return vm_thread(emuenv, target_id, thread);
+}
+
 EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
     TRACY_FUNC(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
     SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(emuenv.mem);
     SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);
-    if (infoCpu) {
-        if (const int error = register_info_size_error(infoCpu->size, sizeof(*infoCpu)))
-            return RET_ERROR(error);
-    }
-    if (infoVfp) {
-        if (const int error = register_info_size_error(infoVfp->size, sizeof(*infoVfp)))
-            return RET_ERROR(error);
-    }
-
+    if (const int error = vm_block_sizes_error(infoCpu, infoVfp))
+        return RET_ERROR(error);
+    if (const int error = vm_uid_error(emuenv, thread_id, threadId))
+        return RET_ERROR(error);
+    if (const int error = vm_block_words_error(infoCpu, infoVfp))
+        return RET_ERROR(error);
     ThreadStateRef thread;
-    if (const int error = vm_target(emuenv, thread_id, threadId, thread))
+    if (const int error = vm_thread(emuenv, threadId, thread))
         return RET_ERROR(error);
 
-    CPUContext context;
-    bool in_kernel_call = false;
-    if (const SceInt32 error = thread->get_vm_context(context, in_kernel_call))
+    if (const SceInt32 error = thread->get_vm_context(infoCpu, infoVfp))
         return RET_ERROR(error);
-
-    if (infoCpu) {
-        infoCpu->cpsr = context.cpsr;
-        static_assert(sizeof(infoCpu->reg) == sizeof(context.cpu_registers));
-        memcpy(infoCpu->reg, context.cpu_registers.data(), sizeof(infoCpu->reg));
-        infoCpu->sb = 100000; // Todo
-        infoCpu->st = 100000; // Todo
-        infoCpu->teehbr = 100000; // Todo
-        infoCpu->tpidrurw = context.tpidrurw;
-    }
-
-    if (infoVfp) {
-        static_assert(sizeof(infoVfp->reg) == sizeof(context.fpu_registers));
-        if (in_kernel_call) {
-            // Inside a syscall a Vita reports the FPSCR the kernel runs with, and only d8 to d15,
-            // which a call keeps. Every other d register reads this NaN.
-            constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
-            infoVfp->fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
-            for (size_t i = 0; i < std::size(infoVfp->reg); i += arm::WORDS_PER_D_REG)
-                memcpy(&infoVfp->reg[i], SCRUBBED, sizeof(SCRUBBED));
-            memcpy(&infoVfp->reg[arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S], &context.fpu_registers[arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S], arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT * sizeof(infoVfp->reg[0]));
-        } else {
-            // A thread stopped in its own code has its own VFP state
-            infoVfp->fpscr = context.fpscr;
-            memcpy(infoVfp->reg, context.fpu_registers.data(), sizeof(infoVfp->reg));
-        }
-    }
-
     return SCE_KERNEL_OK;
 }
 
@@ -1034,27 +1021,22 @@ EXPORT(SceInt32, _sceKernelSetEventWithNotifyCallback, SceUID event_id, SceUInt3
 
 EXPORT(int, _sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
     TRACY_FUNC(_sceKernelSetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
-    const ThreadStateRef thread = emuenv.kernel.get_thread(threadId);
-    if (!thread)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-
-    SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(emuenv.mem);
-    if (infoCpu) {
-        if (infoCpu->size != sizeof(*infoCpu))
-            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
-
-        // Todo
-    }
-
-    SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);
-    if (infoVfp) {
-        if (infoVfp->size != sizeof(*infoVfp))
-            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
-
-        // Todo
-    }
-
-    return UNIMPLEMENTED();
+    const SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(emuenv.mem);
+    const SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);
+    if (const int error = vm_block_sizes_error(infoCpu, infoVfp))
+        return RET_ERROR(error);
+    if (const int error = vm_uid_error(emuenv, thread_id, threadId))
+        return RET_ERROR(error);
+    if (!infoCpu && !infoVfp)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    if (const int error = vm_block_words_error(infoCpu, infoVfp))
+        return RET_ERROR(error);
+    ThreadStateRef thread;
+    if (const int error = vm_thread(emuenv, threadId, thread))
+        return RET_ERROR(error);
+    if (const SceInt32 error = thread->set_vm_context(infoCpu, infoVfp))
+        return RET_ERROR(error);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelSetTimerEvent) {

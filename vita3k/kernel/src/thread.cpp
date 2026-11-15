@@ -31,6 +31,7 @@
 #include <cassert>
 #include <cstring>
 #include <memory>
+#include <span>
 #include <utility>
 
 // The priority a thread created with priority runs at. The default range stands for the game's own.
@@ -891,14 +892,62 @@ int ThreadState::vm_resume() {
     return vm_suspend_count;
 }
 
-SceInt32 ThreadState::get_vm_context(CPUContext &context, bool &in_kernel_call) {
-    std::unique_lock<std::mutex> lock(thread_mutex);
+bool ThreadState::wait_vm_stop(std::unique_lock<std::mutex> &lock) {
     // A thread whose wait timed out while suspended stops on its way back to its code
-    cv.wait(lock, [&] { return parked || status != ThreadStatus::running || vm_suspend_count == 0 || exiting(); });
-    if (vm_suspend_count == 0)
+    cv.wait(lock, [&] { return parked || status != ThreadStatus::running || vm_suspend_count == 0; });
+    return vm_suspend_count != 0;
+}
+
+SceInt32 ThreadState::get_vm_context(SceKernelThreadCpuRegisterInfo *cpu_info, SceKernelThreadVfpRegisterInfo *vfp_info) {
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    if (!wait_vm_stop(lock))
         return SCE_KERNEL_ERROR_NOT_SUSPENDED;
-    context = cpu->get_context();
-    // Inside a kernel call means waiting, or held on the way back from one
-    in_kernel_call = status == ThreadStatus::waiting || (parked && stopped_after_kernel_call);
+    const CPUContext context = cpu->get_context();
+    if (cpu_info) {
+        cpu_info->cpsr = context.cpsr;
+        std::ranges::copy(context.cpu_registers, cpu_info->reg);
+        cpu_info->tpidrurw = context.tpidrurw;
+        cpu_info->sb = tls_slot(TLS_SP_TOP);
+        cpu_info->st = tls_slot(TLS_SP_BOTTOM);
+    }
+    if (vfp_info) {
+        if (stopped_in_kernel_call()) {
+            // Inside a kernel call the FPSCR is the one the kernel runs with, and only d8 to d15,
+            // which a call keeps, are the thread's. Every other d register reads this NaN.
+            constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
+            vfp_info->fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
+            for (size_t i = 0; i < std::size(vfp_info->reg); i += arm::WORDS_PER_D_REG)
+                memcpy(&vfp_info->reg[i], SCRUBBED, sizeof(SCRUBBED));
+            std::ranges::copy(std::span(context.fpu_registers).subspan(arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S, arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT), vfp_info->reg + arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S);
+        } else {
+            vfp_info->fpscr = context.fpscr;
+            std::ranges::copy(context.fpu_registers, vfp_info->reg);
+        }
+    }
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 ThreadState::set_vm_context(const SceKernelThreadCpuRegisterInfo *cpu_info, const SceKernelThreadVfpRegisterInfo *vfp_info) {
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    if (!wait_vm_stop(lock))
+        return SCE_KERNEL_ERROR_NOT_SUSPENDED;
+    CPUContext context = cpu->get_context();
+    if (cpu_info) {
+        std::ranges::copy(cpu_info->reg, context.cpu_registers.begin());
+        context.cpsr = (context.cpsr & SCE_KERNEL_VM_CONTEXT_CPSR_KEPT) | (cpu_info->cpsr & ~SCE_KERNEL_VM_CONTEXT_CPSR_KEPT);
+        context.tpidrurw = cpu_info->tpidrurw;
+        tls_slot(TLS_SP_TOP) = static_cast<int>(cpu_info->sb);
+        tls_slot(TLS_SP_BOTTOM) = static_cast<int>(cpu_info->st);
+    }
+    if (vfp_info) {
+        context.fpscr = vfp_info->fpscr;
+        // Inside a kernel call they go to the save area, and the way back to the thread's code
+        // loads only d8 to d15 from it
+        if (stopped_in_kernel_call())
+            std::ranges::copy(std::span(vfp_info->reg).subspan(arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S, arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT), context.fpu_registers.begin() + arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S);
+        else
+            std::ranges::copy(vfp_info->reg, context.fpu_registers.begin());
+    }
+    cpu->set_context(context);
     return SCE_KERNEL_OK;
 }
