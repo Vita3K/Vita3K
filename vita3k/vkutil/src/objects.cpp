@@ -86,7 +86,7 @@ Image::~Image() {
     destroy();
 }
 
-void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, const vk::ImageCreateFlags image_create_flags, const void *pNext) {
+void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, const vk::ImageCreateFlags image_create_flags, const void *pNext, uint32_t mip_levels) {
     vk::ImageCreateInfo image_info{
         .pNext = pNext,
         .flags = image_create_flags,
@@ -96,7 +96,7 @@ void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, 
             .width = width,
             .height = height,
             .depth = 1 },
-        .mipLevels = 1,
+        .mipLevels = mip_levels,
         .arrayLayers = 1,
         .samples = vk::SampleCountFlagBits::e1,
         .tiling = vk::ImageTiling::eOptimal,

@@ -386,6 +386,7 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     context.current_color_attachment = current_color_attachment_handle;
     context.current_framebuffer_height = current_framebuffer_height;
     context.self_sampling_indices.clear();
+    context.color_attachment_mipmaps_ready = false;
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
 

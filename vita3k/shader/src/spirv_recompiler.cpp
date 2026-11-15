@@ -1063,7 +1063,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32 };
+        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32, f32, b.makeUintType(32) };
         if (uniform_buffer_count > 0)
             uniform_composition.push_back(buffer_addresses_type);
         if (uniform_texture_count > 0) {
@@ -1087,6 +1087,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_FRAG_UNIFORM_MEMBER(writing_mask);
         ADD_FRAG_UNIFORM_MEMBER(use_raw_image);
         ADD_FRAG_UNIFORM_MEMBER(res_multiplier);
+        ADD_FRAG_UNIFORM_MEMBER(surface_lod);
+        ADD_FRAG_UNIFORM_MEMBER(surface_mask);
 
 #undef ADD_FRAG_UNIFORM_MEMBER
         // the resolution multiplier does not require a high precision
@@ -1440,8 +1442,15 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    if (translation_state.is_fragment)
+    if (translation_state.is_fragment) {
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
+        spv_params.frag_coord_id = translation_state.frag_coord_id;
+#ifdef __ANDROID__
+        spv_params.use_surface_lod = translation_state.is_vulkan;
+#else
+        spv_params.use_surface_lod = true;
+#endif
+    }
 
     return spv_params;
 }

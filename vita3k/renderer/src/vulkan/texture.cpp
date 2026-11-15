@@ -123,6 +123,14 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         lookup_result = context.state.surface_cache.retrieve_depth_stencil_as_texture(texture, &texture_viewport);
     }
 
+    if (!is_vertex) {
+        const uint32_t bit = 1U << index;
+        if (lookup_result.has_value() && lookup_result->has_mipmaps)
+            context.curr_frag_ublock.base_block.surface_mask |= bit;
+        else
+            context.curr_frag_ublock.base_block.surface_mask &= ~bit;
+    }
+
     if (lookup_result.has_value()) {
         // get the sampler now
         context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);

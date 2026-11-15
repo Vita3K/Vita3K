@@ -309,10 +309,19 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     std::uint64_t texture_as_surface = 0;
     const GLint *swizzle_surface = nullptr;
     bool only_nearest = false;
+    bool filterable_surface = false;
 
     if (context.record.color_surface.data.address() == data_addr) {
         texture_as_surface = context.current_color_attachment;
         swizzle_surface = color::translate_swizzle(context.record.color_surface.colorFormat);
+
+        const SceGxmColorBaseFormat surface_format = gxm::get_base_format(context.record.color_surface.colorFormat);
+        const bool stored_rawly = state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(surface_format);
+        filterable_surface = !stored_rawly && !color::is_write_surface_non_linearity_filtering(surface_format);
+        if (filterable_surface && (state.res_multiplier > 1.0f) && !context.color_attachment_mipmaps_ready) {
+            generate_surface_mipmaps(static_cast<GLuint>(texture_as_surface), state.res_multiplier);
+            context.color_attachment_mipmaps_ready = true;
+        }
 
         vector_utils::push_if_not_exists(context.self_sampling_indices, index);
     } else {
@@ -346,10 +355,11 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
             texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
                 state, width, height, stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
-                SurfaceTextureRetrievePurpose::READING, swizz_raw);
+                SurfaceTextureRetrievePurpose::SAMPLING, swizz_raw);
 
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
             only_nearest = color::is_write_surface_non_linearity_filtering(format_target_of_texture);
+            filterable_surface = (texture_as_surface != 0) && !only_nearest;
         }
 
         // Try to retrieve S24D8 texture
@@ -363,6 +373,14 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                 only_nearest = true;
             }
         }
+    }
+
+    if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
+        const uint32_t bit = 1U << index;
+        if (filterable_surface && (state.res_multiplier > 1.0f))
+            context.current_frag_render_info.surface_mask |= bit;
+        else
+            context.current_frag_render_info.surface_mask &= ~bit;
     }
 
     if (texture_as_surface != 0) {

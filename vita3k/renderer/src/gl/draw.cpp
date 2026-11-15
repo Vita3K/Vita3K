@@ -33,6 +33,8 @@
 
 #include <spdlog/fmt/bin_to_hex.h>
 
+#include <cmath>
+
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     R_PROFILE(__func__);
@@ -162,6 +164,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.use_raw_image = static_cast<float>(use_raw_image);
     frag_ublock.res_multiplier = renderer.res_multiplier;
+    frag_ublock.surface_lod = std::log2(renderer.res_multiplier);
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)
@@ -225,6 +228,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     } else {
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
     }
+    context.color_attachment_mipmaps_ready = false;
 
     // Restore context for normal draws
     if (context.record.is_maskupdate) {
