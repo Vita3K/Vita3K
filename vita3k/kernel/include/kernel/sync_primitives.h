@@ -21,12 +21,12 @@
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <kernel/waitable.h>
-#include <util/byte_ring_buffer.h>
 #include <util/intrusive_list.h>
 
 #include <condition_variable>
 #include <expected>
 #include <limits>
+#include <memory>
 #include <span>
 #include <thread>
 
@@ -505,7 +505,7 @@ struct MsgPipeTransfer {
     // Returns whether it moved part of its bytes, which keeps it at the head of its queue
     bool keeps_place() const;
     // Returns the guest bytes at its position, at most n and within one piece
-    std::span<char> run(SceSize n);
+    std::span<std::byte> run(SceSize n);
     void advance(SceSize n);
     // Writes the size moved so far for the caller
     void report() const;
@@ -562,20 +562,27 @@ private:
     // Moves bytes to the receiver from the pipe, then from the waiting senders, which put their rest
     // into the pipe. Returns whether the receiver is done.
     bool take(MsgPipeReceiver &receiver);
+    // Copies n bytes from the sender's pieces into the ring, and moves the sender on if commit
+    void copy_pieces_to_ring(MsgPipeSender &sender, SceSize n, bool commit);
+    // Copies n bytes from the ring into the receiver's pieces
+    void copy_ring_to_pieces(MsgPipeReceiver &receiver, SceSize n);
     // Puts as much of the sender's rest into the pipe as its mode allows
     void fill(MsgPipeSender &sender);
     // Moves the pipe's bytes to the receiver, up to what it still wants
     void drain(MsgPipeReceiver &receiver);
     // Returns the bytes a receive can get at once, the pipe's and those the waiting senders still have
     SceSize available() const;
-    // Copies n bytes from the sender to the receiver, and takes them from the sender unless the
-    // receiver peeks
-    static void copy(MsgPipeSender &sender, MsgPipeReceiver &receiver, SceSize n);
     // Returns whether a new call with request goes ahead of the calls already waiting on its side
     bool goes_first(const WaitRequest &request, int priority);
 
-    // Guarded by the lock. Senders and receivers wait in the one queue.
-    ByteRingBuffer data_buffer;
+    // Guarded by the lock. The ring of capacity bytes holds held bytes from read_pos, and a send
+    // writes at write_pos.
+    SceSize capacity;
+    std::unique_ptr<std::byte[]> buffer;
+    SceSize write_pos = 0;
+    SceSize read_pos = 0;
+    SceSize held = 0;
+    // Senders and receivers wait in the one queue
     enum class Side {
         none,
         senders,

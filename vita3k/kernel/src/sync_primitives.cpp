@@ -1684,7 +1684,8 @@ SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
 MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size, SceUID creator)
     : WithUidClass(attr, name, 0, system_event_user_data(creator))
     // A pipe's buffer is a whole number of 4 KiB pages
-    , data_buffer(align(buf_size, 0x1000)) {}
+    , capacity(static_cast<SceSize>(align(buf_size, 0x1000)))
+    , buffer(std::make_unique<std::byte[]>(capacity)) {}
 
 SceInt32 MsgPipe::check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size) {
     if (const SceInt32 error = check_name(name, attr))
@@ -1704,7 +1705,9 @@ static bool is_msg_pipe_mode(SceUInt32 wait_mode) {
 }
 
 void MsgPipe::end_waits(SceUID deleter) {
-    data_buffer.Clear();
+    write_pos = 0;
+    read_pos = 0;
+    held = 0;
     waiting_side = Side::none;
     side_count = 0;
     head_partial = false;
@@ -1739,10 +1742,16 @@ void MsgPipe::wait_ended(ThreadState &thread, SceInt32) {
             head_partial = head->wait_request().sender->keeps_place();
     } else if (ThreadState *head = first_receiver()) {
         MsgPipeReceiver &receiver = *head->wait_request().receiver;
+        // A peek puts back the ring
+        const SceSize read_was = read_pos, held_was = held;
         drain(receiver);
+        if (receiver.peek) {
+            read_pos = read_was;
+            held = held_was;
+        }
         head_partial = receiver.left != 0 && receiver.keeps_place();
     }
-    if (data_buffer.Empty())
+    if (write_pos == read_pos && held == 0)
         pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
     if (--side_count == 0)
         waiting_side = Side::none;
@@ -1755,9 +1764,9 @@ SceInt32 MsgPipe::transfer_result(SceInt32 result, const MsgPipeTransfer &transf
     SceUInt32 bits = moved ? (sending ? SCE_KERNEL_EVENT_IN : SCE_KERNEL_EVENT_OUT) : 0;
     if (result < 0)
         bits |= SCE_KERNEL_EVENT_ERROR;
-    if (sending && moved && !data_buffer.Empty())
+    if (sending && moved && held != 0)
         bits |= SCE_KERNEL_EVENT_DATA_EXIST;
-    if (!sending && data_buffer.Empty())
+    if (!sending && held == 0)
         pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
     if (bits) {
         const SceUInt64 data = static_cast<SceUInt32>(result)
@@ -1796,14 +1805,14 @@ bool MsgPipeTransfer::keeps_place() const {
     return left != total;
 }
 
-std::span<char> MsgPipeTransfer::run(SceSize n) {
+std::span<std::byte> MsgPipeTransfer::run(SceSize n) {
     // Steps over the pieces already moved, and empty ones
     while (offset == pieces[piece].size) {
         ++piece;
         offset = 0;
     }
     const MsgPipeVector &current = pieces[piece];
-    return std::span{ current.base.cast<char>().get(*mem), current.size }.subspan(offset, std::min(n, current.size - offset));
+    return std::span{ current.base.cast<std::byte>().get(*mem), current.size }.subspan(offset, std::min(n, current.size - offset));
 }
 
 void MsgPipeTransfer::advance(SceSize n) {
@@ -1816,52 +1825,54 @@ void MsgPipeTransfer::report() const {
         *size = total - left;
 }
 
-void MsgPipe::copy(MsgPipeSender &sender, MsgPipeReceiver &receiver, SceSize n) {
-    // A copy of the sender moves through its pieces, and a peek leaves the sender where it was
+void MsgPipe::copy_pieces_to_ring(MsgPipeSender &sender, SceSize n, bool commit) {
+    // Each copy ends at a piece end or at the ring end
     MsgPipeSender from = sender;
     while (n > 0) {
-        const std::span<char> in = from.run(n);
-        const std::span<char> out = receiver.run(static_cast<SceSize>(in.size()));
-        std::ranges::copy(in.first(out.size()), out.begin());
-        const SceSize moved = static_cast<SceSize>(out.size());
+        const std::span<std::byte> in = from.run(std::min(n, capacity - write_pos));
+        std::ranges::copy(in, buffer.get() + write_pos);
+        const SceSize moved = static_cast<SceSize>(in.size());
+        write_pos = (write_pos + moved) % capacity;
+        held += moved;
         from.advance(moved);
+        n -= moved;
+    }
+    if (commit)
+        sender = from;
+}
+
+void MsgPipe::copy_ring_to_pieces(MsgPipeReceiver &receiver, SceSize n) {
+    while (n > 0) {
+        const std::span<std::byte> out = receiver.run(std::min(n, capacity - read_pos));
+        std::ranges::copy_n(buffer.get() + read_pos, out.size(), out.begin());
+        const SceSize moved = static_cast<SceSize>(out.size());
+        read_pos = (read_pos + moved) % capacity;
+        held -= moved;
         receiver.advance(moved);
         n -= moved;
     }
-    if (!receiver.peek)
-        sender = from;
 }
 
 void MsgPipe::fill(MsgPipeSender &sender) {
     // ASAP puts what fits, FULL all of its rest or nothing
-    const SceSize room = static_cast<SceSize>(data_buffer.Free());
-    if (sender.full && sender.left > room)
+    const SceSize n = std::min(sender.left, capacity - held);
+    if (sender.full && n < sender.left)
         return;
-    SceSize n = std::min(sender.left, room);
-    while (n > 0) {
-        const std::span<char> in = sender.run(n);
-        const SceSize moved = static_cast<SceSize>(data_buffer.Insert(in.data(), in.size()));
-        sender.advance(moved);
-        n -= moved;
-    }
+    copy_pieces_to_ring(sender, n, true);
 }
 
 void MsgPipe::drain(MsgPipeReceiver &receiver) {
-    const SceSize held = static_cast<SceSize>(data_buffer.Used());
-    // A peek reads on from where it got to, and leaves the bytes in the pipe
-    SceSize at = receiver.peek ? std::min(receiver.total - receiver.left, held) : 0;
-    SceSize n = std::min(receiver.left, held - at);
-    while (n > 0) {
-        const std::span<char> out = receiver.run(n);
-        const SceSize moved = static_cast<SceSize>(receiver.peek ? data_buffer.Peek(out.data(), out.size(), at) : data_buffer.Remove(out.data(), out.size()));
-        at += moved;
-        receiver.advance(moved);
-        n -= moved;
+    // A peek reads on from where it got to
+    if (receiver.peek) {
+        const SceSize skip = std::min(receiver.total - receiver.left, held);
+        read_pos = (read_pos + skip) % capacity;
+        held -= skip;
     }
+    copy_ring_to_pieces(receiver, std::min(receiver.left, held));
 }
 
 SceSize MsgPipe::available() const {
-    SceSize bytes = static_cast<SceSize>(data_buffer.Used());
+    SceSize bytes = held;
     for (const ThreadState &waiter : waiters) {
         if (const MsgPipeSender *const sender = waiter.wait_request().sender)
             bytes += sender->left;
@@ -1889,7 +1900,21 @@ bool MsgPipe::give(MsgPipeSender &sender) {
     // A send reaches the first waiting receiver even with no bytes, which ends an ASAP receive
     while (ThreadState *const receiver = first_receiver()) {
         MsgPipeReceiver &to = *receiver->wait_request().receiver;
-        copy(sender, to, std::min(to.left, sender.left));
+        const SceSize n = std::min(to.left, sender.left);
+        // The bytes go through the ring. A peek goes through a ring that looks empty at its write
+        // position, then puts back the ring.
+        const SceSize write_was = write_pos, read_was = read_pos, held_was = held;
+        if (to.peek) {
+            read_pos = write_pos;
+            held = 0;
+        }
+        copy_pieces_to_ring(sender, n, !to.peek);
+        copy_ring_to_pieces(to, n);
+        if (to.peek) {
+            write_pos = write_was;
+            read_pos = read_was;
+            held = held_was;
+        }
         to.report();
         // A FULL receive that still wants bytes stays the first one
         if (to.full && to.left > 0) {
@@ -1907,12 +1932,16 @@ bool MsgPipe::give(MsgPipeSender &sender) {
 }
 
 bool MsgPipe::take(MsgPipeReceiver &receiver) {
+    // A peek puts back the ring at the end
+    const SceSize write_was = write_pos, read_was = read_pos, held_was = held;
     drain(receiver);
-    // Each waiting sender gives its bytes to the receiver while it wants some, then puts its rest
-    // into the pipe, up to the first sender that stays
+    // Each waiting sender gives its bytes to the receiver through the ring while it wants some, then
+    // puts its rest into the pipe, up to the first sender that stays
     while (ThreadState *const sender = first_sender()) {
         MsgPipeSender &from = *sender->wait_request().sender;
-        copy(from, receiver, std::min(receiver.left, from.left));
+        const SceSize n = std::min(receiver.left, from.left);
+        copy_pieces_to_ring(from, n, !receiver.peek);
+        copy_ring_to_pieces(receiver, n);
         // A peek frees nothing
         if (receiver.peek)
             break;
@@ -1924,6 +1953,11 @@ bool MsgPipe::take(MsgPipeReceiver &receiver) {
         }
         head_partial = false;
         wake_waiter(*sender);
+    }
+    if (receiver.peek) {
+        write_pos = write_was;
+        read_pos = read_was;
+        held = held_was;
     }
     receiver.report();
     return receiver.done();
@@ -1965,7 +1999,7 @@ SceInt32 MsgPipe::receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mod
         return result;
     }
     const uint64_t total = total_size(pieces);
-    if (total > data_buffer.Capacity())
+    if (total > capacity)
         return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
 
     auto guard = lock();
@@ -1992,7 +2026,7 @@ SceInt32 MsgPipe::receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mod
         if (done)
             return finish_wait(guard, thread, callbacks, transfer_result(SCE_KERNEL_OK, receiver, false));
         // A receive that took the last bytes and waits for more leaves no data to report
-        if (data_buffer.Empty())
+        if (held == 0)
             pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
         const SceInt32 result = Waitable::wait(guard, thread, type, request, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
@@ -2011,7 +2045,7 @@ SceInt32 MsgPipe::send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, 
         return result;
     }
     const uint64_t total = total_size(pieces);
-    if (total > data_buffer.Capacity())
+    if (total > capacity)
         return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
 
     auto guard = lock();
@@ -2047,7 +2081,7 @@ SceInt32 MsgPipe::try_receive(ThreadState &thread, MemState &mem, SceUInt32 wait
     if (!is_msg_pipe_mode(wait_mode))
         return SCE_KERNEL_ERROR_ILLEGAL_MODE;
     const uint64_t total = total_size(pieces);
-    if (total > data_buffer.Capacity())
+    if (total > capacity)
         return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
 
     const auto guard = lock();
@@ -2065,7 +2099,7 @@ SceInt32 MsgPipe::try_send(ThreadState &thread, MemState &mem, SceUInt32 wait_mo
     if (!is_msg_pipe_mode(wait_mode))
         return SCE_KERNEL_ERROR_ILLEGAL_MODE;
     const uint64_t total = total_size(pieces);
-    if (total > data_buffer.Capacity())
+    if (total > capacity)
         return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
 
     const auto guard = lock();
@@ -2074,7 +2108,7 @@ SceInt32 MsgPipe::try_send(ThreadState &thread, MemState &mem, SceUInt32 wait_mo
     MsgPipeSender sender(mem, pieces, size, static_cast<SceSize>(total), wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
     // Behind the senders already waiting, or short of room for all of a FULL send, it fails without
     // writing a size
-    if (!goes_first({ .sender = &sender }, thread.get_priority()) || (sender.full && sender.total > data_buffer.Free()))
+    if (!goes_first({ .sender = &sender }, thread.get_priority()) || (sender.full && sender.total > capacity - held))
         return transfer_result(SCE_KERNEL_ERROR_MSG_PIPE_FULL, sender, true);
     return transfer_result(give(sender) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_FULL, sender, true);
 }
@@ -2091,7 +2125,9 @@ SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receiv
         return request.sender || request.receiver;
     },
         SCE_KERNEL_ERROR_WAIT_CANCEL);
-    data_buffer.Clear();
+    write_pos = 0;
+    read_pos = 0;
+    held = 0;
     pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
 
     if (num_send_wait_threads)
@@ -2111,8 +2147,8 @@ SceInt32 MsgPipe::info(SceKernelMppInfo &info) const {
     info.mppId = uid;
     std::ranges::copy(name, info.name);
     info.attr = attr;
-    info.bufSize = static_cast<SceInt32>(data_buffer.Capacity());
-    info.freeSize = static_cast<SceInt32>(data_buffer.Free());
+    info.bufSize = static_cast<SceInt32>(capacity);
+    info.freeSize = static_cast<SceInt32>(capacity - held);
     info.numSendWaitThreads = waiting_side == Side::senders ? static_cast<SceInt32>(waiters.size()) : 0;
     info.numReceiveWaitThreads = waiting_side == Side::receivers ? static_cast<SceInt32>(waiters.size()) : 0;
     return SCE_KERNEL_OK;
