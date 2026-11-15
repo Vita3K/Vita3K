@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -34,7 +33,8 @@ typedef std::shared_ptr<SDL_Haptic> HapticPtr;
 
 struct Controller {
     GamepadPtr controller;
-    int port; // SDL_Gamepad index
+    SDL_JoystickID instance_id;
+    int port; // Vita controller port
     bool has_accel;
     bool has_gyro;
     bool has_led;
@@ -46,13 +46,7 @@ struct ControllerBinding {
     uint32_t button;
 };
 
-struct SDL_GUIDComparator {
-    bool operator()(const SDL_GUID &a, const SDL_GUID &b) const {
-        return memcmp(&a, &b, sizeof(a)) < 0;
-    }
-};
-
-typedef std::map<SDL_GUID, Controller, SDL_GUIDComparator> ControllerList;
+typedef std::map<SDL_JoystickID, Controller> ControllerList;
 
 struct VirtualKeyboardState {
     uint32_t buttons = 0;
