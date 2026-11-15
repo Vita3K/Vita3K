@@ -374,7 +374,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
     if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
         const uint32_t bit = 1U << index;
-        const bool point_sampled = (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT) && (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT);
+        // linear strided textures use the mag filter as the min filter too
+        const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+            && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
         if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))
             context.current_frag_render_info.surface_mask |= bit;
         else
