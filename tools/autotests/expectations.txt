@@ -417,7 +417,7 @@ msgpipe_create_size_wrap        pass
 msgpipe_create_types            pass
 msgpipe_data_exist_while_receive_waits pass
 msgpipe_edges                   pass
-msgpipe_errors                  fail     # sceKernelCloseMsgPipe isn't implemented
+msgpipe_errors                  fail     # a create with a huge size gets a pipe, the Vita fails the buffer allocation with 0x80024804
 msgpipe_event_before_callbacks  pass
 msgpipe_event_waiter_ahead_of_partial pass
 msgpipe_failed_sizes            pass
