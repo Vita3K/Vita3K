@@ -158,6 +158,9 @@ EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const 
 
 EXPORT(SceInt32, _sceKernelCancelEvent, SceUID eventId, SceUInt32 *pNumWaitThreads) {
     TRACY_FUNC(_sceKernelCancelEvent, eventId, pNumWaitThreads);
+    // The count reads 0 if the cancel fails
+    if (pNumWaitThreads)
+        *pNumWaitThreads = 0;
     const EventRef event = find_event(emuenv, eventId);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
@@ -168,6 +171,9 @@ EXPORT(SceInt32, _sceKernelCancelEvent, SceUID eventId, SceUInt32 *pNumWaitThrea
 
 EXPORT(SceInt32, _sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, SceUInt32 *num_wait_thread) {
     TRACY_FUNC(_sceKernelCancelEventFlag, event_id, pattern, num_wait_thread);
+    // The count reads 0 if the cancel fails
+    if (num_wait_thread)
+        *num_wait_thread = 0;
     const EventFlagRef event = emuenv.kernel.objects.find<EventFlag>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
@@ -183,7 +189,7 @@ EXPORT(SceInt32, _sceKernelCancelEventWithSetPattern, SceUID eventId, SceUInt32 
     // The count reads 0 if the cancel fails
     if (num_wait_threads)
         *num_wait_threads = 0;
-    const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(eventId);
+    const EventRef event = find_event(emuenv, eventId);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->cancel(setPattern, opt->userData, num_wait_threads);
@@ -191,6 +197,11 @@ EXPORT(SceInt32, _sceKernelCancelEventWithSetPattern, SceUID eventId, SceUInt32 
 
 EXPORT(SceInt32, _sceKernelCancelMsgPipe, SceUID msgPipeId, SceUInt32 *pNumSendWaitThreads, SceUInt32 *pNumReceiveWaitThreads) {
     TRACY_FUNC(_sceKernelCancelMsgPipe, msgPipeId, pNumSendWaitThreads, pNumReceiveWaitThreads);
+    // The counts read 0 if the cancel fails
+    if (pNumSendWaitThreads)
+        *pNumSendWaitThreads = 0;
+    if (pNumReceiveWaitThreads)
+        *pNumReceiveWaitThreads = 0;
     const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
@@ -240,6 +251,9 @@ EXPORT(int, _sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *p
 
 EXPORT(SceInt32, _sceKernelCancelTimer, SceUID timerId, SceUInt32 *pNumWaitThreads) {
     TRACY_FUNC(_sceKernelCancelTimer, timerId, pNumWaitThreads);
+    // The count reads 0 if the cancel fails
+    if (pNumWaitThreads)
+        *pNumWaitThreads = 0;
     const TimerRef timer = emuenv.kernel.objects.find<Timer>(timerId);
     if (!timer)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
@@ -501,6 +515,9 @@ EXPORT(SceInt32, _sceKernelGetEventInfo, SceUID eventId, Ptr<SceKernelEventInfo>
 
 EXPORT(SceInt32, _sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_pattern) {
     TRACY_FUNC(_sceKernelGetEventPattern, event_id, get_pattern);
+    // The pattern reads 0 if the call fails
+    if (get_pattern)
+        *get_pattern = 0;
     const SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id);
     SceUInt32 pattern;
     if (!event || event->get_pattern(pattern) != SCE_KERNEL_OK)
