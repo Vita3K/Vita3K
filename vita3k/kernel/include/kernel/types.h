@@ -59,6 +59,9 @@
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
 #define SCE_KERNEL_THREAD_INITIAL_FPSCR 0x03000000U
 
+// The CPSR a thread starts with: user mode and no flags
+#define SCE_KERNEL_THREAD_INITIAL_CPSR 0x00000010U
+
 // The words of the value the kernel puts in the d registers it doesn't keep for a thread
 #define SCE_KERNEL_VFP_REGISTER_FILL_LOW 0x7F80DEADU
 #define SCE_KERNEL_VFP_REGISTER_FILL_HIGH 0x7FF8DEADU

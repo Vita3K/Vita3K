@@ -707,8 +707,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
         return RET_ERROR(error);
 
     if (infoCpu) {
-        // A thread a guest can suspend runs in user mode
-        infoCpu->cpsr = (context.cpsr & ~0x1FU) | 0x10;
+        infoCpu->cpsr = context.cpsr;
         static_assert(sizeof(infoCpu->reg) == sizeof(context.cpu_registers));
         memcpy(infoCpu->reg, context.cpu_registers.data(), sizeof(infoCpu->reg));
         infoCpu->sb = 100000; // Todo
@@ -1509,7 +1508,8 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     if (init_priority != SCE_KERNEL_CURRENT_THREAD_PRIORITY && !is_user_priority(init_priority))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
-    if (options->stack_size <= 0)
+    const SceSize stack_size = static_cast<SceSize>(options->stack_size);
+    if (stack_size == 0 || stack_size > SCE_KERNEL_THREAD_STACK_SIZE_MAX)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_STACK_SIZE);
     if (emuenv.kernel.get_thread(thread_id)->in_event_handler())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CONTEXT);

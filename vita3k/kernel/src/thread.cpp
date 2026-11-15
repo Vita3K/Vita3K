@@ -47,6 +47,7 @@ static CPUContext initial_context(Address stack_top) {
     // A Vita starts every thread with these in r2 to r12, and some games rely on r9 not being 0
     std::fill(ctx.cpu_registers.begin() + 2, ctx.cpu_registers.begin() + 13, 0xDEADBEEF);
     ctx.set_sp(stack_top);
+    ctx.cpsr = SCE_KERNEL_THREAD_INITIAL_CPSR;
     ctx.fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
     return ctx;
 }
@@ -108,6 +109,24 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
         return SCE_KERNEL_ERROR_ILLEGAL_CONTEXT;
     if (status != ThreadStatus::dormant)
         return SCE_KERNEL_ERROR_NOT_DORMANT;
+    if (arglen > stack_size)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    // A thread starts with TPIDRURW at 0, also when it starts again
+    CPUContext ctx = initial_context(stack.get() + stack_size);
+    // The entry gets the size of the argument data and its copy on the stack, or 0 and null for none
+    Address data_addr = 0;
+    if (argp && arglen > 0) {
+        data_addr = ctx.get_sp() - align(arglen, 16);
+        ctx.set_sp(data_addr);
+        memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
+    } else {
+        arglen = 0;
+    }
+    begin_run(ctx, { arglen, data_addr }, run_entry_callback);
+    return SCE_KERNEL_OK;
+}
+
+void ThreadState::begin_run(CPUContext ctx, std::initializer_list<uint32_t> args, bool run_entry_callback) {
     assert(held_flags.empty() && held_mutexes.empty() && held_rwlocks.empty());
     run_start_callback = run_entry_callback;
     returned_value = SCE_KERNEL_ERROR_NOT_DORMANT;
@@ -116,28 +135,18 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
         last_cpu = 0;
         change_cpu_count = 0;
     }
-    // A start clears a callback notification the thread's last run left, which its end keeps
+    // A start clears a callback notification and a signal left from before, which its end keeps
     callback_pending = false;
+    signal_pending = false;
     // Each run starts at the priority and on the cores the thread was created with, and its TLS
     // shows them
     priority = init_priority;
     affinity_mask = init_affinity_mask;
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
-    // A thread starts with TPIDRURW at 0, also when it starts again
-    CPUContext ctx = initial_context(stack.get() + stack_size);
-    // The entry gets the size of the argument data and its copy on the stack, or null for none
-    Address data_addr = 0;
-    if (argp && arglen > 0) {
-        data_addr = ctx.get_sp() - align(arglen, 8);
-        ctx.set_sp(data_addr);
-        memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
-    }
-    ctx.place_call(mem, entry_point, cpu->return_pc, { arglen, data_addr });
+    ctx.place_call(mem, entry_point, cpu->return_pc, args);
     cpu->set_context(ctx);
-
     update_status(ThreadStatus::running);
-    return SCE_KERNEL_OK;
 }
 
 void ThreadState::exit(SceInt32 status) {
@@ -406,8 +415,19 @@ void ThreadState::dispatch_abort(Address fault_addr) {
 }
 
 uint32_t ThreadState::start_and_wait(SceSize args, const Ptr<void> argp) {
-    start(args, argp);
+    // A refused start leaves the thread dormant, so its error is the result
+    if (const int error = start(args, argp))
+        return error;
     std::unique_lock<std::mutex> lock(thread_mutex);
+    cv.wait(lock, [&] { return status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
+    return returned_value;
+}
+
+uint32_t ThreadState::call_and_wait(Address arg) {
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    if (status != ThreadStatus::dormant)
+        return SCE_KERNEL_ERROR_NOT_DORMANT;
+    begin_run(initial_context(stack.get() + stack_size), { arg }, false);
     cv.wait(lock, [&] { return status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
     return returned_value;
 }
