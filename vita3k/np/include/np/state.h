@@ -85,6 +85,18 @@ struct NpTusState {
     std::unordered_map<SceUID, NpTusRequest> requests;
 };
 
+struct NpAuthRequest {
+    Address ticket_cb = 0;
+    Address cb_arg = 0;
+    bool pending = true;
+};
+
+struct NpAuthState {
+    std::mutex access_mutex;
+    SceInt32 next_request_id = 1;
+    std::map<SceInt32, NpAuthRequest> requests;
+};
+
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
@@ -92,5 +104,6 @@ struct NpState {
 
     NpTrophyState trophy_state;
     NpTusState tus_state;
+    NpAuthState auth_state;
     np::CommunicationID comm_id;
 };
