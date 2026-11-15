@@ -67,6 +67,9 @@ public:
     // Sets or pulses the bits, then notifies the registered callbacks with notify_arg
     SceInt32 set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg);
     SceInt32 clear(SceUInt32 clear_pattern);
+    // Sets one of the system events, like the open event, with user_data for its waiters, or returns
+    // UNKNOWN_EVENT_ID if it was deleted.
+    SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
     virtual SceInt32 cancel(SceUInt32 *num_wait_threads);
     // Cancels the waits like cancel(), then replaces the whole pattern and the user data.
     SceInt32 cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads);
@@ -119,9 +122,6 @@ public:
     // Pulses bits of an event the kernel made, which aren't limited to the user defined ones, and
     // notifies the registered callbacks with notify_arg
     void pulse_and_notify(SceUInt32 pattern, SceInt32 notify_arg);
-    // Sets one of the system events, like the open event, with user_data for its waiters, or returns
-    // UNKNOWN_EVENT_ID if it was deleted.
-    SceInt32 set_system_event(SceUInt32 event, SceUInt64 user_data);
 };
 
 using SimpleEventRef = Ref<SimpleEvent>;

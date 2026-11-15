@@ -326,7 +326,7 @@ void SimpleEvent::pulse_and_notify(SceUInt32 pattern, SceInt32 notify_arg) {
     notify_callbacks(notify_arg);
 }
 
-SceInt32 SimpleEvent::set_system_event(SceUInt32 event, SceUInt64 user_data) {
+SceInt32 Event::set_system_event(SceUInt32 event, SceUInt64 user_data) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;

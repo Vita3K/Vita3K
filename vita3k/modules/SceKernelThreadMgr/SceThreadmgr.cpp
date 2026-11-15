@@ -1413,9 +1413,15 @@ EXPORT(int, sceKernelCloseEventFlag, SceUID evfId) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelCloseMsgPipe) {
-    TRACY_FUNC(sceKernelCloseMsgPipe);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCloseMsgPipe, SceUID msgPipeId) {
+    TRACY_FUNC(sceKernelCloseMsgPipe, msgPipeId);
+    const MsgPipeRef msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
+    if (!msgpipe)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    // The pipe stays, only the close event tells its waiters. A delete that came first wins.
+    if (msgpipe->set_system_event(SCE_KERNEL_EVENT_CLOSE, system_event_user_data(thread_id)) != SCE_KERNEL_OK)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCloseMutex, SceUID mutexId) {
