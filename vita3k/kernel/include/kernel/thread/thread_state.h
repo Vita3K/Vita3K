@@ -91,7 +91,7 @@ public:
     // The thread's current wait, guarded by the lock of the object it waits on
     // What it asked for, which the wakers read. Only queueing the thread sets it.
     const WaitRequest &wait_request() const { return request; }
-    // Its priority when it was queued, the queue is not reordered if it changes
+    // Its priority when it was queued or last requeued
     int queued_priority = 0;
     // The result given by whoever ended the queued wait, apart from the wake token wait_result
     std::optional<SceInt32> ender_result;
@@ -143,19 +143,22 @@ public:
     [[nodiscard]] SceInt32 delay_until(Deadline deadline, bool callbacks);
     // Blocks this thread until a signal is sent to it or the timeout passes, writing the time left back.
     [[nodiscard]] SceInt32 wait_for_signal(SceUInt32 *timeout, bool callbacks);
-    // Sends a signal to this thread. Fails if the previous one was not consumed yet.
+    // Sends a signal to this thread, which ends its signal wait or else stays pending. Fails if the
+    // previous one is still pending.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant or deleted, then writes its exit status to
     // exit_status. The time left is written back to timeout after every sleep.
     [[nodiscard]] SceInt32 wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks);
     // sleep(), but a callback already pending ends a wait with callbacks at once with NOTIFY_CALLBACK,
     // and the caller then runs it with run_callbacks(). A stale wake can end it early, so callers must
-    // recheck their condition.
+    // recheck their condition. For a wait that queues on nothing, which shows target while it lasts.
     [[nodiscard]] SceInt32 wait(WaitTarget target, Deadline deadline);
+    // wait() for a thread a queue holds, which shows the target the queue set.
+    [[nodiscard]] SceInt32 wait(Deadline deadline);
     // Runs the notified callbacks for a wait that ended with NOTIFY_CALLBACK, with no lock held.
     // Returns THREAD_STOPPED if the thread exits or is deleted meanwhile.
     [[nodiscard]] SceInt32 run_callbacks();
-    // Wakes this thread from wait().
+    // Ends this thread's queued wait, so it shows no target and wait() returns.
     void wake();
     // A host call that blocks the thread inside an export, like an audio output, during which the
     // thread counts as stopped. It shows WAITING on shown while it lives, or stays RUNNING without
@@ -257,8 +260,8 @@ private:
     ThreadStatus shown_status() const;
     // Whether the thread is ending
     bool exiting() const { return ending != Ending::none; }
-    // Sets how the thread ends, which stops its guest code for good and drops a step it didn't take
-    // unless it's none
+    // Sets how the thread ends. Unless it's none, that stops its guest code for good, drops a step
+    // it didn't take and clears its wait target
     void set_ending(Ending how);
     // Whether something holds the thread before its guest code: the debugger, the emulator pause or
     // a ForVM suspend
@@ -276,9 +279,15 @@ private:
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
     // Whether the thread's current wait has a result or the thread is ending. With thread_mutex held.
     bool wait_over() const { return exiting() || wait_result.has_value(); }
-    // Sleeps on target until wake(), a callback notify during the sleep if target has the callback bit, the
+    // wake() with thread_mutex held.
+    void end_wait();
+    // Sets the priority and its copy in TLS, with thread_mutex held.
+    void set_priority(int new_priority);
+    // wait() with thread_mutex held through lock.
+    [[nodiscard]] SceInt32 wait(std::unique_lock<std::mutex> &lock, Deadline deadline);
+    // Sleeps until wake(), a callback notify during the sleep if wait_target has the callback bit, the
     // deadline, or the thread's exit or delete (THREAD_STOPPED), with thread_mutex held through lock.
-    [[nodiscard]] SceInt32 sleep(std::unique_lock<std::mutex> &lock, WaitTarget target, Deadline deadline);
+    [[nodiscard]] SceInt32 sleep(std::unique_lock<std::mutex> &lock, Deadline deadline);
 
     // Runs guest code at one level, the thread's run or a call, with thread_mutex held through lock, which
     // it releases around guest code and the handling of each exit. A call the kernel makes starts
@@ -335,7 +344,8 @@ private:
     SceInt32 affinity_mask;
 
     // Waits
-    // What the thread waits on while waiting, empty otherwise
+    // What the thread waits on, empty otherwise. A queue sets it, and the waker or the wait's own end
+    // clears it. A wait that queues on nothing sets and clears it itself.
     WaitTarget wait_target;
     // The result the next wait() returns, set by the first wake() or callback notify
     std::optional<SceInt32> wait_result;

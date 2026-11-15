@@ -48,7 +48,8 @@ bool Waitable::first_for(int priority) const {
 
 void Waitable::wake_waiter(ThreadState &thread, SceInt32 result) {
     thread.ender_result = result;
-    unqueue(thread, result);
+    waiters.remove(thread);
+    wait_ended(thread, result);
     thread.wake();
 }
 
@@ -56,11 +57,17 @@ std::size_t Waitable::wake_waiters(SceInt32 result) {
     return wake_waiters_if([](ThreadState &) { return true; }, result);
 }
 
-void Waitable::queue(ThreadState &thread, const WaitRequest &request) {
+void Waitable::queue(ThreadState &thread, SceUInt32 type, const WaitRequest &request) {
     assert(!thread.linked());
     thread.request = request;
     thread.ender_result.reset();
-    thread.queued_priority = thread.get_priority();
+    {
+        const std::lock_guard<std::mutex> thread_lock(thread.thread_mutex);
+        // A new wait starts with no result, so a wake left over from an earlier one can't end it
+        thread.wait_target = { type, uid };
+        thread.wait_result.reset();
+        thread.queued_priority = thread.priority;
+    }
     waiter_added(thread);
     if (attr & SCE_KERNEL_ATTR_TH_PRIO)
         insert_by_priority(thread);
@@ -80,10 +87,33 @@ void Waitable::insert_by_priority(ThreadState &thread) {
     waiters.insert(pos, thread);
 }
 
+bool Waitable::try_requeue(ThreadState &thread, int priority, std::unique_lock<std::mutex> &thread_lock) {
+    const std::unique_lock<std::mutex> guard(mutex, std::try_to_lock);
+    if (!guard)
+        return false;
+    thread.set_priority(priority);
+    if (deleted)
+        return true;
+    thread.queued_priority = priority;
+    // A FIFO queue keeps its order, and the same priority still moves the thread behind its equals
+    if (attr & SCE_KERNEL_ATTR_TH_PRIO) {
+        waiters.remove(thread);
+        insert_by_priority(thread);
+    }
+    // Serving wakes other threads, so this thread's lock goes first
+    thread_lock.unlock();
+    serve();
+    return true;
+}
+
 void Waitable::unqueue(ThreadState &thread, SceInt32 result) {
     if (!thread.linked())
         return;
     waiters.remove(thread);
+    {
+        const std::lock_guard<std::mutex> thread_lock(thread.thread_mutex);
+        thread.wait_target = {};
+    }
     wait_ended(thread, result);
 }
 
@@ -120,13 +150,12 @@ SceInt32 Waitable::wait(std::unique_lock<std::mutex> &lock, ThreadState &thread,
     // A callback already pending leaves the timeout as it was
     if (callbacks && thread.has_pending_callbacks())
         return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
-    queue(thread, request);
-    const WaitTarget target{ type, uid };
+    queue(thread, type, request);
     SceInt32 result;
     // Ignore stray wakeups, like one left over from an earlier wait
     do {
         lock.unlock();
-        result = thread.wait(target, deadline);
+        result = thread.wait(deadline);
         lock.lock();
     } while (!thread.ender_result && result == SCE_KERNEL_OK);
     writeback_timeout(timeout, deadline);
@@ -1773,7 +1802,7 @@ void MsgPipe::waiter_added(ThreadState &thread) {
 }
 
 bool MsgPipe::queues_behind_head(const ThreadState &thread) const {
-    // A head that moved part of its transfer stays first against a newcomer send or receive
+    // A head that moved part of its transfer keeps the first place against any send or receive
     const WaitRequest &request = thread.wait_request();
     return (request.sender || request.receiver) && head_partial;
 }

@@ -32,6 +32,7 @@
 #include <cstring>
 #include <memory>
 #include <span>
+#include <thread>
 #include <utility>
 
 // The priority a thread created with priority runs at. The default range stands for the game's own.
@@ -455,34 +456,38 @@ SceInt32 ThreadState::delay_until(Deadline deadline, bool callbacks) {
 }
 
 SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
-    const auto take_signal = [this] {
-        const std::lock_guard<std::mutex> lock(thread_mutex);
-        return std::exchange(signal_pending, false);
-    };
     const Deadline deadline = deadline_from(timeout);
     SceInt32 r = callbacks ? run_callbacks() : SCE_KERNEL_OK;
-    // A signal sent before ends the wait at once, with the timeout as it was
-    while (r == SCE_KERNEL_OK && !take_signal()) {
+    while (r == SCE_KERNEL_OK) {
         {
-            // A signal wait sleeps with a callback pending, only a notify during the sleep ends it
             std::unique_lock<std::mutex> lock(thread_mutex);
-            r = sleep(lock, { wait_type(SCE_KERNEL_WAITTYPE_SIGNAL, callbacks), SCE_KERNEL_SIGNAL_WAIT_ID }, deadline);
+            // A signal sent before ends the wait at once, with the timeout as it was
+            if (std::exchange(signal_pending, false))
+                return SCE_KERNEL_OK;
+            // A signal wait sleeps with a callback pending, only a notify during the sleep ends it
+            wait_target = { wait_type(SCE_KERNEL_WAITTYPE_SIGNAL, callbacks), SCE_KERNEL_SIGNAL_WAIT_ID };
+            wait_result.reset();
+            r = sleep(lock, deadline);
         }
         writeback_timeout(timeout, deadline);
-        if (r == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
-            r = run_callbacks();
+        // A signal sent during the sleep ends it with 0, a notify runs the callbacks and waits again
+        if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
+            return r;
+        r = run_callbacks();
     }
     return r;
 }
 
 SceInt32 ThreadState::send_signal() {
-    {
-        const std::lock_guard<std::mutex> lock(thread_mutex);
-        if (signal_pending)
-            return SCE_KERNEL_ERROR_ALREADY_SENT;
-        signal_pending = true;
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    // Only a signal wait ends, and the signal it takes isn't kept. Any other wait goes on.
+    if (wait_target.id == SCE_KERNEL_SIGNAL_WAIT_ID) {
+        end_wait();
+        return SCE_KERNEL_OK;
     }
-    wake();
+    if (signal_pending)
+        return SCE_KERNEL_ERROR_ALREADY_SENT;
+    signal_pending = true;
     return SCE_KERNEL_OK;
 }
 
@@ -500,8 +505,10 @@ ThreadStatus ThreadState::shown_status() const {
 
 void ThreadState::set_ending(Ending how) {
     ending = how;
-    if (how != Ending::none)
+    if (how != Ending::none) {
         step_requested = false;
+        wait_target = {};
+    }
 }
 
 bool ThreadState::held() const {
@@ -572,15 +579,29 @@ SceInt32 ThreadState::wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_st
 
 SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(thread_mutex);
-    // A callback already pending ends a wait with callbacks at once, unless the deadline passed
-    if (!wait_result && (target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && callback_pending && std::chrono::steady_clock::now() < deadline)
-        wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
-    return sleep(lock, target, deadline);
+    wait_target = target;
+    wait_result.reset();
+    const SceInt32 result = wait(lock, deadline);
+    wait_target = {};
+    return result;
 }
 
-SceInt32 ThreadState::sleep(std::unique_lock<std::mutex> &lock, WaitTarget target, Deadline deadline) {
+SceInt32 ThreadState::wait(Deadline deadline) {
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    return wait(lock, deadline);
+}
+
+SceInt32 ThreadState::wait(std::unique_lock<std::mutex> &lock, Deadline deadline) {
+    // A callback already pending ends a wait with callbacks at once, unless the deadline passed
+    if (!wait_result && (wait_target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && callback_pending && std::chrono::steady_clock::now() < deadline) {
+        wait_target = {};
+        wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
+    }
+    return sleep(lock, deadline);
+}
+
+SceInt32 ThreadState::sleep(std::unique_lock<std::mutex> &lock, Deadline deadline) {
     const auto woken = [&] { return wait_over(); };
-    wait_target = target;
     update_status(ThreadStatus::waiting);
     if (deadline == Deadline::max())
         cv.wait(lock, woken);
@@ -589,8 +610,10 @@ SceInt32 ThreadState::sleep(std::unique_lock<std::mutex> &lock, WaitTarget targe
     // Before the call writes its result to the registers. A thread something holds goes on to its
     // holds, which keep it from its callbacks and its code.
     update_status(ThreadStatus::running);
-    wait_target = {};
     const std::optional<SceInt32> result = std::exchange(wait_result, std::nullopt);
+    // A timeout has no waker to clear the target
+    if (!result)
+        wait_target = {};
     if (exiting())
         return SCE_KERNEL_ERROR_THREAD_STOPPED;
     return result.value_or(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
@@ -608,6 +631,11 @@ SceInt32 ThreadState::run_callbacks() {
 
 void ThreadState::wake() {
     const std::lock_guard<std::mutex> lock(thread_mutex);
+    end_wait();
+}
+
+void ThreadState::end_wait() {
+    wait_target = {};
     // The first result ends the wait, a later one is dropped
     if (!wait_result)
         wait_result = SCE_KERNEL_OK;
@@ -624,8 +652,10 @@ bool ThreadState::notify_callback(Callback &cb, SceInt32 arg, SceUID notifier_id
     // Every notify reaches the owner, also one of a deleted callback that still runs, and ends a wait
     // with callbacks
     callback_pending = true;
-    if ((wait_target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && !wait_result)
+    if ((wait_target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && !wait_result) {
+        wait_target = {};
         wait_result = SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
+    }
     cv.notify_all();
     return true;
 }
@@ -793,7 +823,8 @@ SceKernelThreadInfo ThreadState::info() {
     // A thread whose kernel wait is over is READY until it goes on, and waits on nothing, like on a
     // Vita, where the waker ends the wait. A host wait ends with its host call and stays WAITING.
     const bool ready = status == ThreadStatus::waiting && !host_waiting && wait_over();
-    const WaitTarget reported = ready ? WaitTarget{} : wait_target;
+    // The target shows only while the thread sleeps WAITING, since on a Vita a wait stores both at once
+    const WaitTarget reported = status == ThreadStatus::waiting && !ready ? wait_target : WaitTarget{};
     info.status = ready ? SCE_KERNEL_THREAD_STATUS_READY : std::to_underlying(shown_status());
     info.waitType = reported.type;
     info.waitId = reported.id;
@@ -811,9 +842,33 @@ int ThreadState::get_priority() const {
 }
 
 int ThreadState::change_priority(int new_priority) {
-    const std::lock_guard<std::mutex> lock(thread_mutex);
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    const int old_priority = priority;
+    // A locked object makes the change let go of the thread and start over, which lets the
+    // object's holder go on
+    while (true) {
+        // The kernel's own objects, like the vblank event, have waiters too
+        const SceUID waited = wait_target.id;
+        Ref<Waitable> object = kernel.objects.find<Waitable>(waited);
+        if (!object)
+            object = kernel.kernel_objects.find<Waitable>(waited);
+        // A delay or no wait finds no object
+        if (!object) {
+            set_priority(new_priority);
+            break;
+        }
+        if (object->try_requeue(*this, new_priority, lock))
+            break;
+        lock.unlock();
+        std::this_thread::yield();
+        lock.lock();
+    }
+    return old_priority;
+}
+
+void ThreadState::set_priority(int new_priority) {
+    priority = new_priority;
     tls_slot(TLS_CURRENT_PRIORITY) = new_priority;
-    return std::exchange(priority, new_priority);
 }
 
 SceInt32 ThreadState::change_affinity_mask(SceInt32 new_affinity_mask) {
