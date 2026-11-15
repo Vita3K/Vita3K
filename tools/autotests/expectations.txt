@@ -220,7 +220,7 @@ event_callback_two_events       pass
 event_edges                     pass
 event_flag                      pass
 event_flag_delete_bits          pass
-event_flag_errors               fail     # closes are unimplemented and return 0
+event_flag_errors               pass
 event_flag_hold_callback_events pass
 event_flag_hold_callbacks       pass
 event_flag_hold_leak            pass
@@ -478,7 +478,7 @@ mutex_ceiling                   fail     # mutex priority ceilings
 mutex_ceiling_options           pass
 mutex_count_check_order         pass
 mutex_create_unmapped_options   fail     # the first page reads as mapped, so an option struct at 0x4 isn't refused
-mutex_errors                    fail     # closes are unimplemented and return 0, and an info with a NULL pointer gives 0x80020005
+mutex_errors                    pass
 mutex_owner_end_order           skip     # threads ignore their core and priority, so the waiters an ending owner hands its locks to run in host order
 mutex_owner_relock_waiters      pass
 mutex_recursive_partial_unlock_waiter pass
@@ -565,7 +565,7 @@ rwlock_attr_bits                pass
 rwlock_cancel_order             pass
 rwlock_cancel_wake_order        skip     # threads ignore their core and priority, so the order woken threads run in is a race
 rwlock_counts                   pass
-rwlock_errors                   fail     # closing unknown UIDs
+rwlock_errors                   pass
 rwlock_leaving_writer_other_writer pass
 rwlock_owner_end_mixed_queue    pass
 rwlock_owner_relock_waiters     pass
@@ -582,7 +582,7 @@ self_mask_change_yield          fail     # a self affinity change to a new mask 
 self_priority_drop              fail     # threads ignore their core and priority
 sema_call_error_order           fail     # semaphore calls on a mutex UID give other errors than the Vita's 0x8002000F
 sema_count_overflow             pass
-sema_errors                     fail     # closes are unimplemented and return 0
+sema_errors                     pass
 sema_head_leaves                fail     # a head that leaves by a priority drop doesn't let the next waiter take
 sema_mutex_edges                pass
 sema_poll_negative              pass
@@ -778,7 +778,7 @@ timer_cancel_with_set_pattern   fail     # event calls don't take timer UIDs
 timer_clear_mask_pattern        pass
 timer_delete_event              pass
 timer_edges                     pass
-timer_errors                    fail     # closes are unimplemented and return 0, and a create takes any attribute
+timer_errors                    fail     # a create takes any attribute
 timer_event_interval_zero       pass
 timer_event_replaced_armed      pass
 timer_event_schedule_offset     pass
