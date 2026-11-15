@@ -568,8 +568,6 @@ private:
     void copy_ring_to_pieces(MsgPipeReceiver &receiver, SceSize n);
     // Puts as much of the sender's rest into the pipe as its mode allows
     void fill(MsgPipeSender &sender);
-    // Moves the pipe's bytes to the receiver, up to what it still wants
-    void drain(MsgPipeReceiver &receiver);
     // Returns the bytes a receive can get at once, the pipe's and those the waiting senders still have
     SceSize available() const;
     // Returns whether a new call with request goes ahead of the calls already waiting on its side
