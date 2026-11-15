@@ -318,10 +318,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         const SceGxmColorBaseFormat surface_format = gxm::get_base_format(context.record.color_surface.colorFormat);
         const bool stored_rawly = state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(surface_format);
         filterable_surface = !stored_rawly && !color::is_write_surface_non_linearity_filtering(surface_format);
-        if (filterable_surface && (state.res_multiplier > 1.0f) && !context.color_attachment_mipmaps_ready) {
-            generate_surface_mipmaps(static_cast<GLuint>(texture_as_surface), state.res_multiplier);
-            context.color_attachment_mipmaps_ready = true;
-        }
+        context.self_sampling_needs_mipmaps = filterable_surface && (state.res_multiplier > 1.0f);
 
         vector_utils::push_if_not_exists(context.self_sampling_indices, index);
     } else {

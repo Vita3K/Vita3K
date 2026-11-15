@@ -91,7 +91,7 @@ struct GLContext : public renderer::Context {
     shader::RenderFragUniformBlock current_frag_render_info{};
 
     std::vector<size_t> self_sampling_indices;
-    bool color_attachment_mipmaps_ready = false;
+    bool self_sampling_needs_mipmaps = false;
 
     explicit GLContext();
     ~GLContext() override = default;
