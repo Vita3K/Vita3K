@@ -22,9 +22,17 @@
 #include <util/log.h>
 
 #include <chrono>
+#include <cmath>
 
 namespace renderer::gl {
 static constexpr std::uint64_t CASTED_UNUSED_TEXTURE_PURGE_SECS = 40;
+
+void generate_surface_mipmaps(GLuint texture, float res_multiplier) {
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(std::ceil(std::log2(res_multiplier))));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+}
 
 GLSurfaceCache::GLSurfaceCache() = default;
 
@@ -167,7 +175,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             *stored_width = info.original_width;
         }
 
-        if (purpose == SurfaceTextureRetrievePurpose::READING
+        if (purpose != SurfaceTextureRetrievePurpose::WRITING
             && (base_format == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8 || info.format == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8)
             && base_format != info.format)
             // don't even try to match u8u8u8 with something else
@@ -227,6 +235,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             else if (info.srgb)
                 // a read keeps the encoding the surface was written with
                 surface_internal_format = GL_SRGB8_ALPHA8;
+            info.is_mipmap_dirty = true;
 
             bool store_rawly = false;
 
@@ -304,14 +313,14 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         if (!cache_probably_freed) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING)
                 info.swizzle = swizzle;
-            else if (purpose == SurfaceTextureRetrievePurpose::READING)
+            else if (purpose != SurfaceTextureRetrievePurpose::WRITING)
                 swizzle = info.swizzle;
         }
         if (!addr_in_range_of_cache) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
                 invalidated = true;
             }
-        } else if (purpose == SurfaceTextureRetrievePurpose::READING) {
+        } else if (purpose != SurfaceTextureRetrievePurpose::WRITING) {
             // If we read and it's still in range
             if (used_iterator != last_use_color_surface_index.end()) {
                 last_use_color_surface_index.erase(used_iterator);
@@ -323,6 +332,12 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 // We can't use this texture sadly :( If it uses for writing of course it will be gud gud
                 return 0;
             }
+
+            const auto prepare_sampling = [&](GLuint texture) {
+                if ((purpose == SurfaceTextureRetrievePurpose::SAMPLING) && (state.res_multiplier > 1.0f) && !color::is_write_surface_non_linearity_filtering(base_format))
+                    generate_surface_mipmaps(texture, state.res_multiplier);
+                return texture;
+            };
 
             bool castable = (info.pixel_stride == pixel_stride);
 
@@ -412,7 +427,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                                 }
 
                                 casted_vec[i]->last_used_time = current_time;
-                                return casted_vec[i]->texture[0];
+                                return prepare_sampling(casted_vec[i]->texture[0]);
                             } else {
                                 if (current_time - info.casted_textures[i]->last_used_time >= CASTED_UNUSED_TEXTURE_PURGE_SECS) {
                                     srgb_copies.erase(casted_vec[i]->texture[0]);
@@ -463,7 +478,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                     casted_info.last_used_time = current_time;
                     casted_vec.push_back(std::move(casted_info_unq));
 
-                    return casted_info.texture[0];
+                    return prepare_sampling(casted_info.texture[0]);
                 } else {
                     if (state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(info.format)) {
                         // Create a texture view
@@ -482,7 +497,12 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_expected_read_texture_view[0], GL_TEXTURE_2D,
                             0, 0, 0, 0, width, height, 1);
 
-                        return info.gl_expected_read_texture_view[0];
+                        return prepare_sampling(info.gl_expected_read_texture_view[0]);
+                    }
+
+                    if (info.is_mipmap_dirty && (purpose == SurfaceTextureRetrievePurpose::SAMPLING)) {
+                        prepare_sampling(info.gl_texture[0]);
+                        info.is_mipmap_dirty = false;
                     }
 
                     return info.gl_texture[0];
@@ -498,6 +518,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
                 last_use_color_surface_index.push_back(ite->first);
                 info.is_ping_pong_dirty = true;
+                info.is_mipmap_dirty = true;
                 return info.gl_texture[0];
             } else {
                 return 0;
@@ -521,6 +542,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     info_added->swizzle = swizzle;
     info_added->flags = 0;
     info_added->is_ping_pong_dirty = true;
+    info_added->is_mipmap_dirty = true;
 
     if (!info_added->gl_texture.init(glGenTextures, glDeleteTextures)) {
         LOG_ERROR("Failed to initialise color surface texture!");

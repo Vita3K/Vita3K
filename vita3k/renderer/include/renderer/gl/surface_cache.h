@@ -41,6 +41,7 @@ struct GLRenderTarget;
 enum SurfaceTextureRetrievePurpose {
     READING,
     WRITING,
+    SAMPLING,
 };
 
 struct GLSurfaceCacheInfo {
@@ -77,6 +78,7 @@ struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
     bool is_ping_pong_dirty;
     // written with gamma correction, stored as sRGB
     bool srgb = false;
+    bool is_mipmap_dirty;
     GLObjectArray<1> gl_texture;
     GLObjectArray<1> gl_ping_pong_texture;
     GLObjectArray<1> gl_expected_read_texture_view;
@@ -98,6 +100,8 @@ struct GLDepthStencilSurfaceCacheInfo : public GLSurfaceCacheInfo {
     std::int32_t sample_texture_width = 0;
     std::int32_t sample_texture_height = 0;
 };
+
+void generate_surface_mipmaps(GLuint texture, float res_multiplier);
 
 class GLSurfaceCache {
 private:

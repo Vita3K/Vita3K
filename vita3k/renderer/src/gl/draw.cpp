@@ -33,6 +33,8 @@
 
 #include <spdlog/fmt/bin_to_hex.h>
 
+#include <cmath>
+
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     R_PROFILE(__func__);
@@ -201,6 +203,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     // must match the format used by the surface cache
     frag_ublock.is_srgb = (context.record.color_surface.gamma && renderer.surface_cache.support_srgb_decode && surface_format == GL_RGBA8) ? 1.0f : 0.0f;
     frag_ublock.res_multiplier = renderer.res_multiplier;
+    frag_ublock.surface_lod = std::log2(renderer.res_multiplier);
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)
@@ -323,6 +326,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     } else {
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
     }
+    context.color_attachment_mipmaps_ready = false;
 
     restore_state();
 
