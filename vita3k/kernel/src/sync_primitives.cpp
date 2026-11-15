@@ -25,16 +25,6 @@
 #include <algorithm>
 #include <cassert>
 
-// Whether a queued message pipe transfer moved part of its bytes, which keeps it at the head of its
-// queue
-static bool keeps_place(const WaitRequest &request) {
-    if (request.sender)
-        return request.sender->keeps_place();
-    if (request.receiver)
-        return request.receiver->keeps_place();
-    return false;
-}
-
 // Whether a waiter with request queues by priority on an object with attr. A message pipe orders
 // each side by its own bit.
 static bool by_priority(SceUInt32 attr, const WaitRequest &request) {
@@ -58,7 +48,7 @@ bool Waitable::first_for(int priority) const {
 
 void Waitable::wake_waiter(ThreadState &thread, SceInt32 result) {
     thread.ender_result = result;
-    unqueue(thread);
+    unqueue(thread, result);
     thread.wake();
 }
 
@@ -71,27 +61,32 @@ void Waitable::queue(ThreadState &thread, const WaitRequest &request) {
     thread.request = request;
     thread.ender_result.reset();
     thread.queued_priority = thread.get_priority();
+    waiter_added(thread);
     auto pos = waiters.end();
-    if (by_priority(attr, request)) {
+    if (attr & SCE_KERNEL_ATTR_TH_PRIO) {
         // Lower value is higher priority, equal priorities keep FIFO order
         pos = waiters.begin();
         while (pos != waiters.end() && pos->queued_priority <= thread.queued_priority)
             ++pos;
         // A thread whose place is the front goes right behind a head that keeps its place, so it
         // lands ahead of the threads already behind that head, whatever their priority
-        if (pos == waiters.begin() && pos != waiters.end() && keeps_place(pos->wait_request()))
+        if (pos == waiters.begin() && pos != waiters.end() && queues_behind_head(thread))
             ++pos;
     }
     waiters.insert(pos, thread);
 }
 
-void Waitable::unqueue(ThreadState &thread) {
+void Waitable::unqueue(ThreadState &thread, SceInt32 result) {
+    if (!thread.linked())
+        return;
     waiters.remove(thread);
+    wait_ended(thread, result);
 }
 
 Waitable::Waitable(SceUInt32 attr, const char *name)
     : KernelObject(name)
-    , attr(attr) {}
+    , attr(attr)
+    , openable(attr & SCE_KERNEL_ATTR_OPENABLE) {}
 
 void Waitable::on_delete(SceUID deleter) {
     const std::lock_guard<std::mutex> guard(mutex);
@@ -139,8 +134,7 @@ SceInt32 Waitable::wait(std::unique_lock<std::mutex> &lock, ThreadState &thread,
             return SCE_KERNEL_ERROR_THREAD_STOPPED;
         return *ended;
     }
-    unqueue(thread);
-    wait_end(thread, result);
+    unqueue(thread, result);
     serve();
     return result;
 }
@@ -347,7 +341,7 @@ void Event::fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
 
     pattern |= set_pattern;
     last_user_data = user_data;
-    serve();
+    Event::serve();
 
     // A pulse clears its bits once the waiters had them, also the ones set before it, and keeps its
     // user data
@@ -1492,7 +1486,7 @@ void EventFlag::end_waits(SceUID) {
     holds = 0;
 }
 
-void EventFlag::wait_end(ThreadState &thread, SceInt32 result) {
+void EventFlag::wait_ended(ThreadState &thread, SceInt32 result) {
     if (result != SCE_KERNEL_ERROR_WAIT_TIMEOUT)
         return;
     if (thread.wait_request().out_pattern)
@@ -1687,8 +1681,8 @@ SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
 // * Msg Pipe  *
 // *************
 
-MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size)
-    : WithUidClass(attr, name)
+MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size, SceUID creator)
+    : WithUidClass(attr, name, 0, system_event_user_data(creator))
     // A pipe's buffer is a whole number of 4 KiB pages
     , data_buffer(align(buf_size, 0x1000)) {}
 
@@ -1709,8 +1703,69 @@ static bool is_msg_pipe_mode(SceUInt32 wait_mode) {
     return !(wait_mode & ~(SCE_KERNEL_MSG_PIPE_MODE_FULL | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT | SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE));
 }
 
-void MsgPipe::end_waits(SceUID) {
-    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
+void MsgPipe::end_waits(SceUID deleter) {
+    data_buffer.Clear();
+    waiting_side = Side::none;
+    side_count = 0;
+    head_partial = false;
+    Event::end_waits(deleter);
+}
+
+void MsgPipe::waiter_added(ThreadState &thread) {
+    const WaitRequest &request = thread.wait_request();
+    if (!request.sender && !request.receiver)
+        return;
+    if (goes_first(request, thread.queued_priority))
+        head_partial = request.sender ? request.sender->keeps_place() : request.receiver->keeps_place();
+    const bool priority = by_priority(attr, request);
+    attr = (attr & ~SCE_KERNEL_ATTR_TH_PRIO) | (priority ? SCE_KERNEL_ATTR_TH_PRIO : 0);
+    waiting_side = request.sender ? Side::senders : Side::receivers;
+    ++side_count;
+}
+
+bool MsgPipe::queues_behind_head(const ThreadState &thread) const {
+    // A head that moved part of its transfer stays first against a newcomer send or receive
+    const WaitRequest &request = thread.wait_request();
+    return (request.sender || request.receiver) && head_partial;
+}
+
+void MsgPipe::wait_ended(ThreadState &thread, SceInt32) {
+    const WaitRequest &request = thread.wait_request();
+    if ((!request.sender && !request.receiver) || waiting_side == Side::none)
+        return;
+    head_partial = false;
+    if (waiting_side == Side::senders) {
+        if (const ThreadState *head = first_sender())
+            head_partial = head->wait_request().sender->keeps_place();
+    } else if (ThreadState *head = first_receiver()) {
+        MsgPipeReceiver &receiver = *head->wait_request().receiver;
+        drain(receiver);
+        head_partial = receiver.left != 0 && receiver.keeps_place();
+    }
+    if (data_buffer.Empty())
+        pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
+    if (--side_count == 0)
+        waiting_side = Side::none;
+}
+
+SceInt32 MsgPipe::transfer_result(SceInt32 result, const MsgPipeTransfer &transfer, bool sending) {
+    if (result == SCE_KERNEL_ERROR_THREAD_STOPPED)
+        return result;
+    const SceUInt32 moved = transfer.total - transfer.left;
+    SceUInt32 bits = moved ? (sending ? SCE_KERNEL_EVENT_IN : SCE_KERNEL_EVENT_OUT) : 0;
+    if (result < 0)
+        bits |= SCE_KERNEL_EVENT_ERROR;
+    if (sending && moved && !data_buffer.Empty())
+        bits |= SCE_KERNEL_EVENT_DATA_EXIST;
+    if (!sending && data_buffer.Empty())
+        pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
+    if (bits) {
+        const SceUInt64 data = static_cast<SceUInt32>(result)
+            | (static_cast<SceUInt64>(result < 0 ? ~0U : moved) << 32);
+        fire(bits, data, true);
+        notify_callbacks(bits);
+    }
+    return result;
 }
 
 // The size of all the pieces together
@@ -1837,8 +1892,11 @@ bool MsgPipe::give(MsgPipeSender &sender) {
         copy(sender, to, std::min(to.left, sender.left));
         to.report();
         // A FULL receive that still wants bytes stays the first one
-        if (to.full && to.left > 0)
+        if (to.full && to.left > 0) {
+            head_partial = to.keeps_place();
             break;
+        }
+        head_partial = false;
         wake_waiter(*receiver);
         if (sender.left == 0)
             break;
@@ -1860,8 +1918,11 @@ bool MsgPipe::take(MsgPipeReceiver &receiver) {
             break;
         fill(from);
         from.report();
-        if (!from.done())
+        if (!from.done()) {
+            head_partial = from.keeps_place();
             break;
+        }
+        head_partial = false;
         wake_waiter(*sender);
     }
     receiver.report();
@@ -1869,21 +1930,18 @@ bool MsgPipe::take(MsgPipeReceiver &receiver) {
 }
 
 void MsgPipe::serve() {
-    // From the head, each waiter moves what the pipe's bytes or room allow, up to the first that stays
+    if (waiting_side != Side::senders)
+        return;
     for (auto it = waiters.begin(); it != waiters.end();) {
         ThreadState &waiter = *it++;
-        const WaitRequest &request = waiter.wait_request();
-        if (MsgPipeReceiver *const receiver = request.receiver) {
-            drain(*receiver);
-            receiver->report();
-            if (!receiver->done())
-                return;
-        } else {
-            fill(*request.sender);
-            request.sender->report();
-            if (!request.sender->done())
-                return;
-        }
+        MsgPipeSender *const sender = waiter.wait_request().sender;
+        if (!sender)
+            continue;
+        fill(*sender);
+        sender->report();
+        if (!sender->done())
+            return;
+        head_partial = false;
         wake_waiter(waiter);
     }
 }
@@ -1893,7 +1951,7 @@ bool MsgPipe::goes_first(const WaitRequest &request, int priority) {
     if (!head)
         return true;
     // Lower value is higher priority, and nothing goes ahead of a head that moved part of its bytes
-    return by_priority(attr, request) && head->queued_priority > priority && !keeps_place(head->wait_request());
+    return by_priority(attr, request) && head->queued_priority > priority && !head_partial;
 }
 
 SceInt32 MsgPipe::receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size, SceUInt32 *timeout, bool callbacks) {
@@ -1925,17 +1983,20 @@ SceInt32 MsgPipe::receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mod
     const Deadline deadline = deadline_from(timeout);
     while (true) {
         if (const SceInt32 r = run_wait_callbacks(guard, thread, callbacks))
-            return r;
+            return transfer_result(r, receiver, false);
         // Don't take anything while other receivers are ahead in the queue. The size is written
         // after every attempt.
         const bool done = goes_first(request, thread.get_priority()) && take(receiver);
         receiver.report();
         // The callbacks notified meanwhile run also after a receive that got its bytes
         if (done)
-            return finish_wait(guard, thread, callbacks, SCE_KERNEL_OK);
+            return finish_wait(guard, thread, callbacks, transfer_result(SCE_KERNEL_OK, receiver, false));
+        // A receive that took the last bytes and waits for more leaves no data to report
+        if (data_buffer.Empty())
+            pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
         const SceInt32 result = Waitable::wait(guard, thread, type, request, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
-            return finish_wait(guard, thread, callbacks, result);
+            return finish_wait(guard, thread, callbacks, transfer_result(result, receiver, false));
     }
 }
 
@@ -1968,17 +2029,17 @@ SceInt32 MsgPipe::send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, 
     const Deadline deadline = deadline_from(timeout);
     while (true) {
         if (const SceInt32 r = run_wait_callbacks(guard, thread, callbacks))
-            return r;
+            return transfer_result(r, sender, true);
         // Don't send anything while other senders are ahead in the queue. The size is written
         // after every attempt.
         const bool done = goes_first(request, thread.get_priority()) && give(sender);
         sender.report();
         // The callbacks notified meanwhile run also after a send that moved its bytes
         if (done)
-            return finish_wait(guard, thread, callbacks, SCE_KERNEL_OK);
+            return finish_wait(guard, thread, callbacks, transfer_result(SCE_KERNEL_OK, sender, true));
         const SceInt32 result = Waitable::wait(guard, thread, type, request, deadline, timeout);
         if (result != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
-            return finish_wait(guard, thread, callbacks, result);
+            return finish_wait(guard, thread, callbacks, transfer_result(result, sender, true));
     }
 }
 
@@ -1996,8 +2057,8 @@ SceInt32 MsgPipe::try_receive(ThreadState &thread, MemState &mem, SceUInt32 wait
     // Behind the receivers already waiting, or short of bytes for all of a FULL receive, it fails
     // without writing a size
     if (!goes_first({ .receiver = &receiver }, thread.get_priority()) || (receiver.full && receiver.total > available()))
-        return SCE_KERNEL_ERROR_MSG_PIPE_EMPTY;
-    return take(receiver) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_EMPTY;
+        return transfer_result(SCE_KERNEL_ERROR_MSG_PIPE_EMPTY, receiver, false);
+    return transfer_result(take(receiver) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_EMPTY, receiver, false);
 }
 
 SceInt32 MsgPipe::try_send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size) {
@@ -2014,8 +2075,8 @@ SceInt32 MsgPipe::try_send(ThreadState &thread, MemState &mem, SceUInt32 wait_mo
     // Behind the senders already waiting, or short of room for all of a FULL send, it fails without
     // writing a size
     if (!goes_first({ .sender = &sender }, thread.get_priority()) || (sender.full && sender.total > data_buffer.Free()))
-        return SCE_KERNEL_ERROR_MSG_PIPE_FULL;
-    return give(sender) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_FULL;
+        return transfer_result(SCE_KERNEL_ERROR_MSG_PIPE_FULL, sender, true);
+    return transfer_result(give(sender) ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_MSG_PIPE_FULL, sender, true);
 }
 
 SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads) {
@@ -2023,17 +2084,15 @@ SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receiv
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
 
-    SceUInt32 senders = 0;
-    SceUInt32 receivers = 0;
-    for (auto it = waiters.begin(); it != waiters.end();) {
-        ThreadState &waiter = *it++;
-        if (waiter.wait_request().sender)
-            ++senders;
-        else
-            ++receivers;
-        wake_waiter(waiter, SCE_KERNEL_ERROR_WAIT_CANCEL);
-    }
+    const SceUInt32 senders = waiting_side == Side::senders ? side_count : 0;
+    const SceUInt32 receivers = waiting_side == Side::receivers ? side_count : 0;
+    wake_waiters_if([](ThreadState &waiter) {
+        const WaitRequest &request = waiter.wait_request();
+        return request.sender || request.receiver;
+    },
+        SCE_KERNEL_ERROR_WAIT_CANCEL);
     data_buffer.Clear();
+    pattern &= ~SCE_KERNEL_EVENT_DATA_EXIST;
 
     if (num_send_wait_threads)
         *num_send_wait_threads = senders;
@@ -2054,12 +2113,7 @@ SceInt32 MsgPipe::info(SceKernelMppInfo &info) const {
     info.attr = attr;
     info.bufSize = static_cast<SceInt32>(data_buffer.Capacity());
     info.freeSize = static_cast<SceInt32>(data_buffer.Free());
-    SceInt32 senders = 0;
-    for (const ThreadState &waiter : waiters) {
-        if (waiter.wait_request().sender)
-            ++senders;
-    }
-    info.numSendWaitThreads = senders;
-    info.numReceiveWaitThreads = static_cast<SceInt32>(waiters.size()) - senders;
+    info.numSendWaitThreads = waiting_side == Side::senders ? static_cast<SceInt32>(waiters.size()) : 0;
+    info.numReceiveWaitThreads = waiting_side == Side::receivers ? static_cast<SceInt32>(waiters.size()) : 0;
     return SCE_KERNEL_OK;
 }

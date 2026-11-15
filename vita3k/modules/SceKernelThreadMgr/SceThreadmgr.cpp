@@ -76,7 +76,9 @@ static int copy_guest_string(const MemState &mem, Ptr<const char> str, std::span
 static EventRef find_event(EmuEnvState &emuenv, SceUID event_id) {
     if (SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
         return event;
-    return emuenv.kernel.objects.find<Timer>(event_id);
+    if (TimerRef timer = emuenv.kernel.objects.find<Timer>(event_id))
+        return timer;
+    return emuenv.kernel.objects.find<MsgPipe>(event_id);
 }
 
 // Waits on a simple event or a timer, which are both events.

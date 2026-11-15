@@ -136,7 +136,8 @@ cond_mutex_cancel_during_wait   pass
 cond_mutex_delete               pass
 cond_mutex_delete_wakes         fail     # a mutex delete ends its conditions' waits only at their timeout
 cond_owner_end_relock           pass
-cond_relock_callback_notify     fail     # threads ignore their core and priority, so a notified relocker above the notifier runs its callback after the notifier's next line
+cond_relock_callback_notify     pass
+cond_relock_callback_preempt    skip     # threads ignore their core and priority, so whether a notified relocker above the notifier runs its callback before the notifier's next line is a race
 cond_relock_cancel_mutex        pass
 cond_relock_notify_at_once      skip     # threads ignore their core and priority, so whether the notified heavy relocker already runs when the main thread reads its status is a race
 cond_relock_owned_cancel        pass
@@ -397,27 +398,29 @@ module_start_vfp                pass
 module_text_padding             fail     # the app's code isn't a memory block
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
-msgpipe_async_partial_receive   fail     # message pipe calls with DONT_WAIT finish at once like a try instead of in the background, and a pipe isn't an event
-msgpipe_async_pending_limit     fail     # message pipe calls with DONT_WAIT FULL finish at once instead of in the background, and a pipe isn't an event
-msgpipe_async_piece_error       fail     # DONT_WAIT FULL sends return their error at once instead of in an error event, and a pipe isn't an event
-msgpipe_async_wakes_receiver    fail     # a DONT_WAIT FULL send finishes at once like a try and writes its size, and a pipe isn't an event
+msgpipe_async_partial_receive   fail     # message pipe calls with DONT_WAIT finish at once like a try instead of in the background
+msgpipe_async_pending_limit     fail     # message pipe calls with DONT_WAIT FULL finish at once instead of in the background
+msgpipe_async_piece_error       fail     # DONT_WAIT FULL sends return their error at once instead of in an error event
+msgpipe_async_wakes_receiver    fail     # a DONT_WAIT FULL send finishes at once like a try and writes its size
 msgpipe_async_wrong_uid         fail     # a DONT_WAIT FULL send checks the UID before it returns
-msgpipe_auto_reset_data_exist   fail     # a pipe isn't an event, and sceKernelWaitMultipleEvents
+msgpipe_auto_reset_data_exist   fail     # sceKernelWaitMultipleEvents
 msgpipe_callback_partial        pass
 msgpipe_callback_rejoin_order   pass
-msgpipe_cancel_data_exist       fail     # a pipe isn't an event
+msgpipe_cancel_data_exist       pass
 msgpipe_check_order             fail     # a count 0 vector send to an unknown or deleted pipe gives 0x8002000F, not 0x80028221
 msgpipe_check_order_null        crash    # a send with mode 0x200 and a NULL buffer crashes Vita3K
 msgpipe_create_types            pass
+msgpipe_data_exist_while_receive_waits pass
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
-msgpipe_event_before_callbacks  fail     # a pipe isn't an event
+msgpipe_event_before_callbacks  pass
+msgpipe_event_waiter_ahead_of_partial pass
 msgpipe_failed_sizes            pass
-msgpipe_info_event_waiter       fail     # a pipe isn't an event, and its info has no waiter attribute bit
-msgpipe_mixed_queue             fail     # a pipe isn't an event, and its info has no waiter attribute bit
+msgpipe_info_event_waiter       pass
+msgpipe_mixed_queue             pass
 msgpipe_mixed_sides_sender_order fail     # a send to two waiting DONT_REMOVE receives completes only the first
 msgpipe_modes                   pass
-msgpipe_open_close_bits         fail     # a pipe isn't an event, and an opened UID doesn't keep the pipe alive after the creating UID's delete
+msgpipe_open_close_bits         fail     # an opened UID doesn't keep the pipe alive after the creating UID's delete
 msgpipe_order                   pass
 msgpipe_partial_head_order      pass
 msgpipe_partial_head_rejoin     fail     # no requeue on a priority change
@@ -429,12 +432,13 @@ msgpipe_receive_spans_senders   pass
 msgpipe_receiver_leaves         pass
 msgpipe_receiver_requeue        fail     # no requeue on a priority change
 msgpipe_receivers_serve_three   pass
+msgpipe_rejoin_untouched_head   pass
 msgpipe_ring_wrap               pass
 msgpipe_sender_head_leaves      pass
 msgpipe_sender_jump_ahead       pass
 msgpipe_sender_mix              pass
 msgpipe_sender_requeue          fail     # no requeue on a priority change
-msgpipe_sync_events             fail     # a pipe isn't an event
+msgpipe_sync_events             pass
 msgpipe_try_empty_vectors       pass
 msgpipe_try_receive_senders     pass
 msgpipe_vector_waiters          pass
@@ -443,7 +447,7 @@ msgpipe_waits                   pass
 msgpipe_wake_state              skip     # threads ignore their core and priority, so whether the woken waiter ran before its status is read is a race
 msgpipe_wake_time_left          skip     # a pipe waiter writes its own time left once it runs, and threads ignore their core and priority, so whether it is written right after the wake is a race
 msgpipe_zero_bytes              pass
-msgpipe_zero_pattern_wait       fail     # a pipe isn't an event
+msgpipe_zero_pattern_wait       pass
 mspace                          fail     # sceClib memory space info
 multi_events                    fail     # waiting on several events
 multi_events_and_delete         fail     # sceKernelWaitMultipleEvents, deleted events and the wait type and UID
@@ -452,7 +456,7 @@ multi_events_callback_copies    fail     # sceKernelWaitMultipleEvents
 multi_events_cancel_after_end   fail     # sceKernelWaitMultipleEvents
 multi_events_errors             fail     # waiting on several events with unknown UIDs
 multi_events_final_check        fail     # sceKernelWaitMultipleEvents
-multi_events_pipe               fail     # sceKernelWaitMultipleEvents, and a pipe isn't an event
+multi_events_pipe               fail     # sceKernelWaitMultipleEvents
 multi_events_plain_mix          fail     # sceKernelWaitMultipleEvents
 multi_events_requeue            fail     # sceKernelWaitMultipleEvents
 multi_events_results_past       fail     # sceKernelWaitMultipleEvents

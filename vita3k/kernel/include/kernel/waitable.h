@@ -33,9 +33,10 @@ public:
     // Returns the error for a name the guest can't use, or 0.
     static SceInt32 check_name(const char *name, SceUInt32 attr);
 
-    const SceUInt32 attr;
+    // The attributes given at create, guarded by the lock. A message pipe rewrites its order bit.
+    SceUInt32 attr;
 
-    bool is_openable() const override { return attr & SCE_KERNEL_ATTR_OPENABLE; }
+    bool is_openable() const override { return openable; }
     // Locks the object, marks it deleted and runs end_waits()
     void on_delete(SceUID deleter) final;
 
@@ -50,15 +51,6 @@ protected:
         return guard;
     }
 
-    // Ends the waits on the object when the thread deleter deletes it, with the lock held.
-    virtual void end_waits(SceUID deleter) {}
-
-    // Wakes the waiters that can now get what they wait for, in queue order, with the lock held.
-    virtual void serve() {}
-
-    // Runs when a waiter leaves the queue on its own with result, before serve().
-    virtual void wait_end(ThreadState &thread, SceInt32 result) {}
-
     // Runs the pending callbacks of a wait with callbacks and returns why it must end, or 0.
     [[nodiscard]] SceInt32 run_wait_callbacks(std::unique_lock<std::mutex> &lock, ThreadState &thread, bool callbacks);
 
@@ -72,8 +64,8 @@ protected:
     // The queue methods are called with the lock held
     // Queues thread with request, which its wakers read.
     void queue(ThreadState &thread, const WaitRequest &request);
-    // Takes thread off the queue if it is still on it.
-    void unqueue(ThreadState &thread);
+    // Takes thread off the queue with result if it is still on it.
+    void unqueue(ThreadState &thread, SceInt32 result);
     // Returns the first waiter, or null.
     ThreadState *first_waiter();
     // Returns whether a new waiter of this priority would be first, ahead of every waiter.
@@ -87,10 +79,23 @@ protected:
     // Ends the wait of every waiter with result and returns how many.
     std::size_t wake_waiters(SceInt32 result = SCE_KERNEL_OK);
 
+    // The hooks of each class, in the order a wait reaches them, all called with the lock held
+    // Runs before thread is linked into the queue.
+    virtual void waiter_added(ThreadState &thread) {}
+    // Returns whether thread queues behind the head whatever its priority.
+    virtual bool queues_behind_head(const ThreadState &thread) const { return false; }
+    // Runs after thread left the queue with result, whether woken or leaving on its own.
+    virtual void wait_ended(ThreadState &thread, SceInt32 result) {}
+    // Wakes the waiters that can now get what they wait for, in queue order.
+    virtual void serve() {}
+    // Ends the waits on the object when the thread deleter deletes it.
+    virtual void end_waits(SceUID deleter) {}
+
     // The waiting threads in queue order, borrowed, guarded by the lock. Only queue() links one.
     IntrusiveList<ThreadState> waiters;
 
 private:
+    const bool openable;
     mutable std::mutex mutex;
     bool deleted = false;
 };

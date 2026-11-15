@@ -398,7 +398,7 @@ private:
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
     // Gives a wait that timed out the flag's bits and gives back its hold.
-    void wait_end(ThreadState &thread, SceInt32 result) override;
+    void wait_ended(ThreadState &thread, SceInt32 result) override;
     // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
     void drop_hold();
     // Makes thread the holder and lists the flag in what it holds. The lock must be held.
@@ -524,10 +524,10 @@ struct MsgPipeReceiver : MsgPipeTransfer {
     MsgPipeReceiver(MemState &mem, std::span<const MsgPipeVector> pieces, SceSize *size, SceSize total, bool full, bool peek);
 };
 
-class MsgPipe final : public WithUidClass<Waitable, UidClass::msg_pipe> {
+class MsgPipe final : public WithUidClass<Event, UidClass::msg_pipe> {
     friend class Ref<MsgPipe>;
 
-    MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size);
+    MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size, SceUID creator);
 
 public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
@@ -546,6 +546,10 @@ public:
     SceInt32 info(SceKernelMppInfo &info) const;
 
 private:
+    void waiter_added(ThreadState &thread) override;
+    bool queues_behind_head(const ThreadState &thread) const override;
+    void wait_ended(ThreadState &thread, SceInt32 result) override;
+    SceInt32 transfer_result(SceInt32 result, const MsgPipeTransfer &transfer, bool sending);
     void end_waits(SceUID deleter) override;
     // Carries on the waiters' transfers from the head, up to the first that doesn't end
     void serve() override;
@@ -572,6 +576,14 @@ private:
 
     // Guarded by the lock. Senders and receivers wait in the one queue.
     ByteRingBuffer data_buffer;
+    enum class Side {
+        none,
+        senders,
+        receivers,
+    };
+    Side waiting_side = Side::none;
+    SceUInt32 side_count = 0;
+    bool head_partial = false;
 };
 
 using MsgPipeRef = Ref<MsgPipe>;
