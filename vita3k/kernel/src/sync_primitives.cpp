@@ -822,6 +822,11 @@ SceInt32 Mutex::try_take(MemState &mem, ThreadState &thread, SceInt32 count) {
     return SCE_KERNEL_OK;
 }
 
+void Mutex::count_failed_take(MemState &mem) {
+    if (lightweight())
+        ++workarea.get(mem)->waitCount;
+}
+
 void Mutex::update_workarea(MemState &mem) {
     if (!lightweight())
         return;
@@ -852,6 +857,7 @@ SceInt32 Mutex::acquire(MemState &mem, ThreadState &thread, SceInt32 count, SceU
             r = try_take(mem, thread, count);
             break;
         }
+        count_failed_take(mem);
         r = Waitable::wait(guard, thread, type, { .count = count }, deadline, timeout);
         if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
             r = finish_wait(guard, thread, callbacks, r);
@@ -883,6 +889,7 @@ SceInt32 Mutex::relock(MemState &mem, ThreadState &thread, bool callbacks) {
             r = try_take(mem, thread, 1);
             break;
         }
+        count_failed_take(mem);
         r = Waitable::wait(guard, thread, type, { .count = 1 }, Deadline::max(), nullptr);
         if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK) {
             // Only a delete runs the callbacks notified during the wait
@@ -920,9 +927,13 @@ SceInt32 Mutex::release(MemState &mem, ThreadState &thread, SceInt32 unlock_coun
         return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF : SCE_KERNEL_ERROR_MUTEX_UNLOCK_UDF;
 
     lock_count -= unlock_count;
-    if (lock_count == 0)
+    if (lock_count == 0) {
         clear_owner();
-    serve();
+        serve();
+        // A hand over leaves the number of the other waiters as a lightweight mutex's wait count
+        if (owner && lightweight())
+            workarea.get(mem)->waitCount = static_cast<std::uint32_t>(waiters.size());
+    }
     update_workarea(mem);
 
     return SCE_KERNEL_OK;

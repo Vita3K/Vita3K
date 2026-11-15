@@ -293,6 +293,8 @@ private:
     void serve() override;
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
     void update_workarea(MemState &mem);
+    // Raises a lightweight mutex's wait count for a lock that found it owned. The lock must be held.
+    void count_failed_take(MemState &mem);
 };
 
 class LwMutex final : public WithUidClass<Mutex, UidClass::lw_mutex> {

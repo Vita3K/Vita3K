@@ -787,7 +787,8 @@ struct SceKernelLMOption {
 
 struct SceKernelLwMutexWork {
     std::uint32_t owner;
-    std::uint32_t unknown0;
+    // Not 0 tells an unlock to go to the kernel
+    std::uint32_t waitCount;
     std::uint32_t lockCount;
     std::uint32_t attr;
     SceUID uid;
