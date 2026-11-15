@@ -1089,11 +1089,11 @@ void ControlsDialog::refresh_controller_tabs() {
         auto &tab = m_ctrl_tabs[i];
         tab.connected = false;
         tab.port = -1;
-        tab.guid = {};
+        tab.instance_id = 0;
         tab.type = SDL_GAMEPAD_TYPE_STANDARD;
     }
 
-    for (const auto &[guid, controller] : ctrl.controllers) {
+    for (const auto &[instance_id, controller] : ctrl.controllers) {
         const int port = controller.port;
         if (port < 0 || port >= MAX_CONTROLLERS)
             continue;
@@ -1101,7 +1101,7 @@ void ControlsDialog::refresh_controller_tabs() {
         auto &tab = m_ctrl_tabs[port];
         tab.connected = true;
         tab.port = port;
-        tab.guid = guid;
+        tab.instance_id = instance_id;
         tab.type = SDL_GetGamepadType(controller.controller.get());
         const QString device_name = QString::fromUtf8(controller.name);
         tab.lbl_summary->setText(tr("Connected to %1. Use Bindings to remap controls or Settings for shared controller options.").arg(device_name));
@@ -1238,7 +1238,7 @@ bool ControlsDialog::handle_sdl_event(const SDL_Event &event) {
     SDL_JoystickID active_gamepad_id = 0;
     {
         const std::lock_guard<std::mutex> lock(m_emuenv.ctrl.mutex);
-        const auto it = m_emuenv.ctrl.controllers.find(tab.guid);
+        const auto it = m_emuenv.ctrl.controllers.find(tab.instance_id);
         if (it == m_emuenv.ctrl.controllers.end() || !it->second.controller || !SDL_GamepadConnected(it->second.controller.get())) {
             cancel_controller_capture();
             return false;

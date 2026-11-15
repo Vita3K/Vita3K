@@ -26,6 +26,9 @@
 #include <touch/functions.h>
 #include <util/log.h>
 
+#include <cmath>
+#include <iterator>
+
 void update_keyboard_state(EmuEnvState &emuenv, const std::function<bool(input::PhysicalKeyCode)> &key_held) {
     const auto &cfg = emuenv.cfg;
     const auto is_pressed = [&](input::PhysicalKeyCode primary, input::PhysicalKeyCode alternate) {
@@ -115,7 +118,7 @@ static int reserve_port(CtrlState &state) {
 }
 
 SceCtrlExternalInputMode get_type_of_controller(CtrlState &state, int port) {
-    for (const auto &[guid, controller] : state.controllers) {
+    for (const auto &[_, controller] : state.controllers) {
         if (controller.port == port) {
             const auto type = SDL_GetGamepadType(controller.controller.get());
             return (type == SDL_GAMEPAD_TYPE_PS4) || (type == SDL_GAMEPAD_TYPE_PS5) ? SCE_CTRL_TYPE_DS4 : SCE_CTRL_TYPE_DS3;
@@ -145,6 +148,12 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     // Add new controllers
     int num_gamepads = 0;
     const auto gamepads = SDL_GetGamepads(&num_gamepads);
+    if (gamepads == nullptr) {
+        LOG_WARN("Failed to enumerate gamepads: {}", SDL_GetError());
+        state.has_motion_support = found_gyro && found_accel;
+        return;
+    }
+
     for (int gamepad_index = 0; gamepad_index < num_gamepads; ++gamepad_index) {
         const auto gamepad_id = gamepads[gamepad_index];
         if (state.controllers_num >= SCE_CTRL_MAX_WIRELESS_NUM) {
@@ -158,8 +167,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
             continue;
 #endif
 
-        const SDL_GUID guid = SDL_GetJoystickGUIDForID(gamepad_id);
-        if (!state.controllers.contains(guid)) {
+        if (!state.controllers.contains(gamepad_id)) {
             Controller new_controller;
             new_controller.port = reserve_port(state);
             if (new_controller.port == -1) { // Port not available
@@ -167,13 +175,18 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
             }
             const GamepadPtr controller(SDL_OpenGamepad(gamepad_id), SDL_CloseGamepad);
             if (controller == nullptr) {
+                state.free_ports[new_controller.port] = true;
+                LOG_WARN("Failed to open gamepad {}: {}", gamepad_id, SDL_GetError());
                 continue;
             }
             auto controller_name = SDL_GetGamepadName(controller.get());
             if (controller_name == nullptr) {
+                state.free_ports[new_controller.port] = true;
+                LOG_WARN("Failed to get the name of gamepad {}: {}", gamepad_id, SDL_GetError());
                 continue;
             }
             new_controller.controller = controller;
+            new_controller.instance_id = gamepad_id;
             SDL_SetGamepadPlayerIndex(controller.get(), new_controller.port);
             new_controller.name = controller_name;
 
@@ -186,17 +199,20 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
 
             new_controller.has_led = SDL_GetBooleanProperty(SDL_GetGamepadProperties(controller.get()), SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false);
             if (new_controller.has_led) {
-                auto &color = emuenv.cfg.controller_led_color;
-                if (!color.empty()) {
-                    color.resize(3);
-                    SDL_SetGamepadLED(controller.get(), color[0], color[1], color[2]);
+                const auto &color = emuenv.cfg.controller_led_color;
+                if (color.size() >= 3) {
+                    SDL_SetGamepadLED(
+                        controller.get(),
+                        static_cast<Uint8>(std::clamp(color[0], 0, 255)),
+                        static_cast<Uint8>(std::clamp(color[1], 0, 255)),
+                        static_cast<Uint8>(std::clamp(color[2], 0, 255)));
                 }
             }
 
             found_gyro |= new_controller.has_gyro;
             found_accel |= new_controller.has_accel;
 
-            state.controllers.emplace(guid, new_controller);
+            state.controllers.emplace(gamepad_id, new_controller);
             state.controllers_num++;
         }
     }
@@ -260,7 +276,13 @@ static float axis_to_axis(int16_t axis, const auto &mult) {
 
     const auto f = unsigned_axis / UINT16_MAX;
 
-    const auto output = std::clamp(((f * 2) - 1) * mult, -1.0f, 1.f);
+    constexpr float deadzone = 0.1f;
+    const auto centered = (f * 2) - 1;
+    if (std::abs(centered) <= deadzone)
+        return 0.0f;
+
+    const auto remapped = std::copysign((std::abs(centered) - deadzone) / (1.0f - deadzone), centered);
+    const auto output = std::clamp(remapped * mult, -1.0f, 1.f);
 
     return output;
 }
@@ -366,14 +388,17 @@ SceUInt32 ctrl_peek_buttons(EmuEnvState &emuenv, int port) {
 }
 
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext) {
+    CtrlState &state = emuenv.ctrl;
+    if (pData == nullptr || count == 0 || port < 0 || port >= static_cast<int>(std::size(state.last_vcount))) {
+        return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
+    }
+
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         const char *export_name = "sceCtrl*Buffer*";
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
 
     memset(pData, 0, sizeof(SceCtrlData2) * count);
-
-    CtrlState &state = emuenv.ctrl;
 
     int nb_returned_data = 1;
     if (is_peek) {
