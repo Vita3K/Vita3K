@@ -292,7 +292,7 @@ SceInt32 Event::poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt6
     return try_take(wait_pattern, result_pattern, user_data);
 }
 
-SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
+SceInt32 Event::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -303,7 +303,7 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
     return SCE_KERNEL_OK;
 }
 
-SceInt32 SimpleEvent::set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg) {
+SceInt32 Event::set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
