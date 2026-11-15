@@ -754,7 +754,9 @@ EXPORT(int, _sceKernelGetThreadEventInfo) {
 
 EXPORT(int, _sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
     TRACY_FUNC(_sceKernelGetThreadExitStatus, thid, pExitStatus);
-    const ThreadStateRef thread = emuenv.kernel.get_thread(thid ? thid : thread_id);
+    if (thid == 0 || thid == thread_id)
+        return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thid);
     if (!thread)
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     if (!pExitStatus)
@@ -1101,7 +1103,7 @@ EXPORT(int, _sceKernelSignalLwCondTo) {
 
 EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     TRACY_FUNC(_sceKernelStartThread, thid, arglen, argp);
-    if (thid == 0)
+    if (thid == 0 || thid == thread_id)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     auto thread = emuenv.kernel.get_thread(thid);
     if (!thread)
@@ -1285,23 +1287,23 @@ static int wait_thread_end(ThreadState &waiter, ThreadState &target, int *stat, 
 
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEnd, thid, stat, timeout);
+    if (thid == 0 || thid == thread_id)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     const ThreadStateRef waiter = emuenv.kernel.get_thread(thread_id);
     const ThreadStateRef target = emuenv.kernel.get_thread(thid);
     if (!target)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    if (target == waiter)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     return wait_thread_end(*waiter, *target, stat, timeout, false);
 }
 
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEndCB, thid, stat, timeout);
+    if (thid == 0 || thid == thread_id)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     const ThreadStateRef waiter = emuenv.kernel.get_thread(thread_id);
     const ThreadStateRef target = emuenv.kernel.get_thread(thid);
     if (!target)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    if (target == waiter)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     return wait_thread_end(*waiter, *target, stat, timeout, true);
 }
 
@@ -1318,9 +1320,10 @@ EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelChangeActiveCpuMask) {
-    TRACY_FUNC(sceKernelChangeActiveCpuMask);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelChangeActiveCpuMask, SceUInt32 mask) {
+    TRACY_FUNC(sceKernelChangeActiveCpuMask, mask);
+    // Only system threads may change the active cores, and every Vita3K thread is an app's
+    return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
 }
 
 EXPORT(SceInt32, sceKernelChangeThreadCpuAffinityMask, SceUID thid, SceInt32 affinity_mask) {

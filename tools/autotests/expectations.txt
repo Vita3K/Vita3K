@@ -2,7 +2,7 @@
 # catches: pass, fail (exits normally with other output), crash (Vita3K exits with an error),
 # timeout, or skip (not run, for a test whose outcome depends on how busy the host is). Every test
 # must be listed, and one that doesn't do what its line says fails the run.
-active_cpu_mask_level           fail     # sceKernelChangeActiveCpuMask succeeds for an app thread instead of refusing its permission level
+active_cpu_mask_level           pass
 address_ranges                  pass
 affinity_mask_values            fail     # the CPU fields of thread info, threads ignore their core
 affinity_migrate                fail     # the CPU fields of thread info, threads ignore their core
@@ -209,7 +209,7 @@ end_wait_cb_notify_then_end     skip     # threads ignore their core and priorit
 end_wait_claim_races            fail     # threads ignore their core and priority, so a timed out waiter has already ended
 end_wait_cycle                  pass
 end_wait_during_end_handler     pass
-end_wait_error_order            fail     # a thread end wait on UID 0 gives UNKNOWN_THREAD_ID, not ILLEGAL_THREAD_ID
+end_wait_error_order            pass
 end_wait_exit_preempt           fail     # threads ignore their priority, so the run order after the end differs
 end_waiter_priority_change      skip     # threads ignore their core and priority, so end waiters woken together run in host order
 event_bit_mask                  pass
@@ -736,7 +736,7 @@ thread_run_status               pass
 thread_run_status_cores         fail     # threads ignore their core, so sceKernelGetThreadRunStatus fills only the caller's entry, on core 0
 thread_run_status_in_handler    pass
 thread_run_status_waiting_thread pass
-thread_self_calls               fail     # StartThread with the thread's own UID and GetThreadExitStatus with UID 0 or its own UID give other errors than 0x80028022
+thread_self_calls               pass
 thread_signal                   pass
 thread_signal_timeout           pass
 thread_signal_wait_id           pass
