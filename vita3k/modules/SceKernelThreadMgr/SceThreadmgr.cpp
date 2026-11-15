@@ -1222,7 +1222,13 @@ EXPORT(SceInt32, _sceKernelWaitMultipleEventsCB, SceKernelWaitEvent *events, Sce
 
 EXPORT(SceInt32, _sceKernelWaitSema, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
     TRACY_FUNC(_sceKernelWaitSema, semaId, needCount, pTimeout);
-    const SemaphoreRef semaphore = emuenv.kernel.objects.find<Semaphore>(semaId);
+    // The count is checked once the UID names an object, before its class is
+    const Ref<KernelObject> object = emuenv.kernel.objects.find(semaId);
+    if (!object)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    if (needCount < 1)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+    const SemaphoreRef semaphore = ref_cast<Semaphore>(object);
     if (!semaphore)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     SceUInt32 time_left = pTimeout ? *pTimeout : 0;
@@ -1234,7 +1240,13 @@ EXPORT(SceInt32, _sceKernelWaitSema, SceUID semaId, SceInt32 needCount, SceUInt3
 
 EXPORT(SceInt32, _sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
     TRACY_FUNC(_sceKernelWaitSemaCB, semaId, needCount, pTimeout);
-    const SemaphoreRef semaphore = emuenv.kernel.objects.find<Semaphore>(semaId);
+    // The count is checked once the UID names an object, before its class is
+    const Ref<KernelObject> object = emuenv.kernel.objects.find(semaId);
+    if (!object)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    if (needCount < 1)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+    const SemaphoreRef semaphore = ref_cast<Semaphore>(object);
     if (!semaphore)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     SceUInt32 time_left = pTimeout ? *pTimeout : 0;
@@ -1851,10 +1863,15 @@ EXPORT(SceUID, sceKernelOpenTimer, Ptr<const char> pName) {
 
 EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
     TRACY_FUNC(sceKernelPollSema, semaid, needCount);
-    const SemaphoreRef semaphore = emuenv.kernel.objects.find<Semaphore>(semaid);
-    if (!semaphore) {
+    // The count is checked once the UID names an object, before its class is
+    const Ref<KernelObject> object = emuenv.kernel.objects.find(semaid);
+    if (!object)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
-    }
+    if (needCount < 1)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+    const SemaphoreRef semaphore = ref_cast<Semaphore>(object);
+    if (!semaphore)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     return semaphore->poll(*emuenv.kernel.get_thread(thread_id), needCount);
 }
 
@@ -1955,7 +1972,13 @@ EXPORT(int, sceKernelSignalCondTo, SceUID condid, SceUID thread_target) {
 
 EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
     TRACY_FUNC(sceKernelSignalSema, semaid, signal);
-    const SemaphoreRef semaphore = emuenv.kernel.objects.find<Semaphore>(semaid);
+    // The count is checked once the UID names an object, before its class is
+    const Ref<KernelObject> object = emuenv.kernel.objects.find(semaid);
+    if (!object)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    if (signal < 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
+    const SemaphoreRef semaphore = ref_cast<Semaphore>(object);
     if (!semaphore)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     return semaphore->signal(signal);

@@ -222,6 +222,7 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val, const SceKernelSemaOptParam *opt);
 
+    // The caller refuses a count below 1, or below 0 for a signal, before the class lookup.
     SceInt32 wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(ThreadState &thread, SceInt32 need_count);
     SceInt32 signal(SceInt32 count);
@@ -378,8 +379,8 @@ public:
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr, const SceKernelEventFlagOptParam *opt);
-    // Returns the error a poll or wait for pattern with wait_mode gets, or SCE_KERNEL_OK
-    static SceInt32 check_wait(SceUInt32 pattern, SceUInt32 wait_mode);
+    // Returns ILLEGAL_MODE for a wait mode a poll or wait can't use, or SCE_KERNEL_OK
+    static SceInt32 check_mode(SceUInt32 wait_mode);
 
     SceInt32 wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);

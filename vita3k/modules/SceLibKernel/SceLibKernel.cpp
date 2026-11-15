@@ -1846,7 +1846,12 @@ EXPORT(int, sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void>
 
 EXPORT(int, sceKernelTryLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count) {
     TRACY_FUNC(sceKernelTryLockLwMutex, workarea, lock_count);
-    const auto lwmutexid = workarea.get(emuenv.mem)->uid;
+    // The owner's recursive try lock reads the work area and fails on a sum that isn't above 0
+    const SceKernelLwMutexWork *work = workarea.get(emuenv.mem);
+    if (lock_count > 0 && work->owner == static_cast<SceUInt32>(thread_id) && (work->attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)
+        && static_cast<SceInt32>(work->lockCount) + static_cast<int64_t>(lock_count) <= 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_LOCK_OVF);
+    const auto lwmutexid = work->uid;
     const MutexRef mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
