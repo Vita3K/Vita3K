@@ -72,7 +72,7 @@ callback_outer_wake_more        pass
 callback_outer_wake_send        pass
 callback_owner_end              pass
 callback_pass_order             fail     # callback UIDs don't follow the Vita's creation order, and a run's callbacks differ
-callback_priority_requeue       fail     # no requeue on a priority change
+callback_priority_requeue       pass
 callback_process_exit_spin      pass
 callback_process_exit_wait      pass
 callback_requeue_order          pass
@@ -142,7 +142,7 @@ cond_relock_callback_preempt    skip     # threads ignore their core and priorit
 cond_relock_cancel_mutex        pass
 cond_relock_notify_at_once      skip     # threads ignore their core and priority, so whether the notified heavy relocker already runs when the main thread reads its status is a race
 cond_relock_owned_cancel        pass
-cond_relock_requeue             fail     # a condition waiter taking its mutex back isn't requeued on a priority change
+cond_relock_requeue             pass
 cond_relock_time_left           pass
 cond_rwlock_edges               pass
 cond_semantics                  pass
@@ -226,7 +226,7 @@ event_flag_hold_callbacks       pass
 event_flag_hold_leak            pass
 event_flag_hold_take            pass
 event_flag_multi_waiters        pass
-event_flag_requeue_clear        fail     # no requeue on a priority change
+event_flag_requeue_clear        pass
 event_flag_single_waiter        pass
 event_flag_wait_out_bits        pass
 event_flag_waits                pass
@@ -307,7 +307,7 @@ lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
 lw_cond_after_mutex_delete      fail     # a wait on a lightweight condition variable whose mutex was deleted returns 0x80028186 instead of the unknown lightweight mutex error
 lw_cond_errors                  fail     # a signal to thread 0 gives 0x80028021
-lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back isn't requeued on a priority change
+lw_cond_relock_requeue          pass
 lw_cond_semantics               pass
 lw_cond_work_words              pass
 lw_copied_work_kernel_paths     fail     # a copied lightweight work area doesn't record the caller or its lock count
@@ -434,8 +434,8 @@ msgpipe_modes                   pass
 msgpipe_open_close_bits         fail     # an opened UID doesn't keep the pipe alive after the creating UID's delete
 msgpipe_order                   pass
 msgpipe_partial_head_order      pass
-msgpipe_partial_head_rejoin     fail     # no requeue on a priority change
-msgpipe_partial_head_requeue    fail     # no requeue on a priority change
+msgpipe_partial_head_rejoin     pass
+msgpipe_partial_head_requeue    pass
 msgpipe_peek_ring_vector        pass
 msgpipe_peek_retry              pass
 msgpipe_peek_stale              pass
@@ -443,16 +443,16 @@ msgpipe_peek_two_receivers      pass
 msgpipe_receive_sender_stays    pass
 msgpipe_receive_spans_senders   pass
 msgpipe_receiver_leaves         pass
-msgpipe_receiver_requeue        fail     # no requeue on a priority change
+msgpipe_receiver_requeue        pass
 msgpipe_receivers_serve_three   pass
 msgpipe_rejoin_untouched_head   pass
-msgpipe_requeue_buffered_receiver fail     # no requeue on a priority change
-msgpipe_requeue_same_priority   fail     # no requeue on a priority change
+msgpipe_requeue_buffered_receiver pass
+msgpipe_requeue_same_priority   pass
 msgpipe_ring_wrap               pass
 msgpipe_sender_head_leaves      pass
 msgpipe_sender_jump_ahead       pass
 msgpipe_sender_mix              pass
-msgpipe_sender_requeue          fail     # no requeue on a priority change
+msgpipe_sender_requeue          pass
 msgpipe_sync_events             pass
 msgpipe_try_empty_vectors       pass
 msgpipe_try_receive_senders     pass
@@ -535,13 +535,13 @@ priority_change_args            pass
 priority_change_preempt         fail     # threads ignore their core and priority
 priority_inheritance            fail     # threads ignore their core and priority
 priority_queue_areas            fail     # threads ignore their core and priority
-priority_requeue_others         fail     # waiters keep their place in a priority queue when their priority changes
-priority_requeue_others_more    fail     # no requeue on a priority change, and threads ignore their core and priority, so read lock and thread end waiters woken together run in host order
+priority_requeue_others         pass
+priority_requeue_others_more    skip     # threads ignore their core and priority, so read lock and thread end waiters woken together run in host order
 queue_area_bounds               fail     # threads ignore their core and priority
-queue_order                     fail     # priority changes while waiting
-queue_order_matrix              fail     # a waiter whose priority changes keeps its place in a priority queue
-queue_order_matrix_more         skip     # no requeue on a priority change, and threads ignore their core and priority, so readers and thread end waiters woken together run in host order
-queue_order_timer               fail     # a priority change doesn't move a timer's waiter in its queue
+queue_order                     pass
+queue_order_matrix              pass
+queue_order_matrix_more         skip     # threads ignore their core and priority, so readers and thread end waiters woken together run in host order
+queue_order_timer               pass
 queued_mask_change_busy_core    fail     # a queued affinity change runs T on the held core 0 and reports DORMANT, not STANDBY
 readonly_in                     fail     # setting a timer's time from read only memory isn't refused, and a multiple event wait listed in it gets nothing
 readonly_out_info               fail     # no write check on output parameters
@@ -560,7 +560,7 @@ remote_lower_to_ready_tie       fail     # threads ignore their core and priorit
 remote_priority_change          fail     # threads ignore their core and priority
 remote_raise_to_running_tie     fail     # threads ignore their core and priority
 remote_same_priority_ready      fail     # threads are never STANDBY and ignore their core and priority, so T and U end before the gate lifts
-requeue_lower_same              fail     # no requeue on a priority change
+requeue_lower_same              pass
 restart_callback_new_run        pass
 restart_handler_sees_init       pass
 restart_keeps_create_priority   pass
@@ -581,7 +581,7 @@ rwlock_owner_relock_waiters     pass
 rwlock_reader_again             pass
 rwlock_readers_anonymous        pass
 rwlock_recursive_unlock_waiters pass
-rwlock_requeue_writers          fail     # no requeue on a priority change
+rwlock_requeue_writers          pass
 rwlock_wake_counts              fail     # woken threads aren't READY before they run
 rwlock_wake_order               pass
 savedata_slot_id                fail     # save data slot ID range checks
@@ -592,10 +592,10 @@ self_priority_drop              fail     # threads ignore their core and priorit
 sema_call_error_order           pass
 sema_count_overflow             pass
 sema_errors                     pass
-sema_head_leaves                fail     # a head that leaves by a priority drop doesn't let the next waiter take
+sema_head_leaves                pass
 sema_mutex_edges                pass
 sema_poll_negative              pass
-sema_requeue_wake               fail     # no requeue on a priority change
+sema_requeue_wake               pass
 sema_signal_serve_order         pass
 sema_take_past_waiters          pass
 sema_waits                      pass
@@ -607,7 +607,7 @@ shared_raise_cores              fail     # threads are never READY and ignore th
 shared_ready_raise              fail     # threads are never READY and ignore their core
 signal_during_object_waits      pass
 signal_equal_priority_same_core skip     # threads ignore their core and priority, so whether the woken waiter runs before the signaler's next line is a race
-signal_object_wait_target       fail     # no requeue on a priority change
+signal_object_wait_target       pass
 signal_state_across_restart     pass
 signal_wait_arguments           pass
 signal_wait_callbacks_first     pass
@@ -624,7 +624,7 @@ simple_event_open_close_bits    pass
 simple_event_open_close_notify_arg pass
 simple_event_preempt_counter    fail     # thread info's preempt counters stay 0
 simple_event_wait_null          pass
-simple_event_waiter_patterns    fail     # a raised waiter in a simple event priority queue gets the wrong cancel count and results
+simple_event_waiter_patterns    pass
 simple_event_wake_snapshot      pass
 simple_event_zero_pattern_more  pass
 size_zero_page_start            pass
@@ -810,7 +810,7 @@ timer_repeat_auto_reset_missed  skip     # whether the second poll sees the next
 timer_repeat_info_steps         pass
 timer_repeat_pulse_vs_set       pass
 timer_repeat_wrapping_interval  pass
-timer_requeue                   fail     # no requeue on a priority change
+timer_requeue                   pass
 timer_reset_event_running       pass
 timer_set_time_moves_event      pass
 timer_set_time_stopped_start    pass
@@ -847,7 +847,7 @@ wait_info_retries               skip     # threads ignore their core and priorit
 wait_info_retries_more          pass
 wait_order                      pass
 wait_own_end                    pass
-wait_priority_change            fail     # a waiter changed to any priority goes behind the others at it
+wait_priority_change            pass
 wait_zero_timeout               fail     # multiple event waits with a timeout of 0
 wait_zero_timeout_more          pass
 wake_all_order                  fail     # threads ignore their core and priority
