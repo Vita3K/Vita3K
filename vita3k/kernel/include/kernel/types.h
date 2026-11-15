@@ -1108,9 +1108,22 @@ struct SceProcessParam {
 struct SceKernelThreadOptParam {
     /** Size of the ::SceKernelThreadOptParam structure. */
     SceSize size;
-    /** Attributes */
+    /** Attributes, the SCE_KERNEL_THREAD_OPT_* bits of the fields they ask for */
     SceUInt32 attr;
+    SceUInt32 kStackMemType;
+    SceUInt32 uStackMemType;
+    SceUInt32 uTLSMemType;
+    SceUInt32 uStackMemid;
+    SceUInt32 data_0x18;
 };
+
+#define SCE_KERNEL_THREAD_OPT_KSTACK_MEMTYPE 0x1U
+#define SCE_KERNEL_THREAD_OPT_USTACK_MEMTYPE 0x2U
+#define SCE_KERNEL_THREAD_OPT_UTLS_MEMTYPE 0x4U
+#define SCE_KERNEL_THREAD_OPT_USTACK_MEMID 0x8U
+#define SCE_KERNEL_THREAD_OPT_DATA_0X18 0x10U
+// The last field's default, also every bit a game may set in it
+#define SCE_KERNEL_THREAD_OPT_DATA_0X18_DEFAULT 0x301U
 
 struct SceKernelCreateThread_opt {
     SceSize size;

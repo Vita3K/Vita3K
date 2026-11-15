@@ -675,7 +675,7 @@ thread_cpu_fields               fail     # the CPU fields of thread info, thread
 thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
-thread_create_option_unreadable fail     # an unreadable option pointer isn't checked, so the create reads it and makes the thread
+thread_create_option_unreadable pass
 thread_create_prio0_ceiling     fail     # a ceiling mutex doesn't raise its owner's priority
 thread_create_relative_priority pass
 thread_creator_ends             pass
@@ -727,8 +727,8 @@ thread_limits                   fail     # no limit on the number of threads
 thread_names                    pass
 thread_nouse_vfp                fail     # a waiting thread keeps d16 across its wait
 thread_null_name                pass
-thread_opt_fields               fail     # the thread option struct's fields aren't checked
-thread_opt_param                fail     # thread option struct size and attribute checks
+thread_opt_fields               pass
+thread_opt_param                pass
 thread_own_run_clocks           fail     # thread info's run clocks stay 0
 thread_priority                 pass
 thread_ready_status             fail     # a thread that can run but doesn't reports RUNNING instead of READY

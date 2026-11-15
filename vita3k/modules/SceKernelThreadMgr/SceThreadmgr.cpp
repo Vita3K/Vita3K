@@ -1499,11 +1499,43 @@ static bool is_user_priority(int priority) {
         || (priority >= SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY && priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY);
 }
 
+// The option attributes that ask for the fields after them
+constexpr SceUInt32 THREAD_OPT_FIELDS = SCE_KERNEL_THREAD_OPT_KSTACK_MEMTYPE | SCE_KERNEL_THREAD_OPT_USTACK_MEMTYPE | SCE_KERNEL_THREAD_OPT_UTLS_MEMTYPE | SCE_KERNEL_THREAD_OPT_USTACK_MEMID | SCE_KERNEL_THREAD_OPT_DATA_0X18;
+
+// Returns the error a game's thread option struct gets, or SCE_KERNEL_OK
+static SceInt32 check_thread_options(const SceKernelThreadOptParam &opt) {
+    // Any other attribute makes the create ignore the struct
+    if (opt.attr & ~THREAD_OPT_FIELDS)
+        return SCE_KERNEL_OK;
+    // A game can't choose its kernel stack, nor a block of its own for its stack
+    if (opt.attr & SCE_KERNEL_THREAD_OPT_KSTACK_MEMTYPE)
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    if ((opt.attr & SCE_KERNEL_THREAD_OPT_USTACK_MEMTYPE) && opt.uStackMemType != SCE_KERNEL_MEMBLOCK_TYPE_USER_RW)
+        return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
+    if ((opt.attr & SCE_KERNEL_THREAD_OPT_UTLS_MEMTYPE) && opt.uTLSMemType != SCE_KERNEL_MEMBLOCK_TYPE_USER_RW)
+        return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
+    if (opt.attr & SCE_KERNEL_THREAD_OPT_USTACK_MEMID)
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    if ((opt.attr & SCE_KERNEL_THREAD_OPT_DATA_0X18) && (opt.data_0x18 & ~SCE_KERNEL_THREAD_OPT_DATA_0X18_DEFAULT))
+        return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
+    return SCE_KERNEL_OK;
+}
+
 // The attributes sceKernelCreateThread takes
 constexpr SceUInt32 THREAD_CREATE_ATTRS = SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 | SCE_KERNEL_THREAD_ATTR_NOUSE_VFP | SCE_KERNEL_THREAD_ATTR_VM | SCE_KERNEL_THREAD_ATTR_USER;
 
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);
+    // The option struct is copied in before the create, and its fields past its size read as 0
+    SceKernelThreadOptParam opt{};
+    if (is_unreadable(emuenv.mem, options->option))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (const SceKernelThreadOptParam *option = options->option.get(emuenv.mem)) {
+        const SceSize size = option->size;
+        if (size > sizeof(opt))
+            return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
+        memcpy(&opt, option, size);
+    }
     if (!name)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
     if (!entry)
@@ -1519,6 +1551,8 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CPU_AFFINITY_MASK);
     if (options->attr & ~THREAD_CREATE_ATTRS)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
+    if (const SceInt32 error = check_thread_options(opt))
+        return RET_ERROR(error);
     // The new thread starts at the creating thread's current priority
     if (init_priority == SCE_KERNEL_CURRENT_THREAD_PRIORITY)
         init_priority = emuenv.kernel.get_thread(thread_id)->get_priority();
