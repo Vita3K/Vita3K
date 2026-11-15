@@ -570,14 +570,15 @@ EXPORT(SceInt32, _sceKernelGetMsgPipeInfo, SceUID msgPipeId, SceKernelMppInfo *p
 
 EXPORT(int, _sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *pInfo) {
     TRACY_FUNC(_sceKernelGetMutexInfo, mutexId, pInfo);
-    if (!pInfo)
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-    if (pInfo->size > sizeof(*pInfo))
+    // A NULL info is looked up first, then refused
+    if (pInfo && pInfo->size > sizeof(*pInfo))
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     const Ref<HeavyMutex> mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexId);
     SceKernelMutexInfo info;
     if (!mutex || mutex->info(info) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+    if (!pInfo)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
     write_info(pInfo, info);
     return SCE_KERNEL_OK;
@@ -585,14 +586,15 @@ EXPORT(int, _sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *pInfo) {
 
 EXPORT(int, _sceKernelGetRWLockInfo, SceUID rwlockId, SceKernelRWLockInfo *info) {
     TRACY_FUNC(_sceKernelGetRWLockInfo, rwlockId, info);
-    if (!info)
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-    if (info->size > sizeof(*info))
+    // A NULL info is looked up first, then refused
+    if (info && info->size > sizeof(*info))
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     const RWLockRef rwlock = emuenv.kernel.objects.find<RWLock>(rwlockId);
     SceKernelRWLockInfo full;
     if (!rwlock || rwlock->info(full) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
     write_info(info, full);
     return SCE_KERNEL_OK;
@@ -1359,7 +1361,10 @@ EXPORT(int, sceKernelCloseCond, SceUID condition_variable_id) {
 
 EXPORT(int, sceKernelCloseEventFlag, SceUID evfId) {
     TRACY_FUNC(sceKernelCloseEventFlag, evfId);
-    return UNIMPLEMENTED();
+    // Opens return the creating UID, so a close of a known object does nothing
+    if (!emuenv.kernel.objects.find<EventFlag>(evfId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCloseMsgPipe) {
@@ -1367,9 +1372,12 @@ EXPORT(int, sceKernelCloseMsgPipe) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCloseMutex) {
-    TRACY_FUNC(sceKernelCloseMutex);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCloseMutex, SceUID mutexId) {
+    TRACY_FUNC(sceKernelCloseMutex, mutexId);
+    // Opens return the creating UID, so a close of a known object does nothing
+    if (!emuenv.kernel.objects.find<HeavyMutex>(mutexId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCloseMutex_089) {
@@ -1377,14 +1385,20 @@ EXPORT(int, sceKernelCloseMutex_089) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCloseRWLock) {
-    TRACY_FUNC(sceKernelCloseRWLock);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCloseRWLock, SceUID rwLockId) {
+    TRACY_FUNC(sceKernelCloseRWLock, rwLockId);
+    // Opens return the creating UID, so a close of a known object does nothing
+    if (!emuenv.kernel.objects.find<RWLock>(rwLockId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelCloseSema) {
-    TRACY_FUNC(sceKernelCloseSema);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCloseSema, SceUID semaId) {
+    TRACY_FUNC(sceKernelCloseSema, semaId);
+    // Opens return the creating UID, so a close of a known object does nothing
+    if (!emuenv.kernel.objects.find<Semaphore>(semaId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(SceInt32, sceKernelCloseSimpleEvent, SceUID event_id) {
@@ -1398,9 +1412,12 @@ EXPORT(SceInt32, sceKernelCloseSimpleEvent, SceUID event_id) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelCloseTimer) {
-    TRACY_FUNC(sceKernelCloseTimer);
-    return STUBBED("References not implemented.");
+EXPORT(int, sceKernelCloseTimer, SceUID timerId) {
+    TRACY_FUNC(sceKernelCloseTimer, timerId);
+    // Opens return the creating UID, so a close of a known object does nothing
+    if (!emuenv.kernel.objects.find<Timer>(timerId))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Ptr<SceKernelCallbackFunction> callbackFunc, Ptr<void> pCommon) {
