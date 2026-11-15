@@ -125,7 +125,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     if (!is_vertex) {
         const uint32_t bit = 1U << index;
-        if (lookup_result.has_value() && lookup_result->has_mipmaps)
+        const bool point_sampled = (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT) && (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT);
+        if (lookup_result.has_value() && lookup_result->has_mipmaps && !point_sampled)
             context.curr_frag_ublock.base_block.surface_mask |= bit;
         else
             context.curr_frag_ublock.base_block.surface_mask &= ~bit;

@@ -352,7 +352,7 @@ void VKSurfaceCache::generate_mipmaps(vkutil::Image &image, uint32_t mip_levels)
 
     const vk::ImageMemoryBarrier end_barrier = level_barrier(0, mip_levels, vk::AccessFlagBits::eTransferWrite,
         vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
-    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput,
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput,
         vk::DependencyFlags(), {}, {}, end_barrier);
 }
 
@@ -692,7 +692,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         }
 
         const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
-        if (info.mipmap_scene <= info.written_scene && info.mipmap_scene != scene_timestamp) {
+        if ((info.mipmap_scene <= info.written_scene || &info == last_written_surface) && info.mipmap_scene != scene_timestamp) {
             generate_mipmaps(info.texture, info.mip_levels);
             info.mipmap_scene = scene_timestamp;
         }
