@@ -62,17 +62,21 @@ void Waitable::queue(ThreadState &thread, const WaitRequest &request) {
     thread.ender_result.reset();
     thread.queued_priority = thread.get_priority();
     waiter_added(thread);
-    auto pos = waiters.end();
-    if (attr & SCE_KERNEL_ATTR_TH_PRIO) {
-        // Lower value is higher priority, equal priorities keep FIFO order
-        pos = waiters.begin();
-        while (pos != waiters.end() && pos->queued_priority <= thread.queued_priority)
-            ++pos;
-        // A thread whose place is the front goes right behind a head that keeps its place, so it
-        // lands ahead of the threads already behind that head, whatever their priority
-        if (pos == waiters.begin() && pos != waiters.end() && queues_behind_head(thread))
-            ++pos;
-    }
+    if (attr & SCE_KERNEL_ATTR_TH_PRIO)
+        insert_by_priority(thread);
+    else
+        waiters.push_back(thread);
+}
+
+void Waitable::insert_by_priority(ThreadState &thread) {
+    // Lower value is higher priority, equal priorities keep FIFO order
+    auto pos = waiters.begin();
+    while (pos != waiters.end() && pos->queued_priority <= thread.queued_priority)
+        ++pos;
+    // A thread whose place is the front goes right behind a head that keeps its place, so it
+    // lands ahead of the threads already behind that head, whatever their priority
+    if (pos == waiters.begin() && pos != waiters.end() && queues_behind_head(thread))
+        ++pos;
     waiters.insert(pos, thread);
 }
 
