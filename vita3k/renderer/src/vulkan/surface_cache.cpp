@@ -691,6 +691,14 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
 
         casted->scene_timestamp = scene_timestamp;
 
+        // the surface may have been written by a previous render pass that is still running
+        const vk::MemoryBarrier source_barrier{
+            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderWrite,
+            .dstAccessMask = vk::AccessFlagBits::eTransferRead
+        };
+        cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
+            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlags(), source_barrier, {}, {});
+
         if (bytes_per_pixel_requested == bytes_per_pixel_in_store) {
             vk::ImageCopy image_copy{
                 .srcSubresource = vkutil::color_subresource_layer,
