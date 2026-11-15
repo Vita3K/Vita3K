@@ -124,6 +124,26 @@ protected:
     CPUState(MemState &mem, SceUID thread_id, std::size_t processor_id);
 };
 
+// Reserves bytes on a guest thread's stack for as long as it lives
+class GuestStackAlloc {
+public:
+    GuestStackAlloc(CPUState &cpu, size_t size)
+        : cpu(cpu)
+        , size(size)
+        , addr(cpu.stack_alloc(size)) {}
+    ~GuestStackAlloc() { cpu.stack_free(size); }
+    GuestStackAlloc(const GuestStackAlloc &) = delete;
+    GuestStackAlloc &operator=(const GuestStackAlloc &) = delete;
+
+    // The lowest address of the reserved bytes
+    Address address() const { return addr; }
+
+private:
+    CPUState &cpu;
+    const size_t size;
+    const Address addr;
+};
+
 CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem);
 
 // The CPU state running on this host thread, for signal handlers

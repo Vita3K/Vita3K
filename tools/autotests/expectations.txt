@@ -32,7 +32,7 @@ callback_delete_in_run          pass
 callback_deleted_nested_wait_notify skip     # a notified waiter leaves the queue only when its thread runs, so whether the object still counts it right after the notify is a race
 callback_deleted_object         pass
 callback_edges                  pass
-callback_entry_state            fail     # a callback run by a CB wait starts on the caller's sp, the Vita's libkernel wrapper puts it 8 bytes below
+callback_entry_state            pass
 callback_errors                 pass
 callback_event_results          fail     # event calls don't take message pipe UIDs
 callback_event_waits            pass
@@ -661,7 +661,7 @@ thread                          pass
 thread_call_states              fail     # a thread ready behind a gate reports RUNNING where the Vita reports READY
 thread_change_attr              pass
 thread_change_cpu_count_never_ran fail     # thread info's CPU change count never grows
-thread_context_core_registers   fail     # a waiting thread's context sp is the one inside the wait, not the one before it
+thread_context_core_registers   pass
 thread_context_for_vm           pass
 thread_context_for_vm_error_order fail     # Get checks block sizes before the thread ID, Set skips the caller and VM checks and returns 0 without blocks
 thread_context_never_ran        skip     # threads ignore their core and priority, so whether W runs before the suspend is a race
@@ -708,8 +708,8 @@ thread_event_handler_process_exit pass
 thread_event_handler_register_before_run skip     # threads ignore their core, so in case b the thread runs its START handlers before the main thread registers one, or after, by host timing
 thread_event_handler_release_unregister_running pass
 thread_event_handler_shared_release pass
-thread_event_handler_stack      fail     # event handler sp is 0x28 below the stack top and 16 aligned, the Vita's is 0x30
-thread_event_handler_start_sp   fail     # an END handler starts on the entry's stack pointer, the Vita starts it below it
+thread_event_handler_stack      pass
+thread_event_handler_start_sp   pass
 thread_event_handler_start_target pass
 thread_event_handler_unregister_in_entry pass
 thread_event_handler_unregister_other_uids fail     # an unregister inside a thread event handler of a UID that isn't a sync object, callback or handler, like a thread or memory block UID, gives 0x80028061, not 0x80027101

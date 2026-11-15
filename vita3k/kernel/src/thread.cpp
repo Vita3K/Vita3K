@@ -213,6 +213,8 @@ void ThreadState::run_loop() {
         // A thread that returns from its entry ends like one that exits, end handler included
         if (const std::optional<uint32_t> returned = run_guest(lock, false)) {
             returned_value = *returned;
+            // The return lands in libkernel's exit stub, which pushes two words before its exit call
+            cpu->stack_alloc(8);
             request_ending(Ending::exit);
         }
     } while (finish_run(lock));

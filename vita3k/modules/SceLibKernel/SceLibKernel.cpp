@@ -56,6 +56,11 @@ enum class TimerFlags : uint32_t {
 
 TRACY_MODULE_NAME(SceLibKernel);
 
+// The return address and a padding word that keeps SP 8 byte aligned, which a wait wrapper that
+// only forwards to its syscall pushes first. They stay on the caller's stack while the call lasts,
+// so the callbacks it runs start below them.
+constexpr size_t FORWARD_FRAME_SIZE = 8;
+
 VAR_EXPORT(__sce_libcparam) {
     // This variable almost newer used. So I return something that looks good, but not exacly correct.
     return (emuenv.kernel.process_param ? emuenv.kernel.process_param.get(emuenv.mem)->sce_libc_param.address() : 0);
@@ -1623,31 +1628,37 @@ EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
     TRACY_FUNC(sceKernelLockMutex, mutexid, lock_count, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelLockMutex, mutexid, lock_count, timeout);
 }
 
 EXPORT(SceInt32, sceKernelLockMutexCB, SceUID mutexId, SceInt32 lockCount, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelLockMutexCB, mutexId, lockCount, pTimeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelLockMutexCB, mutexId, lockCount, pTimeout);
 }
 
 EXPORT(SceInt32, sceKernelLockReadRWLock, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelLockReadRWLock, lock_id, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelLockReadRWLock, lock_id, timeout);
 }
 
 EXPORT(SceInt32, sceKernelLockReadRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelLockReadRWLockCB, lock_id, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelLockReadRWLockCB, lock_id, timeout);
 }
 
 EXPORT(SceInt32, sceKernelLockWriteRWLock, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelLockWriteRWLock, lock_id, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelLockWriteRWLock, lock_id, timeout);
 }
 
 EXPORT(SceInt32, sceKernelLockWriteRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelLockWriteRWLockCB, lock_id, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelLockWriteRWLockCB, lock_id, timeout);
 }
 
@@ -1950,11 +1961,13 @@ EXPORT(int, sceKernelUnlockLwMutex2, Ptr<SceKernelLwMutexWork> workarea, int unl
 
 EXPORT(SceInt32, sceKernelWaitCond, SceUID condId, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelWaitCond, condId, pTimeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitCond, condId, pTimeout);
 }
 
 EXPORT(SceInt32, sceKernelWaitCondCB, SceUID condId, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelWaitCondCB, condId, pTimeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitCondCB, condId, pTimeout);
 }
 
@@ -2003,6 +2016,7 @@ EXPORT(int, sceKernelWaitLwCond, Ptr<SceKernelLwCondWork> workarea, SceUInt32 *t
 
 EXPORT(SceInt32, sceKernelWaitLwCondCB, Ptr<SceKernelLwCondWork> pWork, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelWaitLwCondCB, pWork, pTimeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitLwCondCB, pWork, pTimeout);
 }
 
@@ -2020,31 +2034,37 @@ EXPORT(SceInt32, sceKernelWaitMultipleEventsCB, SceKernelWaitEvent *events, SceU
 
 EXPORT(SceInt32, sceKernelWaitSema, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelWaitSema, semaId, needCount, pTimeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitSema, semaId, needCount, pTimeout);
 }
 
 EXPORT(SceInt32, sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelWaitSemaCB, semaId, needCount, pTimeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitSemaCB, semaId, needCount, pTimeout);
 }
 
 EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitSignal, unknown, delay, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitSignal, unknown, delay, timeout);
 }
 
 EXPORT(int, sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitSignalCB, unknown, delay, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitSignalCB, unknown, delay, timeout);
 }
 
 EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(sceKernelWaitThreadEnd, thid, stat, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitThreadEnd, thid, stat, timeout);
 }
 
 EXPORT(int, sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(sceKernelWaitThreadEndCB, thid, stat, timeout);
+    const GuestStackAlloc frame(*emuenv.kernel.get_thread(thread_id)->cpu, FORWARD_FRAME_SIZE);
     return CALL_EXPORT(_sceKernelWaitThreadEndCB, thid, stat, timeout);
 }
 
