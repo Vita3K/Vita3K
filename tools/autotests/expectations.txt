@@ -419,15 +419,15 @@ msgpipe_event_waiter_ahead_of_partial pass
 msgpipe_failed_sizes            pass
 msgpipe_info_event_waiter       pass
 msgpipe_mixed_queue             pass
-msgpipe_mixed_sides_sender_order fail     # a send to two waiting DONT_REMOVE receives completes only the first
+msgpipe_mixed_sides_sender_order pass
 msgpipe_modes                   pass
 msgpipe_open_close_bits         fail     # an opened UID doesn't keep the pipe alive after the creating UID's delete
 msgpipe_order                   pass
 msgpipe_partial_head_order      pass
 msgpipe_partial_head_rejoin     fail     # no requeue on a priority change
 msgpipe_peek_ring_vector        pass
-msgpipe_peek_retry              fail     # a peek that waits again skips the bytes it already took instead of taking them again
-msgpipe_peek_stale              fail     # a send to a DONT_REMOVE receive leaves the pipe's bytes out of step
+msgpipe_peek_retry              pass
+msgpipe_peek_stale              pass
 msgpipe_peek_two_receivers      pass
 msgpipe_receive_sender_stays    pass
 msgpipe_receive_spans_senders   pass

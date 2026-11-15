@@ -1744,11 +1744,12 @@ void MsgPipe::wait_ended(ThreadState &thread, SceInt32) {
         MsgPipeReceiver &receiver = *head->wait_request().receiver;
         // A peek puts back the ring
         const SceSize read_was = read_pos, held_was = held;
-        drain(receiver);
+        copy_ring_to_pieces(receiver, std::min(receiver.left, held));
         if (receiver.peek) {
             read_pos = read_was;
             held = held_was;
         }
+        receiver.report();
         head_partial = receiver.left != 0 && receiver.keeps_place();
     }
     if (write_pos == read_pos && held == 0)
@@ -1861,16 +1862,6 @@ void MsgPipe::fill(MsgPipeSender &sender) {
     copy_pieces_to_ring(sender, n, true);
 }
 
-void MsgPipe::drain(MsgPipeReceiver &receiver) {
-    // A peek reads on from where it got to
-    if (receiver.peek) {
-        const SceSize skip = std::min(receiver.total - receiver.left, held);
-        read_pos = (read_pos + skip) % capacity;
-        held -= skip;
-    }
-    copy_ring_to_pieces(receiver, std::min(receiver.left, held));
-}
-
 SceSize MsgPipe::available() const {
     SceSize bytes = held;
     for (const ThreadState &waiter : waiters) {
@@ -1902,8 +1893,8 @@ bool MsgPipe::give(MsgPipeSender &sender) {
         MsgPipeReceiver &to = *receiver->wait_request().receiver;
         const SceSize n = std::min(to.left, sender.left);
         // The bytes go through the ring. A peek goes through a ring that looks empty at its write
-        // position, then puts back the ring.
-        const SceSize write_was = write_pos, read_was = read_pos, held_was = held;
+        // position, then gets back its read position and count but keeps the new write position.
+        const SceSize read_was = read_pos, held_was = held;
         if (to.peek) {
             read_pos = write_pos;
             held = 0;
@@ -1911,7 +1902,6 @@ bool MsgPipe::give(MsgPipeSender &sender) {
         copy_pieces_to_ring(sender, n, !to.peek);
         copy_ring_to_pieces(to, n);
         if (to.peek) {
-            write_pos = write_was;
             read_pos = read_was;
             held = held_was;
         }
@@ -1934,7 +1924,7 @@ bool MsgPipe::give(MsgPipeSender &sender) {
 bool MsgPipe::take(MsgPipeReceiver &receiver) {
     // A peek puts back the ring at the end
     const SceSize write_was = write_pos, read_was = read_pos, held_was = held;
-    drain(receiver);
+    copy_ring_to_pieces(receiver, std::min(receiver.left, held));
     // Each waiting sender gives its bytes to the receiver through the ring while it wants some, then
     // puts its rest into the pipe, up to the first sender that stays
     while (ThreadState *const sender = first_sender()) {
