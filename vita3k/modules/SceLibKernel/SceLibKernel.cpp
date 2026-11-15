@@ -134,9 +134,11 @@ EXPORT(int, sceClibLookCtypeTable, uint32_t param1) {
     }
 }
 
-EXPORT(int, sceClibMemchr) {
-    TRACY_FUNC(sceClibMemchr);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMemchr, Ptr<const void> src, int ch, SceSize len) {
+    TRACY_FUNC(sceClibMemchr, src, ch, len);
+    const auto data = src.cast<const uint8_t>().get(emuenv.mem);
+    const auto res = static_cast<const uint8_t *>(memchr(data, ch, len));
+    return res ? Ptr<void>(src.address() + static_cast<Address>(res - data)) : Ptr<void>();
 }
 
 EXPORT(int, sceClibMemcmp, const void *s1, const void *s2, SceSize len) {
@@ -433,14 +435,20 @@ EXPORT(int64_t, sceClibStrtoll, const char *str, char **endptr, int base) {
     return strtoll(str, endptr, base);
 }
 
+// Returns the byte as a signed char, in lower case if it is an ASCII letter
 EXPORT(int, sceClibTolower, char ch) {
     TRACY_FUNC(sceClibTolower, ch);
-    return tolower(ch);
+    // Not std::tolower, which is undefined for a negative char and maps more letters in some locales
+    const int c = static_cast<signed char>(ch);
+    return c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c;
 }
 
+// Returns the byte as a signed char, in upper case if it is an ASCII letter
 EXPORT(int, sceClibToupper, char ch) {
     TRACY_FUNC(sceClibToupper, ch);
-    return toupper(ch);
+    // Not std::toupper, for the same reasons as in sceClibTolower
+    const int c = static_cast<signed char>(ch);
+    return c >= 'a' && c <= 'z' ? c - 'a' + 'A' : c;
 }
 
 EXPORT(int, sceClibVdprintf) {
