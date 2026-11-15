@@ -111,7 +111,7 @@ class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
 
 public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
-    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *opt);
 
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     // Sets or pulses the bits, then notifies the registered callbacks with notify_arg
@@ -135,6 +135,9 @@ class Timer final : public WithUidClass<Event, UidClass::timer>, public Intrusiv
     Timer(TimerService &timers, SceUInt32 attr, const char *name, SceUID creator);
 
 public:
+    // Returns the error for arguments a create can't use, or 0.
+    static SceInt32 check_create(const char *name, SceUInt32 attr);
+
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
     SceInt32 start();
     SceInt32 stop();
@@ -217,7 +220,7 @@ public:
     const SceInt32 max;
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
-    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val);
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val, const SceKernelSemaOptParam *opt);
 
     SceInt32 wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(ThreadState &thread, SceInt32 need_count);
@@ -297,6 +300,9 @@ class LwMutex final : public WithUidClass<Mutex, UidClass::lw_mutex> {
     using WithUidClass::WithUidClass;
 
 public:
+    // Returns the error for arguments a create can't use, or 0.
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count, const SceKernelLwMutexOptParam *opt);
+
     // Fills info with what the lightweight mutex's info reports, or returns UNKNOWN_LW_MUTEX_ID if it
     // was deleted.
     SceInt32 info(SceKernelLwMutexInfo &info) const;
@@ -371,7 +377,7 @@ public:
     const SceUInt32 init_pattern;
 
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
-    static SceInt32 check_create(const char *name, SceUInt32 attr);
+    static SceInt32 check_create(const char *name, SceUInt32 attr, const SceKernelEventFlagOptParam *opt);
     // Returns the error a poll or wait for pattern with wait_mode gets, or SCE_KERNEL_OK
     static SceInt32 check_wait(SceUInt32 pattern, SceUInt32 wait_mode);
 
@@ -439,6 +445,9 @@ public:
     };
 
     const MutexRef associated_mutex;
+
+    // Returns the error for arguments a create can't use, or 0.
+    static SceInt32 check_create(const char *name, SceUInt32 attr);
 
     SceInt32 wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 signal(SignalTarget target);

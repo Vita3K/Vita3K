@@ -1231,7 +1231,7 @@ EXPORT(SceUID, sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mu
     return CALL_EXPORT(_sceKernelCreateCond, pName, attr, mutexId, pOptParam);
 }
 
-EXPORT(int, sceKernelCreateEventFlag, const char *name, unsigned int attr, unsigned int flags, SceKernelEventFlagOptParam *opt) {
+EXPORT(int, sceKernelCreateEventFlag, const char *name, unsigned int attr, unsigned int flags, Ptr<const SceKernelEventFlagOptParam> opt) {
     TRACY_FUNC(sceKernelCreateEventFlag, name, attr, flags, opt);
     return CALL_EXPORT(_sceKernelCreateEventFlag, name, attr, flags, opt);
 }
@@ -1301,7 +1301,7 @@ EXPORT(int, sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initVa
     return res;
 }
 
-EXPORT(SceUID, sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *pOptParam) {
+EXPORT(SceUID, sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, Ptr<const SceKernelSimpleEventOptParam> pOptParam) {
     TRACY_FUNC(sceKernelCreateSimpleEvent, name, attr, init_pattern, pOptParam);
     return CALL_EXPORT(_sceKernelCreateSimpleEvent, name, attr, init_pattern, pOptParam);
 }
@@ -1320,7 +1320,7 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry ent
     return res;
 }
 
-EXPORT(SceUID, sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint32_t *opt_params) {
+EXPORT(SceUID, sceKernelCreateTimer, const char *name, SceUInt32 attr, Ptr<const uint32_t> opt_params) {
     TRACY_FUNC(sceKernelCreateTimer, name, attr, opt_params);
     return CALL_EXPORT(_sceKernelCreateTimer, name, attr, opt_params);
 }

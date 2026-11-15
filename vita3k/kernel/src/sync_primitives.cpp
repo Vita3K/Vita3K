@@ -170,12 +170,14 @@ Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64
 SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator)
     : WithUidClass(attr, name, init_pattern, system_event_user_data(creator)) {}
 
-SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern) {
+SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *opt) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
     // The notify attribute is accepted and reported, nothing reads it
     if (attr & ~(SCE_KERNEL_EVENT_ATTR_AUTO_RESET | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE | SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY))
         return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    if (opt && opt->size > sizeof(*opt))
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
     if (init_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
     return SCE_KERNEL_OK;
@@ -446,6 +448,14 @@ inline uint64_t timer_clock() {
 Timer::Timer(TimerService &timers, SceUInt32 attr, const char *name, SceUID creator)
     : WithUidClass(attr, name, 0, system_event_user_data(creator))
     , timers(timers) {}
+
+SceInt32 Timer::check_create(const char *name, SceUInt32 attr) {
+    if (const SceInt32 error = check_name(name, attr))
+        return error;
+    if (attr & ~(SCE_KERNEL_EVENT_ATTR_AUTO_RESET | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE | SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY))
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    return SCE_KERNEL_OK;
+}
 
 // Minimum time until the worker starts its next batch.
 constexpr uint64_t TIMER_EVENT_FLOOR = 200;
@@ -960,6 +970,18 @@ SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_w
     return SCE_KERNEL_OK;
 }
 
+SceInt32 LwMutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count, const SceKernelLwMutexOptParam *opt) {
+    if (attr & ~(SCE_KERNEL_MUTEX_ATTR_RECURSIVE | SCE_KERNEL_ATTR_TH_PRIO))
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    if (opt && opt->size > sizeof(*opt))
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+    if (init_count < 0 || (init_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)))
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    if (!name)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    return SCE_KERNEL_OK;
+}
+
 SceInt32 LwMutex::info(SceKernelLwMutexInfo &info) const {
     const auto guard = lock();
     if (!guard)
@@ -1218,13 +1240,15 @@ Semaphore::Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt
     , max(max_val)
     , val(init_val) {}
 
-SceInt32 Semaphore::check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val) {
+SceInt32 Semaphore::check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val, const SceKernelSemaOptParam *opt) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
     if (attr & ~(SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
         return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
     if (init_val < 0 || max_val <= 0 || init_val > max_val)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    if (opt && opt->size > sizeof(*opt))
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
     return SCE_KERNEL_OK;
 }
 
@@ -1337,6 +1361,14 @@ SceInt32 Semaphore::info(SceKernelSemaInfo &info) const {
 Condvar::Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex)
     : Waitable(attr, name)
     , associated_mutex(std::move(associated_mutex)) {}
+
+SceInt32 Condvar::check_create(const char *name, SceUInt32 attr) {
+    if (!name)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    if (attr & ~SCE_KERNEL_ATTR_TH_PRIO)
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    return SCE_KERNEL_OK;
+}
 
 void Condvar::end_waits(SceUID) {
     // wait() maps this to the condition's own delete error
@@ -1461,11 +1493,13 @@ EventFlag::EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
     , init_pattern(init_pattern)
     , flags(init_pattern) {}
 
-SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr) {
+SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr, const SceKernelEventFlagOptParam *opt) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
     if (attr & ~(SCE_EVENT_WAITMULTIPLE | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
         return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    if (opt && opt->size > sizeof(*opt))
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
     return SCE_KERNEL_OK;
 }
 
