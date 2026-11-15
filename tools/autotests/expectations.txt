@@ -304,7 +304,7 @@ lw_cond_after_mutex_delete      fail     # a wait on a lightweight condition var
 lw_cond_errors                  fail     # a signal to thread 0 gives 0x80028021
 lw_cond_relock_requeue          fail     # a lightweight condition waiter taking its mutex back isn't requeued on a priority change
 lw_cond_semantics               pass
-lw_cond_work_words              fail     # the lightweight mutex work area's wait count word isn't written
+lw_cond_work_words              pass
 lw_copied_work_kernel_paths     fail     # a copied lightweight work area doesn't record the caller or its lock count
 lw_deleted_work_contended       fail     # calls on a deleted contended lightweight mutex give the wrong error codes
 lw_hand_built_work_areas        fail     # unlock on a hand built work area gives 0x80028186 where the Vita gives others
@@ -319,8 +319,8 @@ lw_mutex_semantics              pass
 lw_mutex_user_paths             fail     # the lightweight mutex user paths: try lock checks, an unlock after a delete, bad UID words, the info size check
 lw_openable_attr_rejected       pass
 lw_recursive_count_limit        pass
-lw_wait_count_words             fail     # the lightweight mutex work area's wait count word isn't written
-lw_wait_count_words_more        fail     # a lightweight mutex's waiter count word stays 0 while threads wait on it
+lw_wait_count_words             pass
+lw_wait_count_words_more        pass
 lw_work                         pass
 lw_work_area_freed              fail     # info by UID on a freed work area returns 0 where the Vita gives 0x80028187
 lw_work_area_memory             fail     # a read only work area is accepted where the Vita refuses the create with 0x80022005, and a delete through a read only view returns 0 instead of 0x80020006
