@@ -527,7 +527,7 @@ struct MsgPipeReceiver : MsgPipeTransfer {
 class MsgPipe final : public WithUidClass<Event, UidClass::msg_pipe> {
     friend class Ref<MsgPipe>;
 
-    MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size, SceUID creator);
+    MsgPipe(SceUInt32 attr, const char *name, SceSize buf_size, SceUID creator);
 
 public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK

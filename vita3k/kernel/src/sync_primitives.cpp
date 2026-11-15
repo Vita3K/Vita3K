@@ -1681,10 +1681,10 @@ SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
 // * Msg Pipe  *
 // *************
 
-MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size, SceUID creator)
+MsgPipe::MsgPipe(SceUInt32 attr, const char *name, SceSize buf_size, SceUID creator)
     : WithUidClass(attr, name, 0, system_event_user_data(creator))
     // A pipe's buffer is a whole number of 4 KiB pages
-    , capacity(static_cast<SceSize>(align(buf_size, 0x1000)))
+    , capacity(align(buf_size, 0x1000))
     , buffer(std::make_unique<std::byte[]>(capacity)) {}
 
 SceInt32 MsgPipe::check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size) {
@@ -1694,7 +1694,8 @@ SceInt32 MsgPipe::check_create(const char *name, SceUInt32 type, SceUInt32 attr,
         return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
     if (attr & ~(SCE_KERNEL_MSG_PIPE_ATTR_TH_MASK | SCE_KERNEL_ATTR_OPENABLE | SCE_KERNEL_EVENT_ATTR_AUTO_RESET | SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY))
         return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
-    if (buf_size == 0)
+    // A size that rounds to no page fails, also one that wraps past 4 GiB
+    if (static_cast<SceSize>(buf_size + 0xFFF) >> 12 == 0)
         return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
     return SCE_KERNEL_OK;
 }
