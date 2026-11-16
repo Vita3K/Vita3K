@@ -327,6 +327,7 @@ lw_work_area_memory             fail     # a read only work area is accepted whe
 lw_work_area_unmapped           crash    # a freed block's base still counts as in a block, so a work area there crashes
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 lw_zero_sum_recursive_owner     pass
+lwmutex_lockcb_arm              fail     # no ARM sceKernelLockLwMutexCB export, so the lock does nothing
 main_thread_start               pass
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_access_by_type         fail     # writes to read only memory block types succeed where the Vita gives 0x80022005
@@ -487,6 +488,7 @@ mutex_waiter_counts             pass
 mutex_waits                     pass
 name_lookup                     fail     # opening gives the object's own UID, openable names aren't unique, a condition variable takes the openable attribute
 narrow_mask_onto_equal_core     fail     # threads ignore their core
+net_errno_other_errors          fail     # calls before sceNetInit, unknown socket families and unknown resolvers don't fail like libnet
 nonblocking_wait_preempt        fail     # threads ignore their core and priority
 nonobject_wait_priority_change  fail     # threads ignore their priority, so a woken thread below the main thread runs at once
 nonopenable_name_long_each_kind pass
@@ -673,6 +675,7 @@ thread_cpu_fields               fail     # the CPU fields of thread info, thread
 thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
+thread_create_option_unreadable fail     # an unreadable option pointer isn't checked, so the create reads it and makes the thread
 thread_create_prio0_ceiling     fail     # a ceiling mutex doesn't raise its owner's priority
 thread_create_relative_priority pass
 thread_creator_ends             pass
@@ -760,6 +763,7 @@ thread_status_matrix            fail     # READY, the current CPU of a thread th
 thread_suspend_for_vm_stops     pass
 thread_switch_counter_kinds     fail     # the preempt, release and CPU change counts of thread info stay 0, and sceKernelGetCpuId returns 0
 thread_switch_counters          fail     # sleeps and interrupt preempts don't grow the release and preempt counters
+thread_tls_addr_libkernel       fail     # no libkernel export of sceKernelGetThreadTLSAddr, so it gives NULL for every thread
 thread_vfp_exception            pass
 thread_wait_id_idle             fail     # a thread that can run but hasn't reports RUNNING instead of READY
 thread_zero_mask_lifecycle      fail     # a zero affinity mask reads back as 0x70000 where the Vita reads 0
@@ -816,7 +820,9 @@ timer_zero_pattern_delete       pass
 tls                             pass
 tls_blocks                      fail     # TLS isn't a memory block
 tls_process_id                  pass
+tls_random_slots                fail     # slot 6 is the same word in every thread and the stack canaries aren't slot 7
 tls_slot5                       pass
+tls_slot_reads                  fail     # sceKernelGetThreadId and sceKernelGetThreadCurrentPriority don't read TLS slots 1 and 8
 tls_start_slots                 pass
 uid                             pass
 uid_class                       pass
