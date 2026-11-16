@@ -28,6 +28,8 @@
 #include <chrono>
 #include <condition_variable>
 #include <functional>
+#include <future>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -86,6 +88,13 @@ enum struct Filter : int {
     FSR = 1 << 5,
 };
 
+struct IdleTask {
+    std::function<void()> fn;
+    std::promise<void> done;
+    // Taken by the render thread to run it, or by the caller to drop it after its timeout
+    std::atomic<bool> claimed{ false };
+};
+
 struct State {
     fs::path cache_path;
     fs::path log_path;
@@ -127,6 +136,10 @@ struct State {
     bool should_display;
 
     std::atomic<bool> async_flip_requested{ false };
+
+    // Run by the render thread once it has run every batch that is ready
+    std::mutex idle_tasks_mutex;
+    std::vector<std::shared_ptr<IdleTask>> idle_tasks;
     std::atomic<int> pending_vsync{ -1 };
 
     std::unique_ptr<std::thread> render_thread;

@@ -65,6 +65,8 @@ struct DisplayState {
     std::atomic<bool> imgui_render{ true };
     std::atomic<bool> fullscreen{ false };
     std::atomic<std::uint64_t> vblank_count{ 0 };
+    // Vblanks while neither the emulator pause nor the debugger holds the app
+    std::atomic<std::uint64_t> app_vblank_count{ 0 };
     // The UID of the kernel's event pulsed at each vblank, which the display waits wait on and the
     // vblank start callbacks are registered to
     SceUID vblank_event = 0;

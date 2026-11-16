@@ -181,6 +181,26 @@ void touch_vsync_update(EmuEnvState &emuenv) {
         }
     }
 
+    {
+        const std::lock_guard<std::mutex> guard(emuenv.ctrl.mutex);
+        auto &scripted = emuenv.ctrl.scripted_touch;
+        if (scripted.length.end_vcount != 0 && scripted.length.update(emuenv.display.app_vblank_count.load()))
+            scripted = {};
+
+        if (scripted.active && touch.touch_mode[SCE_TOUCH_PORT_FRONT]) {
+            if (!scripted.down) {
+                touch.curr_touch_id[SCE_TOUCH_PORT_FRONT] = (touch.curr_touch_id[SCE_TOUCH_PORT_FRONT] + 1) % 128;
+                scripted.down = true;
+            }
+
+            SceTouchData &data = touch.touch_buffers[(touch.touch_buffer_idx + 1) % MAX_TOUCH_BUFFER_SAVED][SCE_TOUCH_PORT_FRONT];
+            data.report[0].id = touch.curr_touch_id[SCE_TOUCH_PORT_FRONT];
+            data.report[0].x = scripted.x;
+            data.report[0].y = scripted.y;
+            data.reportNum = 1;
+        }
+    }
+
     touch.touch_buffer_idx++;
     touch.touch_buffer_idx %= MAX_TOUCH_BUFFER_SAVED;
 }
@@ -318,6 +338,14 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
         return 1;
 
     const int port_idx = static_cast<int>(port);
+
+    if (port == SCE_TOUCH_PORT_FRONT) {
+        const std::lock_guard<std::mutex> guard(emuenv.ctrl.mutex);
+        // The length starts once the touch is in the buffer, so the next vblank doesn't end it
+        // before the app sees it
+        if (emuenv.ctrl.scripted_touch.down)
+            emuenv.ctrl.scripted_touch.length.update(emuenv.display.app_vblank_count.load());
+    }
 
     int nb_returned_data = 1;
     if (is_peek) {

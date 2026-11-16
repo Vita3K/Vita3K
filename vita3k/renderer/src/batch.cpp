@@ -131,6 +131,37 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
     } while (true);
 }
 
+static void run_idle_tasks(renderer::State &state) {
+    std::vector<std::shared_ptr<IdleTask>> tasks;
+    {
+        const std::lock_guard<std::mutex> lock(state.idle_tasks_mutex);
+        tasks.swap(state.idle_tasks);
+    }
+    for (const auto &task : tasks) {
+        if (task->claimed.exchange(true))
+            continue;
+        task->fn();
+        task->done.set_value();
+    }
+}
+
+bool run_when_idle(State &state, std::function<void()> fn, std::chrono::milliseconds timeout) {
+    const auto task = std::make_shared<IdleTask>();
+    task->fn = std::move(fn);
+    std::future<void> done = task->done.get_future();
+    {
+        const std::lock_guard<std::mutex> lock(state.idle_tasks_mutex);
+        state.idle_tasks.push_back(task);
+    }
+    if (done.wait_for(timeout) == std::future_status::ready)
+        return true;
+    if (!task->claimed.exchange(true))
+        return false;
+    // It started already
+    done.wait();
+    return true;
+}
+
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms) {
     auto max_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() + max_wait_ms;
 
@@ -146,6 +177,8 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
         auto cmd_list = state.command_buffer_queue.top(3);
 
         if (!cmd_list || !is_cmd_ready(mem, *cmd_list)) {
+            run_idle_tasks(state);
+
             // beginning of the game or homebrew not using gxm
             if (state.context == nullptr)
                 return;
