@@ -80,10 +80,10 @@ class AppsListViewModel(application: Application) : AndroidViewModel(application
         loading = true
         viewModelScope.launch {
             try {
-                appVersion = AppRepository.getAppVersion()
                 val success = AppRepository.initialize(storagePath)
                 initialized = success
                 if (success) {
+                    appVersion = AppRepository.getAppVersion()
                     firmwareInstallState = AppRepository.getFirmwareInstallState()
                     loadApps()
                     startCompatibilitySync()
