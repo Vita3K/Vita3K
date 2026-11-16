@@ -21,6 +21,9 @@
 
 #include <net/types.h>
 
+// Closes the guest socket sid, whatever the libnet init state, for Vita3K's own net code
+int close_net_socket(EmuEnvState &emuenv, int sid);
+
 DECL_EXPORT(int, sceNetBind, int sid, const SceNetSockaddr *addr, unsigned int addrlen);
 DECL_EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags);
 DECL_EXPORT(int, sceNetInetPton, int af, const char *src, void *dst);
