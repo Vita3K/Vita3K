@@ -79,16 +79,21 @@ class AppsListViewModel(application: Application) : AndroidViewModel(application
 
         loading = true
         viewModelScope.launch {
-            appVersion = AppRepository.getAppVersion()
-            val success = AppRepository.initialize(storagePath)
-            initialized = success
-            if (success) {
-                firmwareInstallState = AppRepository.getFirmwareInstallState()
-                loadApps()
-                startCompatibilitySync()
-                startUpdateCheckIfEnabled()
+            try {
+                appVersion = AppRepository.getAppVersion()
+                val success = AppRepository.initialize(storagePath)
+                initialized = success
+                if (success) {
+                    firmwareInstallState = AppRepository.getFirmwareInstallState()
+                    loadApps()
+                    startCompatibilitySync()
+                    startUpdateCheckIfEnabled()
+                }
+            } catch (_: Exception) {
+                initialized = false
+            } finally {
+                loading = false
             }
-            loading = false
         }
     }
 
@@ -96,13 +101,18 @@ class AppsListViewModel(application: Application) : AndroidViewModel(application
         if (!initialized) return
         viewModelScope.launch {
             loading = true
-            AppRepository.refreshAppsList()
-            if (syncCompatibility) {
-                syncCompatibilityDatabase()
+            try {
+                AppRepository.refreshAppsList()
+                if (syncCompatibility) {
+                    syncCompatibilityDatabase()
+                }
+                firmwareInstallState = AppRepository.getFirmwareInstallState()
+                loadApps()
+            } catch (_: Exception) {
+                // Keep the existing app list visible when refreshing fails.
+            } finally {
+                loading = false
             }
-            firmwareInstallState = AppRepository.getFirmwareInstallState()
-            loadApps()
-            loading = false
         }
     }
 
@@ -110,9 +120,14 @@ class AppsListViewModel(application: Application) : AndroidViewModel(application
         if (!initialized) return
         viewModelScope.launch {
             loading = true
-            firmwareInstallState = AppRepository.getFirmwareInstallState()
-            loadApps()
-            loading = false
+            try {
+                firmwareInstallState = AppRepository.getFirmwareInstallState()
+                loadApps()
+            } catch (_: Exception) {
+                // Keep the existing app list visible when refreshing fails.
+            } finally {
+                loading = false
+            }
         }
     }
 
