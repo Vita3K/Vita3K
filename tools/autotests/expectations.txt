@@ -488,7 +488,7 @@ mutex_waiter_counts             pass
 mutex_waits                     pass
 name_lookup                     fail     # opening gives the object's own UID, openable names aren't unique, a condition variable takes the openable attribute
 narrow_mask_onto_equal_core     fail     # threads ignore their core
-net_errno_other_errors          fail     # calls before sceNetInit, unknown socket families and unknown resolvers don't fail like libnet
+net_errno_other_errors          pass
 nonblocking_wait_preempt        fail     # threads ignore their core and priority
 nonobject_wait_priority_change  fail     # threads ignore their priority, so a woken thread below the main thread runs at once
 nonopenable_name_long_each_kind pass

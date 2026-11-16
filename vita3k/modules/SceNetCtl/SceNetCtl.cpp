@@ -144,9 +144,9 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
     const auto handle_error_and_disconnect = [&](int recv_id, int send_id = 0) {
         // Close the sockets if they are valid
         if (recv_id > 0)
-            CALL_EXPORT(sceNetSocketClose, recv_id);
+            close_net_socket(emuenv, recv_id);
         if (send_id > 0)
-            CALL_EXPORT(sceNetSocketClose, send_id);
+            close_net_socket(emuenv, send_id);
 
         {
             // Set the adhoc state and event to disconnected and notify the condition variable
@@ -350,8 +350,8 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         }
 
         // Close the sockets when the loop ends
-        CALL_EXPORT(sceNetSocketClose, recv_id);
-        CALL_EXPORT(sceNetSocketClose, send_id);
+        close_net_socket(emuenv, recv_id);
+        close_net_socket(emuenv, send_id);
 
         {
             // Notify the event and update the adhoc state
