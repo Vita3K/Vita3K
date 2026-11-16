@@ -23,6 +23,7 @@
 #include <gdbstub/functions.h>
 #include <gdbstub/state.h>
 
+#include <cpu/arm.h>
 #include <cpu/state.h>
 
 #include <bit>
@@ -187,12 +188,10 @@ static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
 }
 
 // Register numbers in the target description and in remote packets.
-constexpr uint32_t REG_CPSR = 16;
-constexpr uint32_t REG_D0 = 17;
-constexpr uint32_t VFP_DOUBLE_REGS = 32;
-constexpr uint32_t REG_FPSCR = REG_D0 + VFP_DOUBLE_REGS;
+constexpr uint32_t REG_CPSR = arm::CORE_REG_COUNT;
+constexpr uint32_t REG_D0 = REG_CPSR + 1;
+constexpr uint32_t REG_FPSCR = REG_D0 + arm::D_REG_COUNT;
 constexpr uint32_t REG_Q0 = REG_FPSCR + 1;
-constexpr uint32_t NEON_QUAD_REGS = 16;
 
 // Core, VFP and NEON registers. gdb shows s0-s31 from the d registers by itself but not q0-q15, so
 // the q registers are listed too.
@@ -203,7 +202,7 @@ static std::string make_target_xml() {
 <architecture>arm</architecture>
 <feature name="org.gnu.gdb.arm.core">
 )";
-    for (int r = 0; r < 13; r++)
+    for (uint32_t r = 0; r < arm::REG_SP; r++)
         fmt::format_to(std::back_inserter(xml), R"(<reg name="r{}" bitsize="32" type="uint32"/>)", r);
     xml += fmt::format(R"(<reg name="sp" bitsize="32" type="data_ptr"/>
 <reg name="lr" bitsize="32" type="uint32"/>
@@ -213,7 +212,7 @@ static std::string make_target_xml() {
 <feature name="org.gnu.gdb.arm.vfp">
 )",
         REG_CPSR);
-    for (uint32_t d = 0; d < VFP_DOUBLE_REGS; d++)
+    for (uint32_t d = 0; d < arm::D_REG_COUNT; d++)
         fmt::format_to(std::back_inserter(xml), R"(<reg name="d{}" bitsize="64" type="ieee_double" regnum="{}"/>)", d, REG_D0 + d);
     xml += fmt::format(R"(<reg name="fpscr" bitsize="32" type="int" group="float" regnum="{}"/>
 </feature>
@@ -221,7 +220,7 @@ static std::string make_target_xml() {
 <vector id="v4u32" type="uint32" count="4"/>
 )",
         REG_FPSCR);
-    for (uint32_t q = 0; q < NEON_QUAD_REGS; q++)
+    for (uint32_t q = 0; q < arm::Q_REG_COUNT; q++)
         fmt::format_to(std::back_inserter(xml), R"(<reg name="q{}" bitsize="128" type="v4u32" regnum="{}"/>)", q, REG_Q0 + q);
     xml += "</feature>\n</target>";
     return xml;
@@ -285,20 +284,20 @@ static std::string cmd_get_current_thread(EmuEnvState &state, PacketCommand &com
 }
 
 static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
-    if (reg <= 12) {
+    if (reg < arm::REG_SP) {
         state.set_reg(reg, value);
         return;
     }
 
-    if (reg == 13) {
+    if (reg == arm::REG_SP) {
         state.set_sp(value);
         return;
     }
-    if (reg == 14) {
+    if (reg == arm::REG_LR) {
         state.set_lr(value);
         return;
     }
-    if (reg == 15) {
+    if (reg == arm::REG_PC) {
         state.set_pc(value);
         return;
     }
@@ -317,25 +316,25 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
 
 // How many 32-bit words a register has in p and P packets
 static size_t reg_words(uint32_t reg) {
-    if (reg >= REG_D0 && reg < REG_D0 + VFP_DOUBLE_REGS)
-        return 2;
-    if (reg >= REG_Q0 && reg < REG_Q0 + NEON_QUAD_REGS)
-        return 4;
+    if (reg >= REG_D0 && reg < REG_D0 + arm::D_REG_COUNT)
+        return arm::WORDS_PER_D_REG;
+    if (reg >= REG_Q0 && reg < REG_Q0 + arm::Q_REG_COUNT)
+        return arm::WORDS_PER_Q_REG;
     return 1;
 }
 
 // The context word that a register starts at, or nothing for an unknown register
 static std::optional<uint32_t> reg_first_word(uint32_t reg) {
-    if (reg <= 15)
+    if (reg < arm::CORE_REG_COUNT)
         return reg;
     if (reg == REG_CPSR)
         return CPUContext::WORD_CPSR;
-    if (reg >= REG_D0 && reg < REG_D0 + VFP_DOUBLE_REGS)
-        return CPUContext::WORD_S0 + (reg - REG_D0) * 2;
+    if (reg >= REG_D0 && reg < REG_D0 + arm::D_REG_COUNT)
+        return CPUContext::WORD_S0 + (reg - REG_D0) * arm::WORDS_PER_D_REG;
     if (reg == REG_FPSCR)
         return CPUContext::WORD_FPSCR;
-    if (reg >= REG_Q0 && reg < REG_Q0 + NEON_QUAD_REGS)
-        return CPUContext::WORD_S0 + (reg - REG_Q0) * 4;
+    if (reg >= REG_Q0 && reg < REG_Q0 + arm::Q_REG_COUNT)
+        return CPUContext::WORD_S0 + (reg - REG_Q0) * arm::WORDS_PER_Q_REG;
     return std::nullopt;
 }
 
@@ -412,10 +411,10 @@ static std::string cmd_write_register(EmuEnvState &state, PacketCommand &command
     const std::string value = content.substr(equal_index + 1);
     if (value.size() != reg_words(reg) * 8)
         return "E00";
-    if (reg >= REG_D0 && reg < REG_D0 + VFP_DOUBLE_REGS)
-        write_float_regs(cpu, (reg - REG_D0) * 2, 2, value);
-    else if (reg >= REG_Q0 && reg < REG_Q0 + NEON_QUAD_REGS)
-        write_float_regs(cpu, (reg - REG_Q0) * 4, 4, value);
+    if (reg >= REG_D0 && reg < REG_D0 + arm::D_REG_COUNT)
+        write_float_regs(cpu, (reg - REG_D0) * arm::WORDS_PER_D_REG, arm::WORDS_PER_D_REG, value);
+    else if (reg >= REG_Q0 && reg < REG_Q0 + arm::Q_REG_COUNT)
+        write_float_regs(cpu, (reg - REG_Q0) * arm::WORDS_PER_Q_REG, arm::WORDS_PER_Q_REG, value);
     else
         modify_reg(cpu, reg, parse_reg(value));
 

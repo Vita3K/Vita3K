@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <cpu/arm.h>
 #include <cpu/state.h>
 #include <kernel/thread/thread_state.h>
 
@@ -45,7 +46,7 @@ static int created_priority(int priority) {
 static CPUContext initial_context(Address stack_top) {
     CPUContext ctx;
     // A Vita starts every thread with these in r2 to r12, and some games rely on r9 not being 0
-    std::fill(ctx.cpu_registers.begin() + 2, ctx.cpu_registers.begin() + 13, 0xDEADBEEF);
+    std::fill(ctx.cpu_registers.begin() + 2, ctx.cpu_registers.begin() + arm::REG_SP, 0xDEADBEEF);
     ctx.set_sp(stack_top);
     ctx.cpsr = SCE_KERNEL_THREAD_INITIAL_CPSR;
     ctx.fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
@@ -54,11 +55,11 @@ static CPUContext initial_context(Address stack_top) {
 
 // Puts the fill value in the d registers the kernel doesn't keep when it resumes a thread
 static void fill_unkept_vfp(CPUContext &ctx) {
-    for (std::size_t d = 0; d < 32; d++) {
-        if (d == 2 || d == 3 || (d >= 8 && d <= 15))
+    for (uint32_t d = 0; d < arm::D_REG_COUNT; d++) {
+        if (d == 2 || d == 3 || (d >= arm::AAPCS_VFP_CALLEE_SAVED_FIRST_D && d <= arm::AAPCS_VFP_CALLEE_SAVED_LAST_D))
             continue;
-        ctx.fpu_registers[2 * d] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_LOW);
-        ctx.fpu_registers[2 * d + 1] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_HIGH);
+        ctx.fpu_registers[arm::WORDS_PER_D_REG * d] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_LOW);
+        ctx.fpu_registers[arm::WORDS_PER_D_REG * d + 1] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_HIGH);
     }
 }
 
@@ -357,7 +358,7 @@ std::optional<uint32_t> ThreadState::call_guest(Address fn, std::initializer_lis
     CPUContext ctx = cpu->get_context();
     ctx.set_sp(caller.get_sp());
     ctx.set_lr(caller.get_lr());
-    ctx.set_pc(caller.get_pc() | caller.thumb());
+    ctx.set_pc(caller.get_pc() | (caller.thumb() ? arm::THUMB_BIT : 0));
     ctx.cpsr = caller.cpsr;
     cpu->set_context(ctx);
     return returned;
@@ -395,18 +396,18 @@ void ThreadState::dispatch_abort(Address fault_addr) {
     // instruction, so the call is only a notification and nothing is restored from the context.
     const uint32_t ctx_size = 17 * 4;
     const uint32_t sp_orig = cpu.get_sp();
-    const uint32_t sp_aligned = align_down(sp_orig - ctx_size, 8);
+    const uint32_t sp_aligned = align_down(sp_orig - ctx_size, arm::AAPCS_STACK_ALIGN);
 
     auto *ctx = Ptr<uint32_t>(sp_aligned).get(cpu.mem);
-    for (int i = 0; i < 13; i++)
+    for (uint32_t i = 0; i < arm::REG_SP; i++)
         ctx[i] = cpu.get_reg(i);
-    ctx[13] = sp_aligned + ctx_size;
-    ctx[14] = cpu.get_lr();
-    ctx[15] = cpu.get_pc();
+    ctx[arm::REG_SP] = sp_aligned + ctx_size;
+    ctx[arm::REG_LR] = cpu.get_lr();
+    ctx[arm::REG_PC] = cpu.get_pc();
     ctx[16] = fault_addr;
 
     LOG_DEBUG("DABT handler=0x{:08X} FAR=0x{:08X} PC=0x{:08X} SP=0x{:08X} sp_aligned=0x{:08X}",
-        handler, fault_addr, ctx[15], sp_orig, sp_aligned);
+        handler, fault_addr, ctx[arm::REG_PC], sp_orig, sp_aligned);
 
     // The handler interrupts guest code, which goes on with all its registers
     const CPUContext interrupted = cpu.get_context();

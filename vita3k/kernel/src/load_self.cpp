@@ -20,8 +20,8 @@
 #include <kernel/state.h>
 #include <kernel/types.h>
 
+#include <cpu/arm.h>
 #include <nids/functions.h>
-#include <util/arm.h>
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -145,13 +145,13 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
 
         kernel.func_binding_infos.emplace(nid, FuncBindingInfo{ entry.address(), library_nid });
         if (!func_address) {
-            stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-            stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+            stub[0] = arm::ARM_SVC; // Call our interrupt hook.
+            stub[1] = arm::ARM_MOV_PC_LR; // Return to the caller.
             stub[2] = nid; // Our interrupt hook will read this.
         } else {
-            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(func_address), 12);
-            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(func_address >> 16), 12);
-            stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+            stub[0] = arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(func_address), arm::REG_IP);
+            stub[1] = arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(func_address >> 16), arm::REG_IP);
+            stub[2] = arm::encode_arm_inst(arm::Instruction::BRANCH, 0, arm::REG_IP);
         }
         if (stub[3]) { // if function's associated reftable exists
             VarImportsHeader *const var_reloc_header = Ptr<VarImportsHeader>(stub[3]).get(mem);
@@ -282,9 +282,9 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
                 continue;
             auto address = it->second.entry_address;
             uint32_t *const stub = Ptr<uint32_t>(address).get(mem);
-            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(entry.address()), 12);
-            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(entry.address() >> 16), 12);
-            stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+            stub[0] = arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(entry.address()), arm::REG_IP);
+            stub[1] = arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(entry.address() >> 16), arm::REG_IP);
+            stub[2] = arm::encode_arm_inst(arm::Instruction::BRANCH, 0, arm::REG_IP);
             kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
         }
 
@@ -300,8 +300,8 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
 
 // An import stub resolved to an export branches through MOVW/MOVT of its address.
 static bool stub_targets(const uint32_t *stub, Address address) {
-    return stub[0] == encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(address), 12)
-        && stub[1] == encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(address >> 16), 12);
+    return stub[0] == arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(address), arm::REG_IP)
+        && stub[1] == arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(address >> 16), arm::REG_IP);
 }
 
 static bool unload_func_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, uint32_t library_nid, KernelState &kernel, MemState &mem) {
@@ -330,8 +330,8 @@ static bool unload_func_exports(const uint32_t *nids, const Ptr<uint32_t> *entri
             if (it->second.library_nid != library_nid && !stub_targets(stub, unloaded_address))
                 continue;
 
-            stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-            stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+            stub[0] = arm::ARM_SVC; // Call our interrupt hook.
+            stub[1] = arm::ARM_MOV_PC_LR; // Return to the caller.
             stub[2] = nid; // Our interrupt hook will read this.
             kernel.invalidate_jit_cache(entry, 3 * sizeof(uint32_t));
         }

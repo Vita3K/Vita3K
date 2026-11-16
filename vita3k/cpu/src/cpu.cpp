@@ -39,14 +39,14 @@ CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, M
 }
 
 void CPUState::set_pc(uint32_t val) {
-    if (val & 1) {
-        set_cpsr(get_cpsr() | 0x20);
-        val = val & 0xFFFFFFFE;
+    if (val & arm::THUMB_BIT) {
+        set_cpsr(get_cpsr() | arm::CPSR_T);
+        val &= ~arm::THUMB_BIT;
     } else {
-        set_cpsr(get_cpsr() & 0xFFFFFFDF);
-        val = val & 0xFFFFFFFC;
+        set_cpsr(get_cpsr() & ~arm::CPSR_T);
+        val &= ~(arm::ARM_INSTRUCTION_SIZE - 1);
     }
-    set_reg(15, val);
+    set_reg(arm::REG_PC, val);
 }
 
 std::optional<Address> CPUState::take_abort() {
@@ -58,14 +58,14 @@ std::optional<Address> CPUState::take_abort() {
 void CPUContext::place_call(MemState &mem, Address fn, Address return_pc, std::initializer_list<uint32_t> args) {
     set_pc(fn);
     set_lr(return_pc);
-    for (size_t i = 0; i < std::min<size_t>(args.size(), 4); i++)
+    for (size_t i = 0; i < std::min<size_t>(args.size(), arm::AAPCS_ARG_REG_COUNT); i++)
         cpu_registers[i] = args.begin()[i];
-    if (args.size() > 4) {
+    if (args.size() > arm::AAPCS_ARG_REG_COUNT) {
         constexpr size_t stack_alignment = 16;
-        const size_t stack_args_size = sizeof(uint32_t) * (args.size() - 4);
+        const size_t stack_args_size = sizeof(uint32_t) * (args.size() - arm::AAPCS_ARG_REG_COUNT);
         const size_t stack_size = (stack_args_size + stack_alignment - 1) & ~(stack_alignment - 1);
         set_sp(get_sp() - static_cast<uint32_t>(stack_size));
-        std::ranges::copy(args.begin() + 4, args.end(), Ptr<uint32_t>(get_sp()).get(mem));
+        std::ranges::copy(args.begin() + arm::AAPCS_ARG_REG_COUNT, args.end(), Ptr<uint32_t>(get_sp()).get(mem));
     }
 }
 

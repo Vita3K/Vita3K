@@ -18,31 +18,28 @@
 #include <kernel/debugger.h>
 #include <kernel/state.h>
 
-constexpr unsigned char THUMB_BREAKPOINT[2] = { 0x00, 0xBE };
-constexpr unsigned char ARM_BREAKPOINT[4] = { 0x70, 0x00, 0x20, 0xE1 };
-
 void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
     const auto lock = std::lock_guard(mutex);
     Breakpoint bk;
     bk.thumb_mode = thumb_mode;
     if (thumb_mode) {
-        std::memcpy(&bk.data, Ptr<uint8_t>(addr).get(mem), sizeof(THUMB_BREAKPOINT));
-        std::memcpy(Ptr<uint8_t>(addr).get(mem), THUMB_BREAKPOINT, sizeof(THUMB_BREAKPOINT));
+        std::memcpy(&bk.data, Ptr<uint8_t>(addr).get(mem), sizeof(arm::THUMB_BKPT));
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), &arm::THUMB_BKPT, sizeof(arm::THUMB_BKPT));
     } else {
-        std::memcpy(&bk.data, Ptr<uint8_t>(addr).get(mem), sizeof(ARM_BREAKPOINT));
-        std::memcpy(Ptr<uint8_t>(addr).get(mem), ARM_BREAKPOINT, sizeof(ARM_BREAKPOINT));
+        std::memcpy(&bk.data, Ptr<uint8_t>(addr).get(mem), sizeof(arm::ARM_BKPT));
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), &arm::ARM_BKPT, sizeof(arm::ARM_BKPT));
     }
     breakpoints.emplace(addr, bk);
-    parent.invalidate_jit_cache(addr, 4);
+    parent.invalidate_jit_cache(addr, arm::ARM_INSTRUCTION_SIZE);
 }
 
 void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
     const auto lock = std::lock_guard(mutex);
     if (breakpoints.contains(addr)) {
         auto last = breakpoints[addr];
-        std::memcpy(Ptr<uint8_t>(addr).get(mem), &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), &last.data, last.thumb_mode ? sizeof(arm::THUMB_BKPT) : sizeof(arm::ARM_BKPT));
         breakpoints.erase(addr);
-        parent.invalidate_jit_cache(addr, 4);
+        parent.invalidate_jit_cache(addr, arm::ARM_INSTRUCTION_SIZE);
     }
 }
 

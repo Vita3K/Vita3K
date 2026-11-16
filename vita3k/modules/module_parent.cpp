@@ -20,6 +20,7 @@
 
 #include <modules/module_parent.h>
 
+#include <cpu/arm.h>
 #include <cpu/state.h>
 #include <emuenv/state.h>
 #include <io/device.h>
@@ -104,8 +105,8 @@ Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem) {
     for (uint32_t nid : nids) {
         *function_pointer = function_location;
         // encode svc call
-        function_svc[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-        function_svc[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+        function_svc[0] = arm::ARM_SVC; // Call our interrupt hook.
+        function_svc[1] = arm::ARM_MOV_PC_LR; // Return to the caller.
         function_svc[2] = nid; // Our interrupt hook will read this.
 
         function_pointer++;

@@ -723,10 +723,9 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
             // which a call keeps. Every other d register reads this NaN.
             constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
             infoVfp->fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
-            for (size_t i = 0; i < std::size(infoVfp->reg); i += 2)
+            for (size_t i = 0; i < std::size(infoVfp->reg); i += arm::WORDS_PER_D_REG)
                 memcpy(&infoVfp->reg[i], SCRUBBED, sizeof(SCRUBBED));
-            // d8 to d15 are s16 to s31
-            memcpy(&infoVfp->reg[16], &context.fpu_registers[16], 16 * sizeof(infoVfp->reg[0]));
+            memcpy(&infoVfp->reg[arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S], &context.fpu_registers[arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S], arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT * sizeof(infoVfp->reg[0]));
         } else {
             // A thread stopped in its own code has its own VFP state
             infoVfp->fpscr = context.fpscr;
@@ -1008,7 +1007,7 @@ EXPORT(SceUID, _sceKernelRegisterThreadEventHandler, Ptr<const char> name, SceUI
     const bool bad_mask = target == thread_id ? mask != SCE_KERNEL_THREAD_EVENT_TYPE_END : (mask & ~(SCE_KERNEL_THREAD_EVENT_TYPE_START | SCE_KERNEL_THREAD_EVENT_TYPE_END)) != 0;
     if (bad_mask)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-    if (!is_valid_addr(emuenv.mem, opt->handler.address() & ~1))
+    if (!is_valid_addr(emuenv.mem, opt->handler.address() & ~arm::THUMB_BIT))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     return emuenv.kernel.register_thread_event_handler(Ref<ThreadEventHandler>::make(name_copy, target, mask, opt->handler.address(), opt->common));
 }
@@ -1488,7 +1487,7 @@ EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Pt
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     if (attr)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
-    if (!is_valid_addr(emuenv.mem, callbackFunc.address() & ~1))
+    if (!is_valid_addr(emuenv.mem, callbackFunc.address() & ~arm::THUMB_BIT))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
     return emuenv.kernel.get_thread(thread_id)->add_callback(Ref<Callback>::make(thread_id, name_copy, callbackFunc, pCommon));

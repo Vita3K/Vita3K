@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
+#include <cpu/arm.h>
 #include <mem/ptr.h>
 #include <util/types.h>
 
@@ -57,10 +58,10 @@
 #define SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 0x00002000U
 
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
-#define SCE_KERNEL_THREAD_INITIAL_FPSCR 0x03000000U
+#define SCE_KERNEL_THREAD_INITIAL_FPSCR (arm::FPSCR_DN | arm::FPSCR_FZ)
 
 // The CPSR a thread starts with: user mode and no flags
-#define SCE_KERNEL_THREAD_INITIAL_CPSR 0x00000010U
+#define SCE_KERNEL_THREAD_INITIAL_CPSR arm::CPSR_MODE_USR
 
 // The words of the value the kernel puts in the d registers it doesn't keep for a thread
 #define SCE_KERNEL_VFP_REGISTER_FILL_LOW 0x7F80DEADU
@@ -1075,7 +1076,7 @@ struct SceKernelThreadRunStatus {
 struct SceKernelThreadCpuRegisterInfo {
     SceSize size;
     SceUInt32 cpsr;
-    SceUInt32 reg[16];
+    SceUInt32 reg[arm::CORE_REG_COUNT];
     SceUInt32 tpidrurw;
     SceUInt32 teehbr;
     SceUInt32 sb;
@@ -1085,7 +1086,7 @@ struct SceKernelThreadCpuRegisterInfo {
 struct SceKernelThreadVfpRegisterInfo {
     SceSize size;
     SceUInt32 fpscr;
-    SceFloat reg[64];
+    SceFloat reg[arm::EXT_REG_WORDS];
 };
 
 struct SceProcessParam {

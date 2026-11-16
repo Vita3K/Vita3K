@@ -2,7 +2,6 @@ add_library(
 	util
 	STATIC
 	src/android_driver.cpp
-	src/arm.cpp
 	src/float_to_half.cpp
 	src/fs_utils.cpp
 	src/hash.cpp
