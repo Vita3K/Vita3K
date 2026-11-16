@@ -821,9 +821,9 @@ timer_zero_pattern_delete       pass
 tls                             pass
 tls_blocks                      fail     # TLS isn't a memory block
 tls_process_id                  pass
-tls_random_slots                fail     # slot 6 is the same word in every thread and the stack canaries aren't slot 7
 tls_slot5                       pass
 tls_slot_reads                  fail     # sceKernelGetThreadId and sceKernelGetThreadCurrentPriority don't read TLS slots 1 and 8
+tls_stack_guard                 fail     # the stack canary words aren't slot 7
 tls_start_slots                 pass
 uid                             pass
 uid_class                       pass
