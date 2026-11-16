@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "cpu/common.h"
+#include <cpu/arm.h>
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/state.h>
 #include <util/log.h>
@@ -234,7 +235,7 @@ public:
         switch (exception) {
         case Dynarmic::A32::Exception::Breakpoint:
             cpu.jit->HaltExecution(HALT_BREAKPOINT);
-            cpu.set_pc(cpu.is_thumb_mode() ? pc | 1 : pc);
+            cpu.set_pc(cpu.is_thumb_mode() ? pc | arm::THUMB_BIT : pc);
             break;
         case Dynarmic::A32::Exception::NoExecuteFault:
             LOG_CRITICAL("PC is 0x{:x} in thread {}, ending the app\n{}", pc, cpu.thread_id, cpu.get_context().description());
@@ -294,7 +295,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     }
     config.hook_hint_instructions = true;
     config.global_monitor = &shared_monitor;
-    config.coprocessors[15] = cp15;
+    config.coprocessors[arm::CP15] = cp15;
     config.processor_id = processor_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
     config.enable_cycle_counting = false;
@@ -325,7 +326,7 @@ GuestExit DynarmicCPU::run(RunMode mode) {
     }
     // The NID is the word after the SVC. A stepped SVC reports the debugger stop with it.
     if (Dynarmic::Has(reason, HALT_IMPORT))
-        return { GuestExit::Kind::import, *Ptr<uint32_t>(get_pc() + 4).get(mem), step };
+        return { GuestExit::Kind::import, *Ptr<uint32_t>(get_pc() + arm::ARM_INSTRUCTION_SIZE).get(mem), step };
     if (Dynarmic::Has(reason, HALT_FAULT))
         return { GuestExit::Kind::fault };
     // A run that halted stopped at the return address, and a step never returns

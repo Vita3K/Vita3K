@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
+#include <cpu/arm.h>
 #include <mem/ptr.h>
 #include <util/types.h>
 
@@ -57,10 +58,13 @@
 #define SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 0x00002000U
 
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
-#define SCE_KERNEL_THREAD_INITIAL_FPSCR 0x03000000U
+#define SCE_KERNEL_THREAD_INITIAL_FPSCR (arm::FPSCR_DN | arm::FPSCR_FZ)
 
 // The CPSR a thread starts with: user mode and no flags
-#define SCE_KERNEL_THREAD_INITIAL_CPSR 0x00000010U
+#define SCE_KERNEL_THREAD_INITIAL_CPSR arm::CPSR_MODE_USR
+
+// The CPSR bits a ForVM context write keeps. It takes the other bits from the new value.
+#define SCE_KERNEL_VM_CONTEXT_CPSR_KEPT (arm::CPSR_M | arm::CPSR_F | arm::CPSR_I | arm::CPSR_A | arm::CPSR_RESERVED_23_20 | arm::CPSR_IT_1_0)
 
 // The words of the value the kernel puts in the d registers it doesn't keep for a thread
 #define SCE_KERNEL_VFP_REGISTER_FILL_LOW 0x7F80DEADU
@@ -1075,9 +1079,10 @@ struct SceKernelThreadRunStatus {
 struct SceKernelThreadCpuRegisterInfo {
     SceSize size;
     SceUInt32 cpsr;
-    SceUInt32 reg[16];
+    SceUInt32 reg[arm::CORE_REG_COUNT];
     SceUInt32 tpidrurw;
     SceUInt32 teehbr;
+    // TLS slots 2 and 3, the stack's top and bottom
     SceUInt32 sb;
     SceUInt32 st;
 };
@@ -1085,7 +1090,7 @@ struct SceKernelThreadCpuRegisterInfo {
 struct SceKernelThreadVfpRegisterInfo {
     SceSize size;
     SceUInt32 fpscr;
-    SceFloat reg[64];
+    SceFloat reg[arm::EXT_REG_WORDS];
 };
 
 struct SceProcessParam {
@@ -1107,9 +1112,22 @@ struct SceProcessParam {
 struct SceKernelThreadOptParam {
     /** Size of the ::SceKernelThreadOptParam structure. */
     SceSize size;
-    /** Attributes */
+    /** Attributes, the SCE_KERNEL_THREAD_OPT_* bits of the fields they ask for */
     SceUInt32 attr;
+    SceUInt32 kStackMemType;
+    SceUInt32 uStackMemType;
+    SceUInt32 uTLSMemType;
+    SceUInt32 uStackMemid;
+    SceUInt32 data_0x18;
 };
+
+#define SCE_KERNEL_THREAD_OPT_KSTACK_MEMTYPE 0x1U
+#define SCE_KERNEL_THREAD_OPT_USTACK_MEMTYPE 0x2U
+#define SCE_KERNEL_THREAD_OPT_UTLS_MEMTYPE 0x4U
+#define SCE_KERNEL_THREAD_OPT_USTACK_MEMID 0x8U
+#define SCE_KERNEL_THREAD_OPT_DATA_0X18 0x10U
+// The last field's default, also every bit a game may set in it
+#define SCE_KERNEL_THREAD_OPT_DATA_0X18_DEFAULT 0x301U
 
 struct SceKernelCreateThread_opt {
     SceSize size;

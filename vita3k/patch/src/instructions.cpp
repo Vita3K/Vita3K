@@ -17,10 +17,12 @@
 
 #include "patch/instructions.h"
 
+#include <cpu/arm.h>
+
 #include <util/log.h>
 
 uint32_t nop(std::vector<uint32_t> &args) {
-    return 0xBF00;
+    return arm::THUMB_NOP;
 }
 
 // args[0] - destination register Rd (0-7 only)
@@ -29,7 +31,7 @@ uint32_t t1_mov(std::vector<uint32_t> &args) {
     uint8_t Rd = args[0] & 0x7; // register index (3-bit)
     uint8_t imm = args[1] & 0xFF; // immediate value (8-bit)
 
-    return static_cast<uint32_t>((0x20 | Rd) << 8) | imm;
+    return arm::THUMB_MOV_IMM | (Rd << 8) | imm;
 }
 
 // args[0] = sf (0 = MOV, 1 = MOVS)
@@ -40,13 +42,5 @@ uint32_t a1_mov(std::vector<uint32_t> &args) {
     uint8_t rd = args[1] & 0xF;
     uint8_t imm = args[2] & 0xFF;
 
-    uint32_t instr = 0;
-    instr |= 0b1110u << 28; // cond = AL
-    instr |= 0b1u << 25; // I = 1 (immediate mode)
-    instr |= 0b1101u << 21; // opcode = MOV
-    instr |= sf << 20; // S bit
-    instr |= rd << 12; // Rd
-    instr |= imm; // imm8 (rotate = 0)
-
-    return instr;
+    return arm::ARM_MOV_IMM | (sf << 20) | (rd << 12) | imm;
 }

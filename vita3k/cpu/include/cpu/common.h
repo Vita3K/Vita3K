@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cpu/arm.h>
 #include <fmt/format.h>
 #include <mem/util.h> // Address.
 
@@ -60,24 +61,24 @@ struct GuestExit {
 // An import's result, which the kernel writes to the registers when the call returns to guest code
 struct CallResult {
     // r0 to r3, of which count are written
-    std::array<uint32_t, 4> regs{};
+    std::array<uint32_t, arm::AAPCS_ARG_REG_COUNT> regs{};
     uint8_t count = 0;
     // A float result, in s0 with its bits in regs[0]
     bool in_s0 = false;
 };
 
 struct CPUContext {
-    std::array<uint32_t, 16> cpu_registers{};
-    std::array<float, 64> fpu_registers{};
+    std::array<uint32_t, arm::CORE_REG_COUNT> cpu_registers{};
+    std::array<float, arm::EXT_REG_WORDS> fpu_registers{};
     uint32_t cpsr = 0;
     uint32_t fpscr = 0;
     uint32_t tpidrurw = 0;
 
     // The registers as 32-bit words: r0 to r15, cpsr, s0 to s63, then fpscr. A d register is two
     // words and a q register four.
-    static constexpr uint32_t WORD_CPSR = 16;
-    static constexpr uint32_t WORD_S0 = 17;
-    static constexpr uint32_t WORD_FPSCR = WORD_S0 + 64;
+    static constexpr uint32_t WORD_CPSR = arm::CORE_REG_COUNT;
+    static constexpr uint32_t WORD_S0 = WORD_CPSR + 1;
+    static constexpr uint32_t WORD_FPSCR = WORD_S0 + arm::EXT_REG_WORDS;
 
     uint32_t word(uint32_t i) const {
         if (i < WORD_CPSR)
@@ -90,27 +91,27 @@ struct CPUContext {
     }
 
     bool thumb() const {
-        return cpsr & 0x20;
+        return cpsr & arm::CPSR_T;
     }
 
     uint32_t get_sp() const {
-        return cpu_registers[13];
+        return cpu_registers[arm::REG_SP];
     }
 
     uint32_t get_lr() const {
-        return cpu_registers[14];
+        return cpu_registers[arm::REG_LR];
     }
 
     uint32_t get_pc() const {
-        return cpu_registers[15];
+        return cpu_registers[arm::REG_PC];
     }
 
     void set_sp(uint32_t val) {
-        cpu_registers[13] = val;
+        cpu_registers[arm::REG_SP] = val;
     }
 
     void set_lr(uint32_t val) {
-        cpu_registers[14] = val;
+        cpu_registers[arm::REG_LR] = val;
     }
 
     // Sets up a call of fn with args: the first four in r0 to r3, the rest on the stack in mem, and
@@ -118,14 +119,14 @@ struct CPUContext {
     void place_call(MemState &mem, Address fn, Address return_pc, std::initializer_list<uint32_t> args);
 
     void set_pc(uint32_t val) {
-        if (val & 1) {
-            cpsr |= 0x20;
-            val = val & 0xFFFFFFFE;
+        if (val & arm::THUMB_BIT) {
+            cpsr |= arm::CPSR_T;
+            val &= ~arm::THUMB_BIT;
         } else {
-            cpsr &= 0xFFFFFFDF;
-            val = val & 0xFFFFFFFC;
+            cpsr &= ~arm::CPSR_T;
+            val &= ~(arm::ARM_INSTRUCTION_SIZE - 1);
         }
-        cpu_registers[15] = val;
+        cpu_registers[arm::REG_PC] = val;
     }
 
     std::string description() const {
@@ -134,7 +135,7 @@ struct CPUContext {
         for (int a = 0; a < 6; a++) {
             fmt::format_to(back_it, "r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}\n", a, cpu_registers[a], a + 6, cpu_registers[a + 6]);
         }
-        fmt::format_to(back_it, "r12: 0x{:0>8x}\n", cpu_registers[12]);
+        fmt::format_to(back_it, "r12: 0x{:0>8x}\n", cpu_registers[arm::REG_IP]);
         fmt::format_to(back_it, "Thumb: {}\n", thumb());
         return str;
     }

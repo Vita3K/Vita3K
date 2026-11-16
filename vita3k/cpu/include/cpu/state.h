@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cpu/arm.h>
 #include <cpu/common.h>
 #include <cpu/disasm/state.h>
 #include <mem/state.h>
@@ -103,14 +104,14 @@ struct CPUState {
     virtual CPUContext get_context() = 0;
     virtual void set_context(const CPUContext &ctx) = 0;
 
-    uint32_t get_sp() { return get_reg(13); }
-    void set_sp(uint32_t val) { set_reg(13, val); }
-    uint32_t get_lr() { return get_reg(14); }
-    void set_lr(uint32_t val) { set_reg(14, val); }
-    uint32_t get_pc() { return get_reg(15); }
+    uint32_t get_sp() { return get_reg(arm::REG_SP); }
+    void set_sp(uint32_t val) { set_reg(arm::REG_SP, val); }
+    uint32_t get_lr() { return get_reg(arm::REG_LR); }
+    void set_lr(uint32_t val) { set_reg(arm::REG_LR, val); }
+    uint32_t get_pc() { return get_reg(arm::REG_PC); }
     // Sets the PC, and the Thumb state from bit 0
     void set_pc(uint32_t val);
-    bool is_thumb_mode() { return get_cpsr() & 0x20; }
+    bool is_thumb_mode() { return get_cpsr() & arm::CPSR_T; }
 
     // Debugging helpers
     virtual void set_log_code(bool log) = 0;
@@ -121,6 +122,26 @@ struct CPUState {
 
 protected:
     CPUState(MemState &mem, SceUID thread_id, std::size_t processor_id);
+};
+
+// Reserves bytes on a guest thread's stack for as long as it lives
+class GuestStackAlloc {
+public:
+    GuestStackAlloc(CPUState &cpu, size_t size)
+        : cpu(cpu)
+        , size(size)
+        , addr(cpu.stack_alloc(size)) {}
+    ~GuestStackAlloc() { cpu.stack_free(size); }
+    GuestStackAlloc(const GuestStackAlloc &) = delete;
+    GuestStackAlloc &operator=(const GuestStackAlloc &) = delete;
+
+    // The lowest address of the reserved bytes
+    Address address() const { return addr; }
+
+private:
+    CPUState &cpu;
+    const size_t size;
+    const Address addr;
 };
 
 CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem);
