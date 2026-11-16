@@ -3959,6 +3959,7 @@ NID(_Unwind_VRS_Get, 0x0DFF2B2C)
 NID(_Unwind_VRS_Pop, 0xF16E32FC)
 NID(_Unwind_VRS_Set, 0xDAB28374)
 // Library "SceLibKernel"
+VAR_NID(SceKernelStackChkGuard, 0x4458BCF3)
 VAR_NID(__stack_chk_guard, 0x93B8AA67)
 NID(__sce_aeabi_idiv0, 0x4373B548)
 NID(__sce_aeabi_ldiv0, 0xFB235848)

@@ -68,8 +68,13 @@ VAR_EXPORT(__sce_libcparam) {
 
 VAR_EXPORT(__stack_chk_guard) {
     auto ptr = Ptr<uint32_t>(alloc(emuenv.mem, 4, "__stack_chk_guard"));
-    // Can be any random value
-    *ptr.get(emuenv.mem) = 0x0DEADBEE;
+    *ptr.get(emuenv.mem) = KernelState::STACK_CHECK_GUARD;
+    return ptr.address();
+}
+
+VAR_EXPORT(SceKernelStackChkGuard) {
+    auto ptr = Ptr<uint32_t>(alloc(emuenv.mem, 4, "SceKernelStackChkGuard"));
+    *ptr.get(emuenv.mem) = KernelState::STACK_CHECK_GUARD;
     return ptr.address();
 }
 
