@@ -663,10 +663,19 @@ EXPORT(int, _sceKernelGetSystemTime) {
     return UNIMPLEMENTED();
 }
 
-// Returns the error for ForVM register blocks larger than the kernel copies in, or 0
-static int vm_block_sizes_error(const SceKernelThreadCpuRegisterInfo *cpu, const SceKernelThreadVfpRegisterInfo *vfp) {
-    if ((cpu && cpu->size > sizeof(*cpu)) || (vfp && vfp->size > sizeof(*vfp)))
+// Returns the error for copying in the bytes a ForVM register block's first word gives, or 0
+template <typename T>
+static int vm_block_copy_error(const MemState &mem, Ptr<T> block) {
+    if (!block)
+        return 0;
+    // libkernel reads the size word in user mode, so on the console the app faults there instead
+    if (!is_valid_addr_len(mem, block.address(), sizeof(SceSize)))
+        return SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS;
+    const SceSize size = block.get(mem)->size;
+    if (size > sizeof(T))
         return SCE_KERNEL_ERROR_NO_MEMORY;
+    if (!is_valid_addr_len(mem, block.address(), size))
+        return SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS;
     return 0;
 }
 
@@ -706,10 +715,12 @@ static int vm_target(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id, Th
 
 EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
     TRACY_FUNC(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
+    if (const int error = vm_block_copy_error(emuenv.mem, pCpuRegisterInfo))
+        return RET_ERROR(error);
+    if (const int error = vm_block_copy_error(emuenv.mem, pVfpRegisterInfo))
+        return RET_ERROR(error);
     SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(emuenv.mem);
     SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);
-    if (const int error = vm_block_sizes_error(infoCpu, infoVfp))
-        return RET_ERROR(error);
     if (const int error = vm_uid_error(emuenv, thread_id, threadId))
         return RET_ERROR(error);
     if (const int error = vm_block_words_error(infoCpu, infoVfp))
@@ -1021,10 +1032,12 @@ EXPORT(SceInt32, _sceKernelSetEventWithNotifyCallback, SceUID event_id, SceUInt3
 
 EXPORT(int, _sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
     TRACY_FUNC(_sceKernelSetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
+    if (const int error = vm_block_copy_error(emuenv.mem, pCpuRegisterInfo))
+        return RET_ERROR(error);
+    if (const int error = vm_block_copy_error(emuenv.mem, pVfpRegisterInfo))
+        return RET_ERROR(error);
     const SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(emuenv.mem);
     const SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);
-    if (const int error = vm_block_sizes_error(infoCpu, infoVfp))
-        return RET_ERROR(error);
     if (const int error = vm_uid_error(emuenv, thread_id, threadId))
         return RET_ERROR(error);
     if (!infoCpu && !infoVfp)
@@ -1508,15 +1521,17 @@ constexpr SceUInt32 THREAD_CREATE_ATTRS = SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 | 
 
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);
-    // The option struct is copied in before the create, and its fields past its size read as 0
+    // The option's size word is copied in, then that many bytes, and fields past its size read as 0
     SceKernelThreadOptParam opt{};
-    if (is_unreadable(emuenv.mem, options->option))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
-    if (const SceKernelThreadOptParam *option = options->option.get(emuenv.mem)) {
-        const SceSize size = option->size;
+    if (const Address option = options->option.address()) {
+        if (!is_valid_addr_len(emuenv.mem, option, sizeof(opt.size)))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+        const SceSize size = options->option.get(emuenv.mem)->size;
         if (size > sizeof(opt))
             return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
-        memcpy(&opt, option, size);
+        if (!is_valid_addr_len(emuenv.mem, option, size))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+        memcpy(&opt, options->option.get(emuenv.mem), size);
     }
     if (!name)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
