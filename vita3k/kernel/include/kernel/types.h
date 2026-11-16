@@ -665,21 +665,49 @@ enum SceSysmoduleInternalModuleId : uint32_t {
 // The number of TLS slots sceKernelGetTLSAddr gives an address for
 #define SCE_KERNEL_TLS_KEY_COUNT 0x100
 
-// Indexes in thread local storage (TLS) for system data. It is used mostly by libkernel.
+// Indexes of the words in a thread's TLS area, used by the system and its libraries
 enum TlsItems {
-    TLS_PROCESS_ID = 0, // unused, and 0 when a thread is created, as on a Vita
+    TLS_RESERVED_0 = 0,
     TLS_THREAD_ID = 1,
     TLS_SP_TOP = 2, // the high end of the stack
     TLS_SP_BOTTOM = 3, // its low end
-    TLS_VFP_EXCEPTION = 4,
-    TLS_RESERVED_5 = 5,
-    TLS_RESERVED_6 = 6, // libc reserved longjump addr
-    TLS_STACK_CHECK_GUARD = 7, // libc reserved some memory address mask
+    TLS_VFP_EXCEPTION = 4, // 0 in callbacks and thread event handlers
+    TLS_LWMUTEX_NO_WAIT = 5, // nonzero makes sceKernelLockLwMutex and sceKernelLockLwMutexCB return CAN_NOT_WAIT
+    TLS_JMPBUF_KEY = 6, // random word per thread that setjmp XORs into the saved SP and LR
+    TLS_STACK_CHECK_GUARD = 7, // random word per process, the stack canary and the libc heap check key
     TLS_CURRENT_PRIORITY = 8,
-    TLS_CPU_AFFINITY_MASK = 9,
-    TLS_NET_ERRNO = 0x40,
-    TLS_FIBER_CONTEXT = 0x41,
+    TLS_CPU_AFFINITY_MASK = 9, // shifted left by 16, as in currentCpuAffinityMask
+    TLS_CLIB_ERROR = 0x20, // error code of the sceClib string to number functions
+    TLS_NET_ERRNO = 0x40, // a positive BSD errno that libnet calls store on failure
+    TLS_FIBER_CONTEXT = 0x41, // the running sceFiberRun record, 0 outside a fiber run
+    TLS_PSP2COMPAT_DATA = 0x42,
+    TLS_ULT_DATA = 0x43,
+    TLS_GPU_SIGNAL_COUNT = 0x44, // last GPU signal count sceGpuSignalWait gave this thread
+    TLS_FIOS2_DATA = 0x4D,
+    TLS_LIBC_ASCTIME = 0x80, // keys 0x80 to 0x87
     TLS_LIBC_ERRNO = 0x88,
+    TLS_NEWLIB_REENT = 0x89, // homebrew newlib struct _reent pointer
+    // The array __tls_get_addr indexes by module index, one pointer to this thread's TLS block of
+    // each module, entry 0 being TPIDRURO itself
+    TLS_LIBC_TLS_ARRAY = 0x8C,
+    // The number of entries in that array, which grows when more modules have TLS
+    TLS_LIBC_TLS_COUNT = 0x8D,
+    // The libc module generation the array was built for. Registering or unregistering a module's
+    // TLS bumps libc's global generation, and __tls_get_addr rebuilds the array when the two differ
+    TLS_LIBC_TLS_GENERATION = 0x8E,
+    TLS_LIBC_MBRLEN_STATE = 0x98,
+    TLS_LIBC_MBRTOWC_STATE = 0xA0,
+    TLS_LIBC_MBSRTOWCS_STATE = 0xA8,
+    TLS_LIBC_MBTOWC_STATE = 0xB0,
+    TLS_LIBC_WCRTOMB_STATE = 0xB8,
+    TLS_LIBC_WCTOMB_S_STATE = 0xBC,
+    TLS_LIBC_WCSRTOMBS_STATE = 0xC0,
+    TLS_LIBC_WCTOMB_STATE = 0xC3,
+    TLS_LIBC_STRERROR = 0xC5, // buffer for unknown codes, keys 0xC5 to 0xC9
+    TLS_LIBC_TM = 0xCA, // struct tm of localtime and gmtime, keys 0xCA to 0xD2
+    TLS_LIBC_STRTOK = 0xD3,
+    TLS_LIBC_CXA_GLOBALS = 0xD4, // C++ exception globals, keys 0xD4 to 0xDC
+    TLS_LIBC_CXA_BUFFER = 0xDD, // C++ runtime buffer of 0x88 bytes, keys 0xDD to 0xFE
 };
 
 struct SceSysmoduleOpt {
