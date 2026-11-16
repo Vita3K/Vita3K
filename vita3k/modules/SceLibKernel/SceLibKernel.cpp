@@ -1485,6 +1485,14 @@ EXPORT(Ptr<Ptr<void>>, sceKernelGetTLSAddr, int key) {
     return emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, key);
 }
 
+// libkernel's sceKernelGetThreadTLSAddr
+EXPORT(Ptr<Ptr<void>>, SceLibKernel_35D20E49, SceUID thid, int key) {
+    TRACY_FUNC(SceLibKernel_35D20E49, thid, key);
+    if (thid == 0 || thid == emuenv.kernel.get_thread(thread_id)->tls_slot(TLS_THREAD_ID))
+        thid = thread_id;
+    return emuenv.kernel.get_thread_tls_addr(emuenv.mem, thid, key);
+}
+
 EXPORT(int, sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
     TRACY_FUNC(sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
     return CALL_EXPORT(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
@@ -1506,12 +1514,7 @@ EXPORT(SceInt32, sceKernelGetThreadCpuAffinityMask2, SceUID thid) {
 
 EXPORT(SceInt32, sceKernelGetThreadCurrentPriority) {
     TRACY_FUNC(sceKernelGetThreadCurrentPriority);
-    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
-
-    if (!thread)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-
-    return thread->get_priority();
+    return emuenv.kernel.get_thread(thread_id)->tls_slot(TLS_CURRENT_PRIORITY);
 }
 
 EXPORT(int, sceKernelGetThreadEventInfo) {
@@ -1526,7 +1529,7 @@ EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
 
 EXPORT(int, sceKernelGetThreadId) {
     TRACY_FUNC(sceKernelGetThreadId);
-    return thread_id;
+    return emuenv.kernel.get_thread(thread_id)->tls_slot(TLS_THREAD_ID);
 }
 
 EXPORT(SceInt32, sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadInfo> pInfo) {
@@ -1622,6 +1625,11 @@ EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock
     if (ptimeout)
         *ptimeout = time_left;
     return result;
+}
+
+EXPORT(int, sceKernelLockLwMutexCB_0, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
+    TRACY_FUNC(sceKernelLockLwMutexCB_0, workarea, lock_count, ptimeout);
+    return CALL_EXPORT(sceKernelLockLwMutexCB, workarea, lock_count, ptimeout);
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
