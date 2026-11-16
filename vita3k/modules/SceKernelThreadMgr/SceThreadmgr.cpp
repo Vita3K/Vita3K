@@ -707,8 +707,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
         return RET_ERROR(error);
 
     if (infoCpu) {
-        // A thread a guest can suspend runs in user mode
-        infoCpu->cpsr = (context.cpsr & ~0x1FU) | 0x10;
+        infoCpu->cpsr = context.cpsr;
         static_assert(sizeof(infoCpu->reg) == sizeof(context.cpu_registers));
         memcpy(infoCpu->reg, context.cpu_registers.data(), sizeof(infoCpu->reg));
         infoCpu->sb = 100000; // Todo
@@ -755,7 +754,9 @@ EXPORT(int, _sceKernelGetThreadEventInfo) {
 
 EXPORT(int, _sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
     TRACY_FUNC(_sceKernelGetThreadExitStatus, thid, pExitStatus);
-    const ThreadStateRef thread = emuenv.kernel.get_thread(thid ? thid : thread_id);
+    if (thid == 0 || thid == thread_id)
+        return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thid);
     if (!thread)
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     if (!pExitStatus)
@@ -1102,7 +1103,7 @@ EXPORT(int, _sceKernelSignalLwCondTo) {
 
 EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     TRACY_FUNC(_sceKernelStartThread, thid, arglen, argp);
-    if (thid == 0)
+    if (thid == 0 || thid == thread_id)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     auto thread = emuenv.kernel.get_thread(thid);
     if (!thread)
@@ -1286,23 +1287,23 @@ static int wait_thread_end(ThreadState &waiter, ThreadState &target, int *stat, 
 
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEnd, thid, stat, timeout);
+    if (thid == 0 || thid == thread_id)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     const ThreadStateRef waiter = emuenv.kernel.get_thread(thread_id);
     const ThreadStateRef target = emuenv.kernel.get_thread(thid);
     if (!target)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    if (target == waiter)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     return wait_thread_end(*waiter, *target, stat, timeout, false);
 }
 
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEndCB, thid, stat, timeout);
+    if (thid == 0 || thid == thread_id)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     const ThreadStateRef waiter = emuenv.kernel.get_thread(thread_id);
     const ThreadStateRef target = emuenv.kernel.get_thread(thid);
     if (!target)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    if (target == waiter)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     return wait_thread_end(*waiter, *target, stat, timeout, true);
 }
 
@@ -1319,9 +1320,10 @@ EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelChangeActiveCpuMask) {
-    TRACY_FUNC(sceKernelChangeActiveCpuMask);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelChangeActiveCpuMask, SceUInt32 mask) {
+    TRACY_FUNC(sceKernelChangeActiveCpuMask, mask);
+    // Only system threads may change the active cores, and every Vita3K thread is an app's
+    return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
 }
 
 EXPORT(SceInt32, sceKernelChangeThreadCpuAffinityMask, SceUID thid, SceInt32 affinity_mask) {
@@ -1509,7 +1511,8 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     if (init_priority != SCE_KERNEL_CURRENT_THREAD_PRIORITY && !is_user_priority(init_priority))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
-    if (options->stack_size <= 0)
+    const SceSize stack_size = static_cast<SceSize>(options->stack_size);
+    if (stack_size == 0 || stack_size > SCE_KERNEL_THREAD_STACK_SIZE_MAX)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_STACK_SIZE);
     if (emuenv.kernel.get_thread(thread_id)->in_event_handler())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CONTEXT);

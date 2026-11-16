@@ -1586,16 +1586,22 @@ EXPORT(SceUID, sceKernelLoadStartModule, const char *moduleFileName, SceSize arg
 
 EXPORT(int, sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     TRACY_FUNC(sceKernelLockLwMutex, workarea, lock_count, ptimeout);
+    // The lock refuses at once while the thread's TLS slot 5 isn't 0
+    if (emuenv.kernel.get_thread(thread_id)->tls_slot(TLS_RESERVED_5) != 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_CAN_NOT_WAIT);
     return CALL_EXPORT(_sceKernelLockLwMutex, workarea, lock_count, ptimeout);
 }
 
 EXPORT(int, sceKernelLockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     TRACY_FUNC(sceKernelLockLwMutex_0, workarea, lock_count, ptimeout);
-    return CALL_EXPORT(_sceKernelLockLwMutex, workarea, lock_count, ptimeout);
+    return CALL_EXPORT(sceKernelLockLwMutex, workarea, lock_count, ptimeout);
 }
 
 EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     TRACY_FUNC(sceKernelLockLwMutexCB, workarea, lock_count, ptimeout);
+    // The lock refuses at once while the thread's TLS slot 5 isn't 0
+    if (emuenv.kernel.get_thread(thread_id)->tls_slot(TLS_RESERVED_5) != 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_CAN_NOT_WAIT);
     if (!workarea)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 

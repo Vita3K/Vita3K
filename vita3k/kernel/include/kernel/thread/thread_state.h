@@ -114,9 +114,12 @@ public:
     // itself made, like a function pointer call from library code. The registers are then the ones
     // the function leaves. Returns its r0, or nothing if the thread's or the app's end cut it short.
     std::optional<uint32_t> call_guest(Address fn, std::initializer_list<uint32_t> args);
-    // Starts the dormant thread from another thread and returns its exit status once it ends. Used
-    // for module start and stop and the GXM display queue.
-    uint32_t start_and_wait(SceSize args, const Ptr<void> argp = Ptr<void>{});
+    // Starts the dormant thread from another thread and returns its exit status once it ends, or the
+    // start's error. Used for module start and stop.
+    uint32_t start_and_wait(SceSize args, Ptr<void> argp);
+    // Runs the dormant thread's entry as a call with one argument from another thread and returns
+    // its exit status once it ends. Used for the GXM display queue callback.
+    uint32_t call_and_wait(Address arg);
 
     // Status and info
     ThreadStatus get_status() const;
@@ -230,6 +233,9 @@ private:
     friend class Waitable;
 
     WaitRequest request;
+
+    // Resets what each run starts with and runs the entry with these arguments, under the thread lock
+    void begin_run(CPUContext ctx, std::initializer_list<uint32_t> args, bool run_entry_callback);
 
     // How a thread ends, each value stronger than the ones before it
     enum class Ending : uint8_t {

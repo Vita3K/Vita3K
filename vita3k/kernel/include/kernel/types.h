@@ -59,6 +59,9 @@
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
 #define SCE_KERNEL_THREAD_INITIAL_FPSCR 0x03000000U
 
+// The CPSR a thread starts with: user mode and no flags
+#define SCE_KERNEL_THREAD_INITIAL_CPSR 0x00000010U
+
 // The words of the value the kernel puts in the d registers it doesn't keep for a thread
 #define SCE_KERNEL_VFP_REGISTER_FILL_LOW 0x7F80DEADU
 #define SCE_KERNEL_VFP_REGISTER_FILL_HIGH 0x7FF8DEADU
@@ -654,6 +657,9 @@ enum SceSysmoduleInternalModuleId : uint32_t {
 
 // The size of the kernel's part of a thread's TLS, below the part the guest sees
 #define SCE_KERNEL_TLS_SIZE 0x800
+
+// The number of TLS slots sceKernelGetTLSAddr gives an address for
+#define SCE_KERNEL_TLS_KEY_COUNT 0x100
 
 // Indexes in thread local storage (TLS) for system data. It is used mostly by libkernel.
 enum TlsItems {
