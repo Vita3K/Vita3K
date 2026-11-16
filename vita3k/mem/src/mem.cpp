@@ -158,6 +158,9 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
 
 // Whether the len bytes at addr are all mapped
 bool is_valid_addr_len(const MemState &state, Address addr, uint32_t len) {
+    // An empty range reads nothing
+    if (len == 0)
+        return true;
     const uint64_t end = static_cast<uint64_t>(addr) + len;
     if (end > (UINT64_C(1) << 32))
         return false;
