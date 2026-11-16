@@ -327,7 +327,7 @@ lw_work_area_memory             fail     # a read only work area is accepted whe
 lw_work_area_unmapped           crash    # a freed block's base still counts as in a block, so a work area there crashes
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 lw_zero_sum_recursive_owner     pass
-lwmutex_lockcb_arm              fail     # no ARM sceKernelLockLwMutexCB export, so the lock does nothing
+lwmutex_lockcb_arm              pass
 main_thread_start               pass
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_access_by_type         fail     # writes to read only memory block types succeed where the Vita gives 0x80022005
@@ -764,7 +764,7 @@ thread_status_matrix            fail     # READY, the current CPU of a thread th
 thread_suspend_for_vm_stops     pass
 thread_switch_counter_kinds     fail     # the preempt, release and CPU change counts of thread info stay 0, and sceKernelGetCpuId returns 0
 thread_switch_counters          fail     # sleeps and interrupt preempts don't grow the release and preempt counters
-thread_tls_addr_libkernel       fail     # no libkernel export of sceKernelGetThreadTLSAddr, so it gives NULL for every thread
+thread_tls_addr_libkernel       pass
 thread_vfp_exception            pass
 thread_wait_id_idle             fail     # a thread that can run but hasn't reports RUNNING instead of READY
 thread_zero_mask_lifecycle      fail     # a zero affinity mask reads back as 0x70000 where the Vita reads 0
@@ -822,7 +822,7 @@ tls                             pass
 tls_blocks                      fail     # TLS isn't a memory block
 tls_process_id                  pass
 tls_slot5                       pass
-tls_slot_reads                  fail     # sceKernelGetThreadId and sceKernelGetThreadCurrentPriority don't read TLS slots 1 and 8
+tls_slot_reads                  pass
 tls_stack_guard                 fail     # the stack canary words aren't slot 7
 tls_start_slots                 pass
 uid                             pass

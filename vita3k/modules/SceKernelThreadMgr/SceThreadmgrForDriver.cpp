@@ -169,7 +169,7 @@ EXPORT(int, ksceKernelGetThreadCpuRegisters) {
 
 EXPORT(int, ksceKernelGetThreadCurrentPriority) {
     TRACY_FUNC(ksceKernelGetThreadCurrentPriority);
-    return CALL_EXPORT(sceKernelGetThreadCurrentPriority);
+    return emuenv.kernel.get_thread(thread_id)->get_priority();
 }
 
 EXPORT(int, ksceKernelGetThreadId) {
