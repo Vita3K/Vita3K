@@ -9,15 +9,18 @@
 #include "android_state.h"
 
 #include <app/functions.h>
+#include <config/state.h>
 #include <ime/functions.h>
 #include <ime/keyboard.h>
 #include <io/state.h>
 #include <motion/functions.h>
+#include <renderer/functions.h>
 
 #include <SDL3/SDL_events.h>
 #include <jni.h>
 
 #include <algorithm>
+#include <sstream>
 
 namespace {
 
@@ -136,6 +139,48 @@ Java_org_vita3k_emulator_NativeLib_isAppPaused(JNIEnv *, jclass) {
         return JNI_FALSE;
 
     return controller->is_paused() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_vita3k_emulator_NativeLib_getRuntimeDiagnostics(JNIEnv *env, jclass) {
+    std::ostringstream diagnostics;
+    auto *emuenv = get_emuenv();
+    auto *controller = get_app_session_controller();
+
+    diagnostics << "initialized=" << (emuenv ? "true" : "false") << '\n';
+    diagnostics << "app_running=" << (controller && controller->has_active_session() ? "true" : "false") << '\n';
+    diagnostics << "app_paused=" << (controller && controller->is_running() && controller->is_paused() ? "true" : "false") << '\n';
+
+    if (!emuenv) {
+        diagnostics << "backend=unavailable\n";
+        diagnostics << "gpu=unavailable\n";
+        return env->NewStringUTF(diagnostics.str().c_str());
+    }
+
+    diagnostics << "title=" << (controller ? controller->get_active_app_title() : std::string()) << '\n';
+    diagnostics << "backend=" << emuenv->cfg.current_config.backend_renderer << '\n';
+    diagnostics << "custom_driver=" << emuenv->cfg.current_config.custom_driver_name << '\n';
+
+    const auto *vulkan_info = emuenv->vulkan_device_info.get();
+    if (!vulkan_info || vulkan_info->gpu_names.size() <= 1) {
+        diagnostics << "gpu=unavailable\n";
+        diagnostics << "custom_driver_requested=false\n";
+        diagnostics << "custom_driver_loaded=false\n";
+    } else {
+        diagnostics << "gpu=" << vulkan_info->gpu_names[1] << '\n';
+        diagnostics << "custom_driver_requested=" << (vulkan_info->custom_driver_requested ? "true" : "false") << '\n';
+        diagnostics << "custom_driver_loaded=" << (vulkan_info->custom_driver_loaded ? "true" : "false") << '\n';
+        diagnostics << "mapping_masks=";
+        for (size_t index = 0; index < vulkan_info->mapping_method_masks.size(); ++index) {
+            if (index != 0)
+                diagnostics << ',';
+            diagnostics << vulkan_info->mapping_method_masks[index];
+        }
+        diagnostics << '\n';
+    }
+
+    const std::string result = diagnostics.str();
+    return env->NewStringUTF(result.c_str());
 }
 
 JNIEXPORT jstring JNICALL

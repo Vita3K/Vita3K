@@ -619,6 +619,7 @@ simple_event_wait_null          pass
 simple_event_waiter_patterns    fail     # a raised waiter in a simple event priority queue gets the wrong cancel count and results
 simple_event_wake_snapshot      pass
 simple_event_zero_pattern_more  pass
+size_zero_page_start            pass
 stagnant_mask                   pass
 standby_changes                 fail     # threads are never STANDBY
 standby_handover_order          skip     # threads ignore their core and priority, so the order is a race of about 1 ms

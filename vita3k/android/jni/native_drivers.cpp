@@ -83,16 +83,26 @@ std::optional<fs::path> get_custom_driver_root(JNIEnv *env) {
 
 std::vector<std::string> list_installed_custom_drivers(const fs::path &driver_root) {
     std::vector<std::string> drivers;
-    if (!fs::exists(driver_root))
-        return drivers;
+    try {
+        if (!fs::exists(driver_root))
+            return drivers;
 
-    for (const auto &entry : fs::directory_iterator(driver_root)) {
-        if (entry.is_directory())
-            drivers.push_back(entry.path().filename().string());
+        for (const auto &entry : fs::directory_iterator(driver_root)) {
+            if (entry.is_directory())
+                drivers.push_back(entry.path().filename().string());
+        }
+    } catch (const std::exception &error) {
+        LOG_ERROR("Could not list custom drivers in '{}': {}", driver_root, error.what());
     }
 
     std::ranges::sort(drivers);
     return drivers;
+}
+
+bool is_safe_driver_name(const std::string &name) {
+    const fs::path path(name);
+    return !name.empty() && name != "." && name != ".."
+        && path.filename() == path && !path.has_root_path();
 }
 
 bool extract_custom_driver_archive(const fs::path &archive_path, const fs::path &driver_path, std::string &driver_so_name) {
@@ -186,41 +196,46 @@ Java_org_vita3k_emulator_NativeLib_installCustomDriver(JNIEnv *env, jclass, jstr
 
     const fs::path archive_path = fs::path(jstring_to_string(env, path_str));
     const std::string driver_name = archive_path.filename().stem().string();
-    if (driver_name.empty()) {
+    if (!is_safe_driver_name(driver_name)) {
         LOG_ERROR("Could not derive custom driver name from archive path: {}", archive_path.string());
         return env->NewStringUTF("");
     }
 
-    fs::create_directories(*driver_root);
+    try {
+        fs::create_directories(*driver_root);
 
-    const fs::path driver_path = *driver_root / driver_name;
-    if (fs::exists(driver_path)) {
-        if (!fs::is_empty(driver_path)) {
-            LOG_ERROR("Custom driver {} already exists", driver_name);
+        const fs::path driver_path = *driver_root / driver_name;
+        if (fs::exists(driver_path)) {
+            if (!fs::is_empty(driver_path)) {
+                LOG_ERROR("Custom driver {} already exists", driver_name);
+                return env->NewStringUTF("");
+            }
+
+            fs::remove_all(driver_path);
+        }
+
+        fs::create_directories(driver_path);
+
+        std::string driver_so_name;
+        if (!extract_custom_driver_archive(archive_path, driver_path, driver_so_name)) {
+            fs::remove_all(driver_path);
+            LOG_ERROR("Custom driver installation failed for archive: {}", archive_path.string());
             return env->NewStringUTF("");
         }
 
-        fs::remove_all(driver_path);
-    }
+        std::ofstream driver_name_file(fs_utils::path_to_utf8(driver_path / "driver_name.txt"), std::ios_base::out | std::ios_base::trunc);
+        if (!driver_name_file.is_open()) {
+            fs::remove_all(driver_path);
+            LOG_ERROR("Could not write driver_name.txt for custom driver {}", driver_name);
+            return env->NewStringUTF("");
+        }
 
-    fs::create_directories(driver_path);
-
-    std::string driver_so_name;
-    if (!extract_custom_driver_archive(archive_path, driver_path, driver_so_name)) {
-        fs::remove_all(driver_path);
-        LOG_ERROR("Custom driver installation failed for archive: {}", archive_path.string());
+        driver_name_file << driver_so_name << '\n';
+        driver_name_file.close();
+    } catch (const std::exception &error) {
+        LOG_ERROR("Custom driver installation failed for '{}': {}", archive_path, error.what());
         return env->NewStringUTF("");
     }
-
-    std::ofstream driver_name_file(fs_utils::path_to_utf8(driver_path / "driver_name.txt"), std::ios_base::out | std::ios_base::trunc);
-    if (!driver_name_file.is_open()) {
-        fs::remove_all(driver_path);
-        LOG_ERROR("Could not write driver_name.txt for custom driver {}", driver_name);
-        return env->NewStringUTF("");
-    }
-
-    driver_name_file << driver_so_name << '\n';
-    driver_name_file.close();
 
     LOG_INFO("Successfully installed custom driver {}", driver_name);
     return env->NewStringUTF(driver_name.c_str());
@@ -233,18 +248,23 @@ Java_org_vita3k_emulator_NativeLib_removeCustomDriver(JNIEnv *env, jclass, jstri
         return JNI_FALSE;
 
     const std::string driver_name = jstring_to_string(env, driver_name_str);
-    if (driver_name.empty()) {
+    if (!is_safe_driver_name(driver_name)) {
         LOG_ERROR("Refusing to remove a custom driver with an empty name");
         return JNI_FALSE;
     }
 
-    const fs::path driver_path = *driver_root / driver_name;
-    if (!fs::exists(driver_path)) {
-        LOG_ERROR("Custom driver {} does not exist", driver_name);
+    try {
+        const fs::path driver_path = *driver_root / driver_name;
+        if (!fs::exists(driver_path)) {
+            LOG_ERROR("Custom driver {} does not exist", driver_name);
+            return JNI_FALSE;
+        }
+
+        fs::remove_all(driver_path);
+    } catch (const std::exception &error) {
+        LOG_ERROR("Failed to remove custom driver '{}': {}", driver_name, error.what());
         return JNI_FALSE;
     }
-
-    fs::remove_all(driver_path);
     LOG_INFO("Removed custom driver {}", driver_name);
     return JNI_TRUE;
 }

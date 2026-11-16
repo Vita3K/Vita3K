@@ -13,7 +13,7 @@ env:
   QT_VERSION: '6.11.0'
   SCCACHE_GHA_ENABLED: "true"
   # The VitaAutotests commit to test with. Bump it to pick up new tests.
-  AUTOTESTS_REF: 97fe0da22c3072d93b6ada970bffedaa6a762f47
+  AUTOTESTS_REF: 0d5c7ead21419cc162061a38c5a6bdb460326b1d
 
 jobs:
   desktop-build:
@@ -48,13 +48,13 @@ jobs:
             qt_install_deps: 'false'
 
           - platform: macos-x64
-            runs_on: macos-latest
+            runs_on: macos-26-intel
             cmake_preset: ci-macos-x64
             cache_path: ~/Library/Caches/ccache
             qt_install_deps: 'false'
 
           - platform: macos-arm64
-            runs_on: macos-latest
+            runs_on: macos-26
             cmake_preset: ci-macos-arm64
             cache_path: ~/Library/Caches/ccache
             qt_install_deps: 'false'
