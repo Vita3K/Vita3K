@@ -46,7 +46,13 @@ Root &get_root_paths() {
 }
 
 std::string jstring_to_string(JNIEnv *env, jstring str) {
+    if (!env || !str)
+        return {};
+
     const char *utf = env->GetStringUTFChars(str, nullptr);
+    if (!utf)
+        return {};
+
     std::string result(utf);
     env->ReleaseStringUTFChars(str, utf);
     return result;
@@ -54,10 +60,21 @@ std::string jstring_to_string(JNIEnv *env, jstring str) {
 
 ScopedJniCallback::ScopedJniCallback(JNIEnv *env, jobject callback_obj, const char *method_name, const char *method_sig)
     : env_(env) {
-    env->GetJavaVM(&java_vm_);
+    if (!env_ || !callback_obj || !method_name || !method_sig)
+        return;
+
+    if (env->GetJavaVM(&java_vm_) != JNI_OK) {
+        java_vm_ = nullptr;
+        return;
+    }
     callback_ = env->NewGlobalRef(callback_obj);
     jclass callback_class = env->GetObjectClass(callback_obj);
+    if (!callback_class)
+        return;
+
     method_ = env->GetMethodID(callback_class, method_name, method_sig);
+    if (!method_)
+        env->ExceptionClear();
     env->DeleteLocalRef(callback_class);
 }
 
@@ -113,10 +130,10 @@ std::optional<app::AppEntry> find_app_by_title_id(const std::string &title_id) {
 }
 
 bool remove_path_if_exists(const fs::path &path) {
-    if (!fs::exists(path))
-        return false;
-
     try {
+        if (!fs::exists(path))
+            return false;
+
         fs::remove_all(path);
         return true;
     } catch (const std::exception &error) {

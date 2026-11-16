@@ -49,9 +49,29 @@ void call_activity(const char *name, const char *signature, Args... args) {
 int get_display_rotation() {
     JNIEnv *jni_env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
     jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+    if (!jni_env || !activity)
+        return 0;
+
     jclass clazz = jni_env->GetObjectClass(activity);
+    if (!clazz) {
+        jni_env->DeleteLocalRef(activity);
+        return 0;
+    }
+
     jmethodID method_id = jni_env->GetMethodID(clazz, "getNativeDisplayRotation", "()I");
-    const int rotation = jni_env->CallIntMethod(activity, method_id);
+    if (!method_id) {
+        jni_env->ExceptionClear();
+        jni_env->DeleteLocalRef(clazz);
+        jni_env->DeleteLocalRef(activity);
+        return 0;
+    }
+
+    int rotation = jni_env->CallIntMethod(activity, method_id);
+    if (jni_env->ExceptionCheck()) {
+        jni_env->ExceptionDescribe();
+        jni_env->ExceptionClear();
+        rotation = 0;
+    }
     jni_env->DeleteLocalRef(clazz);
     jni_env->DeleteLocalRef(activity);
     return rotation;

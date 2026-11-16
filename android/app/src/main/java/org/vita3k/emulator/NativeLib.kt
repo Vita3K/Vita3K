@@ -140,6 +140,11 @@ object NativeLib {
     ): Boolean
     /** Returns true when the currently running app session is paused. */
     external fun isAppPaused(): Boolean
+    /**
+     * Returns newline-delimited runtime and Vulkan diagnostics as key=value pairs.
+     * This is intended for support reports and does not change emulator state.
+     */
+    external fun getRuntimeDiagnostics(): String
     /** Returns the title of the currently running app session, or an empty string when unavailable. */
     external fun getRunningAppTitle(): String
     /** Returns true while either SceIme or CommonDialog IME is active. */

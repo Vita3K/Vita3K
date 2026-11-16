@@ -773,12 +773,15 @@ Java_org_vita3k_emulator_NativeLib_clearAllCustomConfigs(JNIEnv *, jclass) {
 JNIEXPORT jobjectArray JNICALL
 Java_org_vita3k_emulator_NativeLib_getModulesList(JNIEnv *env, jclass, jobjectArray current_modules_arr) {
     jclass string_class = env->FindClass("java/lang/String");
+    if (!string_class)
+        return nullptr;
+
     auto *emuenv = get_emuenv();
     if (!emuenv)
         return env->NewObjectArray(0, string_class, nullptr);
 
     std::vector<std::string> current_modules;
-    const jsize length = env->GetArrayLength(current_modules_arr);
+    const jsize length = current_modules_arr ? env->GetArrayLength(current_modules_arr) : 0;
     for (jsize index = 0; index < length; ++index) {
         auto *module = reinterpret_cast<jstring>(env->GetObjectArrayElement(current_modules_arr, index));
         if (module) {

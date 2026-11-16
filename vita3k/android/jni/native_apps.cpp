@@ -23,6 +23,18 @@
 #include <io/state.h>
 #include <util/log.h>
 
+#include <filesystem>
+
+namespace {
+
+bool is_safe_title_id(const std::string &title_id) {
+    const fs::path path(title_id);
+    return !title_id.empty() && title_id != "." && title_id != ".."
+        && path.filename() == path && !path.has_root_path();
+}
+
+} // namespace
+
 extern "C" {
 
 JNIEXPORT jobjectArray JNICALL
@@ -98,6 +110,8 @@ Java_org_vita3k_emulator_NativeLib_performAppAction(JNIEnv *env, jclass, jstring
         return JNI_FALSE;
 
     const std::string title_id = jstring_to_string(env, title_id_str);
+    if (!is_safe_title_id(title_id))
+        return JNI_FALSE;
 
     switch (static_cast<uint32_t>(action_bit)) {
     case ACTION_DELETE_APPLICATION: {
@@ -172,6 +186,8 @@ Java_org_vita3k_emulator_NativeLib_getAppActionAvailabilityMask(JNIEnv *env, jcl
         return static_cast<jint>(0);
 
     const std::string title_id = jstring_to_string(env, title_id_str);
+    if (!is_safe_title_id(title_id))
+        return static_cast<jint>(0);
     return static_cast<jint>(get_app_action_availability_mask(title_id));
 }
 
