@@ -823,7 +823,7 @@ tls_blocks                      fail     # TLS isn't a memory block
 tls_process_id                  pass
 tls_slot5                       pass
 tls_slot_reads                  pass
-tls_stack_guard                 fail     # the stack canary words aren't slot 7
+tls_stack_guard                 pass
 tls_start_slots                 pass
 uid                             pass
 uid_class                       pass

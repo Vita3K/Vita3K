@@ -86,10 +86,9 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     tls_slot(TLS_THREAD_ID) = id;
     tls_slot(TLS_SP_TOP) = stack.get() + this->stack_size;
     tls_slot(TLS_SP_BOTTOM) = stack.get();
-    // A Vita starts every thread with a different random value in each of these. These are the
-    // values one thread had on a PS Vita TV, the same for every thread so runs repeat.
+    // The console gives each thread a word from its MT19937. One fixed word keeps runs repeatable.
     tls_slot(TLS_JMPBUF_KEY) = static_cast<int>(0xFEFA7314);
-    tls_slot(TLS_STACK_CHECK_GUARD) = static_cast<int>(0xC325C2A7);
+    tls_slot(TLS_STACK_CHECK_GUARD) = static_cast<int>(KernelState::STACK_CHECK_GUARD);
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
 

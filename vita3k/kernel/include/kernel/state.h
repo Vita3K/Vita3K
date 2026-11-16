@@ -153,6 +153,9 @@ struct KernelState {
     Ptr<void> client_vtable = Ptr<void>(0);
     Ptr<Address> shellsvc_client = Ptr<Address>(0);
     Ptr<void> libc_dso_handle_main = Ptr<void>(0);
+    // The stack canary every thread gets in TLS slot 7. The console makes one for each process from
+    // its MT19937. One fixed word keeps runs repeatable.
+    static constexpr SceUInt32 STACK_CHECK_GUARD = 0xC325C2A7;
 
     Debugger debugger;
 
