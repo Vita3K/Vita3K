@@ -48,13 +48,13 @@ jobs:
             qt_install_deps: 'false'
 
           - platform: macos-x64
-            runs_on: macos-latest
+            runs_on: macos-13
             cmake_preset: ci-macos-x64
             cache_path: ~/Library/Caches/ccache
             qt_install_deps: 'false'
 
           - platform: macos-arm64
-            runs_on: macos-latest
+            runs_on: macos-14
             cmake_preset: ci-macos-arm64
             cache_path: ~/Library/Caches/ccache
             qt_install_deps: 'false'
