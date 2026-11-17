@@ -51,6 +51,7 @@ using UniformTypes = std::map<GLuint, GLenum>;
 class GLTextureCache : public TextureCache {
 public:
     GLObjectArray<TextureCacheSize> textures;
+    std::array<GLenum, TextureCacheSize> targets{};
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id);
     void cleanup();
