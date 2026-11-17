@@ -200,7 +200,7 @@ display_vblank_cb_inner_sema    pass
 display_vblank_cb_inner_wait    pass
 display_vblank_cb_inner_wait_cb pass
 display_vblank_cb_long_callback pass
-display_vblank_cb_notify        fail     # threads ignore their core and priority, so the notified waiter already runs when its status is read
+display_vblank_cb_notify        skip     # threads ignore their core and priority, so whether the notified waiter already ran its callback when its status is read and the second notify comes is a race
 display_vblank_cb_notify_after_wake skip     # threads ignore their core and priority, so whether the woken waiter already passed its callback check when the notify comes is a race, and one of the two outcomes can go uncaught
 display_vblank_multi_cb_notify  skip     # timing, it passes alone and fails about one run in six with the other tests running
 display_vblank_pending_no_cb    pass
@@ -260,16 +260,20 @@ forvm_suspend_core_handover     fail     # the ForVM suspend hands the core over
 forvm_suspend_exact_counts      fail     # thread info's preempt counters stay 0
 forvm_suspend_preempt_count     fail     # the interrupt preempt count of thread info stays 0, a ForVM suspend doesn't grow it
 fpscr_flags_across_calls        fail     # the start handler sees an inexact flag (0x10) in FPSCR that the Vita does not set
+gxm_color_surface_init_checks   fail     # sceGxmColorSurfaceInit has no format table, scale mode, type, register size or tiled size checks, a bad swizzled size gives INVALID_ALIGNMENT
+gxm_color_surface_wide_stride   fail     # Vita3K keeps the full stride, and with surface sync off by default no surface is written back to memory
 gxm_context_memory              fail     # sceGxmCreateContext checks no buffer size, alignment, mapping or NULL ring buffer
 gxm_deferred_callback_recorder  skip     # a VDM memory callback during B's draws runs as a call on A, the thread that began the command list, while A waits for B, so whether B hangs depends on whether its draws need a ring refill
 gxm_deferred_callback_threads   fail     # sceGxmBeginCommandList also calls the vertex and fragment memory callbacks
 gxm_deferred_ring_usage         fail     # the command list words are a host pointer, the deferred buffer getters return the buffer's start, a draw without the default uniform reserve succeeds, and 1 KiB of VDM holds 13 empty lists or 79 draws, not 96 or 23
 gxm_deferred_ring_usage_more    fail     # the command list words are a host pointer and the deferred buffer getters return the buffer's start, so every count is -1 or 0
 gxm_display_queue_finish_wait   fail     # a thread in sceGxmDisplayQueueFinish waits with no wait type or ID, the Vita shows an event flag wait
+gxm_fragment_program_cache      fail     # fragment programs are cached by program and blend only, so another output format, vertex program or MSAA mode with a blend gives the cached one
 gxm_map_alias_close             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_alias_pages             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_app_memory              fail     # the app's code maps
 gxm_map_block_types             crash    # read only and device blocks and blocks for code map, the unmap of a freed block crashes
+gxm_map_enclose                 fail     # a map over others gives INVALID_POINTER instead of DRIVER
 gxm_map_many                    fail     # a map over others gives INVALID_POINTER instead of DRIVER
 gxm_map_memory                  fail     # attribute, alignment, range and overlap checks, a map before sceGxmInitialize
 gxm_map_no_block                crash    # unmapping a range in no block
@@ -286,6 +290,7 @@ gxm_sync_objects                fail     # sync objects before sceGxmInitialize 
 gxm_terminate_wait              fail     # a thread in sceGxmTerminate shows RUNNING with no wait, the Vita shows it waiting for the display queue thread's end
 gxm_terminate_wait_between      fail     # the idle display queue thread is DORMANT instead of waiting on an event flag
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
+gxm_texture_strided             fail     # strided textures drop stride bits 14:13, so strides above 32768 bytes read back wrong
 gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
 gxm_wait_errors                 fail     # no notification region or display queue thread checks, a finish of a deferred context gives 0x805B0004
 handler_after_thread_delete     pass
