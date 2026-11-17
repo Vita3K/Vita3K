@@ -60,6 +60,11 @@ public:
         return names[i];
     }
 
+    void recreate(size_t i, renderer::Generator *generator) {
+        deleter(1, &names[i]);
+        generator(1, &names[i]);
+    }
+
     size_t size() const {
         return names.size();
     }

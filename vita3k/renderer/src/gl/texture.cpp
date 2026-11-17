@@ -76,6 +76,7 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
 
 void GLTextureCache::cleanup() {
     textures.cleanup();
+    targets.fill(0);
     texture_lookup.clear();
     texture_queue.items.clear();
     texture_queue.head = nullptr;
@@ -93,8 +94,14 @@ void GLTextureCache::cleanup() {
 }
 
 void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
-    const GLuint gl_texture = textures[index];
-    glBindTexture(get_gl_texture_type(texture), gl_texture);
+    const GLenum target = get_gl_texture_type(texture);
+    if (targets[index] != target) {
+        // a texture name cannot be bound to another target than its first one
+        if (targets[index] != 0)
+            textures.recreate(index, glGenTextures);
+        targets[index] = target;
+    }
+    glBindTexture(target, textures[index]);
 }
 
 static GLenum bcn_to_rgba8(const SceGxmTextureBaseFormat format) {
@@ -305,7 +312,6 @@ GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture) {
 
 void bind_texture_without_cache(GLTextureCache &cache, const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
-    glBindTexture(get_gl_texture_type(gxm_texture), cache.textures[0]);
     cache.select(0, gxm_texture);
     cache.configure_texture(gxm_texture);
     cache.upload_texture(gxm_texture, mem);
