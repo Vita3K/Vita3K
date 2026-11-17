@@ -16,14 +16,18 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceGxm.h"
+#include "../SceProcessmgr/SceProcessmgr.h"
 
 #include <modules/module_parent.h>
 
+#include <algorithm>
+#include <array>
 #include <bit>
 #include <compare>
 #include <optional>
 #include <span>
 #include <stack>
+#include <string_view>
 #if defined(__x86_64__) && !defined(__APPLE__)
 #include <xxh_x86dispatch.h>
 #else
@@ -1361,6 +1365,30 @@ void shutdown(EmuEnvState &emuenv) {
 
     // wait for any deferred GXM callback to finish before continuing shutdown
     const std::lock_guard<std::mutex> callback_guard(emuenv.gxm.callback_lock);
+}
+
+// Compatibility mask libgxm computes at module start, older apps get more permissive checks
+void init_compat_mask(EmuEnvState &emuenv, SceUID thread_id) {
+    static constexpr std::array<std::string_view, 8> titles = { "PCSC00006", "PCSC90003", "PCSA00015", "PCSA00020", "PCSA00025", "PCSF00007", "PCSD00005", "PCSG00178" };
+    const uint32_t version = CALL_EXPORT(sceKernelGetMainModuleSdkVersion);
+    SceUInt32 mask = 0;
+    if (version < 0x01600000)
+        mask = 0xFFFFE;
+    else if (version < 0x01650000)
+        mask = 0xFFFF8;
+    else if (version < 0x01800000)
+        mask = 0xFFFC0;
+    else if (version < 0x02000000)
+        mask = 0xFFE00;
+    else if (version < 0x02100000)
+        mask = 0xFF000;
+    else if (version < 0x02500000)
+        mask = 0xFE000;
+    else if (version < 0x03100000)
+        mask = 0xF8000;
+    if (std::ranges::contains(titles, emuenv.io.title_id))
+        mask |= 1;
+    emuenv.gxm.compat_mask = mask;
 }
 
 } // namespace gxm
