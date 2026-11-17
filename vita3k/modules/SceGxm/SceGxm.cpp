@@ -19,6 +19,9 @@
 
 #include <modules/module_parent.h>
 
+#include <bit>
+#include <compare>
+#include <optional>
 #include <span>
 #include <stack>
 #if defined(__x86_64__) && !defined(__APPLE__)
@@ -1423,9 +1426,20 @@ struct VertexProgramCacheKey {
 
 typedef std::map<VertexProgramCacheKey, Ptr<SceGxmVertexProgram>> VertexProgramCache;
 
+// The blend and the multisample mode, which only matters with a blend
+struct FragmentBlendKey {
+    uint32_t blend_info; // the bits of the SceGxmBlendInfo
+    SceGxmMultisampleMode multisample_mode;
+    auto operator<=>(const FragmentBlendKey &) const = default;
+};
+
 struct FragmentProgramCacheKey {
-    SceGxmRegisteredProgram fragment_program;
-    SceGxmBlendInfo blend_info;
+    Ptr<const SceGxmProgram> program;
+    std::array<uint8_t, 10> vertex_output_mapping;
+    SceGxmOutputRegisterFormat output_format;
+    // Empty when the program doesn't blend
+    std::optional<FragmentBlendKey> blend;
+    std::strong_ordering operator<=>(const FragmentProgramCacheKey &) const = default;
 };
 
 typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
@@ -1476,20 +1490,6 @@ static bool operator<(const VertexProgramCacheKey &a, const VertexProgramCacheKe
         return false;
     }
     return b.hash < a.hash;
-}
-
-static bool operator<(const SceGxmBlendInfo &a, const SceGxmBlendInfo &b) {
-    return memcmp(&a, &b, sizeof(a)) < 0;
-}
-
-static bool operator<(const FragmentProgramCacheKey &a, const FragmentProgramCacheKey &b) {
-    if (a.fragment_program < b.fragment_program) {
-        return true;
-    }
-    if (b.fragment_program < a.fragment_program) {
-        return false;
-    }
-    return b.blend_info < a.blend_info;
 }
 
 static int init_texture_base(const char *export_name, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat tex_format, uint32_t width, uint32_t height, uint32_t mipCount,
@@ -4580,6 +4580,29 @@ EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, 
     return 0;
 }
 
+// Whether the blend changes the color the surface gets. A full color mask with each function NONE,
+// or ADD or SUBTRACT of ONE and ZERO, writes the fragment color unchanged.
+static bool is_blending(const SceGxmBlendInfo &blend) {
+    const auto passes = [](SceGxmBlendFunc func, SceGxmBlendFactor src, SceGxmBlendFactor dst) {
+        return func == SCE_GXM_BLEND_FUNC_NONE
+            || ((func == SCE_GXM_BLEND_FUNC_ADD || func == SCE_GXM_BLEND_FUNC_SUBTRACT) && src == SCE_GXM_BLEND_FACTOR_ONE && dst == SCE_GXM_BLEND_FACTOR_ZERO);
+    };
+    return blend.colorMask != SCE_GXM_COLOR_MASK_ALL || !passes(blend.colorFunc, blend.colorSrc, blend.colorDst) || !passes(blend.alphaFunc, blend.alphaSrc, blend.alphaDst);
+}
+
+// Where each of the first nine texture coordinates of the vertex program goes, 0 to 9 in order without a vertex program
+static std::array<uint8_t, 10> vertex_output_mapping(const SceGxmProgram *vertex_program) {
+    std::array<uint8_t, 10> mapping = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    if (!vertex_program)
+        return mapping;
+
+    const uint32_t texcoords = vertex_program->vertex_varyings()->vertex_outputs2;
+    uint8_t next = 0;
+    for (size_t i = 0; i < 9; i++)
+        mapping[i] = ((texcoords >> (i * 3)) & 7) ? next++ : 9;
+    return mapping;
+}
+
 EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const SceGxmBlendInfo *blendInfo, Ptr<const SceGxmProgram> vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
     TRACY_FUNC(sceGxmShaderPatcherCreateFragmentProgram, shaderPatcher, programId, outputFormat, multisampleMode, blendInfo, vertexProgram, fragmentProgram);
     MemState &mem = emuenv.mem;
@@ -4587,19 +4610,12 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     if (!shaderPatcher || !programId || !fragmentProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    static const SceGxmBlendInfo default_blend_info = {
-        SCE_GXM_COLOR_MASK_ALL,
-        SCE_GXM_BLEND_FUNC_NONE,
-        SCE_GXM_BLEND_FUNC_NONE,
-        SCE_GXM_BLEND_FACTOR_ONE,
-        SCE_GXM_BLEND_FACTOR_ZERO,
-        SCE_GXM_BLEND_FACTOR_ONE,
-        SCE_GXM_BLEND_FACTOR_ZERO
-    };
-    const FragmentProgramCacheKey key = {
-        *programId,
-        (blendInfo != nullptr) ? *blendInfo : default_blend_info
-    };
+    if (blendInfo && !is_blending(*blendInfo))
+        blendInfo = nullptr;
+
+    FragmentProgramCacheKey key = { programId->program, vertex_output_mapping(vertexProgram.get(mem)), outputFormat };
+    if (blendInfo)
+        key.blend = FragmentBlendKey{ std::bit_cast<uint32_t>(*blendInfo), multisampleMode };
     FragmentProgramCache::const_iterator cached = shaderPatcher->fragment_program_cache.find(key);
     if (cached != shaderPatcher->fragment_program_cache.end()) {
         ++cached->second.get(mem)->reference_count;
@@ -4741,7 +4757,7 @@ EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shad
         }
     } else {
         for (auto it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end();) {
-            if (it->first.fragment_program.program == rp->program) {
+            if (it->first.program == rp->program) {
                 SceGxmFragmentProgram *frag_program = it->second.get(emuenv.mem);
                 while (frag_program->compile_threads_on.load(std::memory_order_acquire) > 0)
                     std::this_thread::yield();

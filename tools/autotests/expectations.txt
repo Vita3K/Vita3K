@@ -268,7 +268,7 @@ gxm_deferred_callback_threads   fail     # sceGxmBeginCommandList also calls the
 gxm_deferred_ring_usage         fail     # the command list words are a host pointer, the deferred buffer getters return the buffer's start, a draw without the default uniform reserve succeeds, and 1 KiB of VDM holds 13 empty lists or 79 draws, not 96 or 23
 gxm_deferred_ring_usage_more    fail     # the command list words are a host pointer and the deferred buffer getters return the buffer's start, so every count is -1 or 0
 gxm_display_queue_finish_wait   fail     # a thread in sceGxmDisplayQueueFinish waits with no wait type or ID, the Vita shows an event flag wait
-gxm_fragment_program_cache      fail     # fragment programs are cached by program and blend only, so another output format, vertex program or MSAA mode with a blend gives the cached one
+gxm_fragment_program_cache      pass
 gxm_map_alias_close             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_alias_pages             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_app_memory              fail     # the app's code maps
