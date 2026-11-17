@@ -260,7 +260,7 @@ forvm_suspend_core_handover     fail     # the ForVM suspend hands the core over
 forvm_suspend_exact_counts      fail     # thread info's preempt counters stay 0
 forvm_suspend_preempt_count     fail     # the interrupt preempt count of thread info stays 0, a ForVM suspend doesn't grow it
 fpscr_flags_across_calls        fail     # the start handler sees an inexact flag (0x10) in FPSCR that the Vita does not set
-gxm_color_surface_init_checks   fail     # sceGxmColorSurfaceInit has no format table, scale mode, type, register size or tiled size checks, a bad swizzled size gives INVALID_ALIGNMENT
+gxm_color_surface_init_checks   pass
 gxm_color_surface_wide_stride   fail     # Vita3K keeps the full stride, and with surface sync off by default no surface is written back to memory
 gxm_context_memory              fail     # sceGxmCreateContext checks no buffer size, alignment, mapping or NULL ring buffer
 gxm_deferred_callback_recorder  skip     # a VDM memory callback during B's draws runs as a call on A, the thread that began the command list, while A waits for B, so whether B hangs depends on whether its draws need a ring refill

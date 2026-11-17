@@ -1867,10 +1867,69 @@ EXPORT(SceGxmColorSurfaceType, sceGxmColorSurfaceGetType, const SceGxmColorSurfa
     return surface->surfaceType;
 }
 
+// Allows the U8S8S8U8 color surface format, set for apps built before 3.10
+static constexpr SceUInt32 COMPAT_OLD_COLOR_FORMATS = 0x10000;
+// Skips the color surface scale mode and type checks, set for apps built before 2.50
+static constexpr SceUInt32 COMPAT_NO_SURFACE_MODE_CHECKS = 0x2000;
+
+struct ColorFormatSupport {
+    bool size_32;
+    bool size_64;
+    bool downscale;
+};
+
+// Output register sizes and MSAA downscale of a color surface format, none for a format libgxm refuses
+static std::optional<ColorFormatSupport> get_color_format_support(SceGxmColorBaseFormat format) {
+    switch (format) {
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_COLOR_BASE_FORMAT_U1U5U5U5:
+    case SCE_GXM_COLOR_BASE_FORMAT_U4U4U4U4:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U3U3U2:
+    case SCE_GXM_COLOR_BASE_FORMAT_S5S5U6:
+        return ColorFormatSupport{ true, true, true };
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_F16F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_S16:
+    case SCE_GXM_COLOR_BASE_FORMAT_S16S16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U16U16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_S8:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_S8S8:
+    case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
+        return ColorFormatSupport{ true, false, true };
+    case SCE_GXM_COLOR_BASE_FORMAT_F32:
+        return ColorFormatSupport{ true, false, false };
+    case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
+    case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
+    case SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9:
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
+        return ColorFormatSupport{ false, true, true };
+    case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
+        return ColorFormatSupport{ false, true, false };
+    case SCE_GXM_COLOR_BASE_FORMAT_U8S8S8U8:
+        return ColorFormatSupport{ true, true, true };
+    default:
+        return std::nullopt;
+    }
+}
+
 EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorFormat colorFormat, SceGxmColorSurfaceType surfaceType, SceGxmColorSurfaceScaleMode scaleMode, SceGxmOutputRegisterSize outputRegisterSize, uint32_t width, uint32_t height, uint32_t strideInPixels, Ptr<void> data) {
     TRACY_FUNC(sceGxmColorSurfaceInit, surface, colorFormat, surfaceType, scaleMode, outputRegisterSize, width, height, strideInPixels, data);
     if (!surface)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    const SceGxmColorBaseFormat base_format = gxm::get_base_format(colorFormat);
+    if (base_format == SCE_GXM_COLOR_BASE_FORMAT_U8S8S8U8 && !(emuenv.gxm.compat_mask & COMPAT_OLD_COLOR_FORMATS))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    const std::optional<ColorFormatSupport> support = get_color_format_support(base_format);
+    if (!support)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     if (width == 0 || width > 4096 || height == 0 || height > 4096)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
@@ -1881,9 +1940,33 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
     if ((strideInPixels < width) || ((data.address() & 3) != 0))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
-    // if the surface is swizzled, width and height must be power of 2
-    if (surfaceType == SCE_GXM_COLOR_SURFACE_SWIZZLED && ((width & (width - 1)) || (height & (height - 1))))
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+    if (!(emuenv.gxm.compat_mask & COMPAT_NO_SURFACE_MODE_CHECKS)) {
+        if (scaleMode > SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE)
+            return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+        if (surfaceType != SCE_GXM_COLOR_SURFACE_LINEAR && surfaceType != SCE_GXM_COLOR_SURFACE_TILED && surfaceType != SCE_GXM_COLOR_SURFACE_SWIZZLED)
+            return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (scaleMode != SCE_GXM_COLOR_SURFACE_SCALE_NONE && !support->downscale)
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+
+    if (surfaceType == SCE_GXM_COLOR_SURFACE_SWIZZLED && (width < 16 || height < 16 || !std::has_single_bit(width) || !std::has_single_bit(height)))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    if (surfaceType == SCE_GXM_COLOR_SURFACE_TILED && (width < 32 || height < 32))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    if (!(outputRegisterSize == SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT ? support->size_64 : support->size_32))
+        return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
+
+    const uint32_t stride_in_bytes = static_cast<uint32_t>(gxm::bits_per_pixel(base_format) * strideInPixels / 8);
+    const bool plain_linear = align(width, 8) == strideInPixels;
+    if (surfaceType != SCE_GXM_COLOR_SURFACE_TILED && surfaceType != SCE_GXM_COLOR_SURFACE_SWIZZLED && !plain_linear) {
+        // A 24 bit format takes only the plain linear stride
+        if (gxm::bits_per_pixel(base_format) == 24 || stride_in_bytes < 4 || stride_in_bytes > 131072)
+            return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
 
     memset(surface, 0, sizeof(SceGxmColorSurface));
     surface->disabled = 0;
@@ -1909,10 +1992,9 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
         return CALL_EXPORT(sceGxmTextureInitTiled, &surface->backgroundTex, surface->data, tex_format, width, height, 1);
     default:
         // linear
-        if (align(width, 8) == strideInPixels) {
+        if (plain_linear) {
             return CALL_EXPORT(sceGxmTextureInitLinear, &surface->backgroundTex, surface->data, tex_format, width, height, 1);
         } else {
-            uint32_t stride_in_bytes = static_cast<uint32_t>(gxm::bits_per_pixel(gxm::get_base_format(colorFormat)) * strideInPixels / 8);
             return CALL_EXPORT(sceGxmTextureInitLinearStrided, &surface->backgroundTex, surface->data, tex_format, width, height, stride_in_bytes);
         }
     }
