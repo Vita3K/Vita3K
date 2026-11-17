@@ -56,6 +56,7 @@ struct MemoryMapInfo {
 
 struct GxmState {
     SceGxmInitializeParams params;
+    SceUInt32 compat_mask = 0;
 
     Queue<DisplayCallback> display_queue;
     std::mutex display_queue_add_mutex;

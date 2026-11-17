@@ -28,6 +28,7 @@
 #include <display/functions.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <gxm/functions.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
@@ -753,6 +754,9 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
 
     // Before any guest code runs, since it may wait for a vblank or register a vblank callback
     start_sync_thread(emuenv);
+
+    // Before any guest code runs
+    gxm::init_compat_mask(emuenv, main_thread->id);
 
     // Run `module_start` export (entry point) of loaded libraries
     for (auto &[_, module] : emuenv.kernel.loaded_modules) {
