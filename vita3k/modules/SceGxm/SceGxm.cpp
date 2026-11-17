@@ -5147,6 +5147,16 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
     return result;
 }
 
+// Stores stride / 4 - 1 in the 15 stride bits of a strided texture's word 0
+static void set_texture_stride(SceGxmTexture &texture, uint32_t byteStride) {
+    const uint32_t stride_compressed = (byteStride >> 2) - 1;
+    texture.mip_filter = stride_compressed & 1;
+    texture.min_filter = (stride_compressed >> 1) & 3;
+    texture.mip_count = (stride_compressed >> 3) & 15;
+    texture.lod_bias = (stride_compressed >> 7) & 63;
+    texture.stride_hi = stride_compressed >> 13;
+}
+
 EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t byteStride) {
     TRACY_FUNC(sceGxmTextureInitLinearStrided, texture, data, texFormat, width, height, byteStride);
     if (!texture) {
@@ -5167,11 +5177,7 @@ EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const vo
 
     memset(texture, 0, sizeof(SceGxmTexture));
 
-    const uint32_t stride_compressed = (byteStride >> 2) - 1;
-    texture->mip_filter = stride_compressed & 1;
-    texture->min_filter = (stride_compressed & 0b0000110) >> 1;
-    texture->mip_count = (stride_compressed & 0b1111000) >> 3;
-    texture->lod_bias = (stride_compressed & 0b1111110000000) >> 7;
+    set_texture_stride(*texture, byteStride);
     texture->base_format = (texFormat & 0x1F000000) >> 24;
     texture->type = SCE_GXM_TEXTURE_LINEAR_STRIDED >> 29;
     texture->data_addr = data.address() >> 2;
@@ -5417,7 +5423,8 @@ EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride)
     if ((byteStride < 4) || (byteStride > 131072))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
-    return UNIMPLEMENTED();
+    set_texture_stride(*texture, byteStride);
+    return 0;
 }
 
 static bool verify_texture_mode(SceGxmTexture *texture, SceGxmTextureAddrMode mode) {

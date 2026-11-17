@@ -290,7 +290,7 @@ gxm_sync_objects                fail     # sync objects before sceGxmInitialize 
 gxm_terminate_wait              fail     # a thread in sceGxmTerminate shows RUNNING with no wait, the Vita shows it waiting for the display queue thread's end
 gxm_terminate_wait_between      fail     # the idle display queue thread is DORMANT instead of waiting on an event flag
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
-gxm_texture_strided             fail     # strided textures drop stride bits 14:13, so strides above 32768 bytes read back wrong
+gxm_texture_strided             pass
 gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
 gxm_wait_errors                 fail     # no notification region or display queue thread checks, a finish of a deferred context gives 0x805B0004
 handler_after_thread_delete     pass

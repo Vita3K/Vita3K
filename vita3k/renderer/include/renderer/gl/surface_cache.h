@@ -67,7 +67,7 @@ struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
     std::uint16_t height;
     uint16_t original_width;
     uint16_t original_height;
-    std::uint16_t pixel_stride;
+    std::uint32_t pixel_stride;
     std::size_t total_bytes;
 
     SceGxmColorBaseFormat format;
@@ -115,7 +115,7 @@ public:
 
     void cleanup();
 
-    GLuint retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
+    GLuint retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint32_t pixel_stride,
         const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
         std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr);
     GLuint retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address);

@@ -530,7 +530,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
     std::uint32_t swizzle = 0;
 
     GLint tex_handle = static_cast<GLint>(renderer.surface_cache.retrieve_color_surface_texture_handle(renderer, static_cast<std::uint16_t>(surface.width),
-        static_cast<std::uint16_t>(surface.height), static_cast<std::uint16_t>(surface.strideInPixels),
+        static_cast<std::uint16_t>(surface.height), surface.strideInPixels,
         gxm::get_base_format(surface.colorFormat), surface.data, SurfaceTextureRetrievePurpose::READING, swizzle));
 
     if (tex_handle == 0) {
