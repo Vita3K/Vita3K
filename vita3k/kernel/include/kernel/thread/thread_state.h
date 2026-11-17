@@ -61,7 +61,7 @@ struct DisplayWaitBases {
     uint32_t depth = 0;
 };
 
-struct ThreadState final : public WithUidClass<Waitable, UidClass::thread>, public IntrusiveLink<ThreadState> {
+struct ThreadState final : public WithUidClass<ThreadState, Waitable, UidClass::thread>, public IntrusiveLink<ThreadState> {
 private:
     friend class Ref<ThreadState>;
 

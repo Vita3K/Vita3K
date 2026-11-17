@@ -28,7 +28,7 @@
 struct ThreadState;
 
 // A kernel object threads can wait on, with the lock that guards its fields and its waiters
-class Waitable : public KernelObject {
+class Waitable : public WithClass<Waitable, KernelObject> {
 public:
     // Returns the error for a name the guest can't use, or 0.
     static SceInt32 check_name(const char *name, SceUInt32 attr);

@@ -46,23 +46,36 @@ enum class UidClass : SceUInt32 {
     simple_event = 13,
 };
 
+// A class of kernel objects, and the class it is a subclass of
+struct KernelClass {
+    const KernelClass *parent;
+};
+
 class KernelObject;
 
-// A kernel object type with a single class, given by its static uid_class.
+// A class of the tree, which names itself
 template <typename T>
-concept KernelObjectClass = std::derived_from<T, KernelObject> && std::is_final_v<T> && requires {
-    { T::uid_class } -> std::convertible_to<UidClass>;
-};
+concept KernelObjectClass = std::derived_from<T, KernelObject> && std::same_as<typename T::Self, T>;
 
 // A kernel object that guest code refers to by UID.
 class KernelObject : public RefCounted {
 public:
+    static constexpr KernelClass kernel_class{ nullptr };
+
     // Whether the object is a T
     template <KernelObjectClass T>
     bool is() const {
-        return get_uid_class() == T::uid_class;
+        if constexpr (std::is_final_v<T>)
+            return &get_class() == &T::kernel_class;
+        for (const KernelClass *c = &get_class(); c; c = c->parent) {
+            if (c == &T::kernel_class)
+                return true;
+        }
+        return false;
     }
 
+    // Returns the class of the object.
+    virtual const KernelClass &get_class() const = 0;
     // Returns the class reported by sceKernelGetThreadmgrUIDClass.
     virtual UidClass get_uid_class() const = 0;
     // Whether open calls find the object by its name.
@@ -87,11 +100,21 @@ template <KernelObjectClass T>
     return Ref<T>::from(static_cast<T &>(*object));
 }
 
-// Base of a kernel object type with a single class, which uid_class names.
-template <std::derived_from<KernelObject> Base, UidClass C>
-class WithUidClass : public Base {
+// The class S, a subclass of Base's class
+template <typename S, std::derived_from<KernelObject> Base>
+class WithClass : public Base {
 public:
     using Base::Base;
+    using Self = S;
+    static constexpr KernelClass kernel_class{ &Base::kernel_class };
+    const KernelClass &get_class() const override { return kernel_class; }
+};
+
+// A leaf class, with the number sceKernelGetThreadmgrUIDClass reports
+template <typename S, std::derived_from<KernelObject> Base, UidClass C>
+class WithUidClass : public WithClass<S, Base> {
+public:
+    using WithClass<S, Base>::WithClass;
     static constexpr UidClass uid_class = C;
     UidClass get_uid_class() const final { return C; }
 };
