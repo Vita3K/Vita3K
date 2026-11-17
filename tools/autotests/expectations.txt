@@ -435,6 +435,7 @@ msgpipe_open_close_bits         fail     # an opened UID doesn't keep the pipe a
 msgpipe_order                   pass
 msgpipe_partial_head_order      pass
 msgpipe_partial_head_rejoin     fail     # no requeue on a priority change
+msgpipe_partial_head_requeue    fail     # no requeue on a priority change
 msgpipe_peek_ring_vector        pass
 msgpipe_peek_retry              pass
 msgpipe_peek_stale              pass
@@ -445,6 +446,7 @@ msgpipe_receiver_leaves         pass
 msgpipe_receiver_requeue        fail     # no requeue on a priority change
 msgpipe_receivers_serve_three   pass
 msgpipe_rejoin_untouched_head   pass
+msgpipe_requeue_buffered_receiver fail     # no requeue on a priority change
 msgpipe_requeue_same_priority   fail     # no requeue on a priority change
 msgpipe_ring_wrap               pass
 msgpipe_sender_head_leaves      pass
@@ -605,6 +607,7 @@ shared_raise_cores              fail     # threads are never READY and ignore th
 shared_ready_raise              fail     # threads are never READY and ignore their core
 signal_during_object_waits      pass
 signal_equal_priority_same_core skip     # threads ignore their core and priority, so whether the woken waiter runs before the signaler's next line is a race
+signal_object_wait_target       fail     # no requeue on a priority change
 signal_state_across_restart     pass
 signal_wait_arguments           pass
 signal_wait_callbacks_first     pass
