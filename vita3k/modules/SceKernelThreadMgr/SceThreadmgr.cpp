@@ -72,16 +72,7 @@ static int copy_guest_string(const MemState &mem, Ptr<const char> str, std::span
     return size;
 }
 
-// Finds a simple event, a timer or a message pipe, which are all events.
-static EventRef find_event(EmuEnvState &emuenv, SceUID event_id) {
-    if (SimpleEventRef event = emuenv.kernel.objects.find<SimpleEvent>(event_id))
-        return event;
-    if (TimerRef timer = emuenv.kernel.objects.find<Timer>(event_id))
-        return timer;
-    return emuenv.kernel.objects.find<MsgPipe>(event_id);
-}
-
-// Waits on a simple event or a timer, which are both events.
+// Waits on any event, such as a simple event, a timer or a message pipe.
 static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
     // The wait writes to local copies that go to the guest when it returns, so callbacks that run
     // during the wait still see the old values. Outputs the wait doesn't write are 0.
@@ -93,7 +84,7 @@ static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID 
     SceUInt32 *const timeout_copy = timeout ? &time_left : nullptr;
     const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
     SceInt32 result;
-    if (const EventRef event = find_event(emuenv, event_id))
+    if (const EventRef event = emuenv.kernel.objects.find<Event>(event_id))
         result = event->wait(*thread, bit_pattern, pattern_copy, data_copy, timeout_copy, callbacks);
     else
         result = RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
@@ -161,7 +152,7 @@ EXPORT(SceInt32, _sceKernelCancelEvent, SceUID eventId, SceUInt32 *pNumWaitThrea
     // The count reads 0 if the cancel fails
     if (pNumWaitThreads)
         *pNumWaitThreads = 0;
-    const EventRef event = find_event(emuenv, eventId);
+    const EventRef event = emuenv.kernel.objects.find<Event>(eventId);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     const SceInt32 result = event->cancel(pNumWaitThreads);
@@ -189,7 +180,7 @@ EXPORT(SceInt32, _sceKernelCancelEventWithSetPattern, SceUID eventId, SceUInt32 
     // The count reads 0 if the cancel fails
     if (num_wait_threads)
         *num_wait_threads = 0;
-    const EventRef event = find_event(emuenv, eventId);
+    const EventRef event = emuenv.kernel.objects.find<Event>(eventId);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->cancel(setPattern, opt->userData, num_wait_threads);
@@ -497,7 +488,7 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
 EXPORT(SceInt32, _sceKernelGetEventInfo, SceUID eventId, Ptr<SceKernelEventInfo> pInfo) {
     TRACY_FUNC(_sceKernelGetEventInfo, eventId, pInfo);
     SceKernelEventInfo full;
-    const EventRef event = find_event(emuenv, eventId);
+    const EventRef event = emuenv.kernel.objects.find<Event>(eventId);
     if (!event || event->info(full) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 
@@ -518,7 +509,7 @@ EXPORT(SceInt32, _sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_patt
     // The pattern reads 0 if the call fails
     if (get_pattern)
         *get_pattern = 0;
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     SceUInt32 pattern;
     if (!event || event->get_pattern(pattern) != SCE_KERNEL_OK)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
@@ -951,7 +942,7 @@ EXPORT(int, _sceKernelPollEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt
         *result_pattern = 0;
     if (user_data)
         *user_data = 0;
-    if (const EventRef event = find_event(emuenv, event_id))
+    if (const EventRef event = emuenv.kernel.objects.find<Event>(event_id))
         return event->poll(bit_pattern, result_pattern, user_data);
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 }
@@ -971,7 +962,7 @@ EXPORT(SceInt32, _sceKernelPulseEventWithNotifyCallback, SceUID event_id, SceUIn
     TRACY_FUNC(_sceKernelPulseEventWithNotifyCallback, event_id, set_pattern, opt);
     if (!opt)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse_and_notify(set_pattern, opt->user_data, false, opt->notify_arg);
@@ -1024,7 +1015,7 @@ EXPORT(SceInt32, _sceKernelSetEventWithNotifyCallback, SceUID event_id, SceUInt3
     TRACY_FUNC(_sceKernelSetEventWithNotifyCallback, event_id, set_pattern, opt);
     if (!opt)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse_and_notify(set_pattern, opt->user_data, true, opt->notify_arg);
@@ -1380,7 +1371,7 @@ EXPORT(int, sceKernelCheckWaitableStatus) {
 
 EXPORT(SceInt32, sceKernelClearEvent, SceUID event_id, SceUInt32 clear_pattern) {
     TRACY_FUNC(sceKernelClearEvent, event_id, clear_pattern);
-    if (const EventRef event = find_event(emuenv, event_id))
+    if (const EventRef event = emuenv.kernel.objects.find<Event>(event_id))
         return event->clear(clear_pattern);
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 }
@@ -1916,7 +1907,7 @@ EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
 
 EXPORT(SceInt32, sceKernelPulseEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {
     TRACY_FUNC(sceKernelPulseEvent, event_id, set_pattern, user_data);
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse(set_pattern, user_data, false);
@@ -1924,7 +1915,7 @@ EXPORT(SceInt32, sceKernelPulseEvent, SceUID event_id, SceUInt32 set_pattern, Sc
 
 EXPORT(SceInt32, sceKernelRegisterCallbackToEvent, SceUID event_id, SceUID callback_id) {
     TRACY_FUNC(sceKernelRegisterCallbackToEvent, event_id, callback_id);
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     CallbackRef callback = emuenv.kernel.objects.find<Callback>(callback_id);
@@ -1955,7 +1946,7 @@ EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
 
 EXPORT(SceInt32, sceKernelSetEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {
     TRACY_FUNC(sceKernelSetEvent, event_id, set_pattern, user_data);
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->set_or_pulse(set_pattern, user_data, true);
@@ -2098,7 +2089,7 @@ EXPORT(int, sceKernelUnlockWriteRWLock, SceUID lock_id) {
 
 EXPORT(SceInt32, sceKernelUnregisterCallbackFromEvent, SceUID event_id, SceUID callback_id) {
     TRACY_FUNC(sceKernelUnregisterCallbackFromEvent, event_id, callback_id);
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->unregister_callback(callback_id);
@@ -2106,7 +2097,7 @@ EXPORT(SceInt32, sceKernelUnregisterCallbackFromEvent, SceUID event_id, SceUID c
 
 EXPORT(SceInt32, sceKernelUnregisterCallbackFromEventAll, SceUID event_id) {
     TRACY_FUNC(sceKernelUnregisterCallbackFromEventAll, event_id);
-    const EventRef event = find_event(emuenv, event_id);
+    const EventRef event = emuenv.kernel.objects.find<Event>(event_id);
     if (!event)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     return event->unregister_callbacks();
