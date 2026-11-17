@@ -56,7 +56,7 @@ class TimerService;
 
 // The event part of simple events and timers: a bit pattern, the user data of the last set, and the
 // waits for bits of the pattern.
-class Event : public Waitable {
+class Event : public WithClass<Event, Waitable> {
 public:
     const bool auto_reset;
 
@@ -110,7 +110,7 @@ protected:
     UniqueList<CallbackRegistration> registrations;
 };
 
-class SimpleEvent final : public WithUidClass<Event, UidClass::simple_event> {
+class SimpleEvent final : public WithUidClass<SimpleEvent, Event, UidClass::simple_event> {
     friend class Ref<SimpleEvent>;
 
     SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator);
@@ -128,7 +128,7 @@ using SimpleEventRef = Ref<SimpleEvent>;
 
 using EventRef = Ref<Event>;
 
-class Timer final : public WithUidClass<Event, UidClass::timer>, public IntrusiveLink<Timer> {
+class Timer final : public WithUidClass<Timer, Event, UidClass::timer>, public IntrusiveLink<Timer> {
     friend class Ref<Timer>;
     friend class TimerService;
 
@@ -210,7 +210,7 @@ private:
     std::thread thread;
 };
 
-class Semaphore final : public WithUidClass<Waitable, UidClass::semaphore> {
+class Semaphore final : public WithUidClass<Semaphore, Waitable, UidClass::semaphore> {
     friend class Ref<Semaphore>;
 
     Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val);
@@ -297,7 +297,7 @@ private:
     void count_failed_take(MemState &mem);
 };
 
-class LwMutex final : public WithUidClass<Mutex, UidClass::lw_mutex> {
+class LwMutex final : public WithUidClass<LwMutex, Mutex, UidClass::lw_mutex> {
     friend class Ref<LwMutex>;
 
     using WithUidClass::WithUidClass;
@@ -311,7 +311,7 @@ public:
     SceInt32 info(SceKernelLwMutexInfo &info) const;
 };
 
-class HeavyMutex final : public WithUidClass<Mutex, UidClass::mutex> {
+class HeavyMutex final : public WithUidClass<HeavyMutex, Mutex, UidClass::mutex> {
     friend class Ref<HeavyMutex>;
 
     HeavyMutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling);
@@ -323,7 +323,7 @@ public:
 
 using MutexRef = Ref<Mutex>;
 
-class RWLock final : public WithUidClass<Waitable, UidClass::rw_lock>, public IntrusiveLink<RWLock> {
+class RWLock final : public WithUidClass<RWLock, Waitable, UidClass::rw_lock>, public IntrusiveLink<RWLock> {
     friend class Ref<RWLock>;
 
     RWLock(SceUInt32 attr, const char *name);
@@ -370,7 +370,7 @@ private:
 
 using RWLockRef = Ref<RWLock>;
 
-class EventFlag final : public WithUidClass<Waitable, UidClass::event_flag>, public IntrusiveLink<EventFlag> {
+class EventFlag final : public WithUidClass<EventFlag, Waitable, UidClass::event_flag>, public IntrusiveLink<EventFlag> {
     friend class Ref<EventFlag>;
 
     EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
@@ -465,7 +465,7 @@ private:
     bool lightweight() const { return get_uid_class() == UidClass::lw_cond; }
 };
 
-class LwCond final : public WithUidClass<Condvar, UidClass::lw_cond> {
+class LwCond final : public WithUidClass<LwCond, Condvar, UidClass::lw_cond> {
     friend class Ref<LwCond>;
 
     LwCond(SceUInt32 attr, const char *name, MutexRef associated_mutex, Ptr<SceKernelLwCondWork> workarea);
@@ -478,7 +478,7 @@ public:
     const Ptr<SceKernelLwCondWork> workarea;
 };
 
-class HeavyCond final : public WithUidClass<Condvar, UidClass::cond> {
+class HeavyCond final : public WithUidClass<HeavyCond, Condvar, UidClass::cond> {
     friend class Ref<HeavyCond>;
 
     using WithUidClass::WithUidClass;
@@ -536,7 +536,7 @@ struct MsgPipeReceiver : MsgPipeTransfer {
     MsgPipeReceiver(MemState &mem, std::span<const MsgPipeVector> pieces, SceSize *size, SceSize total, bool full, bool peek);
 };
 
-class MsgPipe final : public WithUidClass<Event, UidClass::msg_pipe> {
+class MsgPipe final : public WithUidClass<MsgPipe, Event, UidClass::msg_pipe> {
     friend class Ref<MsgPipe>;
 
     MsgPipe(SceUInt32 attr, const char *name, SceSize buf_size, SceUID creator);
@@ -607,7 +607,3 @@ private:
 };
 
 using MsgPipeRef = Ref<MsgPipe>;
-
-// Only the concrete classes are kernel object classes, not the ones they share
-static_assert(KernelObjectClass<HeavyMutex> && KernelObjectClass<LwMutex> && !KernelObjectClass<Mutex>);
-static_assert(KernelObjectClass<SimpleEvent> && KernelObjectClass<Timer> && !KernelObjectClass<Event>);

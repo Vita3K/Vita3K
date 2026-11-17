@@ -84,7 +84,7 @@ void Waitable::unqueue(ThreadState &thread, SceInt32 result) {
 }
 
 Waitable::Waitable(SceUInt32 attr, const char *name)
-    : KernelObject(name)
+    : WithClass(name)
     , attr(attr)
     , openable(attr & SCE_KERNEL_ATTR_OPENABLE) {}
 
@@ -161,7 +161,7 @@ SceInt32 Waitable::check_name(const char *name, SceUInt32 attr) {
 // *****************
 
 Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data)
-    : Waitable(attr, name)
+    : WithClass(attr, name)
     , auto_reset(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
     , pattern(init_pattern | SCE_KERNEL_EVENT_CREATE)
     , last_user_data(init_user_data) {}
