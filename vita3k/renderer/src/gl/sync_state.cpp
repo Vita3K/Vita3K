@@ -324,11 +324,11 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         std::uint16_t height = static_cast<std::uint16_t>(gxm::get_height(texture));
 
         if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
-            std::uint16_t stride_in_pixels = width;
+            std::uint32_t stride_in_pixels = width;
 
             switch (texture.texture_type()) {
             case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-                stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(texture)) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
+                stride_in_pixels = gxm::get_stride_in_bytes(texture) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
                 break;
             case SCE_GXM_TEXTURE_LINEAR:
                 // when the texture is linear, the stride should be aligned to 8 pixels

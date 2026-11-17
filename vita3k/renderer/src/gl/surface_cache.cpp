@@ -77,7 +77,7 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
 }
 
-GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
+GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint32_t pixel_stride,
     const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
     std::uint16_t *stored_height, std::uint16_t *stored_width) {
     // Create the key to access the cache struct

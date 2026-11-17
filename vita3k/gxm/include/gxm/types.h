@@ -1173,7 +1173,8 @@ static_assert(sizeof(SceGxmBlendInfo) == 4, "Incorrect size.");
 
 struct SceGxmTexture {
     // Control Word 0
-    uint32_t unk0 : 3;
+    uint32_t unk0 : 1;
+    uint32_t stride_hi : 2;
     uint32_t vaddr_mode : 3;
     uint32_t uaddr_mode : 3;
     uint32_t mip_filter : 1;
