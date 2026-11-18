@@ -379,8 +379,8 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
-        return GL_RG;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+        return GL_RG;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
         return GL_RG_INTEGER;
 
