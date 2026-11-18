@@ -229,7 +229,9 @@ static size_t process_batches_until_display(renderer::State &state, const Featur
         }
 #endif
 
-        state.command_buffer_queue.pop();
+        cmd_list = state.command_buffer_queue.pop();
+        if (!cmd_list)
+            return batches_processed;
         process_batch(state, features, mem, config, *cmd_list);
         batches_processed++;
     }

@@ -200,7 +200,7 @@ COMMAND(handle_transfer_copy) {
     const uint32_t colorKeyValue = helper.pop<uint32_t>();
     const uint32_t colorKeyMask = helper.pop<uint32_t>();
     SceGxmTransferColorKeyMode colorKeyMode = helper.pop<SceGxmTransferColorKeyMode>();
-    const SceGxmTransferImage *images = helper.pop<SceGxmTransferImage *>();
+    const std::shared_ptr<const SceGxmTransferImage[]> images(helper.pop<SceGxmTransferImage *>());
     const SceGxmTransferFormat src_fmt = images[0].format;
     const SceGxmTransferFormat dst_fmt = images[1].format;
     SceGxmTransferType src_type = helper.pop<SceGxmTransferType>();
@@ -208,7 +208,6 @@ COMMAND(handle_transfer_copy) {
 
     if (src_fmt != dst_fmt) {
         LOG_ERROR_ONCE("Unhandled format conversion from 0x{:0X} to 0x{:0X}", fmt::underlying(src_fmt), fmt::underlying(dst_fmt));
-        delete[] images;
         return;
     }
 
@@ -244,8 +243,6 @@ COMMAND(handle_transfer_copy) {
             perform_transfer_copy_src_type<std::array<uint64_t, 2>, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
             break;
         }
-
-        delete[] images;
     };
 
     if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
@@ -259,13 +256,11 @@ COMMAND(handle_transfer_copy) {
 
 COMMAND(handle_transfer_downscale) {
     TRACY_FUNC_COMMANDS(handle_transfer_downscale);
-    SceGxmTransferImage *src = helper.pop<SceGxmTransferImage *>();
-    SceGxmTransferImage *dst = helper.pop<SceGxmTransferImage *>();
+    const std::shared_ptr<SceGxmTransferImage> src(helper.pop<SceGxmTransferImage *>());
+    const std::shared_ptr<SceGxmTransferImage> dst(helper.pop<SceGxmTransferImage *>());
 
     if (src->format != dst->format) {
         LOG_ERROR_ONCE("Unhandled format conversion from 0x{:0X} to 0x{:0X}", fmt::underlying(src->format), fmt::underlying(dst->format));
-        delete src;
-        delete dst;
         return;
     }
 
@@ -337,9 +332,6 @@ COMMAND(handle_transfer_downscale) {
                 break;
             }
         }
-
-        delete src;
-        delete dst;
     };
 
     if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
