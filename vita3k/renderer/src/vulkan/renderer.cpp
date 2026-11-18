@@ -802,6 +802,10 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             LOG_WARN("Shader interlock disabled: VK_KHR_maintenance2 is required for separate sRGB attachment and UNORM storage views");
             support_shader_interlock = false;
         }
+        if (support_shader_interlock && !physical_device_features.shaderStorageImageExtendedFormats) {
+            LOG_WARN("Shader interlock disabled: shaderStorageImageExtendedFormats is required to use color surfaces such as R8 as storage images");
+            support_shader_interlock = false;
+        }
         if (support_shader_interlock) {
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
             support_shader_interlock = static_cast<bool>(props.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock);

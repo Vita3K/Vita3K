@@ -57,7 +57,7 @@ GLContext::GLContext()
     std::memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlock));
 }
 
-static GLenum translate_blend_func(SceGxmBlendFunc src) {
+GLenum translate_blend_func(SceGxmBlendFunc src) {
     R_PROFILE(__func__);
 
     switch (src) {
@@ -76,7 +76,7 @@ static GLenum translate_blend_func(SceGxmBlendFunc src) {
     }
 }
 
-static GLenum translate_blend_factor(SceGxmBlendFactor src) {
+GLenum translate_blend_factor(SceGxmBlendFactor src) {
     R_PROFILE(__func__);
 
     switch (src) {
@@ -411,6 +411,10 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glEnable(GL_SCISSOR_TEST);
     }
+
+    // the blending of single component surfaces depends on the surface
+    if (context.record.fragment_program)
+        sync_blending(context.record, mem);
 }
 
 static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_TO_GL_FORMAT = {
@@ -421,7 +425,8 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_U8U8U8_BGR, { GL_RGB, GL_UNSIGNED_BYTE } },
     { SCE_GXM_COLOR_FORMAT_U5U6U5_RGB, { GL_RGB, GL_UNSIGNED_SHORT_5_6_5 } },
     { SCE_GXM_COLOR_FORMAT_U8U8_AR, { GL_RG, GL_UNSIGNED_BYTE } },
-    { SCE_GXM_COLOR_FORMAT_U8_A, { GL_ALPHA, GL_UNSIGNED_BYTE } },
+    // single component surfaces are stored in the red channel
+    { SCE_GXM_COLOR_FORMAT_U8_A, { GL_RED, GL_UNSIGNED_BYTE } },
     { SCE_GXM_COLOR_FORMAT_U8_R, { GL_RED, GL_UNSIGNED_BYTE } },
     { SCE_GXM_COLOR_FORMAT_U2F10F10F10_ABGR, { GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV } },
     { SCE_GXM_COLOR_FORMAT_U2U10U10U10_ABGR, { GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV } },

@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <renderer/profile.h>
+#include <renderer/shaders.h>
 
 #include <renderer/gl/functions.h>
 #include <renderer/gl/state.h>
@@ -71,9 +72,11 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         return;
     }
 
+    const Sha256Hash fragment_hash = get_fragment_shader_hash(fragment_program_gxp, gxm_fragment_program.renderer_data->hash, context.record.color_surface.colorFormat);
+
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
-    if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
+    if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || fragment_hash != context.last_draw_fragment_program_hash) {
         // Need to recompile!
         SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate);
 
@@ -238,7 +241,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
 
     context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;
-    context.last_draw_fragment_program_hash = context.record.fragment_program.get(mem)->renderer_data->hash;
+    context.last_draw_fragment_program_hash = fragment_hash;
 
     context.vertex_stream_ring_buffer.draw_call_done();
     context.index_stream_ring_buffer.draw_call_done();

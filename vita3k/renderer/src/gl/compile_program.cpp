@@ -252,7 +252,9 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     const GLVertexProgram &vertex_program = *reinterpret_cast<GLVertexProgram *>(
         vertex_program_gxm.renderer_data.get());
 
-    const ProgramHashes hashes(fragment_program.hash, vertex_program.hash);
+    const SceGxmProgram &fragment_program_shader = *fragment_program_gxm.program.get(mem);
+    const Sha256Hash fragment_hash = get_fragment_shader_hash(fragment_program_shader, fragment_program.hash, state.color_surface.colorFormat);
+    const ProgramHashes hashes(fragment_hash, vertex_program.hash);
 
     // First pass, trying to find the program, since link is costly
     const ProgramCache::const_iterator cached = renderer.program_cache.find(hashes);
@@ -267,11 +269,11 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     context.shader_hints.color_format = state.color_surface.colorFormat;
     context.shader_hints.attributes = &vertex_program_gxm.attributes;
 
-    const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem), features, fragment_program.hash, renderer.fragment_shader_cache,
+    const SharedGLObject fragment_shader = get_or_compile_shader(&fragment_program_shader, features, fragment_hash, renderer.fragment_shader_cache,
         GL_FRAGMENT_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled);
 
     if (!fragment_shader) {
-        LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", hex_string(fragment_program.hash));
+        LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", hex_string(fragment_hash));
         return SharedGLObject();
     }
 
@@ -286,9 +288,9 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     SharedGLObject program = compile_program(renderer.program_cache, fragment_shader, vertex_shader, hashes);
 
     // Save shader cache haches
-    const auto shader_cache_hash_index = get_shaders_hash_index(renderer.shaders_cache_hashs, fragment_program.hash, vertex_program.hash);
+    const auto shader_cache_hash_index = get_shaders_hash_index(renderer.shaders_cache_hashs, fragment_hash, vertex_program.hash);
     if (shader_cache_hash_index == renderer.shaders_cache_hashs.end()) {
-        renderer.shaders_cache_hashs.push_back({ fragment_program.hash, vertex_program.hash });
+        renderer.shaders_cache_hashs.push_back({ fragment_hash, vertex_program.hash });
         save_shaders_cache_hashs(renderer, renderer.shaders_cache_hashs);
     }
 
