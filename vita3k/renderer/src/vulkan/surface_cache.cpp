@@ -1266,16 +1266,17 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
 
         // now we need to wait for the fence, then destroy it along with the command buffer
         // to prevent memory leaks
-        CallbackRequestFunction vk_callback = [&state = this->state, fence, surface_cmd]() {
-            auto result = state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max());
-            if (result != vk::Result::eSuccess)
-                LOG_ERROR("Could not wait for fences.");
-
-            // destroy the objects
+        // the deleter also runs if the callback is discarded at shutdown
+        const std::shared_ptr<void> sync_objects(nullptr, [&state = this->state, fence, surface_cmd](void *) {
             state.device.destroyFence(fence);
 
             std::lock_guard<std::mutex> lock(state.multithread_pool_mutex);
             state.device.freeCommandBuffers(state.multithread_command_pool, surface_cmd);
+        });
+        CallbackRequestFunction vk_callback = [&state = this->state, fence, sync_objects]() {
+            auto result = state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess)
+                LOG_ERROR("Could not wait for fences.");
         };
         state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(vk_callback)) });
 

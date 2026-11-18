@@ -174,7 +174,9 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
             }
         }
 
-        state.command_buffer_queue.pop();
+        cmd_list = state.command_buffer_queue.pop();
+        if (!cmd_list)
+            return;
         process_batch(state, features, mem, config, *cmd_list);
     }
 }
