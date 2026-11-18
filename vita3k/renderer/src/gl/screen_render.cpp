@@ -442,10 +442,12 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean last_enable_stencil_test = glIsEnabled(GL_STENCIL_TEST);
     GLboolean last_color_mask[4];
     glGetBooleanv(GL_COLOR_WRITEMASK, last_color_mask);
 
     glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_STENCIL_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -612,6 +614,10 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+    if (last_enable_stencil_test)
+        glEnable(GL_STENCIL_TEST);
+    else
+        glDisable(GL_STENCIL_TEST);
 #ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
 #endif
