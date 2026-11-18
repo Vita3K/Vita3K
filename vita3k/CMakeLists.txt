@@ -1,6 +1,6 @@
 include("${CMAKE_SOURCE_DIR}/cmake/version.cmake")
 add_custom_target(vita3k_version
-	COMMAND ${CMAKE_COMMAND} "-DVITA3K_BINARY_DIR=${CMAKE_BINARY_DIR}" -P "${CMAKE_SOURCE_DIR}/cmake/version.cmake"
+	COMMAND ${CMAKE_COMMAND} "-DVITA3K_BINARY_DIR=${CMAKE_BINARY_DIR}" "-DGIT_EXECUTABLE=${GIT_EXECUTABLE}" -P "${CMAKE_SOURCE_DIR}/cmake/version.cmake"
 	BYPRODUCTS "${CMAKE_BINARY_DIR}/vita3k/config/version.cpp" "${CMAKE_BINARY_DIR}/vita3k/config/gitver.h"
 	VERBATIM)
 

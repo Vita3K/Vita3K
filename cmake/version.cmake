@@ -15,16 +15,31 @@ if(NOT DEFINED VITA3K_BINARY_DIR)
 	set(VITA3K_BINARY_DIR "${CMAKE_BINARY_DIR}")
 endif()
 
+if(NOT GIT_EXECUTABLE)
+	find_package(Git QUIET)
+endif()
+
+set(GIT_COMMIT "")
+set(GIT_COUNT "")
+set(GIT_HASH "")
 execute_process(
-	COMMAND git rev-list HEAD --count
+	COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
 	WORKING_DIRECTORY ${VITA3K_SOURCE_DIR}
-	OUTPUT_VARIABLE GIT_COUNT
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(
-	COMMAND git rev-parse --short HEAD
-	WORKING_DIRECTORY ${VITA3K_SOURCE_DIR}
-	OUTPUT_VARIABLE GIT_HASH
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
+	OUTPUT_VARIABLE GIT_COMMIT
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	ERROR_QUIET)
+if(NOT GIT_COMMIT STREQUAL "")
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} rev-list ${GIT_COMMIT} --count
+		WORKING_DIRECTORY ${VITA3K_SOURCE_DIR}
+		OUTPUT_VARIABLE GIT_COUNT
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} rev-parse --short ${GIT_COMMIT}
+		WORKING_DIRECTORY ${VITA3K_SOURCE_DIR}
+		OUTPUT_VARIABLE GIT_HASH
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 
 # Value is different when is PR
 if("$ENV{GITHUB_EVENT_NAME}" STREQUAL "pull_request")
@@ -36,11 +51,11 @@ if("$ENV{GITHUB_EVENT_NAME}" STREQUAL "pull_request")
 	endif()
 else()
 	execute_process(
-		COMMAND git rev-parse --abbrev-ref HEAD
+		COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
 		WORKING_DIRECTORY ${VITA3K_SOURCE_DIR}
 		OUTPUT_VARIABLE GIT_BRANCH
 		OUTPUT_STRIP_TRAILING_WHITESPACE)
-	set(CMD git config --get remote.origin.url)
+	set(CMD ${GIT_EXECUTABLE} config --get remote.origin.url)
 endif()
 
 execute_process(COMMAND ${CMD}
@@ -71,7 +86,7 @@ else()
 	set(VITA3K_GIT_REV "${GIT_HASH}-${GIT_REPO}/${GIT_BRANCH}")
 endif()
 
-configure_file("${VITA3K_SOURCE_DIR}/vita3k/config/src/version.cpp.in" "${VITA3K_BINARY_DIR}/vita3k/config/version.cpp")
+configure_file("${VITA3K_SOURCE_DIR}/vita3k/config/src/version.cpp.in" "${VITA3K_BINARY_DIR}/vita3k/config/version.cpp" ESCAPE_QUOTES)
 file(CONFIGURE OUTPUT "${VITA3K_BINARY_DIR}/vita3k/config/gitver.h"
 	CONTENT "#define APP_VER_HI @VITA3K_APP_VER_HI@\n#define APP_VER_MID @VITA3K_APP_VER_MID@\n#define APP_VER_LO @VITA3K_APP_VER_LO@\n#define APP_NUMBER @GIT_COUNT@\n"
 	@ONLY)
