@@ -32,6 +32,7 @@ void GLSurfaceCache::cleanup() {
     color_surface_textures.clear();
     scene_color_address = 0;
     srgb_copies.clear();
+    gamma_samplings.clear();
 
     for (auto &ds : depth_stencil_textures) {
         ds.gl_texture.cleanup();
@@ -112,7 +113,7 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
 
 GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint32_t pixel_stride,
     const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
-    std::uint16_t *stored_height, std::uint16_t *stored_width) {
+    std::uint16_t *stored_height, std::uint16_t *stored_width, bool srgb) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
 
@@ -140,6 +141,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     GLenum surface_internal_format = color::translate_internal_format(base_format);
     GLenum surface_upload_format = color::translate_format(base_format);
     GLenum surface_data_type = color::translate_type(base_format);
+
+    // gamma corrected writes are encoded by the hardware into an sRGB surface
+    const bool write_srgb = purpose == SurfaceTextureRetrievePurpose::WRITING && srgb && support_srgb_decode && surface_internal_format == GL_RGBA8;
+    if (write_srgb)
+        surface_internal_format = GL_SRGB8_ALPHA8;
 
     std::size_t bytes_per_stride = pixel_stride * color::bytes_per_pixel(base_format);
     std::size_t total_surface_size = bytes_per_stride * original_height;
@@ -175,7 +181,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
         if (ite->first == key) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
-                surface_stat_changed = surface_extent_changed || (base_format != info.format);
+                surface_stat_changed = surface_extent_changed || (base_format != info.format) || (write_srgb != info.srgb);
             } else {
                 // If the extent changed but format is not the same, then the probability of it being a cast is high
                 surface_stat_changed = surface_extent_changed && (base_format == info.format);
@@ -198,6 +204,8 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             // Remake locally to avoid making changes to framebuffer array
             uint16_t prev_width = info.width;
             uint16_t prev_height = info.height;
+            // only the sRGB encoding changed, the stored bytes stay valid
+            const bool keep_content = !surface_extent_changed && (base_format == info.format) && (purpose == SurfaceTextureRetrievePurpose::WRITING);
             info.width = width;
             info.height = height;
             info.original_width = original_width;
@@ -206,11 +214,19 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             info.format = base_format;
             info.total_bytes = total_surface_size;
             info.flags = 0;
+            if (purpose == SurfaceTextureRetrievePurpose::WRITING)
+                info.srgb = write_srgb;
+            else if (info.srgb)
+                // a read keeps the encoding the surface was written with
+                surface_internal_format = GL_SRGB8_ALPHA8;
 
             bool store_rawly = false;
 
             auto remake_and_apply_filters = [&](GLuint bind_texture_id) {
-                if (prev_width <= info.width && prev_height <= info.height && surface_extent_changed) {
+                if ((surface_extent_changed && prev_width <= info.width && prev_height <= info.height) || keep_content) {
+                    // a surface whose encoding changed can also be smaller, keep what overlaps
+                    const GLsizei copy_width = std::min<GLsizei>(prev_width, info.width);
+                    const GLsizei copy_height = std::min<GLsizei>(prev_height, info.height);
                     GLuint temp_texture;
                     glGenTextures(1, &temp_texture);
                     glBindTexture(GL_TEXTURE_2D, temp_texture);
@@ -235,7 +251,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                     }
-                    glCopyImageSubData(temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, bind_texture_id, GL_TEXTURE_2D, 0, 0, 0, 0, prev_width, prev_height, 1);
+                    glCopyImageSubData(temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, bind_texture_id, GL_TEXTURE_2D, 0, 0, 0, 0, copy_width, copy_height, 1);
 
                     glDeleteTextures(1, &temp_texture);
                 } else {
@@ -486,6 +502,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     info_added->data = address;
     info_added->total_bytes = bytes_per_stride * original_height;
     info_added->format = base_format;
+    info_added->srgb = write_srgb;
     info_added->swizzle = swizzle;
     info_added->flags = 0;
     info_added->is_ping_pong_dirty = true;
@@ -621,12 +638,15 @@ void GLSurfaceCache::release_srgb_copies(const GLColorSurfaceCacheInfo &info) {
         srgb_copies.erase(casted->texture[0]);
 }
 
-GLuint GLSurfaceCache::retrieve_srgb_copy(GLuint texture) {
+GLuint GLSurfaceCache::retrieve_srgb_copy(GLuint texture, bool *created) {
     GLint width = 0, height = 0, internal_format = 0;
     glBindTexture(GL_TEXTURE_2D, texture);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+    // a surface written with gamma is already stored as sRGB
+    if (internal_format == GL_SRGB8_ALPHA8)
+        return texture;
     if (internal_format != GL_RGBA8) {
         LOG_WARN_ONCE("Trying to use gamma correction with non-compatible surface format {}", log_hex(internal_format));
         return texture;
@@ -644,11 +664,111 @@ GLuint GLSurfaceCache::retrieve_srgb_copy(GLuint texture) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         copy->width = width;
         copy->height = height;
+        if (created)
+            *created = true;
     }
 
     glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
     glCopyImageSubData(texture, GL_TEXTURE_2D, 0, 0, 0, 0, copy->texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
     return copy->texture[0];
+}
+
+static void respecify_keeping_content(const GLuint texture, const GLenum internal_format, const GLsizei width, const GLsizei height) {
+    GLint last_texture = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+
+    GLuint temp_texture;
+    glGenTextures(1, &temp_texture);
+    glBindTexture(GL_TEXTURE_2D, temp_texture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height);
+    glCopyImageSubData(texture, GL_TEXTURE_2D, 0, 0, 0, 0, temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glCopyImageSubData(temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, texture, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+
+    glDeleteTextures(1, &temp_texture);
+    glBindTexture(GL_TEXTURE_2D, last_texture);
+}
+
+void GLSurfaceCache::set_color_surface_srgb(Ptr<void> address, bool srgb) {
+    const auto ite = color_surface_textures.find(address.address());
+    if (ite == color_surface_textures.end())
+        return;
+
+    GLColorSurfaceCacheInfo &info = *ite->second;
+    // same check as for gamma writes: every format stored as RGBA8 can be sRGB
+    if (info.srgb == srgb || color::translate_internal_format(info.format) != GL_RGBA8)
+        return;
+
+    info.srgb = srgb;
+    // earlier draws may have written the surface through image stores, the copy must see them
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+    const GLenum internal_format = srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+    respecify_keeping_content(info.gl_texture[0], internal_format, info.width, info.height);
+    if (info.gl_ping_pong_texture[0])
+        respecify_keeping_content(info.gl_ping_pong_texture[0], internal_format, info.width, info.height);
+}
+
+void GLSurfaceCache::set_gamma_sampling(std::size_t unit, GLuint surface) {
+    if (surface)
+        gamma_samplings[unit] = { surface, false };
+    else
+        gamma_samplings.erase(unit);
+}
+
+// the sampling state that sync_texture set on the surface, for its sRGB copy
+static void copy_sampling_parameters(const GLuint from, const GLuint to) {
+    static constexpr GLenum params[] = { GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T,
+        GL_TEXTURE_SWIZZLE_R, GL_TEXTURE_SWIZZLE_G, GL_TEXTURE_SWIZZLE_B, GL_TEXTURE_SWIZZLE_A };
+    GLint values[std::size(params)];
+    glBindTexture(GL_TEXTURE_2D, from);
+    for (std::size_t i = 0; i < std::size(params); i++)
+        glGetTexParameteriv(GL_TEXTURE_2D, params[i], &values[i]);
+    glBindTexture(GL_TEXTURE_2D, to);
+    for (std::size_t i = 0; i < std::size(params); i++)
+        glTexParameteri(GL_TEXTURE_2D, params[i], values[i]);
+}
+
+void GLSurfaceCache::refresh_gamma_samplings() {
+    if (gamma_samplings.empty())
+        return;
+
+    bool rebound = false;
+    for (auto it = gamma_samplings.begin(); it != gamma_samplings.end();) {
+        GammaSampling &sampling = it->second;
+        const auto surface = std::ranges::find_if(color_surface_textures, [&](const auto &entry) { return entry.second->gl_texture[0] == sampling.surface; });
+        if (surface == color_surface_textures.end()) {
+            it = gamma_samplings.erase(it);
+            continue;
+        }
+
+        const bool srgb_storage = surface->second->srgb;
+        if (srgb_storage && !sampling.on_copy) {
+            ++it;
+            continue;
+        }
+
+        glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + it->first));
+        if (srgb_storage) {
+            glBindTexture(GL_TEXTURE_2D, sampling.surface);
+        } else {
+            // RGBA8 storage is not decoded, sample an sRGB copy of what the surface holds now
+            bool created = false;
+            const GLuint copy = retrieve_srgb_copy(sampling.surface, &created);
+            // a new copy (first use, or remade after a resize) has the default parameters
+            if (!sampling.on_copy || created)
+                copy_sampling_parameters(sampling.surface, copy);
+            glBindTexture(GL_TEXTURE_2D, copy);
+        }
+        sampling.on_copy = !srgb_storage;
+        rebound = true;
+        ++it;
+    }
+
+    // the rest of the renderer binds its textures on unit 0, as sync_texture leaves it
+    if (rebound)
+        glActiveTexture(GL_TEXTURE0);
 }
 
 GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) {
@@ -662,7 +782,7 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     if (!info.is_ping_pong_dirty)
         return info.gl_ping_pong_texture[0];
 
-    GLenum surface_internal_format = color::translate_internal_format(info.format);
+    GLenum surface_internal_format = info.srgb ? GL_SRGB8_ALPHA8 : color::translate_internal_format(info.format);
     GLenum surface_upload_format = color::translate_format(info.format);
     GLenum surface_data_type = color::translate_type(info.format);
 
@@ -819,7 +939,7 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
         std::uint32_t swizzle_set = color->colorFormat & SCE_GXM_COLOR_SWIZZLE_MASK;
         color_handle = retrieve_color_surface_texture_handle(state, color->width,
             color->height, color->strideInPixels, gxm::get_base_format(color->colorFormat), color->data,
-            SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height);
+            SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height, nullptr, color->gamma != 0);
     } else {
         color_handle = target->attachments[0];
     }

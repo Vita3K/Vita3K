@@ -35,6 +35,7 @@ struct RenderFragUniformBlock {
     float writing_mask;
     float use_raw_image;
     float res_multiplier;
+    float is_srgb;
 };
 
 enum FragUniformFieldId : uint32_t {
@@ -42,7 +43,8 @@ enum FragUniformFieldId : uint32_t {
     FRAG_UNIFORM_front_disabled,
     FRAG_UNIFORM_writing_mask,
     FRAG_UNIFORM_use_raw_image,
-    FRAG_UNIFORM_res_multiplier
+    FRAG_UNIFORM_res_multiplier,
+    FRAG_UNIFORM_is_srgb
 };
 
 template <typename T>

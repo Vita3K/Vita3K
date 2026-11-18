@@ -316,6 +316,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     }
 
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
+    state.surface_cache.set_gamma_sampling(index, 0);
 
     std::uint64_t texture_as_surface = 0;
     const GLint *swizzle_surface = nullptr;
@@ -362,8 +363,13 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
             only_nearest = color::is_write_surface_non_linearity_filtering(format_target_of_texture);
 
-            if (texture_as_surface && texture.gamma_mode)
-                texture_as_surface = state.surface_cache.retrieve_srgb_copy(static_cast<GLuint>(texture_as_surface));
+            if (texture_as_surface && texture.gamma_mode) {
+                const GLuint surface = static_cast<GLuint>(texture_as_surface);
+                texture_as_surface = state.surface_cache.retrieve_srgb_copy(surface);
+                if (texture_as_surface == surface)
+                    // stored as sRGB: if a later draw stores it as RGBA8, the unit must still decode
+                    state.surface_cache.set_gamma_sampling(index, surface);
+            }
         }
 
         // Try to retrieve S24D8 texture
@@ -381,6 +387,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
     if (texture_as_surface != 0) {
         glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));
+        if (state.surface_cache.support_srgb_decode)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, texture.gamma_mode ? GL_DECODE_EXT : GL_SKIP_DECODE_EXT);
 
         if (only_nearest) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

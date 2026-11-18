@@ -130,6 +130,16 @@ using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, Ve
 
 static void discard_masked_fragments(spv::Builder &b, const TranslationState &translate_state);
 
+// the shader reads and writes gamma corrected surfaces through images, which do no sRGB conversion
+static spv::Id get_is_srgb(spv::Builder &b, const SpirvShaderParameters &parameters, const TranslationState &translate_state) {
+    if (translate_state.is_vulkan)
+        return parameters.is_srgb_constant;
+
+    // OpenGL has no specialization constant, the flag is in the render info block
+    const spv::Id is_srgb = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_is_srgb) });
+    return b.createBinOp(spv::OpFOrdGreaterThan, b.makeBoolType(), b.createLoad(is_srgb, spv::NoPrecision), b.makeFloatConstant(0.5f));
+}
+
 static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const Input &input, const uint32_t explicit_array_size = 0) {
     // disabled
     return param_id;
@@ -808,10 +818,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
                 b.setPrecision(source, precision);
 
-                if (translation_state.is_vulkan) {
+                {
                     const spv::Id old_source = source;
                     // if (is_srgb)
-                    spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
+                    spv::Builder::If cond_builder(get_is_srgb(b, parameters, translation_state), spv::SelectionControlMaskNone, b);
 
                     // perform gamma correction:
                     // source.xyz = pow(source.xyz, vec3(2.2));
@@ -1064,7 +1074,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32 };
+        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32, f32 };
         if (uniform_buffer_count > 0)
             uniform_composition.push_back(buffer_addresses_type);
         if (uniform_texture_count > 0) {
@@ -1088,6 +1098,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_FRAG_UNIFORM_MEMBER(writing_mask);
         ADD_FRAG_UNIFORM_MEMBER(use_raw_image);
         ADD_FRAG_UNIFORM_MEMBER(res_multiplier);
+        ADD_FRAG_UNIFORM_MEMBER(is_srgb);
 
 #undef ADD_FRAG_UNIFORM_MEMBER
         // the resolution multiplier does not require a high precision
@@ -1635,10 +1646,10 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
         translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { { true, translated_id }, { true, translated_id }, { false, 0 }, { false, 1 } });
 
-        if (translate_state.is_vulkan) {
+        {
             spv::Id old_color = color;
             // if (is_srgb)
-            spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
+            spv::Builder::If cond_builder(get_is_srgb(b, parameters, translate_state), spv::SelectionControlMaskNone, b);
 
             // perform inverse gamma correction:
             // color.xyz = pow(color.xyz, vec3(1/2.2));
@@ -1656,8 +1667,6 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             cond_builder.makeBeginElse();
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, old_color });
             cond_builder.makeEndIf();
-        } else {
-            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
         }
 
         if (features.preserve_f16_nan_as_u16) {

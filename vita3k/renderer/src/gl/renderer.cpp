@@ -209,7 +209,8 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
         { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image },
-        { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format }
+        { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format },
+        { "GL_EXT_texture_sRGB_decode", &gl_state.surface_cache.support_srgb_decode }
     };
 
     for (int i = 0; i < total_extensions; i++) {
@@ -249,7 +250,7 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
 }
 
 bool GLState::init() {
-    if (!screen_renderer.init(static_assets)) {
+    if (!screen_renderer.init(static_assets, surface_cache.support_srgb_decode)) {
         LOG_ERROR("Failed to initialize screen renderer");
         return false;
     }
@@ -392,6 +393,13 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     context.self_sampling_indices.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
+
+    if (state.surface_cache.support_srgb_decode) {
+        if (color_surface_fin && color_surface_fin->gamma)
+            glEnable(GL_FRAMEBUFFER_SRGB);
+        else
+            glDisable(GL_FRAMEBUFFER_SRGB);
+    }
 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glDisable(GL_SCISSOR_TEST);
@@ -622,6 +630,11 @@ void queue_surface_data(GLState &renderer, GLContext &context, MemState &mem, Sc
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
     const bool read_raw = renderer.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(base_format);
 
+    // read what is stored, without converting from sRGB in the downscale blit
+    const GLboolean srgb_enabled = renderer.surface_cache.support_srgb_decode && glIsEnabled(GL_FRAMEBUFFER_SRGB);
+    if (srgb_enabled)
+        glDisable(GL_FRAMEBUFFER_SRGB);
+
     int multiplier = static_cast<int>(renderer.res_multiplier);
     GLint previous_read_framebuffer = 0;
     if (multiplier > 1 && !read_raw) {
@@ -683,6 +696,8 @@ void queue_surface_data(GLState &renderer, GLContext &context, MemState &mem, Sc
     } else {
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, nullptr);
     }
+    if (srgb_enabled)
+        glEnable(GL_FRAMEBUFFER_SRGB);
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
@@ -804,6 +819,16 @@ void GLState::complete_readbacks_overlapping(MemState &mem, Address begin, Addre
 
 void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) {
     should_display = false;
+
+    // the screen is presented as stored, without encoding to sRGB
+    struct SrgbWriteGuard {
+        const GLboolean enabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+        SrgbWriteGuard() { glDisable(GL_FRAMEBUFFER_SRGB); }
+        ~SrgbWriteGuard() {
+            if (enabled)
+                glEnable(GL_FRAMEBUFFER_SRGB);
+        }
+    } srgb_write_guard;
 
     DisplayFrameInfo display_frame;
     {
