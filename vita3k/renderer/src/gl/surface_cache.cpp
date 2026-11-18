@@ -51,9 +51,28 @@ void GLSurfaceCache::cleanup() {
 }
 
 void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint source_texture, const GLenum dest_internal,
-    const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type, const int offset_x,
-    const int offset_y, const int width, const int height, const int dest_width, const int dest_height, const std::size_t total_source_size) {
-    static constexpr GLsizei I32_SIGNED_MAX = 0x7FFFFFFF;
+    const GLenum dest_upload_format, const GLenum dest_type, const int dest_bpp, const GLenum source_format, const GLenum source_type,
+    const int source_bpp, const int dest_x, const int y, const int source_texture_width, const int dest_width, const int height) {
+    glBindTexture(GL_TEXTURE_2D, dest_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, dest_internal, dest_width, height, 0, dest_upload_format, dest_type, nullptr);
+
+    // Both formats share the same bytes per row, so the copy works on byte ranges. With larger source pixels the
+    // first one read can start before dest_x: skip the dest pixels in front of it.
+    const int start_byte = dest_x * dest_bpp;
+    const int source_x = start_byte / source_bpp;
+    const int skip_pixels = (start_byte - source_x * source_bpp) / dest_bpp;
+    int source_width = std::min((start_byte + dest_width * dest_bpp + source_bpp - 1) / source_bpp - source_x, source_texture_width - source_x);
+    // read whole dest pixels, so that the packed rows are as long as the unpacked ones
+    if (dest_bpp > source_bpp)
+        source_width -= source_width % (dest_bpp / source_bpp);
+    if (source_width <= 0)
+        return;
+
+    const int row_length = source_width * source_bpp / dest_bpp;
+    const int copy_width = std::min(dest_width, row_length - skip_pixels);
+    if (copy_width <= 0)
+        return;
+    const std::size_t copy_size = static_cast<std::size_t>(source_width) * source_bpp * height;
 
     if (!typeless_copy_buffer[0]) {
         if (!typeless_copy_buffer.init(glGenBuffers, glDeleteBuffers)) {
@@ -62,21 +81,33 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
         }
     }
 
-    if (total_source_size > typeless_copy_buffer_size) {
+    if (copy_size > typeless_copy_buffer_size) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, total_source_size, nullptr, GL_STATIC_COPY);
+        glBufferData(GL_PIXEL_PACK_BUFFER, copy_size, nullptr, GL_STATIC_COPY);
 
-        typeless_copy_buffer_size = total_source_size;
+        typeless_copy_buffer_size = copy_size;
     }
 
+    GLint pack_alignment, unpack_alignment;
+    glGetIntegerv(GL_PACK_ALIGNMENT, &pack_alignment);
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpack_alignment);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
     glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
-    glGetTextureSubImage(source_texture, 0, offset_x, offset_y, 0, width, height, 1, source_format, source_type, I32_SIGNED_MAX, nullptr);
+    glGetTextureSubImage(source_texture, 0, source_x, y, 0, source_width, height, 1, source_format, source_type, static_cast<GLsizei>(copy_size), nullptr);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_NONE);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, typeless_copy_buffer[0]);
-    glBindTexture(GL_TEXTURE_2D, dest_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, dest_internal, dest_width, dest_height, 0, dest_upload_format, dest_type, nullptr);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, skip_pixels);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, copy_width, height, dest_upload_format, dest_type, nullptr);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
+
+    glPixelStorei(GL_PACK_ALIGNMENT, pack_alignment);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, unpack_alignment);
 }
 
 GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint32_t pixel_stride,
@@ -341,8 +372,8 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                                         0, 0, 0, 0, width, height, 1);
                                 } else {
                                     do_typeless_copy(casted_vec[i]->texture[0], source_texture, surface_internal_format, surface_upload_format,
-                                        surface_data_type, source_format, source_data_type, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), info.width,
-                                        height, width, height, info.total_bytes);
+                                        surface_data_type, static_cast<int>(bytes_per_pixel_requested), source_format, source_data_type, static_cast<int>(bytes_per_pixel_in_store),
+                                        static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width, width, height);
                                 }
 
                                 casted_vec[i]->last_used_time = current_time;
@@ -380,11 +411,10 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         glCopyImageSubData(source_texture, GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_info.texture[0], GL_TEXTURE_2D,
                             0, 0, 0, 0, width, height, 1);
                     } else {
-                        // TODO: Copy sub region of typeless copy is still not handled ((
                         // We must do a typeless copy (RPCS3)
                         do_typeless_copy(casted_info.texture[0], source_texture, surface_internal_format, surface_upload_format,
-                            surface_data_type, source_format, source_data_type, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), info.width,
-                            height, width, height, info.total_bytes);
+                            surface_data_type, static_cast<int>(bytes_per_pixel_requested), source_format, source_data_type, static_cast<int>(bytes_per_pixel_in_store),
+                            static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width, width, height);
 
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
