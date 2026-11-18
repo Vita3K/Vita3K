@@ -424,6 +424,7 @@ void OverlayRenderer::render(const overlay::display_manager &manager,
     GLboolean last_depth = glIsEnabled(GL_DEPTH_TEST);
     GLboolean last_cull = glIsEnabled(GL_CULL_FACE);
     GLboolean last_scissor = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean last_stencil = glIsEnabled(GL_STENCIL_TEST);
     GLint last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha;
     glGetIntegerv(GL_BLEND_SRC_RGB, &last_blend_src_rgb);
     glGetIntegerv(GL_BLEND_DST_RGB, &last_blend_dst_rgb);
@@ -444,6 +445,7 @@ void OverlayRenderer::render(const overlay::display_manager &manager,
     glBlendEquation(GL_FUNC_ADD);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
+    glDisable(GL_STENCIL_TEST);
     glEnable(GL_SCISSOR_TEST);
     glScissor(static_cast<GLint>(viewport_x), static_cast<GLint>(viewport_y),
         static_cast<GLsizei>(viewport_w), static_cast<GLsizei>(viewport_h));
@@ -518,6 +520,10 @@ void OverlayRenderer::render(const overlay::display_manager &manager,
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+    if (last_stencil)
+        glEnable(GL_STENCIL_TEST);
+    else
+        glDisable(GL_STENCIL_TEST);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
