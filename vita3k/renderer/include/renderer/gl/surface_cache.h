@@ -118,8 +118,8 @@ private:
 
 private:
     void do_typeless_copy(const GLuint dest_texture, const GLuint source_texture, const GLenum dest_internal,
-        const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type,
-        const int offset_x, const int offset_y, const int width, const int height, const int dest_width, const int dest_height, const std::size_t total_source_size);
+        const GLenum dest_upload_format, const GLenum dest_type, const int dest_bpp, const GLenum source_format, const GLenum source_type,
+        const int source_bpp, const int dest_x, const int y, const int source_texture_width, const int dest_width, const int height);
     void save_scene_start(GLColorSurfaceCacheInfo &info);
     void release_srgb_copies(const GLColorSurfaceCacheInfo &info);
 
