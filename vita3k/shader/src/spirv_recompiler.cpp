@@ -2177,6 +2177,7 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
         return spv::ImageFormat::ImageFormatRgba8Snorm;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
         return spv::ImageFormat::ImageFormatRgba16f;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:

@@ -558,8 +558,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-            // don't change what openGL is doing (which is completely wrong)
-            if (!is_vulkan || support_a2rgb10) {
+            if (is_vulkan && support_a2rgb10) {
                 LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
                 break;
             }
