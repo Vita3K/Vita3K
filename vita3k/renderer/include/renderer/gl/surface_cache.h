@@ -75,6 +75,8 @@ struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
 
     Ptr<void> data;
     bool is_ping_pong_dirty;
+    // written with gamma correction, stored as sRGB
+    bool srgb = false;
     GLObjectArray<1> gl_texture;
     GLObjectArray<1> gl_ping_pong_texture;
     GLObjectArray<1> gl_expected_read_texture_view;
@@ -116,6 +118,13 @@ private:
     // sRGB copies of the surfaces sampled with gamma, by surface texture
     std::unordered_map<GLuint, std::unique_ptr<SrgbCopy>> srgb_copies;
 
+    struct GammaSampling {
+        GLuint surface = 0;
+        bool on_copy = false;
+    };
+    // texture units sampling with gamma a surface stored as sRGB, by unit
+    std::unordered_map<std::size_t, GammaSampling> gamma_samplings;
+
 private:
     void do_typeless_copy(const GLuint dest_texture, const GLuint source_texture, const GLenum dest_internal,
         const GLenum dest_upload_format, const GLenum dest_type, const int dest_bpp, const GLenum source_format, const GLenum source_type,
@@ -124,15 +133,23 @@ private:
     void release_srgb_copies(const GLColorSurfaceCacheInfo &info);
 
 public:
+    bool support_srgb_decode = false;
+
     explicit GLSurfaceCache();
 
     void cleanup();
 
     GLuint retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint32_t pixel_stride,
         const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
-        std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr);
+        std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr, bool srgb = false);
     GLuint retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address);
-    GLuint retrieve_srgb_copy(GLuint texture);
+    // created is set when the copy was (re)made and still has the default sampling parameters
+    GLuint retrieve_srgb_copy(GLuint texture, bool *created = nullptr);
+    void set_color_surface_srgb(Ptr<void> address, bool srgb);
+    // the texture unit samples this surface with gamma, or something else when surface is 0
+    void set_gamma_sampling(std::size_t unit, GLuint surface);
+    // keep the gamma sampling units decoding while their surface is stored as RGBA8
+    void refresh_gamma_samplings();
 
     // We really can't sample this around... The only usage of this function is interally load/store from this texture.
     GLuint retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width = -1,

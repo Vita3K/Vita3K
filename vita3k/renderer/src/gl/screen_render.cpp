@@ -67,7 +67,7 @@ void ScreenRenderer::setup_vertex_attributes(GLuint program) {
     glEnableVertexAttribArray(uv_attrib);
 }
 
-bool ScreenRenderer::init(const fs::path &static_assets) {
+bool ScreenRenderer::init(const fs::path &static_assets, bool support_srgb_decode) {
     glGenTextures(1, &m_screen_texture);
 
     const auto builtin_shaders_path = static_assets / "shaders-builtin/opengl";
@@ -96,6 +96,13 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    m_support_srgb_decode = support_srgb_decode;
+    if (support_srgb_decode) {
+        // surfaces written with gamma correction are stored as sRGB and must be shown as stored
+        glSamplerParameteri(m_sampler_linear, GL_TEXTURE_SRGB_DECODE_EXT, GL_SKIP_DECODE_EXT);
+        glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_SRGB_DECODE_EXT, GL_SKIP_DECODE_EXT);
+    }
 
     // SMAA is optional, the filter simply stays unavailable if it could not be set up
     init_smaa(static_assets);
@@ -452,6 +459,11 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    if (m_support_srgb_decode) {
+        // for the SMAA passes run without a sampler object
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, GL_SKIP_DECODE_EXT);
+    }
 #ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
