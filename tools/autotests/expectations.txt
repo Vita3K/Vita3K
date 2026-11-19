@@ -13,8 +13,17 @@ app_free_sizes                  fail     # the app's code, data, stack and TLS a
 app_memory_blocks               fail     # the app's code, data, stacks and TLS aren't memory blocks with their types
 app_memory_ranges               fail     # the app's own memory isn't in memory blocks, the find ignores its size
 app_start_free                  fail     # the app's code, data, stack and TLS aren't memory blocks, and the reported free size isn't the Vita's
+appmgr_app_data_mount           crash    # sceAppMgrAppDataMount is a stub, a NULL out pointer is written by the host and kills Vita3K
+appmgr_app_param_int            fail     # sceAppMgrAppParamGetInt returns 0 for every param and never writes out, no unknown or shell only errors
 appmgr_app_param_string         fail     # sceAppMgrAppParamGetString sizes, the NUL and the errors
+appmgr_convert_vs0              crash    # sceAppMgrConvertVs0UserDrivePath is a stub with no size or vs0 checks, a NULL src or dst kills Vita3K
+appmgr_get_app_state            crash    # _sceAppMgrGetAppState has no size, version or NULL checks, a NULL state is memset by the host and kills Vita3K
+appmgr_load_exec_checks         crash    # sceAppMgrLoadExec has no path checks, a NULL path throws a host exception
+appmgr_raw_path                 fail     # sceAppMgrGetRawPath only copies the path, no PD drive name for app0:, no size or length errors
 appmgr_system_event             crash    # sceAppMgrReceiveSystemEvent, then a host access past the guest's memory
+async_complete_cancel           fail     # sceIoReadAsync and the async completion calls are stubs, no event UID or result to complete or cancel
+async_open_read                 fail     # sceIoOpenAsync, sceIoReadAsync and the async close are stubs, no event UID and no result in it
+async_param_block               fail     # async io calls are stubs, so no event UID, and the parameter block is never filled in
 atomics                         pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
 cache_mount                     fail     # sceAppUtilCacheMount's init and mount checks, cache0: before a mount
@@ -135,6 +144,7 @@ cond_info_after_mutex_delete    fail     # a condition's info still names its mu
 cond_mutex_cancel_during_wait   pass
 cond_mutex_delete               pass
 cond_mutex_delete_order         timeout  # a mutex delete ends its conditions' waits only at their timeout, 20 s in each of the four cases
+cond_mutex_delete_wake_dispatch fail     # threads ignore their priority, so a mutex or lightweight condition waiter a mutex delete wakes runs only later
 cond_mutex_delete_wakes         fail     # a mutex delete ends its conditions' waits only at their timeout
 cond_owner_end_relock           pass
 cond_relock_callback_notify     pass
@@ -157,6 +167,12 @@ cond_timeout_claim_races        fail     # a woken thread runs at once, so it ha
 cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
 core_choice                     fail     # the CPU fields of thread info, threads ignore their core
+cpu_bkpt_arm                    timeout  # a BKPT in guest code parks the thread forever instead of killing the app
+cpu_bkpt_thumb                  timeout  # a BKPT in guest code parks the thread forever instead of killing the app
+cpu_data_abort_load             fail     # a load from an unmapped address only logs, the thread exits with status 7 and the app goes on
+cpu_data_abort_load_freed       fail     # a load from a freed block only logs, the thread exits with status 7 and the app goes on
+cpu_data_abort_store            fail     # a store to an unmapped address only logs, the thread exits with status 7 and the app goes on
+cpu_data_abort_store_freed      fail     # a store to a freed block only logs, the thread exits with status 7 and the app goes on
 cpu_fetch_data_page             fail     # code in a read and write block runs
 cpu_fetch_freed_block           timeout  # a fetch outside guest memory reads zeros and runs them
 cpu_fetch_freed_code            fail     # a thread still runs the code it ran from a block that was freed since
@@ -165,6 +181,7 @@ cpu_fetch_null_callback         pass
 cpu_fetch_null_end_wait         pass
 cpu_fetch_null_thumb            pass
 cpu_fetch_vm_block              pass
+cpu_ple_mcrr                    crash    # a user mcrr p15 c11 hits a dynarmic coprocessor assert, the Vita runs it and patches it to a NOP
 cpu_strex_overlap               fail     # a strex whose status register is also its value or base register does nothing and leaves the monitor open
 cpu_undefined_arm               fail     # an undefined instruction is skipped and the app goes on
 cpu_undefined_thumb             fail     # an undefined instruction is skipped and the app goes on
@@ -173,6 +190,7 @@ cpu_wfi_user                    fail     # a WFI ends the thread as if its funct
 cpu_writeback_same_register     fail     # a load or store with writeback whose base is its data register does nothing, except a Thumb pre-indexed str
 create_attributes               pass
 create_attrs                    pass
+create_modes                    fail     # sceIoOpen and sceIoMkdir ignore the create mode, no mode errors, and stat gives every file and directory one fixed mode
 create_option_unreadable        pass
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
@@ -187,6 +205,7 @@ delay_wait_id                   pass
 delete_race_end_waiters         pass
 delete_with_waiters             pass
 delete_with_waiters_more        fail     # sceKernelWaitMultipleEvents
+devctl_ioctl                    fail     # sceIoDevctl and sceIoIoctl commands and sizes, Vita3K accepts any ioctl and 0x3001 with any output size
 directories                     fail     # directory mode and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
 display_framebuf_blocks         fail     # no framebuffer base alignment check
@@ -235,6 +254,8 @@ event_info_multi_wait_nodes     fail     # sceKernelWaitMultipleEvents
 event_info_partial_wakes        pass
 event_initial_user_data         pass
 event_notify_callback           pass
+event_notify_deleted_wait_outputs pass
+event_notify_ends_every_wait    skip     # with no scheduler the notified threads run at once, so their status right after the set is a race
 event_notify_multi_wait         fail     # waiting on several events
 event_notify_other_waits        fail     # a notify on one event leaves other waits and their callbacks in the wrong state
 event_set_walk_before_dispatch  fail     # event flag waiters wake out of FIFO order when the flag is set
@@ -272,6 +293,8 @@ gxm_fragment_program_cache      pass
 gxm_map_alias_close             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_alias_pages             crash    # an opened block is its original, the unmap of a freed block's range crashes
 gxm_map_app_memory              fail     # the app's code maps
+gxm_map_attrib_bits             fail     # sceGxmMapMemory accepts any attribute bits, the Vita refuses 0x100 alone, READ with 0x8 or 0x10, and 0x102
+gxm_map_attrib_more_bits        fail     # sceGxmMapMemory accepts any attribute bits, the Vita refuses READ with 0x4, 0x20, 0x40 or 0x80 and WRITE with 0x8 or 0x10
 gxm_map_block_types             crash    # read only and device blocks and blocks for code map, the unmap of a freed block crashes
 gxm_map_enclose                 fail     # a map over others gives INVALID_POINTER instead of DRIVER
 gxm_map_many                    fail     # a map over others gives INVALID_POINTER instead of DRIVER
@@ -279,10 +302,13 @@ gxm_map_memory                  fail     # attribute, alignment, range and overl
 gxm_map_no_block                crash    # unmapping a range in no block
 gxm_map_opened                  fail     # an opened block is its original, so the two don't map at once
 gxm_map_original_free           crash    # an opened block is its original, the unmap of a freed block's range crashes
+gxm_map_pin_count               crash    # a block freed while GPU mapped isn't kept by a pin count, its find gives another error and a later access faults the host
 gxm_map_size_zero               fail     # unmaps by an address inside a mapping, size 0 maps
+gxm_map_size_zero_order         fail     # sceGxmMapMemory keeps one mapping per base, a second map at the same base fails, and unmaps go in another order
 gxm_map_thread_stack_delete     crash    # a deleted thread's mapped stack is freed, and the unmap crashes
 gxm_map_uninitialized           fail     # the map calls don't check that libgxm is initialized
 gxm_map_usse_free               fail     # a USSE mapping doesn't keep its block, lookups of a freed block give 0x80024700
+gxm_map_zombie_range            crash    # a free of a GPU mapped block unmaps its memory at once, so a later read of that range faults the host
 gxm_render_target_memory        crash    # render target sizes and driver memory blocks, a width of 0 aborts
 gxm_shader_patcher_memory       fail     # patcher create doesn't check its buffer regions or host allocation callbacks
 gxm_surface_memory              fail     # surface data alignment checks
@@ -291,7 +317,13 @@ gxm_terminate_wait              fail     # a thread in sceGxmTerminate shows RUN
 gxm_terminate_wait_between      fail     # the idle display queue thread is DORMANT instead of waiting on an event flag
 gxm_texture_memory              fail     # texture data, stride and palette alignment checks
 gxm_texture_strided             pass
+gxm_unmap_kind_mix              fail     # the USSE unmaps keep no records, so one never removes a sceGxmMapMemory mapping at a shared base and always gives 0
 gxm_usse_map                    fail     # USSE map size, alignment and overlap checks
+gxm_usse_map_arg_order          fail     # the USSE map and unmap calls check no initialization, alignment or size, a NULL base gives INVALID_POINTER even before sceGxmInitialize
+gxm_usse_map_ranges             fail     # sceGxmMapVertexUsseMemory and the fragment one check no block under the range, any range or size maps
+gxm_usse_offset_bits            fail     # the USSE map offset is the host address of the base, not a heap offset with a kind byte, freed offsets are not reused
+gxm_usse_remap_offset           fail     # the USSE map offset is the base address, not a heap offset, so C equals A and never lands after B
+gxm_usse_terminate              fail     # the USSE unmaps keep no records, so after sceGxmTerminate they give 0 instead of DRIVER
 gxm_wait_errors                 fail     # no notification region or display queue thread checks, a finish of a deferred context gives 0x805B0004
 handler_after_thread_delete     pass
 handoff_more                    skip     # threads ignore their core and priority, so whether the woken waiter ran before the releaser reads the state is a race
@@ -299,6 +331,7 @@ head_leaves_more                pass
 info                            pass
 info_fields                     pass
 info_sizes                      pass
+io_priority                     fail     # sceIoGetPriority, sceIoSetPriority and the default priority calls are stubs, no range check and no stored value
 local_ready_requeue             fail     # threads are never READY or STANDBY
 local_standby_raise_preempt     fail     # T reads DORMANT where the Vita has STANDBY, and the steps run in another order
 lock_calls_callback_runs        pass
@@ -431,7 +464,9 @@ msgpipe_info_event_waiter       pass
 msgpipe_mixed_queue             pass
 msgpipe_mixed_sides_sender_order pass
 msgpipe_modes                   pass
+msgpipe_notify_walk_senders     fail     # a set with notification on the pipe serves the sender behind the callback waiter it ends
 msgpipe_open_close_bits         fail     # an opened UID doesn't keep the pipe alive after the creating UID's delete
+msgpipe_open_limit              fail     # the open limit option of sceKernelCreateMsgPipe is ignored, opens never stop and 0x80 isn't refused
 msgpipe_order                   pass
 msgpipe_partial_head_order      pass
 msgpipe_partial_head_rejoin     pass
@@ -454,6 +489,7 @@ msgpipe_sender_jump_ahead       pass
 msgpipe_sender_mix              pass
 msgpipe_sender_requeue          pass
 msgpipe_sync_events             pass
+msgpipe_total_after_object_limit fail     # no plain object limit on kernel objects, semaphore and 1 MiB pipe creates never fail
 msgpipe_try_empty_vectors       pass
 msgpipe_try_receive_senders     pass
 msgpipe_vector_waiters          pass
@@ -657,11 +693,13 @@ suspend_vm_syscall_boundary     pass
 suspend_wake_status_at_once     skip     # whether a woken waiter suspended for VM still shows READY or already parked as SUSPENDED is a race, and so is its relock
 suspend_wake_status_kinds       skip     # whether a woken waiter suspended for VM still shows READY or already parked as SUSPENDED is a race
 suspended_nonobject_waits       pass
+sync_chstat_pread_dread         crash    # sceIoPread into a NULL buffer is written through as a host pointer and segfaults
 sync_object_memory_cost         fail     # kernel objects take no main memory
 syscall_callee_saved            pass
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
 syscall_vfp_clobber             fail     # a delay or a timed-out semaphore wait keeps every d register, none read the NaN 0x7FF8DEAD7F80DEAD
+syscall_vfp_helpers             fail     # kernel calls change FPSCR and keep d0, d1 and d16, the Vita keeps FPSCR and clobbers those in some calls
 sysmodule                       fail     # system modules don't load without firmware
 system_font_blocks              crash    # opening the system font blocks by name
 system_info                     fail     # the active CPU mask, size checks and per-core counters
@@ -684,6 +722,7 @@ thread_cpu_fields               fail     # the CPU fields of thread info, thread
 thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
+thread_create_entry_check_order fail     # sceKernelCreateThread checks attr, priority and stack before the entry address, and takes a data address as entry
 thread_create_option_unreadable pass
 thread_create_prio0_ceiling     fail     # a ceiling mutex doesn't raise its owner's priority
 thread_create_relative_priority pass
@@ -698,6 +737,7 @@ thread_entry_block_types        fail     # app data and USER_RW addresses are ac
 thread_errors                   pass
 thread_event_handler            pass
 thread_event_handler_check_order fail     # no execute permission tracking, so a handler at a data address is accepted
+thread_event_handler_check_order_more fail     # sceKernelRegisterThreadEventHandler takes a data address as handler, the Vita returns ILLEGAL_ADDR
 thread_event_handler_context    pass
 thread_event_handler_delete_refused pass
 thread_event_handler_delete_self pass
@@ -731,6 +771,7 @@ thread_info                     pass
 thread_info_fields              fail     # thread info's run time, the last CPU is 0 since threads ignore their core
 thread_info_sizes               pass
 thread_lifecycle                pass
+thread_limit_count              fail     # sceKernelCreateThread has no thread limit, creates never fail with 0x8002450D
 thread_limit_release            fail     # thread creates aren't refused at the Vita's limit, which gives 0x8002450D
 thread_limits                   fail     # no limit on the number of threads
 thread_names                    pass
@@ -774,6 +815,8 @@ thread_switch_counter_kinds     fail     # the preempt, release and CPU change c
 thread_switch_counters          fail     # sleeps and interrupt preempts don't grow the release and preempt counters
 thread_tls_addr_libkernel       pass
 thread_vfp_exception            pass
+thread_vm_bkpt                  fail     # a BKPT in a VM thread parks it instead of stopping it with an exception, so its wait gets no record
+thread_vm_undefined             fail     # an undefined instruction in a VM thread doesn't end the process, the worker just stops and the wait returns
 thread_wait_id_idle             fail     # a thread that can run but hasn't reports RUNNING instead of READY
 thread_zero_mask_lifecycle      fail     # a zero affinity mask reads back as 0x70000 where the Vita reads 0
 timeout_left_kinds              fail     # sceKernelWaitMultipleEvents
@@ -868,5 +911,6 @@ wake_target_core                fail     # threads ignore their core
 wake_waker_core                 fail     # threads ignore their core
 waker_vfp_fill                  fail     # a call that wakes a higher priority thread keeps every d register
 wrapper_out_zero                pass
+wrong_handles                   fail     # sceIo calls on a directory or non-descriptor UID, error codes differ, a file under a missing directory is created
 yield_order                     fail     # threads ignore their core and priority
 zero_timeout_wait_no_yield      fail     # threads ignore their priority, so a ready thread runs while the caller spins
