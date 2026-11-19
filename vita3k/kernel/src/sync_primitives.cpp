@@ -47,35 +47,45 @@ bool Waitable::first_for(int priority) const {
 }
 
 void Waitable::wake_waiter(ThreadState &thread, SceInt32 result) {
-    thread.ender_result = result;
-    waiters.remove(thread);
-    wait_ended(thread, result);
-    thread.wake();
+    const std::lock_guard<std::mutex> thread_lock(thread.thread_mutex);
+    wake_one(thread, this, result);
 }
 
-std::size_t Waitable::wake_waiters(SceInt32 result) {
-    return wake_waiters_if([](ThreadState &) { return true; }, result);
+void Waitable::wake_one(ThreadState &thread, Waitable *queue, SceInt32 result) {
+    if (queue) {
+        queue->waiters.remove(thread);
+        thread.waited = nullptr;
+        thread.ender_result = result;
+        queue->wait_ended(thread, result);
+    }
+    thread.end_wait(result);
+}
+
+std::size_t Waitable::wake_all(SceInt32 result) {
+    return wake_all_if([](ThreadState &) { return true; }, result);
 }
 
 void Waitable::queue(ThreadState &thread, SceUInt32 type, const WaitRequest &request) {
     assert(!thread.wait_link.linked());
+    const std::lock_guard<std::mutex> thread_lock(thread.thread_mutex);
     thread.request = request;
     thread.ender_result.reset();
-    {
-        const std::lock_guard<std::mutex> thread_lock(thread.thread_mutex);
-        // A new wait starts with no result, so a wake left over from an earlier one can't end it
-        thread.wait_target = { type, uid };
-        thread.wait_result.reset();
-        thread.queued_priority = thread.priority;
-    }
+    // The hook reads the priority the thread queues with
+    thread.queued_priority = thread.priority;
     waiter_added(thread);
+    // A new wait starts with no result, so a wake left over from an earlier one can't end it. The
+    // thread shows the wait from here, and its link and its target change together.
+    thread.wait_target = { type, uid };
+    thread.wait_result.reset();
+    thread.waited = this;
+    thread.update_status(ThreadStatus::waiting);
     if (attr & SCE_KERNEL_ATTR_TH_PRIO)
-        insert_by_priority(thread);
+        insert_waiter_by_priority(thread);
     else
         waiters.push_back(thread);
 }
 
-void Waitable::insert_by_priority(ThreadState &thread) {
+void Waitable::insert_waiter_by_priority(ThreadState &thread) {
     // Lower value is higher priority, equal priorities keep FIFO order
     auto pos = waiters.begin();
     while (pos != waiters.end() && pos->queued_priority <= thread.queued_priority)
@@ -87,33 +97,21 @@ void Waitable::insert_by_priority(ThreadState &thread) {
     waiters.insert(pos, thread);
 }
 
-bool Waitable::try_requeue(ThreadState &thread, int priority, std::unique_lock<std::mutex> &thread_lock) {
-    const std::unique_lock<std::mutex> guard(mutex, std::try_to_lock);
-    if (!guard)
-        return false;
-    thread.set_priority(priority);
-    if (deleted)
-        return true;
-    thread.queued_priority = priority;
+void Waitable::requeue(ThreadState &thread) {
     // A FIFO queue keeps its order, and the same priority still moves the thread behind its equals
     if (attr & SCE_KERNEL_ATTR_TH_PRIO) {
         waiters.remove(thread);
-        insert_by_priority(thread);
+        insert_waiter_by_priority(thread);
     }
-    // Serving wakes other threads, so this thread's lock goes first
-    thread_lock.unlock();
-    serve();
-    return true;
 }
 
 void Waitable::unqueue(ThreadState &thread, SceInt32 result) {
+    const std::lock_guard<std::mutex> thread_lock(thread.thread_mutex);
     if (!thread.wait_link.linked())
         return;
     waiters.remove(thread);
-    {
-        const std::lock_guard<std::mutex> thread_lock(thread.thread_mutex);
-        thread.wait_target = {};
-    }
+    thread.waited = nullptr;
+    thread.wait_target = {};
     wait_ended(thread, result);
 }
 
@@ -225,7 +223,7 @@ void Event::end_waits(SceUID deleter) {
     // The waits for the delete event get it with the deleting thread's user data, then the others end
     fire(SCE_KERNEL_EVENT_DELETE, system_event_user_data(deleter), true);
     notify_callbacks(SCE_KERNEL_EVENT_DELETE);
-    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 SceInt32 Event::register_callback(KernelState &kernel, CallbackRef callback, SceUID notify_id) {
@@ -396,7 +394,7 @@ void Event::fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
 }
 
 void Event::serve() {
-    wake_waiters_if([&](auto &waiter) {
+    wake_all_if([&](auto &waiter) {
         const WaitRequest &wait = waiter.wait_request();
         if (!(pattern & wait.pattern))
             return false;
@@ -432,7 +430,7 @@ SceInt32 Event::cancel(SceUInt32 *num_wait_threads) {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
 
-    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
@@ -446,7 +444,7 @@ SceInt32 Event::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *nu
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
 
-    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     // Every bit is replaced, the create event too, and no waiter is left to get them
     pattern = set_pattern;
     last_user_data = user_data;
@@ -744,7 +742,7 @@ SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     // The event set with sceKernelSetTimerEvent is canceled too, but the timer keeps running with
     // the event's interval and type
     armed = false;
@@ -798,7 +796,7 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
 }
 
 void Mutex::end_waits(SceUID) {
-    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     clear_owner();
 }
 
@@ -1011,7 +1009,7 @@ SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_w
     if (new_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE))
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
-    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     lock_count = new_count;
     if (new_count > 0)
         set_owner(thread);
@@ -1086,7 +1084,7 @@ SceInt32 RWLock::check_create(const char *name, SceUInt32 attr) {
 }
 
 void RWLock::end_waits(SceUID) {
-    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     clear_write_owner();
 }
 
@@ -1250,7 +1248,7 @@ void RWLock::serve() {
     // A waiting writer goes first, even before readers that waited longer, once nobody holds it.
     auto *const writer = find_waiter([](auto &waiter) { return waiter.wait_request().write; });
     if (!writer) {
-        lock_count += static_cast<SceInt32>(wake_waiters());
+        lock_count += static_cast<SceInt32>(wake_all());
     } else if (lock_count == 0) {
         set_write_owner(*writer);
         lock_count = 1;
@@ -1264,8 +1262,8 @@ SceInt32 RWLock::cancel(ThreadState &thread, SceUInt32 *num_read_wait_threads, S
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
     const auto is_writer = [](auto &waiter) { return waiter.wait_request().write; };
-    const auto nb_writers = static_cast<SceUInt32>(wake_waiters_if(is_writer, SCE_KERNEL_ERROR_WAIT_CANCEL));
-    const auto nb_readers = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_writers = static_cast<SceUInt32>(wake_all_if(is_writer, SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_readers = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
 
     // The lock is reset, and only the calling thread may hold it afterwards
     const bool write_locked = flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK;
@@ -1306,7 +1304,7 @@ SceInt32 Semaphore::check_create(const char *name, SceUInt32 attr, SceInt32 init
 }
 
 void Semaphore::end_waits(SceUID) {
-    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 SceInt32 Semaphore::wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks) {
@@ -1378,7 +1376,7 @@ SceInt32 Semaphore::cancel(SceInt32 set_count, SceUInt32 *num_wait_threads) {
     if (set_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
-    const auto nb_threads = static_cast<SceUInt32>(wake_waiters(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     if (set_count < 0) {
         val = init_val;
     } else {
@@ -1423,7 +1421,7 @@ SceInt32 Condvar::check_create(const char *name, SceUInt32 attr) {
 
 void Condvar::end_waits(SceUID) {
     // wait() maps this to the condition's own delete error
-    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, bool callbacks) {
@@ -1491,7 +1489,7 @@ SceInt32 Condvar::signal(SignalTarget target) {
         if (ThreadState *const waiter = first_waiter())
             wake_waiter(*waiter);
     } else {
-        wake_waiters();
+        wake_all();
     }
 
     return SCE_KERNEL_OK;
@@ -1564,17 +1562,22 @@ SceInt32 EventFlag::check_mode(SceUInt32 wait_mode) {
 }
 
 void EventFlag::end_waits(SceUID) {
-    wake_waiters(SCE_KERNEL_ERROR_WAIT_DELETE);
+    wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     clear_holder();
     holds = 0;
 }
 
 void EventFlag::wait_ended(ThreadState &thread, SceInt32 result) {
-    if (result != SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+    if (result == SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
         return;
-    if (thread.wait_request().out_pattern)
+    // A set's take() already wrote the bits from before its clear
+    if (result != SCE_KERNEL_OK && thread.wait_request().out_pattern)
         *thread.wait_request().out_pattern = flags;
-    drop_hold();
+    // The holder is the waiter, since a second wait gets EVF_MULTI, and its lock is held here
+    if (holds > 0 && --holds == 0) {
+        thread.unlist_held(*this);
+        holder = nullptr;
+    }
 }
 
 void EventFlag::drop_hold() {
@@ -1640,7 +1643,7 @@ SceInt32 EventFlag::wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_
     if (held_by_other(thread.id))
         return SCE_KERNEL_ERROR_EVF_MULTI;
 
-    // A flag without SCE_EVENT_WAITMULTIPLE is held while the wait lasts, take() releases it
+    // A flag without SCE_EVENT_WAITMULTIPLE is held while the wait lasts, its own take or its end releases it
     if (!(attr & SCE_EVENT_WAITMULTIPLE) && holds++ == 0)
         set_holder(thread);
     const SceUInt32 type = wait_type(SCE_KERNEL_WAITTYPE_EVENTFLAG, callbacks);
@@ -1651,8 +1654,10 @@ SceInt32 EventFlag::wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_
         r = run_wait_callbacks(guard, thread, callbacks);
         if (r != SCE_KERNEL_OK)
             break;
-        if (take(request))
+        if (take(request)) {
+            drop_hold();
             break;
+        }
         // A wait whose deadline is already gone returns these bits
         if (out_bits)
             *out_bits = flags;
@@ -1711,12 +1716,11 @@ bool EventFlag::take(const WaitRequest &wait) {
         flags = 0;
     if (wait.mode & SCE_EVENT_WAITCLEAR_PAT)
         flags &= ~wait.pattern;
-    drop_hold();
     return true;
 }
 
 void EventFlag::serve() {
-    wake_waiters_if([&](auto &waiter) { return take(waiter.wait_request()); });
+    wake_all_if([&](auto &waiter) { return take(waiter.wait_request()); });
 }
 
 SceInt32 EventFlag::clear(SceUInt32 pattern) {
@@ -1734,15 +1738,9 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
 
-    const auto set_out_bits = [&](auto &waiter) {
-        if (waiter.wait_request().out_pattern)
-            *waiter.wait_request().out_pattern = pattern;
-        drop_hold();
-        return true;
-    };
-    const auto nb_threads = static_cast<SceUInt32>(wake_waiters_if(set_out_bits, SCE_KERNEL_ERROR_WAIT_CANCEL));
-
+    // The waiters get the new bits as their out bits
     flags = pattern;
+    const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
 
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
@@ -2188,7 +2186,7 @@ SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receiv
 
     const SceUInt32 senders = waiting_side == Side::senders ? side_count : 0;
     const SceUInt32 receivers = waiting_side == Side::receivers ? side_count : 0;
-    wake_waiters_if([](ThreadState &waiter) {
+    wake_all_if([](ThreadState &waiter) {
         const WaitRequest &request = waiter.wait_request();
         return request.sender || request.receiver;
     },

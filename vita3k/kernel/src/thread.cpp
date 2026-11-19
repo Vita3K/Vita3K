@@ -32,7 +32,6 @@
 #include <cstring>
 #include <memory>
 #include <span>
-#include <thread>
 #include <utility>
 
 // The priority a thread created with priority runs at. The default range stands for the game's own.
@@ -267,7 +266,7 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
         const auto end_guard = this->lock();
         lock.lock();
         update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
-        wake_waiters_if([&](auto &waiter) {
+        wake_all_if([&](auto &waiter) {
             if (waiter.wait_request().out_status)
                 *waiter.wait_request().out_status = static_cast<SceInt32>(returned_value);
             return true;
@@ -485,7 +484,7 @@ SceInt32 ThreadState::send_signal() {
     const std::lock_guard<std::mutex> lock(thread_mutex);
     // Only a signal wait ends, and the signal it takes isn't kept. Any other wait goes on.
     if (wait_target.id == SCE_KERNEL_SIGNAL_WAIT_ID) {
-        end_wait();
+        Waitable::wake_one(*this, nullptr, SCE_KERNEL_OK);
         return SCE_KERNEL_OK;
     }
     if (signal_pending)
@@ -632,16 +631,11 @@ SceInt32 ThreadState::run_callbacks() {
     return SCE_KERNEL_OK;
 }
 
-void ThreadState::wake() {
-    const std::lock_guard<std::mutex> lock(thread_mutex);
-    end_wait();
-}
-
-void ThreadState::end_wait() {
+void ThreadState::end_wait(SceInt32 result) {
     wait_target = {};
     // The first result ends the wait, a later one is dropped
     if (!wait_result)
-        wait_result = SCE_KERNEL_OK;
+        wait_result = result;
     cv.notify_all();
 }
 
@@ -702,6 +696,10 @@ void ThreadState::add_held(EventFlag &flag) {
 
 void ThreadState::remove_held(EventFlag &flag) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
+    unlist_held(flag);
+}
+
+void ThreadState::unlist_held(EventFlag &flag) {
     assert(flag.held_link.linked());
     held_flags.remove(flag);
 }
@@ -848,26 +846,18 @@ int ThreadState::get_priority() const {
 
 int ThreadState::change_priority(int new_priority) {
     std::unique_lock<std::mutex> lock(thread_mutex);
+    // Read once, so a change that starts over still returns the priority it first saw
     const int old_priority = priority;
-    // A locked object makes the change let go of the thread and start over, which lets the
-    // object's holder go on
-    while (true) {
-        // The kernel's own objects, like the vblank event, have waiters too
-        const SceUID waited = wait_target.id;
-        Ref<Waitable> object = kernel.objects.find<Waitable>(waited);
-        if (!object)
-            object = kernel.kernel_objects.find<Waitable>(waited);
-        // A delay or no wait finds no object
-        if (!object) {
-            set_priority(new_priority);
-            break;
+    // The priority and the queue change together, and a wait that moved to another object
+    // meanwhile is changed there
+    while (!change_wait(lock, [&](Waitable *queue) {
+        set_priority(new_priority);
+        if (queue) {
+            queued_priority = new_priority;
+            queue->requeue(*this);
         }
-        if (object->try_requeue(*this, new_priority, lock))
-            break;
-        lock.unlock();
-        std::this_thread::yield();
+    }))
         lock.lock();
-    }
     return old_priority;
 }
 

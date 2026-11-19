@@ -418,14 +418,14 @@ private:
     // Takes the flags for the thread if pattern matches them, or returns why it can't. The lock must
     // be held.
     SceInt32 try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
-    // Completes wait if the flags match its pattern: writes its out bits, clears the flags its mode
-    // asks for and releases its hold. Returns false if they don't match. The lock must be held.
+    // Completes wait if the flags match its pattern: writes its out bits and clears the flags its
+    // mode asks for. Returns false if they don't match. The lock must be held.
     bool take(const WaitRequest &wait);
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
-    // Gives a wait that timed out the flag's bits and gives back its hold.
+    // Writes the bits for every end but a callback's, unless a set did, and gives back the hold.
     void wait_ended(ThreadState &thread, SceInt32 result) override;
-    // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
+    // Gives back one hold of the holder for its own take. The lock must be held.
     void drop_hold();
     // Makes thread the holder and lists the flag in what it holds. The lock must be held.
     void set_holder(ThreadState &thread);
