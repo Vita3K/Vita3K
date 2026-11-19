@@ -900,6 +900,8 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool 
     // the depth part only matters if we can't apply linear filtering to it
     is_depth &= !support_depth_linear_filtering;
     compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
+    // anisotropic filtering is only applied to mipmapped textures
+    compact_repr |= (static_cast<uint32_t>(gxm_texture.true_mip_count() > 1) << 24);
 
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {
