@@ -22,6 +22,8 @@
 #include <shader/uniform_block.h>
 #include <vkutil/objects.h>
 
+#include <memory>
+
 struct MemState;
 
 namespace renderer::vulkan {
@@ -207,6 +209,14 @@ struct PostSurfaceSyncRequest {
     ColorSurfaceCacheInfo *cache_info;
 };
 
+struct DepthStencilReadback;
+
+// Write the stencil of a force-stored depth-stencil surface back to guest memory
+// once the GPU is done (the readback owns its host-visible copy buffer)
+struct DepthStencilSyncRequest {
+    std::shared_ptr<DepthStencilReadback> readback;
+};
+
 using CallbackRequestFunction = std::function<void()>;
 struct CallbackRequest {
     // use a pointer so the size is similar to other elements of WaitThreadRequest
@@ -230,6 +240,7 @@ using WaitThreadRequest = std::variant<
     FrameDoneRequest,
     BufferSyncRequest,
     PostSurfaceSyncRequest,
+    DepthStencilSyncRequest,
     SyncSignalRequest,
     CallbackRequest>;
 
