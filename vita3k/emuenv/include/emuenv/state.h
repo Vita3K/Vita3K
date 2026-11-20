@@ -151,6 +151,7 @@ public:
     uint32_t current_fps_offset = 0;
     uint32_t ms_per_frame = 0;
     renderer::Backend backend_renderer{};
+    WindowPtr window{ nullptr, nullptr };
     RendererPtr renderer{};
     std::unique_ptr<renderer::VulkanDeviceInfo> vulkan_device_info;
     bool drop_inputs{};
@@ -174,9 +175,6 @@ public:
     RegMgrState &regmgr;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
-    float system_dpi_scale = 1.f;
-    float manual_dpi_scale = 1.f;
-    FVector2 gui_scale = { 1.f, 1.f };
     GDBState &gdb;
     HTTPState &http;
     CameraState &camera;
