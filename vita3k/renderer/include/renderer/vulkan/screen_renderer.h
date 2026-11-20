@@ -93,8 +93,12 @@ public:
     void render(vk::ImageView image_view, vk::ImageLayout layout, const Viewport &viewport);
     void swap_window();
     void set_filter(const std::string_view &filter);
+    void set_vsync(bool enabled);
 
 private:
+    bool vsync = true;
+
+    void choose_present_mode();
     void create_render_pass();
     void create_layout_sync();
     void create_swapchain();
