@@ -151,7 +151,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
         if (cache_probably_freed) {
             for (auto fbuf_ite = framebuffer_array.begin(); fbuf_ite != framebuffer_array.end();) {
-                if ((fbuf_ite->first & 0xFFFFFFFF) == key) {
+                if ((fbuf_ite->first & 0xFFFFFFFF) == info.gl_texture[0]) {
                     fbuf_ite = framebuffer_array.erase(fbuf_ite);
                 } else {
                     ++fbuf_ite;
@@ -470,8 +470,12 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
-    if (color_surface_textures.contains(key)) {
-        LOG_WARN_ONCE("Two different surfaces have the same base address, this is not handled, an openGL error will happen.");
+    if (const auto previous = color_surface_textures.find(key); previous != color_surface_textures.end()) {
+        // the new surface replaces the one at the same address that it does not fit in
+        const GLuint previous_texture = previous->second->gl_texture[0];
+        std::erase_if(framebuffer_array, [&](const auto &fb) { return (fb.first & 0xFFFFFFFF) == previous_texture; });
+        std::erase(last_use_color_surface_index, key);
+        color_surface_textures.erase(previous);
     }
     color_surface_textures.emplace(key, std::move(info_added));
 
