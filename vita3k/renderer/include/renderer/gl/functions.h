@@ -65,7 +65,7 @@ void sync_mask(const GLState &state, GLContext &context, const MemState &mem);
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front);
 void sync_point_line_width(const GLState &state, const std::uint32_t size, const bool front);
 void sync_depth_bias(const int factor, const int unit, const bool front);
-void sync_blending(const GxmRecordState &state, const MemState &mem);
+void sync_blending(const GxmRecordState &state, const FeatureState &features, const MemState &mem);
 void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config);
 void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &state, const MemState &mem);
 void bind_fundamental(GLContext &context);

@@ -88,7 +88,7 @@ COMMAND_SET_STATE(program) {
 
         switch (renderer.current_backend) {
         case Backend::OpenGL:
-            gl::sync_blending(render_context->record, mem);
+            gl::sync_blending(render_context->record, renderer.features, mem);
             break;
 
         case Backend::Vulkan:
