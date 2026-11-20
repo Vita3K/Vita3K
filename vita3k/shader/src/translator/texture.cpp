@@ -17,6 +17,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <shader/spirv_recompiler.h>
+#include <shader/uniform_block.h>
 #include <shader/usse_decoder_helpers.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_translator.h>
@@ -64,6 +65,92 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
 
     // the uv coefficients are the fractional values
     return b.setPrecision(b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fract, { coords }), spv::DecorationRelaxedPrecision);
+}
+
+// Sample an upscaled surface with the footprint bilinear filtering has on the Vita:
+// blur passes minify or sample between texels to average them, which a higher resolution defeats
+static spv::Id sample_upscaled_surface(spv::Builder &b, const spv::Id std_builtins, const SpirvShaderParameters &params, spv::Id sampled_image, spv::Id coords, spv::Id is_filter) {
+    const spv::Id f32 = b.makeFloatType(32);
+    const spv::Id v2f32 = b.makeVectorType(f32, 2);
+    const spv::Id v2i32 = b.makeVectorType(b.makeIntType(32), 2);
+    const spv::Id zero = b.makeFloatConstant(0.0f);
+    const spv::Id one = b.makeFloatConstant(1.0f);
+    const spv::Id half = b.makeFloatConstant(0.5f);
+    const spv::Id v2half = b.makeCompositeConstant(v2f32, { half, half });
+    const spv::Id v2one = b.makeCompositeConstant(v2f32, { one, one });
+    const spv::Id two = b.makeFloatConstant(2.0f);
+    const spv::Id v2two = b.makeCompositeConstant(v2f32, { two, two });
+
+    const auto load_uniform = [&](uint32_t field) {
+        return b.createLoad(utils::create_access_chain(b, spv::StorageClassUniform, params.render_info_id, { b.makeIntConstant(field) }), spv::NoPrecision);
+    };
+    const spv::Id surface_lod = load_uniform(FRAG_UNIFORM_surface_lod);
+
+    spv::Id query_lod = b.createOp(spv::OpImageQueryLod, v2f32, { sampled_image, coords });
+    query_lod = b.createOp(spv::OpVectorExtractDynamic, f32, { query_lod, b.makeIntConstant(1) });
+    const spv::Id minification = b.createBuiltinCall(f32, std_builtins, GLSLstd450FClamp, { query_lod, zero, one });
+
+    // where the Vita would have sampled: at the center of the native pixel
+    const spv::Id frag_scale = load_uniform(FRAG_UNIFORM_res_multiplier);
+    const spv::Id v2frag_scale = b.createCompositeConstruct(v2f32, { frag_scale, frag_scale });
+    spv::Id frag_coord = b.createLoad(params.frag_coord_id, spv::NoPrecision);
+    frag_coord = b.createOp(spv::OpVectorShuffle, v2f32, { { true, frag_coord }, { true, frag_coord }, { false, 0 }, { false, 1 } });
+    spv::Id native_center = b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Floor, { b.createBinOp(spv::OpFDiv, v2f32, frag_coord, v2frag_scale) });
+    native_center = b.createBinOp(spv::OpFMul, v2f32, b.createBinOp(spv::OpFAdd, v2f32, native_center, v2half), v2frag_scale);
+    const spv::Id offset = b.createBinOp(spv::OpFSub, v2f32, native_center, frag_coord);
+    spv::Id native_coords = b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fma, { b.createUnaryOp(spv::OpDPdx, v2f32, coords), b.createCompositeConstruct(v2f32, { b.createCompositeExtract(offset, f32, 0), b.createCompositeExtract(offset, f32, 0) }), coords });
+    native_coords = b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fma, { b.createUnaryOp(spv::OpDPdy, v2f32, coords), b.createCompositeConstruct(v2f32, { b.createCompositeExtract(offset, f32, 1), b.createCompositeExtract(offset, f32, 1) }), native_coords });
+
+    // 0 on a native texel center (no filtering), 1 on a corner (average of 4 texels)
+    const spv::Id image_type = b.makeImageType(f32, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
+    const spv::Id image = b.createUnaryOp(spv::OpImage, image_type, sampled_image);
+    const spv::Id size = b.createUnaryOp(spv::OpConvertSToF, v2f32, b.createOp(spv::OpImageQuerySizeLod, v2i32, { image, b.makeIntConstant(0) }));
+    const spv::Id scale = b.createBuiltinCall(f32, std_builtins, GLSLstd450Exp2, { surface_lod });
+    const spv::Id native_size = b.createBinOp(spv::OpFDiv, v2f32, size, b.createCompositeConstruct(v2f32, { scale, scale }));
+    spv::Id phase = b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fma, { native_coords, native_size, b.createUnaryOp(spv::OpFNegate, v2f32, v2half) });
+    phase = b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fract, { phase });
+    phase = b.createBuiltinCall(v2f32, std_builtins, GLSLstd450FAbs, { b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fma, { phase, v2two, b.createUnaryOp(spv::OpFNegate, v2f32, v2one) }) });
+    phase = b.createBinOp(spv::OpFSub, v2f32, v2one, phase);
+    phase = b.createBuiltinCall(f32, std_builtins, GLSLstd450FMax, { b.createCompositeExtract(phase, f32, 0), b.createCompositeExtract(phase, f32, 1) });
+
+    // a magnified surface keeps its resolution
+    const spv::Id not_magnified = b.createBuiltinCall(f32, std_builtins, GLSLstd450FClamp, { b.createBuiltinCall(f32, std_builtins, GLSLstd450Fma, { query_lod, two, one }), zero, one });
+
+    // filters with taps on texel centers rely on each tap averaging a whole native texel
+    phase = b.createTriOp(spv::OpSelect, f32, is_filter, one, phase);
+    phase = b.createBinOp(spv::OpFMul, f32, phase, not_magnified);
+
+    const spv::Id footprint = b.createBuiltinCall(f32, std_builtins, GLSLstd450FMax, { minification, phase });
+    const spv::Id lod = b.createBinOp(spv::OpFMul, f32, footprint, surface_lod);
+
+    const spv::Id v4f32 = b.makeVectorType(f32, 4);
+    const spv::Id result = b.createVariable(spv::NoPrecision, spv::StorageClassFunction, v4f32, "surface_footprint");
+    spv::Builder::If cond_builder(b.createBinOp(spv::OpFOrdGreaterThan, b.makeBoolType(), lod, zero), spv::SelectionControlMaskNone, b);
+
+    // A single sample of the native sized mip level snaps to the native texel grid, which makes the blur
+    // lag behind a smoothly moving light. 2x2 samples one level lower give the same width without it.
+    const spv::Id level = b.createBuiltinCall(f32, std_builtins, GLSLstd450FMax, { b.createBinOp(spv::OpFSub, f32, lod, one), zero });
+    spv::Id spread = b.createBinOp(spv::OpFMul, f32, b.makeFloatConstant(0.35f), b.createBuiltinCall(f32, std_builtins, GLSLstd450Exp2, { lod }));
+    spread = b.createBinOp(spv::OpFMul, f32, spread, b.createBuiltinCall(f32, std_builtins, GLSLstd450FMin, { lod, one }));
+    const spv::Id spread_uv = b.createBinOp(spv::OpFDiv, v2f32, b.createCompositeConstruct(v2f32, { spread, spread }), size);
+    const spv::Id spread_x = b.createCompositeExtract(spread_uv, f32, 0);
+    const spv::Id spread_y = b.createCompositeExtract(spread_uv, f32, 1);
+    const spv::Id neg_x = b.createUnaryOp(spv::OpFNegate, f32, spread_x);
+    const spv::Id neg_y = b.createUnaryOp(spv::OpFNegate, f32, spread_y);
+    spv::Id sum = spv::NoResult;
+    for (const auto &[dx, dy] : { std::pair{ neg_x, neg_y }, std::pair{ spread_x, neg_y }, std::pair{ neg_x, spread_y }, std::pair{ spread_x, spread_y } }) {
+        const spv::Id tap_coords = b.createBinOp(spv::OpFAdd, v2f32, coords, b.createCompositeConstruct(v2f32, { dx, dy }));
+        const spv::Id tap = b.createOp(spv::OpImageSampleExplicitLod, v4f32, { sampled_image, tap_coords, spv::ImageOperandsLodMask, level });
+        sum = (sum == spv::NoResult) ? tap : b.createBinOp(spv::OpFAdd, v4f32, sum, tap);
+    }
+    const spv::Id quarter = b.makeFloatConstant(0.25f);
+    b.createStore(b.createBinOp(spv::OpVectorTimesScalar, v4f32, sum, quarter), result);
+
+    cond_builder.makeBeginElse();
+    b.createStore(b.createOp(spv::OpImageSampleExplicitLod, v4f32, { sampled_image, coords, spv::ImageOperandsLodMask, zero }), result);
+    cond_builder.makeEndIf();
+
+    return b.createLoad(result, spv::NoPrecision);
 }
 
 spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, int texture_index, const int dim, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id extra1, const spv::Id extra2, const int gather4_comp) {
@@ -149,7 +236,32 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
         }
     }
 
-    image_sample = m_b.createOp(op, type_f32_v[4], params);
+    if (m_spirv_params.use_surface_lod && dim == 2 && op == spv::OpImageSampleImplicitLod && params.size() == 2) {
+        const spv::Id u32 = m_b.makeUintType(32);
+        spv::Id surface_mask = utils::create_access_chain(m_b, spv::StorageClassUniform, m_spirv_params.render_info_id, { m_b.makeIntConstant(FRAG_UNIFORM_surface_mask) });
+        surface_mask = m_b.createBinOp(spv::OpBitwiseAnd, u32, m_b.createLoad(surface_mask, spv::NoPrecision), m_b.makeUintConstant(1U << texture_index));
+        const spv::Id is_surface = m_b.createBinOp(spv::OpINotEqual, m_b.makeBoolType(), surface_mask, m_b.makeUintConstant(0));
+
+        const spv::Id result = m_b.createVariable(spv::NoPrecision, spv::StorageClassFunction, type_f32_v[4], "surface_sample");
+        spv::Builder::If cond_builder(is_surface, spv::SelectionControlMaskNone, m_b);
+
+        spv::Id coord_xy = coord_id;
+        if (m_b.getNumComponents(coord_xy) > 2)
+            coord_xy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { { true, coord_xy }, { true, coord_xy }, { false, 0 }, { false, 1 } });
+        surface_sample_count[texture_index]++;
+        if (!surface_filter_vars[texture_index])
+            surface_filter_vars[texture_index] = m_b.createVariable(spv::NoPrecision, spv::StorageClassPrivate, m_b.makeBoolType(), fmt::format("surface_filter_{}", texture_index).c_str());
+        const spv::Id is_filter = m_b.createLoad(surface_filter_vars[texture_index], spv::NoPrecision);
+        m_b.createStore(sample_upscaled_surface(m_b, std_builtins, m_spirv_params, tex, coord_xy, is_filter), result);
+
+        cond_builder.makeBeginElse();
+        m_b.createStore(m_b.createOp(op, type_f32_v[4], params), result);
+        cond_builder.makeEndIf();
+
+        image_sample = m_b.createLoad(result, spv::NoPrecision);
+    } else {
+        image_sample = m_b.createOp(op, type_f32_v[4], params);
+    }
 
     if (get_data_type_size(dest_type) < 4 && dest_type != DataType::UINT16 && dest_type != DataType::INT16)
         m_b.setPrecision(image_sample, spv::DecorationRelaxedPrecision);
@@ -497,4 +609,18 @@ bool USSETranslatorVisitor::smp(
     }
 
     return true;
+}
+
+void USSETranslatorVisitor::finalize_surface_filters() {
+    if (!surface_filter_init_block)
+        return;
+
+    spv::Block *const last_build_point = m_b.getBuildPoint();
+    m_b.setBuildPoint(surface_filter_init_block);
+    for (size_t i = 0; i < surface_filter_vars.size(); i++) {
+        if (surface_filter_vars[i])
+            m_b.createStore(m_b.makeBoolConstant(surface_sample_count[i] > 1), surface_filter_vars[i]);
+    }
+    m_b.leaveFunction();
+    m_b.setBuildPoint(last_build_point);
 }

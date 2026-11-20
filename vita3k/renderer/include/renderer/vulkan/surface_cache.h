@@ -72,6 +72,8 @@ struct CastedTexture {
     uint32_t cropped_width = 0;
     uint32_t cropped_height = 0;
     SceGxmColorBaseFormat format;
+    uint32_t mip_levels = 1;
+    vk::ImageView mip_view = nullptr;
 };
 
 struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
@@ -94,6 +96,12 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
 
     // sRGB attachment view of the UNORM image used for interlock storage access
     vk::ImageView gamma_view = nullptr;
+    // upscaled surfaces are sampled through all their mip levels to keep the Vita filtering footprint
+    uint32_t mip_levels = 1;
+    vk::ImageView mip_view = nullptr;
+    vk::ImageView alternate_mip_view = nullptr;
+    uint64_t written_scene = 0;
+    uint64_t mipmap_scene = 0;
 
     // only used when upscaling is enabled, to downscale the image first
     std::unique_ptr<vkutil::Image> blit_image;
@@ -151,6 +159,7 @@ struct TextureLookupResult {
     vk::ImageView view;
     vkutil::ImageLayout layout;
     vk::Format format;
+    bool has_mipmaps = false;
 };
 
 // result when trying to retrieve a surface from the surface cache
@@ -191,6 +200,10 @@ private:
 
     void destroy_surface(ColorSurfaceCacheInfo &info);
     void destroy_surface(DepthStencilSurfaceCacheInfo &info);
+
+    std::map<vk::Format, bool> mipmappable_formats;
+    uint32_t get_surface_mip_levels(vk::Format format, uint32_t width, uint32_t height);
+    void generate_mipmaps(vkutil::Image &image, uint32_t mip_levels);
 
 public:
     // when creating a mutable image, can we pass as an argument

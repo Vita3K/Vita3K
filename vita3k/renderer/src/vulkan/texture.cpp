@@ -123,6 +123,17 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         lookup_result = context.state.surface_cache.retrieve_depth_stencil_as_texture(texture, &texture_viewport);
     }
 
+    if (!is_vertex) {
+        const uint32_t bit = 1U << index;
+        // linear strided textures use the mag filter as the min filter too
+        const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+            && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
+        if (lookup_result.has_value() && lookup_result->has_mipmaps && !point_sampled)
+            context.curr_frag_ublock.base_block.surface_mask |= bit;
+        else
+            context.curr_frag_ublock.base_block.surface_mask &= ~bit;
+    }
+
     if (lookup_result.has_value()) {
         // get the sampler now
         context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);

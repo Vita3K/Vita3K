@@ -33,6 +33,8 @@
 
 #include <spdlog/fmt/bin_to_hex.h>
 
+#include <cmath>
+
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     R_PROFILE(__func__);
@@ -162,6 +164,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.use_raw_image = static_cast<float>(use_raw_image);
     frag_ublock.res_multiplier = renderer.res_multiplier;
+    frag_ublock.surface_lod = std::log2(renderer.res_multiplier);
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)
@@ -194,6 +197,17 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     std::memcpy(index_gpu_ptr.first, indices, index_buffer_size);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
 
+    if (context.self_sampling_needs_mipmaps) {
+        const TextureInfo &textures_used = gxm_fragment_program.renderer_data->textures_used;
+        for (const size_t index : context.self_sampling_indices) {
+            if ((index < SCE_GXM_MAX_TEXTURE_UNITS) && textures_used[index]) {
+                glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + index));
+                generate_surface_mipmaps(context.current_color_attachment, renderer.res_multiplier);
+                break;
+            }
+        }
+    }
+
     if (fragment_program_gxp.is_native_color()) {
         if (features.should_use_shader_interlock() && !config.spirv_shader) {
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
@@ -208,6 +222,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[0]);
             std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data);
             if (ping_pong != 0) {
+                if (context.self_sampling_needs_mipmaps)
+                    generate_surface_mipmaps(static_cast<GLuint>(ping_pong), renderer.res_multiplier);
                 for (std::size_t i = 0; i < context.self_sampling_indices.size(); i++) {
                     glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[i]);
                     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(ping_pong));
