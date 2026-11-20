@@ -385,6 +385,9 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         state, mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height);
     context.current_color_attachment = current_color_attachment_handle;
     context.current_framebuffer_height = current_framebuffer_height;
+    // with macroblock sync, each macroblock is written to memory before the next one is rendered
+    const bool macroblock_sync = context.render_target && context.render_target->has_macroblock_sync;
+    state.surface_cache.begin_scene(macroblock_sync ? Ptr<void>() : context.record.color_surface.data);
     context.self_sampling_indices.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
