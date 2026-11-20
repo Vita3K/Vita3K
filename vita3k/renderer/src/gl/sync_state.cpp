@@ -277,6 +277,12 @@ void sync_point_line_width(const GLState &state, const std::uint32_t width, cons
 void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     // Depth Bias
     if (is_front) {
+        // The offset only applies to the polygon modes it is enabled for
+        glEnable(GL_POLYGON_OFFSET_FILL);
+#ifndef __ANDROID__
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glEnable(GL_POLYGON_OFFSET_POINT);
+#endif
         glPolygonOffset(static_cast<GLfloat>(factor), static_cast<GLfloat>(unit));
     }
 }
