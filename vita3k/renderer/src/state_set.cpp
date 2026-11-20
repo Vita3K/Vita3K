@@ -382,7 +382,7 @@ COMMAND_SET_STATE(stencil_func) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        gl::sync_stencil_func(stencil_state_op, stencil_state_vals, mem, !is_front);
+        gl::sync_stencil_func(render_context->record, !is_front);
         break;
 
     case Backend::Vulkan:
@@ -401,14 +401,13 @@ COMMAND_SET_STATE(stencil_ref) {
     const bool is_front = helper.pop<bool>();
     const uint8_t sref = helper.pop<const unsigned char>();
 
-    GxmStencilStateOp &stencil_state_op = is_front ? render_context->record.front_stencil_state_op : render_context->record.back_stencil_state_op;
     GxmStencilStateValues &stencil_state_vals = is_front ? render_context->record.front_stencil_state_values : render_context->record.back_stencil_state_values;
 
     stencil_state_vals.ref = sref;
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        gl::sync_stencil_func(stencil_state_op, stencil_state_vals, mem, !is_front);
+        gl::sync_stencil_func(render_context->record, !is_front);
         break;
 
     case Backend::Vulkan:
@@ -450,7 +449,8 @@ COMMAND_SET_STATE(two_sided) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        // TODO: something should be done here
+        gl::sync_stencil_func(render_context->record, false);
+        gl::sync_stencil_func(render_context->record, true);
         break;
 
     case Backend::Vulkan:
