@@ -440,9 +440,14 @@ EXPORT(Ptr<char>, sceClibStrstr, const char *s1, const char *s2) {
     return Ptr<char>(res, emuenv.mem);
 }
 
-EXPORT(int64_t, sceClibStrtoll, const char *str, char **endptr, int base) {
+EXPORT(int64_t, sceClibStrtoll, const char *str, Ptr<Ptr<char>> endptr, int base) {
     TRACY_FUNC(sceClibStrtoll, str, endptr, base);
-    return strtoll(str, endptr, base);
+    char *end = nullptr;
+    const int64_t res = strtoll(str, &end, base);
+    // the guest slot is 4 bytes wide, store a guest address instead of the host pointer
+    if (endptr)
+        *endptr.get(emuenv.mem) = Ptr<char>(end, emuenv.mem);
+    return res;
 }
 
 // Returns the byte as a signed char, in lower case if it is an ASCII letter
