@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import org.vita3k.emulator.Emulator
 import org.vita3k.emulator.R
 import org.vita3k.emulator.data.RestartRequiredSetting
+import org.vita3k.emulator.overlay.InputOverlay
 import org.vita3k.emulator.ui.components.OverlayEditorPalette
 import org.vita3k.emulator.ui.rememberConnectedGamepads
 import org.vita3k.emulator.ui.screens.settings.ControllerMappingSections
@@ -192,6 +193,7 @@ private fun EmulationPauseMenu(
     Box(modifier = Modifier.fillMaxSize()) {
         ControlsEditorBar(
             visibleState = controlsVisibilityState,
+            overlayView = activity.getmOverlay(),
             onDone = { sessionViewModel.finishControlsEditor(activity) },
             onReset = { sessionViewModel.resetControlsLayout(activity) },
             modifier = Modifier.fillMaxSize()
@@ -998,6 +1000,7 @@ private fun EmbeddedSettingsTab(
 @Composable
 private fun ControlsEditorBar(
     visibleState: MutableTransitionState<Boolean>,
+    overlayView: InputOverlay?,
     onDone: () -> Unit,
     onReset: () -> Unit,
     modifier: Modifier = Modifier
@@ -1009,6 +1012,7 @@ private fun ControlsEditorBar(
         modifier = modifier
     ) {
         OverlayEditorPalette(
+            overlayView = overlayView,
             onDone = onDone,
             onReset = onReset,
             modifier = modifier

@@ -17,6 +17,7 @@ import android.view.MotionEvent;
  */
 public final class InputOverlayDrawableJoystick
 {
+  private boolean mVisible = true;
   private float mCurrentX = 0.0f;
   private float mCurrentY = 0.0f;
   private float mJoystickX = 0.0f;
@@ -32,6 +33,8 @@ public final class InputOverlayDrawableJoystick
   private Rect mVirtBounds;
   private Rect mOrigBounds;
   private int mOpacity;
+  private float mScaleFactor = 1.0f;
+  private int mSensitivityPercent = 100;
   private final BitmapDrawable mOuterBitmap;
   private final BitmapDrawable mDefaultStateInnerBitmap;
   private final BitmapDrawable mPressedStateInnerBitmap;
@@ -86,11 +89,41 @@ public final class InputOverlayDrawableJoystick
     return mJoystickLegacyId;
   }
 
+  public void setVisible(boolean visible) { mVisible = visible; }
+  public boolean isVisible() { return mVisible; }
   public void draw(Canvas canvas)
   {
+    draw(canvas, false);
+  }
+
+  public void draw(Canvas canvas, boolean showHiddenDimmed)
+  {
+    if (!mVisible && !showHiddenDimmed) return;
+    Rect bounds = getBounds();
+    int dimLayer = -1;
+    if (!mVisible) {
+      Rect dimBounds = getTouchBounds();
+      dimLayer = canvas.saveLayerAlpha(dimBounds.left, dimBounds.top, dimBounds.right, dimBounds.bottom, 105);
+    }
+    int save = canvas.save();
+    canvas.scale(mScaleFactor, mScaleFactor, bounds.exactCenterX(), bounds.exactCenterY());
     mOuterBitmap.draw(canvas);
     getCurrentStateBitmapDrawable().draw(canvas);
     mBoundsBoxBitmap.draw(canvas);
+    canvas.restoreToCount(save);
+    if (dimLayer != -1) canvas.restoreToCount(dimLayer);
+  }
+
+  public void setScaleFactor(float scale) { mScaleFactor = Math.max(0.35f, Math.min(2.5f, scale)); }
+
+  public Rect getTouchBounds()
+  {
+    Rect bounds = getBounds();
+    int width = Math.round(bounds.width() * mScaleFactor);
+    int height = Math.round(bounds.height() * mScaleFactor);
+    int cx = bounds.centerX();
+    int cy = bounds.centerY();
+    return new Rect(cx - width / 2, cy - height / 2, cx + (width + 1) / 2, cy + (height + 1) / 2);
   }
 
   public boolean TrackEvent(MotionEvent event)
@@ -106,7 +139,7 @@ public final class InputOverlayDrawableJoystick
     {
       case MotionEvent.ACTION_DOWN:
       case MotionEvent.ACTION_POINTER_DOWN:
-        if (getBounds().contains((int) event.getX(pointerIndex), (int) event.getY(pointerIndex)))
+        if (getTouchBounds().contains((int) event.getX(pointerIndex), (int) event.getY(pointerIndex)))
         {
           concerned = true;
           mPressedState = true;
@@ -151,6 +184,8 @@ public final class InputOverlayDrawableJoystick
         concerned = true;
         float touchX = event.getX(i);
         float touchY = event.getY(i);
+        touchX = getVirtBounds().centerX() + (touchX - getVirtBounds().centerX()) / mScaleFactor;
+        touchY = getVirtBounds().centerY() + (touchY - getVirtBounds().centerY()) / mScaleFactor;
         float maxY = getVirtBounds().bottom;
         float maxX = getVirtBounds().right;
         touchX -= getVirtBounds().centerX();
@@ -168,15 +203,22 @@ public final class InputOverlayDrawableJoystick
 
   public void onConfigureTouch(MotionEvent event)
   {
-    switch (event.getAction())
+    onConfigureTouch(event, event.getActionIndex());
+  }
+
+  public void onConfigureTouch(MotionEvent event, int pointerIndex)
+  {
+    if (pointerIndex < 0 || pointerIndex >= event.getPointerCount()) return;
+    switch (event.getActionMasked())
     {
       case MotionEvent.ACTION_DOWN:
-        mPreviousTouchX = (int) event.getX();
-        mPreviousTouchY = (int) event.getY();
+      case MotionEvent.ACTION_POINTER_DOWN:
+        mPreviousTouchX = (int) event.getX(pointerIndex);
+        mPreviousTouchY = (int) event.getY(pointerIndex);
         break;
       case MotionEvent.ACTION_MOVE:
-        int deltaX = (int) event.getX() - mPreviousTouchX;
-        int deltaY = (int) event.getY() - mPreviousTouchY;
+        int deltaX = (int) event.getX(pointerIndex) - mPreviousTouchX;
+        int deltaY = (int) event.getY(pointerIndex) - mPreviousTouchY;
         mControlPositionX += deltaX;
         mControlPositionY += deltaY;
         setBounds(new Rect(mControlPositionX, mControlPositionY,
@@ -189,20 +231,31 @@ public final class InputOverlayDrawableJoystick
         setOrigBounds(new Rect(new Rect(mControlPositionX, mControlPositionY,
                 mOuterBitmap.getIntrinsicWidth() + mControlPositionX,
                 mOuterBitmap.getIntrinsicHeight() + mControlPositionY)));
-        mPreviousTouchX = (int) event.getX();
-        mPreviousTouchY = (int) event.getY();
+        mPreviousTouchX = (int) event.getX(pointerIndex);
+        mPreviousTouchY = (int) event.getY(pointerIndex);
         break;
     }
   }
 
   public float getX()
   {
-    return mJoystickX;
+    return applySensitivity(mJoystickX);
   }
 
   public float getY()
   {
-    return mJoystickY;
+    return applySensitivity(mJoystickY);
+  }
+
+  public void setSensitivityPercent(int sensitivityPercent)
+  {
+    mSensitivityPercent = Math.max(10, Math.min(200, sensitivityPercent));
+  }
+
+  private float applySensitivity(float value)
+  {
+    float adjusted = value * mSensitivityPercent / 100f;
+    return Math.max(-1f, Math.min(1f, adjusted));
   }
 
   public int getXControl()
