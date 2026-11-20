@@ -92,6 +92,7 @@ protected:
     AvailableTexture loading_texture;
     // contain the decrypted header when loading dds
     ddspp::Descriptor *dds_descriptor = nullptr;
+    void free_dds_descriptor();
     // file being written to when exporting dds
     std::ofstream output_file;
     // used when exporting dds

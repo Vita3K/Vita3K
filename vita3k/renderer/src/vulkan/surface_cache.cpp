@@ -1206,13 +1206,20 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     return (framebuffer_array[key] = { fb_standard, fb_interlock, color_result.base_image });
 }
 
+// the queue only refuses requests once aborted, the callback is then destroyed without being run
+static void push_callback(VKState &state, CallbackRequestFunction &&callback) {
+    auto request = std::make_unique<CallbackRequestFunction>(std::move(callback));
+    if (state.request_queue.push(CallbackRequest{ request.get() }))
+        request.release();
+}
+
 bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, CallbackRequestFunction &callback, Address target_address) {
     if (!state.features.enable_memory_mapping || state.disable_surface_sync)
         return false;
 
     if (vector_utils::find_index(cpu_surfaces_changed, source_address) != -1) {
         // there is a transfer operation pending on this surface, just add the callback after and we are done
-        state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(callback)) });
+        push_callback(state, std::move(callback));
 
         if (target_address)
             cpu_surfaces_changed.push_back(target_address);
@@ -1266,25 +1273,32 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
 
         // now we need to wait for the fence, then destroy it along with the command buffer
         // to prevent memory leaks
-        CallbackRequestFunction vk_callback = [&state = this->state, fence, surface_cmd]() {
-            auto result = state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max());
-            if (result != vk::Result::eSuccess)
-                LOG_ERROR("Could not wait for fences.");
-
-            // destroy the objects
+        // the deleter also runs if the callback is discarded at shutdown or by an exception, so it waits too
+        const std::shared_ptr<void> sync_objects(nullptr, [&state = this->state, fence, surface_cmd](void *) {
+            try {
+                if (state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess)
+                    LOG_ERROR("Could not wait for fences.");
+            } catch (const vk::SystemError &e) {
+                LOG_ERROR("Could not wait for fences: {}", e.what());
+            }
             state.device.destroyFence(fence);
 
             std::lock_guard<std::mutex> lock(state.multithread_pool_mutex);
             state.device.freeCommandBuffers(state.multithread_command_pool, surface_cmd);
+        });
+        CallbackRequestFunction vk_callback = [&state = this->state, fence, sync_objects]() {
+            auto result = state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess)
+                LOG_ERROR("Could not wait for fences.");
         };
-        state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(vk_callback)) });
+        push_callback(state, std::move(vk_callback));
 
         if (returned_info)
             state.request_queue.push(PostSurfaceSyncRequest{ returned_info });
     }
 
     // now push the callback
-    state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(callback)) });
+    push_callback(state, std::move(callback));
 
     if (target_address)
         cpu_surfaces_changed.push_back(target_address);

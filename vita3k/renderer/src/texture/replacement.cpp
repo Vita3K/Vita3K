@@ -604,6 +604,11 @@ void TextureCache::import_done() {
     }
 }
 
+void TextureCache::free_dds_descriptor() {
+    delete dds_descriptor;
+    dds_descriptor = nullptr;
+}
+
 void TextureCache::refresh_available_textures() {
     if (import_folder.empty() || export_folder.empty())
         return;

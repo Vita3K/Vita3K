@@ -89,7 +89,7 @@ void GLTextureCache::cleanup() {
     importing_texture = false;
     imported_texture_raw_data.clear();
     imported_texture_decoded = nullptr;
-    dds_descriptor = nullptr;
+    free_dds_descriptor();
 }
 
 void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
