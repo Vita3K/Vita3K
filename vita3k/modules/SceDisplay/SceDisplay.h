@@ -26,6 +26,16 @@ enum SceDisplaySetBufSync {
     SCE_DISPLAY_SETBUF_NEXTFRAME = 1
 };
 
+enum SceDisplaySetFrameBufOpt {
+    SCE_DISPLAY_SETFRAMEBUF_OPT_NODUPLICATE = 0x01,
+    SCE_DISPLAY_SETFRAMEBUF_OPT_WAIT = 0x02
+};
+
+enum SceDisplayGetFrameBufOpt {
+    SCE_DISPLAY_GETFRAMEBUF_OPT_EFFECTIVE = 0x01,
+    SCE_DISPLAY_GETFRAMEBUF_OPT_SCHEDULED = 0x02
+};
+
 template <>
 inline std::string to_debug_str<SceDisplaySetBufSync>(const MemState &mem, SceDisplaySetBufSync type) {
     switch (type) {
@@ -61,10 +71,12 @@ struct SceDisplayFrameBuf {
 };
 
 // Only BigSky uses this version of the structure
-struct SceDisplayFrameBuf2 : public SceDisplayFrameBuf {
+struct SceDisplayFrameBufExt : public SceDisplayFrameBuf {
     // BigSky uses this field and sets it to a value between 0 and 5, in practice always 1
-    SceUInt32 unkn = 0;
+    SceUInt32 flags = 0;
 };
+static_assert(sizeof(SceDisplayFrameBuf) == 0x18);
+static_assert(sizeof(SceDisplayFrameBufExt) == 0x1C);
 
 DECL_EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size);
 DECL_EXPORT(SceInt32, _sceDisplayGetMaximumFrameBufResolution, SceInt32 *width, SceInt32 *height);

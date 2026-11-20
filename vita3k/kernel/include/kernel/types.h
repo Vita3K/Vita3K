@@ -173,8 +173,8 @@
 constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
 
 enum SceKernelModel {
-    SCE_KERNEL_MODEL_VITA,
-    SCE_KERNEL_MODEL_VITATV
+    SCE_KERNEL_MODEL_VITA = 0x10000,
+    SCE_KERNEL_MODEL_VITATV = 0x20000
 };
 
 enum SceKernelErrorCode : uint32_t {
@@ -1148,6 +1148,7 @@ struct SceKernelThreadOptParam {
     SceUInt32 uStackMemid;
     SceUInt32 data_0x18;
 };
+static_assert(sizeof(SceKernelThreadOptParam) == 0x1C);
 
 #define SCE_KERNEL_THREAD_OPT_KSTACK_MEMTYPE 0x1U
 #define SCE_KERNEL_THREAD_OPT_USTACK_MEMTYPE 0x2U

@@ -46,29 +46,34 @@ typedef enum SceIoMode {
 } SceIoMode;
 
 typedef enum SceIoAccessMode {
-    SCE_S_IXUSR = 0x0001, //!< User execute permission
-    SCE_S_IWUSR = 0x0002, //!< User write permission
-    SCE_S_IRUSR = 0x0004, //!< User read permission
-    SCE_S_IRWXU = 0x0007, //!< User access rights mask
+    SCE_S_IXUSR = 000100, //!< User execute permission
+    SCE_S_IWUSR = 000200, //!< User write permission
+    SCE_S_IRUSR = 000400, //!< User read permission
+    SCE_S_IRWXU = 000700, //!< User access rights mask
 
-    SCE_S_IXGRP = 0x0008, //!< Group execute permission
-    SCE_S_IWGRP = 0x0010, //!< Group write permission
-    SCE_S_IRGRP = 0x0020, //!< Group read permission
-    SCE_S_IRWXG = 0x0038, //!< Group access rights mask
+    SCE_S_IXGRP = 000000, //!< Group execute permission
+    SCE_S_IWGRP = 000000, //!< Group write permission
+    SCE_S_IRGRP = 000000, //!< Group read permission
+    SCE_S_IRWXG = 000000, //!< Group access rights mask
 
-    SCE_S_IXOTH = 0x0040, //!< Others execute permission
-    SCE_S_IWOTH = 0x0080, //!< Others write permission
-    SCE_S_IROTH = 0x0100, //!< Others read permission
-    SCE_S_IRWXO = 0x01C0, //!< Others access rights mask
+    SCE_S_IXSYS = 000001, //!< System execute permission
+    SCE_S_IWSYS = 000002, //!< System write permission
+    SCE_S_IRSYS = 000004, //!< System read permission
+    SCE_S_IRWXS = 000007, //!< System access rights mask
 
-    SCE_S_ISVTX = 0x0200, //!< Sticky
-    SCE_S_ISGID = 0x0400, //!< Set GID
-    SCE_S_ISUID = 0x0800, //!< Set UID
+    SCE_S_IXOTH = 000001, //!< Others execute permission
+    SCE_S_IWOTH = 000002, //!< Others write permission
+    SCE_S_IROTH = 000004, //!< Others read permission
+    SCE_S_IRWXO = 000007, //!< Others access rights mask
 
-    SCE_S_IFDIR = 0x1000, //!< Directory
-    SCE_S_IFREG = 0x2000, //!< Regular file
-    SCE_S_IFLNK = 0x4000, //!< Symbolic link
-    SCE_S_IFMT = 0xF000, //!< Format bits mask
+    SCE_S_ISVTX = 000000, //!< Sticky
+    SCE_S_ISGID = 000000, //!< Set GID
+    SCE_S_ISUID = 000000, //!< Set UID
+
+    SCE_S_IFDIR = 0010000, //!< Directory
+    SCE_S_IFREG = 0020000, //!< Regular file
+    SCE_S_IFLNK = 0040000, //!< Symbolic link
+    SCE_S_IFMT = 0170000, //!< Format bits mask
 } SceIoAccessMode;
 
 enum SceIoFileMode {
@@ -118,7 +123,9 @@ struct SceIoDevInfo {
     SceInt64 max_size;
     SceInt64 free_size;
     SceSize cluster_size;
+    SceUIntPtr unk;
 };
+static_assert(sizeof(SceIoDevInfo) == 0x18);
 
 enum SceFiosOverlayType : uint8_t {
     SCE_FIOS_OVERLAY_TYPE_OPAQUE,
