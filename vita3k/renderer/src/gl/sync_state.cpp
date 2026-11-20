@@ -361,6 +361,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
             only_nearest = color::is_write_surface_non_linearity_filtering(format_target_of_texture);
+
+            if (texture_as_surface && texture.gamma_mode)
+                texture_as_surface = state.surface_cache.retrieve_srgb_copy(static_cast<GLuint>(texture_as_surface));
         }
 
         // Try to retrieve S24D8 texture
