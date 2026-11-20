@@ -494,13 +494,14 @@ EXPORT(int, sceClibVsnprintf, char *dst, SceSize dst_max_size, const char *fmt, 
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    int result = utils::snprintf(dst, dst_max_size, fmt, *(thread->cpu), emuenv.mem, args);
+    const int result = utils::snprintf(dst, dst_max_size, fmt, *(thread->cpu), emuenv.mem, args);
 
-    if (!result) {
+    // Same as sceClibSnprintf: an empty result is no error, return the length
+    if (result < 0) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }
 
-    return SCE_KERNEL_OK;
+    return result;
 }
 
 EXPORT(int, sceClibVsnprintfChk) {
