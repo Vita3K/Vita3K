@@ -405,8 +405,8 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     sync_depth_write_enable(context.record.back_depth_write_mode, false);
 
     sync_stencil_data(context.record, mem);
-    sync_stencil_func(context.record.back_stencil_state_op, context.record.back_stencil_state_values, mem, true);
-    sync_stencil_func(context.record.front_stencil_state_op, context.record.front_stencil_state_values, mem, false);
+    sync_stencil_func(context.record, true);
+    sync_stencil_func(context.record, false);
 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glEnable(GL_SCISSOR_TEST);
@@ -417,7 +417,10 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR, { GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB, { GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA, { GL_RGBA, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR, { GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_REV } },
     { SCE_GXM_COLOR_FORMAT_U4U4U4U4_ARGB, { GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4_REV } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA, { GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4 } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_BGRA, { GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4 } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8_BGR, { GL_RGB, GL_UNSIGNED_BYTE } },
     { SCE_GXM_COLOR_FORMAT_U5U6U5_RGB, { GL_RGB, GL_UNSIGNED_SHORT_5_6_5 } },
     { SCE_GXM_COLOR_FORMAT_U8U8_AR, { GL_RG, GL_UNSIGNED_BYTE } },
