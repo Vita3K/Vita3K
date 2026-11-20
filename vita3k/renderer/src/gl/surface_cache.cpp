@@ -110,6 +110,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
     std::size_t bytes_per_stride = pixel_stride * color::bytes_per_pixel(base_format);
     std::size_t total_surface_size = bytes_per_stride * original_height;
+    const std::size_t image_extent = bytes_per_stride * (original_height - 1) + original_width * color::bytes_per_pixel(base_format);
 
     if (overlap) {
         GLColorSurfaceCacheInfo &info = *ite->second;
@@ -135,14 +136,14 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write situation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
-        const bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
+        const bool addr_in_range_of_cache = ((key + image_extent) <= (ite->first + info.total_bytes));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
 
         if (ite->first == key) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
-                surface_stat_changed = surface_extent_changed || (base_format != info.format);
+                surface_stat_changed = surface_extent_changed || (base_format != info.format) || (pixel_stride != info.pixel_stride);
             } else {
                 // If the extent changed but format is not the same, then the probability of it being a cast is high
                 surface_stat_changed = surface_extent_changed && (base_format == info.format);

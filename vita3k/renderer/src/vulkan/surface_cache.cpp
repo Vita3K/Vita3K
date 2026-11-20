@@ -537,6 +537,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         stride_bytes = pixel_stride * gxm::bits_per_pixel(base_format) / 8;
     }
     uint32_t total_surface_size = stride_bytes * original_height;
+    if (tiling == SurfaceTiling::Linear)
+        total_surface_size = stride_bytes * (original_height - 1) + original_width * gxm::bits_per_pixel(base_format) / 8;
 
     ColorSurfaceCacheInfo &info = *ite->second;
 
