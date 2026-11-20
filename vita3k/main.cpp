@@ -276,7 +276,15 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         app::AppSessionController session(emuenv);
-        const int exit_code = sdl_frontend::run(emuenv, session, AppLaunchRequest{ .app_path = *emuenv.cfg.run_app_path });
+
+        const sdl_frontend::Hooks hooks{
+            .on_guide_button = [&] {
+                const bool is_paused = session.is_paused();
+                session.set_pause_reason(app::AppSessionPauseReason::User, !is_paused);
+            },
+        };
+
+        const int exit_code = sdl_frontend::run(emuenv, session, AppLaunchRequest{ .app_path = *emuenv.cfg.run_app_path }, hooks);
 #ifdef _WIN32
         CoUninitialize();
 #endif
