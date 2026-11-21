@@ -121,6 +121,7 @@ private:
         const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type,
         const int offset_x, const int offset_y, const int width, const int height, const int dest_width, const int dest_height, const std::size_t total_source_size);
     void save_scene_start(GLColorSurfaceCacheInfo &info);
+    void release_srgb_copies(const GLColorSurfaceCacheInfo &info);
 
 public:
     explicit GLSurfaceCache();
@@ -144,6 +145,9 @@ public:
         target = new_target;
     }
     void begin_scene(Ptr<void> color_address);
+    void end_scene() {
+        scene_color_address = 0;
+    }
 
     GLuint sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const float res_multiplier, SceFVector2 &texture_size);
     std::vector<uint32_t> dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, float res_multiplier, bool support_get_texture_sub_image);
