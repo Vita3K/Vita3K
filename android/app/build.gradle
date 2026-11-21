@@ -11,8 +11,12 @@ def hasCiSigning = signingStorePath && signingStorePassword && signingKeyAlias &
 
 android {
 	namespace = "org.vita3k.emulator"
-	compileSdk = 35
-	ndkVersion = "29.0.14206865"
+	compileSdk {
+		version = release(37) {
+			minorApiLevel = 2
+		}
+	}
+	ndkVersion = "30.0.16248370"
 	buildFeatures {
 		buildConfig = true
 		compose = true
@@ -21,7 +25,7 @@ android {
 	defaultConfig {
 		applicationId = "org.vita3k.emulator"
 		minSdk = 28
-		targetSdk = 35
+		targetSdk = 37
 		versionCode = 21
 		versionName = "0.2.1"
 
