@@ -168,7 +168,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write situation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
-        const bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
+        bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
@@ -273,11 +273,15 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
             release_srgb_copies(info);
             info.casted_textures.clear();
+
+            if (purpose == SurfaceTextureRetrievePurpose::WRITING)
+                addr_in_range_of_cache = true;
         }
-        if ((purpose == SurfaceTextureRetrievePurpose::WRITING) && (swizzle != info.swizzle)) {
-            info.swizzle = swizzle;
-        } else if (purpose == SurfaceTextureRetrievePurpose::READING) {
-            swizzle = info.swizzle;
+        if (!cache_probably_freed) {
+            if (purpose == SurfaceTextureRetrievePurpose::WRITING)
+                info.swizzle = swizzle;
+            else if (purpose == SurfaceTextureRetrievePurpose::READING)
+                swizzle = info.swizzle;
         }
         if (!addr_in_range_of_cache) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
