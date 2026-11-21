@@ -40,6 +40,7 @@ struct PendingReadback {
     SceGxmColorSurface surface;
     uint32_t width;
     uint32_t height;
+    int multiplier;
     bool use_temp;
     Address begin;
     Address end;
@@ -50,6 +51,14 @@ struct PendingReadback {
 struct ReadbackBuffer {
     GLuint pbo;
     size_t capacity;
+};
+
+struct DownscaleTarget {
+    uint32_t width;
+    uint32_t height;
+    GLenum internal_format;
+    GLuint texture;
+    GLuint framebuffer;
 };
 
 struct GLState : public renderer::State {
@@ -68,6 +77,7 @@ struct GLState : public renderer::State {
     std::deque<PendingReadback> pending_readbacks;
     std::vector<ReadbackBuffer> free_readback_buffers;
     std::vector<uint8_t> readback_scratch;
+    std::vector<DownscaleTarget> downscale_targets;
 
     bool init() override;
     void cleanup() override;
@@ -99,6 +109,7 @@ struct GLState : public renderer::State {
     }
     void complete_readbacks(MemState &mem, bool wait) override;
     void complete_readbacks_overlapping(MemState &mem, Address begin, Address end) override;
+    GLuint get_downscale_framebuffer(uint32_t width, uint32_t height, GLenum internal_format);
 };
 
 } // namespace renderer::gl
