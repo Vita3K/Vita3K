@@ -230,6 +230,9 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     if (context.record.is_maskupdate) {
         sync_depth_data(context.record);
         sync_stencil_data(context.record, mem);
+        // sync_stencil_data writes every stencil bit, restore the write masks
+        sync_stencil_func(context.record, true);
+        sync_stencil_func(context.record, false);
         glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
     }
 

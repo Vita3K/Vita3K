@@ -139,6 +139,9 @@ COMMAND(handle_sync_surface_data) {
         vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(render_context);
         if (context->is_recording)
             context->stop_recording(vertex_notification, fragment_notification);
+    } else if (renderer.current_backend == Backend::OpenGL) {
+        // the render target is no longer read as it was at the scene start
+        static_cast<gl::GLState &>(renderer).surface_cache.end_scene();
     }
 
     SceGxmColorSurface *surface = &render_context->record.color_surface;

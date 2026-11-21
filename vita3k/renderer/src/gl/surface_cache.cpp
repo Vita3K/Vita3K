@@ -160,6 +160,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 }
             }
             // Clear out. We will recreate later
+            release_srgb_copies(info);
             color_surface_textures.erase(ite);
             invalidated = true;
         } else if (surface_stat_changed) {
@@ -239,6 +240,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 remake_and_apply_filters(info.gl_ping_pong_texture[0]);
             }
 
+            release_srgb_copies(info);
             info.casted_textures.clear();
         }
         if ((purpose == SurfaceTextureRetrievePurpose::WRITING) && (swizzle != info.swizzle)) {
@@ -347,6 +349,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                                 return casted_vec[i]->texture[0];
                             } else {
                                 if (current_time - info.casted_textures[i]->last_used_time >= CASTED_UNUSED_TEXTURE_PURGE_SECS) {
+                                    srgb_copies.erase(casted_vec[i]->texture[0]);
                                     casted_vec.erase(casted_vec.begin() + i);
                                     continue;
                                 }
@@ -487,6 +490,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         const GLuint previous_texture = previous->second->gl_texture[0];
         std::erase_if(framebuffer_array, [&](const auto &fb) { return (fb.first & 0xFFFFFFFF) == previous_texture; });
         std::erase(last_use_color_surface_index, key);
+        release_srgb_copies(*previous->second);
         color_surface_textures.erase(previous);
     }
     color_surface_textures.emplace(key, std::move(info_added));
@@ -496,7 +500,9 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // We have to purge a cache along with framebuffer
         // So choose the one that is last used
         const std::uint64_t first_key = last_use_color_surface_index.front();
-        GLuint texture_handle = color_surface_textures.find(first_key)->second->gl_texture[0];
+        const GLColorSurfaceCacheInfo &evicted = *color_surface_textures.find(first_key)->second;
+        GLuint texture_handle = evicted.gl_texture[0];
+        release_srgb_copies(evicted);
 
         for (auto it = framebuffer_array.cbegin(); it != framebuffer_array.cend();) {
             if ((it->first & 0xFFFFFFFF) == texture_handle) {
@@ -546,6 +552,9 @@ void GLSurfaceCache::save_scene_start(GLColorSurfaceCacheInfo &info) {
         }
         glBindTexture(GL_TEXTURE_2D, info.scene_start_texture[0]);
         glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height);
+        // integer formats are incomplete with linear filtering
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
     glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
@@ -558,6 +567,13 @@ void GLSurfaceCache::begin_scene(Ptr<void> color_address) {
     // only the surfaces already read while rendered to are saved
     if (ite != color_surface_textures.end() && ite->second->scene_start_texture[0])
         save_scene_start(*ite->second);
+}
+
+void GLSurfaceCache::release_srgb_copies(const GLColorSurfaceCacheInfo &info) {
+    srgb_copies.erase(info.gl_texture[0]);
+    srgb_copies.erase(info.gl_expected_read_texture_view[0]);
+    for (const auto &casted : info.casted_textures)
+        srgb_copies.erase(casted->texture[0]);
 }
 
 GLuint GLSurfaceCache::retrieve_srgb_copy(GLuint texture) {
