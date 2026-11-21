@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-android_api_level="${ANDROID_API_LEVEL:-35}"
-android_build_tools="${ANDROID_BUILD_TOOLS:-36.0.0}"
-android_ndk_version="${ANDROID_NDK_VERSION:-29.0.14206865}"
+android_api_level="${ANDROID_API_LEVEL:-37.2}"
+android_build_tools="${ANDROID_BUILD_TOOLS:-37.0.0}"
+android_ndk_version="${ANDROID_NDK_VERSION:-30.0.16248370}"
 
 sudo apt-get update
 sudo apt-get install -y ninja-build
