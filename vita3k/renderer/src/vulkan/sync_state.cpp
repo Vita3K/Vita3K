@@ -30,7 +30,7 @@ void sync_clipping(VKContext &context) {
     if (!context.render_target)
         return;
 
-    const float res_multiplier = context.state.res_multiplier;
+    const float res_multiplier = context.state.res_multiplier * context.surface_downscale;
 
     const int scissor_x = context.record.region_clip_min.x;
     const int scissor_y = context.record.region_clip_min.y;
@@ -181,7 +181,7 @@ void sync_viewport_real(VKContext &context, const float xOffset, const float yOf
     const float x = xOffset - std::abs(xScale);
     const float y = yOffset - yScale;
 
-    const float res_multiplier = context.state.res_multiplier;
+    const float res_multiplier = context.state.res_multiplier * context.surface_downscale;
 
     // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkViewport.html
     // https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#vertexpostproc-viewport

@@ -169,6 +169,8 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
     , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), state.deep_stencil_use) {
     width = static_cast<uint32_t>(params.width * state.res_multiplier);
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
+    base_width = width;
+    base_height = height;
 
     vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment;
     if (state.features.support_shader_interlock)
