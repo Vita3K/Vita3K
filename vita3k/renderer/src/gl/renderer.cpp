@@ -473,15 +473,22 @@ static void post_process_pixels_data(const int multiplier, std::uint32_t *pixels
         const int bytes_per_output_pixel = (gxm::bits_per_pixel(gxm::get_base_format(surface.colorFormat)) + 7) >> 3;
         const int bytes_per_input_pixel = is_SE5M9M9M9 ? 6 : bytes_per_output_pixel;
 
-        const uint32_t end_stride_bytes = bytes_per_output_pixel * (surface.strideInPixels - surface.width);
+        // A readback at the guest size packs its rows like the guest surface (GL_PACK_ROW_LENGTH is its stride),
+        // an upscaled one packs them tightly and only one pixel of each multiplier x multiplier block is kept
+        const size_t input_row_bytes = static_cast<size_t>(multiplier == 1 ? surface.strideInPixels : width) * bytes_per_input_pixel;
+        const size_t output_row_bytes = static_cast<size_t>(surface.strideInPixels) * bytes_per_output_pixel;
         for (uint32_t row = 0; row < surface.height; row++) {
+            curr_input = source + row * multiplier * input_row_bytes;
+            curr_output = reinterpret_cast<uint8_t *>(pixels) + row * output_row_bytes;
             for (uint32_t col = 0; col < surface.width; col++) {
                 if (!is_SE5M9M9M9) {
-                    memcpy(curr_output, curr_input, bytes_per_input_pixel);
+                    // without temporary storage the conversion is done in place
+                    if (curr_output != curr_input)
+                        memcpy(curr_output, curr_input, bytes_per_input_pixel);
 
                     if (is_U8U8U8_RGBA) {
-                        std::swap(curr_input[0], curr_input[3]);
-                        std::swap(curr_input[1], curr_input[2]);
+                        std::swap(curr_output[0], curr_output[3]);
+                        std::swap(curr_output[1], curr_output[2]);
                     }
                 } else {
                     const uint16_t *temp_bytes = reinterpret_cast<uint16_t *>(curr_input);
@@ -495,9 +502,6 @@ static void post_process_pixels_data(const int multiplier, std::uint32_t *pixels
                 curr_output += bytes_per_output_pixel;
                 curr_input += bytes_per_input_pixel * multiplier;
             }
-            // take the pixel stride into account
-            curr_output += end_stride_bytes;
-            curr_input += (multiplier - 1) * width * bytes_per_input_pixel;
         }
 
         width /= multiplier;
