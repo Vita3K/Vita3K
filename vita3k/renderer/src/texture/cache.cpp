@@ -780,13 +780,18 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             else
                 // the xor 1 is to make sure it won't be the same as hash_texture_nostride
                 info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
+            info->hashed_generation = hash_generation;
         }
     } else {
         // Texture is cached.
         index = cached_gxm_texture_index;
         info = gxm_it->second;
         configure = false;
-        if (info->use_hash) {
+        if (info->use_hash && info->hashed_generation == hash_generation) {
+            // already hashed and uploaded since guest memory last changed
+            upload = false;
+        } else if (info->use_hash) {
+            info->hashed_generation = hash_generation;
             const uint64_t previous_hash = info->hash;
             if (import_textures || export_textures)
                 info->hash = hash_texture_nostride(gxm_texture, mem);

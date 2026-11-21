@@ -116,6 +116,9 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
         { CommandOpcode::DestroyContext, cmd_handle_destroy_context }
     };
 
+    // the guest may have written textures since the previous command list
+    state.get_texture_cache()->invalidate_hashes();
+
     if (command_list.context)
         state.context = command_list.context;
 
@@ -129,6 +132,10 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
 
         if (state.has_pending_readbacks() && !can_run_before_readbacks(cmd->opcode))
             state.complete_readbacks(mem, true);
+
+        // draws and state changes neither write guest memory nor let the guest write it in between
+        if (cmd->opcode != CommandOpcode::Draw && cmd->opcode != CommandOpcode::SetState)
+            state.get_texture_cache()->invalidate_hashes();
 
         auto handler = handlers.find(cmd->opcode);
         if (handler == handlers.end()) {

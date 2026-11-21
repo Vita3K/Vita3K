@@ -756,6 +756,7 @@ void GLState::complete_readbacks(MemState &mem, bool wait) {
                 LOG_ERROR("Could not read back a surface, the guest surface at {} is left unchanged", fmt::ptr(pixels));
         }
         if (source && pixels) {
+            texture_cache.invalidate_hashes();
             if (readback.use_temp) {
                 readback_scratch.resize(readback.size);
                 std::memcpy(readback_scratch.data(), source, readback.size);
