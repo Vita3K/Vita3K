@@ -51,6 +51,14 @@ using UniformTypes = std::map<GLuint, GLenum>;
 class GLTextureCache : public TextureCache {
 public:
     GLObjectArray<TextureCacheSize> textures;
+    std::array<GLenum, TextureCacheSize> targets{};
+    // the compressed uploads must use the internal format of the texture
+    std::array<GLenum, TextureCacheSize> internal_formats{};
+    size_t current_index = 0;
+    bool support_srgb_r8 = false;
+    bool support_srgb_rg8 = false;
+
+    GLenum linear_to_srgb(GLenum format) const;
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id);
     void cleanup();

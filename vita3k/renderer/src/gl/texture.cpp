@@ -71,11 +71,21 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
         }
     }
 
+    for (int i = 0; i < total_extensions; i++) {
+        const auto ext_name = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
+        if (strcmp(ext_name, "GL_EXT_texture_sRGB_R8") == 0)
+            support_srgb_r8 = true;
+        else if (strcmp(ext_name, "GL_EXT_texture_sRGB_RG8") == 0)
+            support_srgb_rg8 = true;
+    }
+
     return textures.init(glGenTextures, glDeleteTextures);
 }
 
 void GLTextureCache::cleanup() {
     textures.cleanup();
+    targets.fill(0);
+    internal_formats.fill(0);
     texture_lookup.clear();
     texture_queue.items.clear();
     texture_queue.head = nullptr;
@@ -93,8 +103,56 @@ void GLTextureCache::cleanup() {
 }
 
 void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
-    const GLuint gl_texture = textures[index];
-    glBindTexture(get_gl_texture_type(texture), gl_texture);
+    const GLenum target = get_gl_texture_type(texture);
+    if (targets[index] != target) {
+        // a texture name cannot be bound to another target than its first one
+        if (targets[index] != 0)
+            textures.recreate(index, glGenTextures);
+        targets[index] = target;
+    }
+    glBindTexture(target, textures[index]);
+    current_index = index;
+}
+
+// from EXT_texture_sRGB, EXT_texture_sRGB_R8 and EXT_texture_sRGB_RG8
+#ifndef GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
+#endif
+#ifndef GL_SR8_EXT
+#define GL_SR8_EXT 0x8FBD
+#define GL_SRG8_EXT 0x8FBE
+#endif
+
+GLenum GLTextureCache::linear_to_srgb(const GLenum format) const {
+    switch (format) {
+    case GL_R8:
+        if (support_srgb_r8)
+            return GL_SR8_EXT;
+        break;
+    case GL_RG8:
+        if (support_srgb_rg8)
+            return GL_SRG8_EXT;
+        break;
+    case GL_RGBA:
+    case GL_RGBA8:
+        return GL_SRGB8_ALPHA8;
+    case GL_RGB8:
+        return GL_SRGB8;
+    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+    case GL_COMPRESSED_RGBA_BPTC_UNORM:
+        return GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+    default:
+        break;
+    }
+    LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", log_hex(format));
+    return format;
 }
 
 static GLenum bcn_to_rgba8(const SceGxmTextureBaseFormat format) {
@@ -159,6 +217,9 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
         int num_comp = gxm::get_num_components(base_format);
         format = (num_comp == 4) ? GL_RGBA : (num_comp == 2 ? GL_RG : GL_RED);
     }
+    if (gxm_texture.gamma_mode)
+        internal_format = linear_to_srgb(internal_format);
+    internal_formats[current_index] = internal_format;
 
     // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
     GLenum upload_type = GL_TEXTURE_2D;
@@ -222,7 +283,8 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
             glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, block_height);
         }
 
-        const GLenum format = translate_format(base_format);
+        // the format of a compressed upload must be the internal format, which may be sRGB
+        const GLenum format = internal_formats[current_index] ? internal_formats[current_index] : translate_format(base_format);
         size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
         glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
 
@@ -243,6 +305,7 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
 void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
     SceGxmTexture &gxm_texture = current_info->texture;
+    internal_formats[current_index] = 0;
     GLint default_swizzle[] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
     const GLint *swizzle = default_swizzle;
     if (nb_components == 3)
@@ -305,7 +368,6 @@ GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture) {
 
 void bind_texture_without_cache(GLTextureCache &cache, const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
-    glBindTexture(get_gl_texture_type(gxm_texture), cache.textures[0]);
     cache.select(0, gxm_texture);
     cache.configure_texture(gxm_texture);
     cache.upload_texture(gxm_texture, mem);

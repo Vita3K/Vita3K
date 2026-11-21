@@ -386,6 +386,9 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         state, mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height);
     context.current_color_attachment = current_color_attachment_handle;
     context.current_framebuffer_height = current_framebuffer_height;
+    // with macroblock sync, each macroblock is written to memory before the next one is rendered
+    const bool macroblock_sync = context.render_target && context.render_target->has_macroblock_sync;
+    state.surface_cache.begin_scene(macroblock_sync ? Ptr<void>() : context.record.color_surface.data);
     context.self_sampling_indices.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
@@ -406,8 +409,8 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     sync_depth_write_enable(context.record.back_depth_write_mode, false);
 
     sync_stencil_data(context.record, mem);
-    sync_stencil_func(context.record.back_stencil_state_op, context.record.back_stencil_state_values, mem, true);
-    sync_stencil_func(context.record.front_stencil_state_op, context.record.front_stencil_state_values, mem, false);
+    sync_stencil_func(context.record, true);
+    sync_stencil_func(context.record, false);
 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glEnable(GL_SCISSOR_TEST);
@@ -418,7 +421,10 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR, { GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB, { GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA, { GL_RGBA, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR, { GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_REV } },
     { SCE_GXM_COLOR_FORMAT_U4U4U4U4_ARGB, { GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4_REV } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA, { GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4 } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_BGRA, { GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4 } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8_BGR, { GL_RGB, GL_UNSIGNED_BYTE } },
     { SCE_GXM_COLOR_FORMAT_U5U6U5_RGB, { GL_RGB, GL_UNSIGNED_SHORT_5_6_5 } },
     { SCE_GXM_COLOR_FORMAT_U8U8_AR, { GL_RG, GL_UNSIGNED_BYTE } },
@@ -430,8 +436,8 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_U10U10U10U2_BGRA, { GL_RGBA, GL_UNSIGNED_INT_10_10_10_2 } },
     { SCE_GXM_COLOR_FORMAT_F16_R, { GL_RED, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F16F16_GR, { GL_RG, GL_HALF_FLOAT } },
-    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR, { GL_RGBA, GL_UNSIGNED_SHORT } },
-    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB, { GL_BGRA, GL_UNSIGNED_SHORT } },
+    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR, { GL_RGBA, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB, { GL_BGRA, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F32_R, { GL_RED, GL_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F32F32_GR, { GL_RG, GL_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F11F11F10_RGB, { GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV } },

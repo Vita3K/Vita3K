@@ -51,13 +51,18 @@ public:
         this->deleter = deleter;
         generator(static_cast<GLsizei>(names.size()), &names[0]);
 
-        return glGetError() == GL_NO_ERROR;
+        return names[0] != 0;
     }
 
     GLuint operator[](size_t i) const {
         assert(i >= 0);
         assert(i < names.size());
         return names[i];
+    }
+
+    void recreate(size_t i, renderer::Generator *generator) {
+        deleter(1, &names[i]);
+        generator(1, &names[i]);
     }
 
     size_t size() const {

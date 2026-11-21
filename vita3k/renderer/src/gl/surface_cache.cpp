@@ -30,6 +30,8 @@ GLSurfaceCache::GLSurfaceCache() = default;
 
 void GLSurfaceCache::cleanup() {
     color_surface_textures.clear();
+    scene_color_address = 0;
+    srgb_copies.clear();
 
     for (auto &ds : depth_stencil_textures) {
         ds.gl_texture.cleanup();
@@ -151,13 +153,14 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
         if (cache_probably_freed) {
             for (auto fbuf_ite = framebuffer_array.begin(); fbuf_ite != framebuffer_array.end();) {
-                if ((fbuf_ite->first & 0xFFFFFFFF) == key) {
+                if ((fbuf_ite->first & 0xFFFFFFFF) == info.gl_texture[0]) {
                     fbuf_ite = framebuffer_array.erase(fbuf_ite);
                 } else {
                     ++fbuf_ite;
                 }
             }
             // Clear out. We will recreate later
+            release_srgb_copies(info);
             color_surface_textures.erase(ite);
             invalidated = true;
         } else if (surface_stat_changed) {
@@ -237,6 +240,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 remake_and_apply_filters(info.gl_ping_pong_texture[0]);
             }
 
+            release_srgb_copies(info);
             info.casted_textures.clear();
         }
         if ((purpose == SurfaceTextureRetrievePurpose::WRITING) && (swizzle != info.swizzle)) {
@@ -306,6 +310,16 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
                     std::vector<std::unique_ptr<GLCastedTexture>> &casted_vec = info.casted_textures;
 
+                    // the Vita writes the render target to memory at the end of the scene,
+                    // so reading it while rendering to it gives what it had at the start
+                    GLuint source_texture = info.gl_texture[0];
+                    if (ite->first == scene_color_address) {
+                        if (!info.scene_start_texture[0])
+                            save_scene_start(info);
+                        if (info.scene_start_texture[0])
+                            source_texture = info.scene_start_texture[0];
+                    }
+
                     GLenum source_format, source_data_type = 0;
 
                     if (state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(info.format)) {
@@ -323,10 +337,10 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                                 glBindTexture(GL_TEXTURE_2D, casted_vec[i]->texture[0]);
 
                                 if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
-                                    glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
+                                    glCopyImageSubData(source_texture, GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
                                         0, 0, 0, 0, width, height, 1);
                                 } else {
-                                    do_typeless_copy(casted_vec[i]->texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
+                                    do_typeless_copy(casted_vec[i]->texture[0], source_texture, surface_internal_format, surface_upload_format,
                                         surface_data_type, source_format, source_data_type, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), info.width,
                                         height, width, height, info.total_bytes);
                                 }
@@ -335,6 +349,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                                 return casted_vec[i]->texture[0];
                             } else {
                                 if (current_time - info.casted_textures[i]->last_used_time >= CASTED_UNUSED_TEXTURE_PURGE_SECS) {
+                                    srgb_copies.erase(casted_vec[i]->texture[0]);
                                     casted_vec.erase(casted_vec.begin() + i);
                                     continue;
                                 }
@@ -362,12 +377,12 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-                        glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_info.texture[0], GL_TEXTURE_2D,
+                        glCopyImageSubData(source_texture, GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_info.texture[0], GL_TEXTURE_2D,
                             0, 0, 0, 0, width, height, 1);
                     } else {
                         // TODO: Copy sub region of typeless copy is still not handled ((
                         // We must do a typeless copy (RPCS3)
-                        do_typeless_copy(casted_info.texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
+                        do_typeless_copy(casted_info.texture[0], source_texture, surface_internal_format, surface_upload_format,
                             surface_data_type, source_format, source_data_type, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), info.width,
                             height, width, height, info.total_bytes);
 
@@ -470,8 +485,13 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
-    if (color_surface_textures.contains(key)) {
-        LOG_WARN_ONCE("Two different surfaces have the same base address, this is not handled, an openGL error will happen.");
+    if (const auto previous = color_surface_textures.find(key); previous != color_surface_textures.end()) {
+        // the new surface replaces the one at the same address that it does not fit in
+        const GLuint previous_texture = previous->second->gl_texture[0];
+        std::erase_if(framebuffer_array, [&](const auto &fb) { return (fb.first & 0xFFFFFFFF) == previous_texture; });
+        std::erase(last_use_color_surface_index, key);
+        release_srgb_copies(*previous->second);
+        color_surface_textures.erase(previous);
     }
     color_surface_textures.emplace(key, std::move(info_added));
 
@@ -480,7 +500,9 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // We have to purge a cache along with framebuffer
         // So choose the one that is last used
         const std::uint64_t first_key = last_use_color_surface_index.front();
-        GLuint texture_handle = color_surface_textures.find(first_key)->second->gl_texture[0];
+        const GLColorSurfaceCacheInfo &evicted = *color_surface_textures.find(first_key)->second;
+        GLuint texture_handle = evicted.gl_texture[0];
+        release_srgb_copies(evicted);
 
         for (auto it = framebuffer_array.cbegin(); it != framebuffer_array.cend();) {
             if ((it->first & 0xFFFFFFFF) == texture_handle) {
@@ -505,6 +527,83 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     }
 
     return texture_handle_return;
+}
+
+void GLSurfaceCache::save_scene_start(GLColorSurfaceCacheInfo &info) {
+    GLint width = 0, height = 0, internal_format = 0;
+    glBindTexture(GL_TEXTURE_2D, info.gl_texture[0]);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+
+    GLint saved_width = 0, saved_height = 0, saved_format = 0;
+    if (info.scene_start_texture[0]) {
+        glBindTexture(GL_TEXTURE_2D, info.scene_start_texture[0]);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &saved_width);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &saved_height);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &saved_format);
+    }
+
+    if (saved_width != width || saved_height != height || saved_format != internal_format) {
+        info.scene_start_texture.cleanup();
+        if (!info.scene_start_texture.init(glGenTextures, glDeleteTextures)) {
+            LOG_ERROR("Failed to initialise scene start texture!");
+            return;
+        }
+        glBindTexture(GL_TEXTURE_2D, info.scene_start_texture[0]);
+        glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, width, height);
+        // integer formats are incomplete with linear filtering
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+
+    glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+    glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.scene_start_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+}
+
+void GLSurfaceCache::begin_scene(Ptr<void> color_address) {
+    scene_color_address = color_address.address();
+    const auto ite = color_surface_textures.find(scene_color_address);
+    // only the surfaces already read while rendered to are saved
+    if (ite != color_surface_textures.end() && ite->second->scene_start_texture[0])
+        save_scene_start(*ite->second);
+}
+
+void GLSurfaceCache::release_srgb_copies(const GLColorSurfaceCacheInfo &info) {
+    srgb_copies.erase(info.gl_texture[0]);
+    srgb_copies.erase(info.gl_expected_read_texture_view[0]);
+    for (const auto &casted : info.casted_textures)
+        srgb_copies.erase(casted->texture[0]);
+}
+
+GLuint GLSurfaceCache::retrieve_srgb_copy(GLuint texture) {
+    GLint width = 0, height = 0, internal_format = 0;
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+    if (internal_format != GL_RGBA8) {
+        LOG_WARN_ONCE("Trying to use gamma correction with non-compatible surface format {}", log_hex(internal_format));
+        return texture;
+    }
+
+    // a mutable texture cannot have an sRGB view, sample a copy instead
+    std::unique_ptr<SrgbCopy> &copy = srgb_copies[texture];
+    if (!copy || copy->width != width || copy->height != height) {
+        copy = std::make_unique<SrgbCopy>();
+        if (!copy->texture.init(glGenTextures, glDeleteTextures))
+            return texture;
+        glBindTexture(GL_TEXTURE_2D, copy->texture[0]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        copy->width = width;
+        copy->height = height;
+    }
+
+    glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+    glCopyImageSubData(texture, GL_TEXTURE_2D, 0, 0, 0, 0, copy->texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+    return copy->texture[0];
 }
 
 GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) {

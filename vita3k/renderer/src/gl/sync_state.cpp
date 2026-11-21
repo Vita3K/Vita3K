@@ -217,14 +217,25 @@ void sync_depth_data(const renderer::GxmRecordState &state) {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 
-    if (!state.depth_stencil_surface.force_load && state.depth_stencil_surface.depth_data) {
+    if (!state.depth_stencil_surface.force_load) {
         glClearDepthf(state.depth_stencil_surface.background_depth);
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 }
 
-void sync_stencil_func(const GxmStencilStateOp &state_op, const GxmStencilStateValues &state_vals, const MemState &mem, const bool is_back_stencil) {
-    const GLenum face = is_back_stencil ? GL_BACK : GL_FRONT;
+void sync_stencil_func(const GxmRecordState &state, const bool is_back_stencil) {
+    GLenum face;
+    if (state.two_sided == SCE_GXM_TWO_SIDED_DISABLED) {
+        // the back state is not used when two sided is disabled
+        if (is_back_stencil)
+            return;
+        face = GL_FRONT_AND_BACK;
+    } else {
+        // the y flip makes the GXM front faces back faces for OpenGL, as for culling
+        face = is_back_stencil ? GL_FRONT : GL_BACK;
+    }
+    const GxmStencilStateOp &state_op = is_back_stencil ? state.back_stencil_state_op : state.front_stencil_state_op;
+    const GxmStencilStateValues &state_vals = is_back_stencil ? state.back_stencil_state_values : state.front_stencil_state_values;
 
     glStencilOpSeparate(face,
         translate_stencil_op(state_op.stencil_fail),
@@ -237,7 +248,7 @@ void sync_stencil_func(const GxmStencilStateOp &state_op, const GxmStencilStateV
 void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
     // Stencil test.
     glEnable(GL_STENCIL_TEST);
-    glStencilMask(GL_TRUE);
+    glStencilMask(0xFF);
     if (!state.depth_stencil_surface.force_load) {
         glClearStencil(state.depth_stencil_surface.stencil);
         glClear(GL_STENCIL_BUFFER_BIT);
@@ -350,6 +361,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
             only_nearest = color::is_write_surface_non_linearity_filtering(format_target_of_texture);
+
+            if (texture_as_surface && texture.gamma_mode)
+                texture_as_surface = state.surface_cache.retrieve_srgb_copy(static_cast<GLuint>(texture_as_surface));
         }
 
         // Try to retrieve S24D8 texture

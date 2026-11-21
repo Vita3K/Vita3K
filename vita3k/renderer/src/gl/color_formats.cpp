@@ -104,6 +104,8 @@ GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
         return GL_RGB8;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+    // GL_RGBA4 cannot be bound as an image for programmable blending
+    case SCE_GXM_COLOR_BASE_FORMAT_U4U4U4U4:
         return GL_RGBA8;
 
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
