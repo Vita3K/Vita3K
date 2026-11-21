@@ -141,6 +141,9 @@ private:
     template <class U>
     friend class RefList;
 
+    template <class U>
+    friend class RefForwardList;
+
     // Adds this reference to the object's count
     void retain() noexcept {
         if (ptr)
@@ -230,4 +233,33 @@ public:
 
 private:
     IntrusiveList<T> list;
+};
+
+// An intrusive forward list that holds one reference to each object on it. The caller locks it.
+template <class T>
+class RefForwardList {
+public:
+    // Drops the reference to every object still on the list
+    ~RefForwardList() {
+        while (!list.empty())
+            pop_front();
+    }
+
+    // Whether no object is on the list
+    bool empty() const {
+        return list.empty();
+    }
+
+    // Links object at the front and takes its reference over
+    void push_front(Ref<T> object) {
+        list.push_front(*object.release_ownership());
+    }
+
+    // Takes the first object off the list and returns the list's reference to it
+    Ref<T> pop_front() {
+        return Ref<T>::adopt(&list.pop_front());
+    }
+
+private:
+    IntrusiveForwardList<T> list;
 };
