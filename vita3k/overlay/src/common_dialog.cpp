@@ -68,7 +68,7 @@ void submit_ime_dialog(DialogState &dialog) {
 
         const std::string utf8 = string_utils::utf16_to_utf8(dialog.active_ime->str);
         snprintf(dialog.ime.text, sizeof(dialog.ime.text), "%s", utf8.c_str());
-        dialog.active_ime->event_id = SCE_IME_EVENT_PRESS_ENTER;
+        dialog.active_ime->queue_event(SCE_IME_EVENT_PRESS_ENTER);
     }
 
     dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
@@ -79,7 +79,7 @@ void submit_ime_dialog(DialogState &dialog) {
 void cancel_ime_dialog(DialogState &dialog) {
     if (dialog.active_ime) {
         std::lock_guard lock(dialog.active_ime->mutex);
-        dialog.active_ime->event_id = SCE_IME_EVENT_PRESS_CLOSE;
+        dialog.active_ime->queue_event(SCE_IME_EVENT_PRESS_CLOSE);
     }
 
     dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;

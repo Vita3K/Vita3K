@@ -19,6 +19,7 @@
 
 #include <ime/types.h>
 
+#include <deque>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -50,7 +51,35 @@ struct Ime {
     std::u16string str;
     uint32_t caps_level = 0;
     uint32_t caretIndex = 0;
-    uint32_t event_id = SCE_IME_EVENT_OPEN;
+    std::deque<uint32_t> pending_events;
+    bool terminal_event_pending = false;
+
+    static bool is_terminal_event(uint32_t id) {
+        return id == SCE_IME_EVENT_PRESS_ENTER || id == SCE_IME_EVENT_PRESS_CLOSE;
+    }
+
+    bool queue_event(uint32_t id) {
+        if (terminal_event_pending)
+            return false;
+        if (!is_terminal_event(id) && !pending_events.empty() && pending_events.back() == id)
+            return true;
+        pending_events.push_back(id);
+        terminal_event_pending = is_terminal_event(id);
+        return true;
+    }
+
+    void queue_submit_events() {
+        if (terminal_event_pending)
+            return;
+        pending_events.push_back(SCE_IME_EVENT_PRESS_ENTER);
+        pending_events.push_back(SCE_IME_EVENT_PRESS_CLOSE);
+        terminal_event_pending = true;
+    }
+
+    void clear_pending_event() {
+        pending_events.clear();
+        terminal_event_pending = false;
+    }
 
     void deinit() {
         state = false;
@@ -60,6 +89,6 @@ struct Ime {
         str.clear();
         caps_level = 0;
         caretIndex = 0;
-        event_id = SCE_IME_EVENT_OPEN;
+        clear_pending_event();
     }
 };
