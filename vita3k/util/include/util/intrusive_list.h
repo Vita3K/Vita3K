@@ -153,8 +153,8 @@ public:
         return *first;
     }
 
-    // Adds item, which must be in no list through this link, before position
-    void insert(iterator position, T &item) {
+    // Adds item, which must be in no list through this link, before position, and returns where it is
+    iterator insert(iterator position, T &item) {
         assert(position.list == this);
         IntrusiveLink<T> &node = link(item);
         assert(!node.linked());
@@ -163,7 +163,7 @@ public:
             node.prev = &item;
             node.next = &item;
             first = &item;
-            return;
+            return iterator(this, &item);
         }
         // The end is behind the last T, which is in front of the first
         T &next = position.node ? *position.node : *first;
@@ -173,6 +173,7 @@ public:
         link(next).prev = &item;
         if (position.node == first)
             first = &item;
+        return iterator(this, &item);
     }
     void push_back(T &item) {
         insert(end(), item);

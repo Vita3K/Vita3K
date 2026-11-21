@@ -23,6 +23,12 @@ Callback::Callback(SceUID thread_id, const char *name, Ptr<SceKernelCallbackFunc
     , cb_func(cb_func)
     , userdata(pCommon) {}
 
+void Callback::note(SceInt32 arg, SceUID notifier_id) {
+    pending.notifier_id = notifier_id;
+    pending.arg = arg;
+    ++pending.count;
+}
+
 ThreadEventHandler::ThreadEventHandler(const char *name, SceUID target, SceUInt32 mask, Address handler, Address common)
     : WithUidClass(name)
     , target(target)

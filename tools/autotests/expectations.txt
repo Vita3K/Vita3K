@@ -38,7 +38,7 @@ callback_changes                pass
 callback_clobbers_registers     pass
 callback_create_check_order     fail     # a callback create takes a function at a data address, the Vita refuses one that isn't executable
 callback_delete_in_run          pass
-callback_deleted_nested_wait_notify skip     # a notified waiter leaves the queue only when its thread runs, so whether the object still counts it right after the notify is a race
+callback_deleted_nested_wait_notify skip     # the notify ends the wait, but with no scheduler the notified thread runs at once and may wait again before the object is read, so its count right after the notify is a race
 callback_deleted_object         pass
 callback_edges                  pass
 callback_entry_state            pass
@@ -71,7 +71,7 @@ callback_notify_equal_priority  skip     # threads ignore their core and priorit
 callback_notify_id_mixed        pass
 callback_notify_preempt         skip     # threads ignore their core and priority, so whether the callback runs inside the notify is a race
 callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
-callback_notify_then_release_more skip     # a notified waiter leaves the queue only when its thread runs, so whether the object still counts it right after the notify is a race
+callback_notify_then_release_more skip     # the notify ends the wait, but with no scheduler the notified thread runs at once and may wait again before the object is read, so its count right after the notify is a race
 callback_notify_time_left       fail     # threads ignore their core and priority, so the waiter runs its callback during the notifier's busy interval and waits again
 callback_notify_time_left_more  fail     # after a callback notify the time left is the one when the wait returns, not the one at the notify, and a simple event wait that takes its bits after a notify returns 0, not NOTIFY_CALLBACK
 callback_outer_timeout          pass
@@ -257,7 +257,7 @@ event_notify_callback           pass
 event_notify_deleted_wait_outputs pass
 event_notify_ends_every_wait    skip     # with no scheduler the notified threads run at once, so their status right after the set is a race
 event_notify_multi_wait         fail     # waiting on several events
-event_notify_other_waits        fail     # a notify on one event leaves other waits and their callbacks in the wrong state
+event_notify_other_waits        fail     # with no scheduler the notified thread runs its callback at once, so it is not READY with its notification pending right after the notify
 event_set_walk_before_dispatch  fail     # event flag waiters wake out of FIFO order when the flag is set
 event_take_past_queue           pass
 event_timeout_then_set          fail     # a timed out waiter reports DORMANT where the Vita reports READY, and sceKernelWaitMultipleEvents
@@ -464,7 +464,7 @@ msgpipe_info_event_waiter       pass
 msgpipe_mixed_queue             pass
 msgpipe_mixed_sides_sender_order pass
 msgpipe_modes                   pass
-msgpipe_notify_walk_senders     fail     # a set with notification on the pipe serves the sender behind the callback waiter it ends
+msgpipe_notify_walk_senders     pass
 msgpipe_open_close_bits         fail     # an opened UID doesn't keep the pipe alive after the creating UID's delete
 msgpipe_open_limit              fail     # the open limit option of sceKernelCreateMsgPipe is ignored, opens never stop and 0x80 isn't refused
 msgpipe_order                   pass

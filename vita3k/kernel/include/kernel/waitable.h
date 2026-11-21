@@ -54,8 +54,9 @@ public:
     // The steps a change to a wait runs, with the lock and the waiter's lock held
     // Moves thread to its place for its queued priority.
     void requeue(ThreadState &thread);
-    // Ends the wait of thread with result, taking it off queue if it waits on one. With thread's lock
-    // held, and queue's when there is one.
+    // Ends the wait of thread with result: takes it off queue if it waits on one, stores the result,
+    // runs queue's hook, clears the target and makes it READY. With thread's lock held, and queue's
+    // when there is one.
     static void wake_one(ThreadState &thread, Waitable *queue, SceInt32 result);
 
 protected:
@@ -80,10 +81,10 @@ protected:
     [[nodiscard]] SceInt32 finish_wait(std::unique_lock<std::mutex> &lock, ThreadState &thread, bool callbacks, SceInt32 result);
 
     // The queue methods are called with the lock held
-    // Queues thread with request, which its wakers read, and shows the wait of this type on the object.
-    void queue(ThreadState &thread, SceUInt32 type, const WaitRequest &request);
-    // Takes thread off the queue with result if it is still on it, and clears the wait it shows.
-    void unqueue(ThreadState &thread, SceInt32 result);
+    // Queues thread with request, which its wakers read, and shows the wait of this type on the
+    // object. Returns why it can't wait instead: it is ending, the deadline is gone, or a callback is
+    // pending for a wait with callbacks.
+    [[nodiscard]] SceInt32 queue(ThreadState &thread, SceUInt32 type, const WaitRequest &request, Deadline deadline, SceUInt32 *timeout);
     // Links thread behind every waiter of its queued priority or a higher one, and behind a head that keeps its place.
     void insert_waiter_by_priority(ThreadState &thread);
     // Returns the first waiter, or null.
@@ -108,8 +109,9 @@ protected:
     virtual void wait_ended(ThreadState &thread, SceInt32 result) {}
     // Wakes the waiters that can now get what they wait for, in queue order.
     virtual void serve() {}
-    // Ends the waits on the object when the thread deleter deletes it.
-    virtual void end_waits(SceUID deleter) {}
+    // Ends the waits on the object when the thread deleter deletes it, with the lock held through
+    // guard, which an event's notify walk lets go of and takes again.
+    virtual void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) {}
 
     // The waiting threads in queue order, borrowed, guarded by the lock and each thread's lock. Only
     // queue() and requeue() link one.

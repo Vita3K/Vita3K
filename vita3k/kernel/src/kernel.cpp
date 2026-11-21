@@ -33,6 +33,7 @@
 #include <SDL3/SDL_mutex.h>
 #include <SDL3/SDL_thread.h>
 
+#include <limits>
 #include <utility>
 
 int CorenumAllocator::new_corenum() {
@@ -209,25 +210,41 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
     return thread->tls.get_ptr<Ptr<void>>() + key;
 }
 
+void KernelState::remove_threads() {
+    // In UID order, finding the next thread with mutex held. A thread created meanwhile sees
+    // process_exiting and deletes itself.
+    SceUID last = std::numeric_limits<SceUID>::min();
+    while (true) {
+        ThreadStateRef thread;
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            const auto it = threads.upper_bound(last);
+            if (it == threads.end())
+                return;
+            last = it->first;
+            thread = it->second;
+        }
+        thread->remove();
+    }
+}
+
 void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> relaunch) {
     {
         const std::lock_guard<std::mutex> lock(mutex);
         if (std::exchange(process_exiting, true))
             return;
-        for (auto &[_, thread] : threads)
-            thread->remove();
     }
+    remove_threads();
     if (process_exit_callback)
         process_exit_callback(res, std::move(relaunch));
 }
 
 void KernelState::process_exit() {
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        const std::lock_guard<std::mutex> lock(mutex);
         process_exiting = true;
-        for (auto &[_, thread] : threads)
-            thread->remove();
     }
+    remove_threads();
 
     std::unique_lock<std::mutex> lock(mutex);
     thread_deleted_cond.wait(lock, [this] { return threads.empty(); });
