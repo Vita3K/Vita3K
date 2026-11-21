@@ -48,6 +48,8 @@ static constexpr size_t TextureCacheSize = 1024;
 typedef std::array<uint32_t, 4> TextureGxmDataRepr;
 struct TextureCacheInfo {
     uint64_t hash = 0;
+    // hash_generation of the texture cache when hash was computed
+    uint64_t hashed_generation = 0;
     SceGxmTexture texture;
     int index = 0;
     uint32_t texture_size = 0;
@@ -105,6 +107,12 @@ protected:
 public:
     Backend backend;
     bool use_protect = false;
+    // A texture is hashed at most once per generation. The generation changes whenever guest memory may have
+    // been written since: by the guest between command lists or after it was signaled, or by the renderer.
+    uint64_t hash_generation = 1;
+    void invalidate_hashes() {
+        hash_generation++;
+    }
     YUVConversionCache yuv_conversion_cache;
     // use a separate sampler cache
     bool use_sampler_cache = false;
