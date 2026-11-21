@@ -161,6 +161,72 @@ private:
     std::size_t count = 0;
 };
 
+// A T's place in one IntrusiveForwardList, a base class of the T. A node in no list points at
+// itself. A T in a list must stay where it is, so the link can't be copied or moved.
+template <class T>
+class IntrusiveForwardLink {
+public:
+    IntrusiveForwardLink() = default;
+    IntrusiveForwardLink(const IntrusiveForwardLink &) = delete;
+    IntrusiveForwardLink &operator=(const IntrusiveForwardLink &) = delete;
+    ~IntrusiveForwardLink() {
+        assert(!linked());
+    }
+
+    // Whether the T is in a list, which tells an unlinked T from a list's last one
+    bool linked() const {
+        return next != this;
+    }
+
+private:
+    template <class U>
+    friend class IntrusiveForwardList;
+
+    IntrusiveForwardLink *next = this;
+};
+
+// A circular singly linked list of Ts around a sentinel head, added to and taken from the front
+// only, so a change writes only the head and the T it adds or takes. Adding and taking allocates
+// nothing. It never owns or destroys its Ts, and the caller locks it.
+template <class T>
+class IntrusiveForwardList {
+public:
+    bool empty() const {
+        return !head.linked();
+    }
+
+    T &front() {
+        assert(!empty());
+        return static_cast<T &>(*head.next);
+    }
+
+    // Whether value is in a forward list
+    static bool linked(const T &value) {
+        const IntrusiveForwardLink<T> &node = value;
+        return node.linked();
+    }
+
+    // Adds value, which must be in no list, at the front
+    void push_front(T &value) {
+        IntrusiveForwardLink<T> &node = value;
+        assert(!node.linked());
+        node.next = head.next;
+        head.next = &node;
+    }
+
+    // Takes the first T off the list and returns it
+    T &pop_front() {
+        assert(!empty());
+        IntrusiveForwardLink<T> *const node = head.next;
+        head.next = node->next;
+        node->next = node;
+        return static_cast<T &>(*node);
+    }
+
+private:
+    IntrusiveForwardLink<T> head;
+};
+
 // An intrusive list that owns the objects on it. The caller locks it.
 template <class T>
 class UniqueList {
