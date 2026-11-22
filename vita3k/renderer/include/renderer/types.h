@@ -172,6 +172,15 @@ inline bool may_write_depth_stencil(const GxmRecordState &record) {
     return false;
 }
 
+// whether the vertex or the fragment program of a draw recorded with this state may store to guest memory
+inline bool may_store_to_memory(const GxmRecordState &record, const MemState &mem) {
+    const auto stores = [&](const Ptr<const SceGxmProgram> &program) {
+        return (program.get(mem)->program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE) != 0;
+    };
+
+    return stores(record.vertex_program.get(mem)->program) || stores(record.fragment_program.get(mem)->program);
+}
+
 struct Context {
     RenderTarget *current_render_target{};
     GxmRecordState record;

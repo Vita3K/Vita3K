@@ -59,8 +59,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     MemState &mem, const Config &config) {
     R_PROFILE(__func__);
 
-    // a draw whose color nothing observes and which leaves depth and stencil untouched has no effect
-    if (context.record.skip_color_output && !may_write_depth_stencil(context.record)) {
+    // a draw whose color nothing observes and which leaves depth, stencil and guest memory untouched has no effect
+    if (context.record.skip_color_output && !may_write_depth_stencil(context.record) && !may_store_to_memory(context.record, mem)) {
         for (auto &stream : context.record.vertex_streams) {
             stream.data = nullptr;
             stream.size = 0;
@@ -199,9 +199,26 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
     const std::size_t index_buffer_size = index_size * count;
 
+    // Restore context for normal draws
+    const auto restore_state = [&]() {
+        if (context.record.is_maskupdate) {
+            sync_depth_data(context.record);
+            sync_stencil_data(context.record, mem);
+            // sync_stencil_data writes every stencil bit, restore the write masks
+            sync_stencil_func(context.record, true);
+            sync_stencil_func(context.record, false);
+            glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
+        }
+
+        if (both_side_fragment_program_disabled || context.record.skip_color_output) {
+            sync_blending(context.record, features, mem);
+        }
+    };
+
     std::pair<std::uint8_t *, std::size_t> index_gpu_ptr = context.index_stream_ring_buffer.allocate(index_buffer_size);
     if (!index_gpu_ptr.first) {
         LOG_ERROR("Failed to allocate index stream ring buffer data from GPU!");
+        restore_state();
         return;
     }
 
@@ -240,19 +257,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
     }
 
-    // Restore context for normal draws
-    if (context.record.is_maskupdate) {
-        sync_depth_data(context.record);
-        sync_stencil_data(context.record, mem);
-        // sync_stencil_data writes every stencil bit, restore the write masks
-        sync_stencil_func(context.record, true);
-        sync_stencil_func(context.record, false);
-        glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
-    }
-
-    if (both_side_fragment_program_disabled || context.record.skip_color_output) {
-        sync_blending(context.record, features, mem);
-    }
+    restore_state();
 
     context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;
     context.last_draw_fragment_program_hash = context.record.fragment_program.get(mem)->renderer_data->hash;

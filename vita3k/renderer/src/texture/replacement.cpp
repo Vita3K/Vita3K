@@ -76,6 +76,8 @@ void TextureCache::set_replacement_state(bool import_textures, bool export_textu
         queue_item.content.hash = 0;
         queue_item.content.dirty = true;
     }
+    // and rehash them on their next bind, even within the current generation
+    invalidate_hashes();
 
     refresh_available_textures();
 }
