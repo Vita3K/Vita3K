@@ -73,7 +73,7 @@ callback_notify_preempt         skip     # threads ignore their core and priorit
 callback_notify_then_release    skip     # threads ignore their core and priority, so whether the notified waiter runs before the release is a race
 callback_notify_then_release_more skip     # the notify ends the wait, but with no scheduler the notified thread runs at once and may wait again before the object is read, so its count right after the notify is a race
 callback_notify_time_left       fail     # threads ignore their core and priority, so the waiter runs its callback during the notifier's busy interval and waits again
-callback_notify_time_left_more  fail     # after a callback notify the time left is the one when the wait returns, not the one at the notify, and a simple event wait that takes its bits after a notify returns 0, not NOTIFY_CALLBACK
+callback_notify_time_left_more  fail     # with no scheduler the notified thread runs its callback at once and waits again, so the release ends a second wait: its time left is the one at the release, and a simple event wait returns 0
 callback_outer_timeout          pass
 callback_outer_wake             pass
 callback_outer_wake_kinds       pass
@@ -496,7 +496,7 @@ msgpipe_vector_waiters          pass
 msgpipe_vectors                 pass
 msgpipe_waits                   pass
 msgpipe_wake_state              skip     # threads ignore their core and priority, so whether the woken waiter ran before its status is read is a race
-msgpipe_wake_time_left          skip     # a pipe waiter writes its own time left once it runs, and threads ignore their core and priority, so whether it is written right after the wake is a race
+msgpipe_wake_time_left          pass
 msgpipe_zero_bytes              pass
 msgpipe_zero_pattern_wait       pass
 mspace                          fail     # sceClib memory space info

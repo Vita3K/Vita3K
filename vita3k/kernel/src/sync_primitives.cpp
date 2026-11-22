@@ -56,8 +56,10 @@ void Waitable::wake_one(ThreadState &thread, Waitable *queue, SceInt32 result) {
         queue->waiters.remove(thread);
         thread.waited = nullptr;
     }
-    // The result is stored before the class's hook runs
+    // The result and the time left are stored before the class's hook runs
     thread.wait_result = result;
+    if (thread.time_left)
+        *std::exchange(thread.time_left, nullptr) = time_left_until(thread.wait_deadline);
     if (queue)
         queue->wait_ended(thread, result);
     thread.wait_target = {};
@@ -89,6 +91,8 @@ SceInt32 Waitable::queue(ThreadState &thread, SceUInt32 type, const WaitRequest 
     waiter_added(thread);
     // The thread shows the wait from here, and its link and its target change together
     thread.wait_target = { type, uid };
+    thread.time_left = deadline == Deadline::max() ? nullptr : timeout;
+    thread.wait_deadline = deadline;
     thread.waited = this;
     thread.update_status(ThreadStatus::waiting);
     if (attr & SCE_KERNEL_ATTR_TH_PRIO)
@@ -148,12 +152,12 @@ SceInt32 Waitable::wait(std::unique_lock<std::mutex> &lock, ThreadState &thread,
     lock.unlock();
     SceInt32 result;
     {
-        // Whoever ends the wait takes the thread off the queue and serves the others
+        // Whoever ends the wait takes the thread off the queue, writes the time left and serves the
+        // others
         std::unique_lock<std::mutex> thread_lock(thread.thread_mutex);
         result = thread.sleep(thread_lock, deadline);
     }
     lock.lock();
-    writeback_timeout(timeout, deadline);
     return result;
 }
 

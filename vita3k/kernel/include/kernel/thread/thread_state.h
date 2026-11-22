@@ -154,7 +154,7 @@ public:
     // previous one is still pending.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant or deleted, then writes its exit status to
-    // exit_status. The time left is written back to timeout after every sleep.
+    // exit_status. The end of each wait writes the time left to timeout.
     [[nodiscard]] SceInt32 wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks);
     // Blocks this thread on nothing, showing target, until whoever ends the wait does, and returns its
     // result. A callback already pending ends a wait with callbacks at once with NOTIFY_CALLBACK, and
@@ -360,6 +360,9 @@ private:
     Waitable *waited = nullptr;
     // The result of the current or last wait, set by whoever ends it
     SceInt32 wait_result = SCE_KERNEL_OK;
+    // Where whoever ends the current wait writes the time left before wait_deadline, or null
+    SceUInt32 *time_left = nullptr;
+    Deadline wait_deadline;
     // A sceKernelSendSignal is pending for this thread.
     bool signal_pending = false;
 

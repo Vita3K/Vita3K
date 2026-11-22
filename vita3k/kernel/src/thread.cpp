@@ -481,10 +481,11 @@ SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
                 return SCE_KERNEL_ERROR_THREAD_STOPPED;
             // A signal wait sleeps with a callback pending, only a notify during the sleep ends it
             wait_target = { wait_type(SCE_KERNEL_WAITTYPE_SIGNAL, callbacks), SCE_KERNEL_SIGNAL_WAIT_ID };
+            time_left = deadline == Deadline::max() ? nullptr : timeout;
+            wait_deadline = deadline;
             update_status(ThreadStatus::waiting);
             r = sleep(lock, deadline);
         }
-        writeback_timeout(timeout, deadline);
         // A signal sent during the sleep ends it with 0, a notify runs the callbacks and waits again
         if (r != SCE_KERNEL_ERROR_NOTIFY_CALLBACK)
             return r;

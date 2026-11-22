@@ -54,9 +54,9 @@ public:
     // The steps a change to a wait runs, with the lock and the waiter's lock held
     // Moves thread to its place for its queued priority.
     void requeue(ThreadState &thread);
-    // Ends the wait of thread with result: takes it off queue if it waits on one, stores the result,
-    // runs queue's hook, clears the target and makes it READY. With thread's lock held, and queue's
-    // when there is one.
+    // Ends the wait of thread with result: takes it off queue if it waits on one, stores the result
+    // and writes the time left, runs queue's hook, clears the target and makes it READY. With
+    // thread's lock held, and queue's when there is one.
     static void wake_one(ThreadState &thread, Waitable *queue, SceInt32 result);
 
 protected:
