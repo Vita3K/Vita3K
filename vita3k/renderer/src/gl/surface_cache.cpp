@@ -519,6 +519,17 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
+    // Start from zero as Vulkan does: the content of a new texture is undefined, AMD drivers hand out
+    // memory that held other data, which reads as NaN in float formats. Uncharted keeps its exposure in
+    // a F11F11F10 surface that it updates from its previous value, so one NaN made the screen black for good.
+#ifdef __ANDROID__
+    // GLES has no glClearTexImage, upload zeros (16 bytes covers the largest pixel)
+    const std::vector<std::uint8_t> zeros(static_cast<std::size_t>(width) * height * 16);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, surface_upload_format, surface_data_type, zeros.data());
+#else
+    glClearTexImage(texture_handle_return, 0, surface_upload_format, surface_data_type, nullptr);
+#endif
+
     if (const auto previous = color_surface_textures.find(key); previous != color_surface_textures.end()) {
         // the new surface replaces the one at the same address that it does not fit in
         const GLuint previous_texture = previous->second->gl_texture[0];
