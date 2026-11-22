@@ -452,9 +452,9 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     if (!context.in_renderpass)
         context.start_render_pass(true, maskupdate);
 
-    // a draw whose color nothing observes and which leaves depth and stencil untouched has no effect,
+    // a draw whose color nothing observes and which leaves depth, stencil and guest memory untouched has no effect,
     // unless it counts samples for a visibility query (the render pass is started above so the scene still clears)
-    if (context.record.skip_color_output && !may_write_depth_stencil(context.record)
+    if (context.record.skip_color_output && !may_write_depth_stencil(context.record) && !may_store_to_memory(context.record, mem)
         && !(context.current_visibility_buffer != nullptr && context.current_query_idx != -1)) {
         for (auto &stream : context.record.vertex_streams) {
             stream.data = nullptr;
