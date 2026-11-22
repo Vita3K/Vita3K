@@ -210,7 +210,9 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     std::memcpy(index_gpu_ptr.first, indices, index_buffer_size);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
 
-    if (fragment_program_gxp.is_native_color()) {
+    // The shader reads the color attachment whenever it uses the fragment color, so writes from the previous draws
+    // must be made visible to it, native color or not
+    if (fragment_program_gxp.is_frag_color_used()) {
         if (features.should_use_shader_interlock() && !config.spirv_shader) {
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
         } else if (features.should_use_texture_barrier()) {
