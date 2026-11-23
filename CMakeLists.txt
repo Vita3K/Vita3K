@@ -137,6 +137,10 @@ if(VITA3K_USE_SYSTEM_SDL)
 	find_package(SDL3 3.4 REQUIRED CONFIG)
 endif()
 
+if(APPLE)
+	option(VITA3K_USE_SYSTEM_MOLTENVK "Use the MoltenVK version in the system instead of downloading the prebuilt one" OFF)
+endif()
+
 if(WIN32)
 	add_compile_definitions("_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "_CRT_SECURE_NO_WARNINGS" "NOMINMAX")
 endif()
