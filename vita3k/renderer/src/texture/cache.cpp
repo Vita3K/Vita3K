@@ -284,6 +284,10 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
     return std::min(true_mip, max_mip_text);
 }
 
+bool has_uploaded_mipmaps(const SceGxmTexture &texture) {
+    return get_upload_mip(texture.true_mip_count(), gxm::get_width(texture), gxm::get_height(texture)) > 1;
+}
+
 // must walk the same layout as upload_texture
 uint32_t texture_source_size(const SceGxmTexture &texture) {
     const auto texture_type = texture.texture_type();
@@ -901,7 +905,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool 
     is_depth &= !support_depth_linear_filtering;
     compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
     // anisotropic filtering is only applied to mipmapped textures
-    compact_repr |= (static_cast<uint32_t>(gxm_texture.true_mip_count() > 1) << 24);
+    compact_repr |= (static_cast<uint32_t>(has_uploaded_mipmaps(gxm_texture)) << 24);
 
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {

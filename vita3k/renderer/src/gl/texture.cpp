@@ -45,7 +45,7 @@ static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum t
 
     // anisotropic filtering
     // textures that are point-sampled or have no mipmaps (lookup tables...) can contain data other than color
-    const bool use_anisotropy = anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST) && gxm_texture.true_mip_count() > 1;
+    const bool use_anisotropy = anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST) && renderer::texture::has_uploaded_mipmaps(gxm_texture);
     // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
     glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, use_anisotropy ? static_cast<float>(anisotropic_filtering) : 1.f);
 }

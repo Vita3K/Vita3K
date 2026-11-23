@@ -269,6 +269,8 @@ void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint1
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 
 uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height);
+// whether more than one mip level gets uploaded for this texture
+bool has_uploaded_mipmaps(const SceGxmTexture &texture);
 // get the size of the guest memory read when uploading every mip of every face
 uint32_t texture_source_size(const SceGxmTexture &texture);
 

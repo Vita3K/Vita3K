@@ -594,7 +594,7 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
 
     // textures that are point-sampled or have no mipmaps (lookup tables...) can contain data other than color
     sampler_info.anisotropyEnable = (anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest)
-        && texture.true_mip_count() > 1;
+        && renderer::texture::has_uploaded_mipmaps(texture);
 
     sampler = state.device.createSampler(sampler_info);
 }
