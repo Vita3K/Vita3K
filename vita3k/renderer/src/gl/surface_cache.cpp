@@ -809,6 +809,57 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     return info.gl_ping_pong_texture[0];
 }
 
+// The Vita keeps one depth sample per MSAA sample: twice as many rows, and twice as many columns with 4x MSAA,
+// so games sample the depth of a multisampled render target with these sizes. This renderer does not draw
+// multisampled render targets at a higher resolution, so stretch the depth to one texel per sample.
+GLuint GLSurfaceCache::retrieve_depth_samples(GLDepthStencilSurfaceCacheInfo &info, std::int32_t width, std::int32_t height) {
+    const std::int32_t scale_x = (info.multisample_mode == SCE_GXM_MULTISAMPLE_4X) ? 2 : 1;
+    const std::int32_t scale_y = 2;
+
+    if (!info.sample_texture[0] || info.sample_texture_width != width || info.sample_texture_height != height) {
+        info.sample_texture.cleanup();
+        if (!info.sample_texture.init(glGenTextures, glDeleteTextures)) {
+            LOG_ERROR("Failed to initialise depth sample texture!");
+            return 0;
+        }
+        glBindTexture(GL_TEXTURE_2D, info.sample_texture[0]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+        info.sample_texture_width = width;
+        info.sample_texture_height = height;
+    }
+
+    if (!depth_scale_framebuffers[0] && !depth_scale_framebuffers.init(glGenFramebuffers, glDeleteFramebuffers)) {
+        LOG_ERROR("Failed to initialise depth scale framebuffers!");
+        return 0;
+    }
+
+    GLint last_read_framebuffer = 0, last_draw_framebuffer = 0;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &last_read_framebuffer);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &last_draw_framebuffer);
+    const GLboolean scissor_enabled = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean depth_mask = GL_TRUE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &depth_mask);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, depth_scale_framebuffers[0]);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, info.gl_texture[0], 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, depth_scale_framebuffers[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, info.sample_texture[0], 0);
+    glDisable(GL_SCISSOR_TEST);
+    glDepthMask(GL_TRUE);
+
+    const GLint dest_width = std::min(width, info.width * scale_x);
+    const GLint dest_height = std::min(height, info.height * scale_y);
+    glBlitFramebuffer(0, 0, dest_width / scale_x, dest_height / scale_y, 0, 0, dest_width, dest_height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+    glDepthMask(depth_mask);
+    if (scissor_enabled)
+        glEnable(GL_SCISSOR_TEST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, last_read_framebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, last_draw_framebuffer);
+
+    return info.sample_texture[0];
+}
+
 GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width, std::int32_t force_height, const bool is_reading) {
     if (!target) {
         LOG_ERROR("Unable to retrieve Depth Stencil texture with no active render target!");
@@ -845,6 +896,12 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
         }
 
         GLDepthStencilSurfaceCacheInfo &cached_info = depth_stencil_textures[found_index];
+        if (!is_reading)
+            cached_info.multisample_mode = target->multisample_mode;
+        else if (cached_info.multisample_mode != SCE_GXM_MULTISAMPLE_NONE)
+            // Growing the surface to the size of the texture would throw away what was drawn in it
+            return retrieve_depth_samples(cached_info, force_width, force_height);
+
         bool need_remake = false;
         if (cached_info.width < force_width) {
             cached_info.width = force_width;
@@ -916,6 +973,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
     depth_stencil_textures[found_index].surface = surface;
     depth_stencil_textures[found_index].width = force_width;
     depth_stencil_textures[found_index].height = force_height;
+    depth_stencil_textures[found_index].multisample_mode = target->multisample_mode;
 
     glBindTexture(GL_TEXTURE_2D, depth_stencil_textures[found_index].gl_texture[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, force_width, force_height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
