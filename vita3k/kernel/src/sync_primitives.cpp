@@ -58,7 +58,7 @@ std::size_t Waitable::wake_waiters(SceInt32 result) {
 }
 
 void Waitable::queue(ThreadState &thread, SceUInt32 type, const WaitRequest &request) {
-    assert(!thread.linked());
+    assert(!thread.wait_link.linked());
     thread.request = request;
     thread.ender_result.reset();
     {
@@ -107,7 +107,7 @@ bool Waitable::try_requeue(ThreadState &thread, int priority, std::unique_lock<s
 }
 
 void Waitable::unqueue(ThreadState &thread, SceInt32 result) {
-    if (!thread.linked())
+    if (!thread.wait_link.linked())
         return;
     waiters.remove(thread);
     {
@@ -199,6 +199,11 @@ Event::Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64
     , pattern(init_pattern | SCE_KERNEL_EVENT_CREATE)
     , last_user_data(init_user_data) {}
 
+Event::~Event() {
+    while (!registrations.empty())
+        drop_registration(registrations.front());
+}
+
 // The create event comes with the creating thread's user data, like the other system events
 SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUID creator)
     : WithUidClass(attr, name, init_pattern, system_event_user_data(creator)) {}
@@ -231,7 +236,8 @@ SceInt32 Event::register_callback(KernelState &kernel, CallbackRef callback, Sce
     auto pos = registrations.begin();
     while (pos != registrations.end() && pos->callback->uid <= callback->uid)
         ++pos;
-    registrations.insert(pos, std::make_unique<CallbackRegistration>(kernel, std::move(callback), notify_id));
+    CallbackRegistration *const registration = new CallbackRegistration(kernel, std::move(callback), notify_id);
+    registrations.insert(pos, *registration);
     return SCE_KERNEL_OK;
 }
 
@@ -241,7 +247,7 @@ SceInt32 Event::unregister_callback(SceUID callback_id) {
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     for (CallbackRegistration &registration : registrations) {
         if (registration.callback->uid == callback_id) {
-            registrations.remove(registration);
+            drop_registration(registration);
             return SCE_KERNEL_OK;
         }
     }
@@ -253,7 +259,7 @@ SceInt32 Event::unregister_callbacks() {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     while (!registrations.empty())
-        registrations.remove(*registrations.begin());
+        drop_registration(registrations.front());
     return SCE_KERNEL_OK;
 }
 
@@ -265,8 +271,13 @@ void Event::notify_callbacks(SceInt32 arg) {
         // A callback whose owner is gone, or that was closed, is dropped
         const ThreadStateRef owner = registration.kernel.get_thread(callback.thread_id);
         if (!owner || !owner->notify_callback(callback, arg, registration.notify_id))
-            registrations.remove(registration);
+            drop_registration(registration);
     }
+}
+
+void Event::drop_registration(CallbackRegistration &registration) {
+    registrations.remove(registration);
+    delete &registration;
 }
 
 SceInt32 Event::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
@@ -514,13 +525,11 @@ void TimerService::stop() {
     const std::lock_guard<std::mutex> guard(mutex);
     stopping = false;
     while (!timers.empty())
-        timers.remove(*timers.begin());
+        timers.remove(timers.front());
 }
 
 void TimerService::arm(Timer &timer, uint64_t deadline) {
     const std::lock_guard<std::mutex> guard(mutex);
-    // The list's old reference goes, this one is linked again
-    TimerRef ref = Ref<Timer>::from(timer);
     unlink(timer);
     timer.deadline = deadline;
     // After the timers due at the same time
@@ -528,7 +537,7 @@ void TimerService::arm(Timer &timer, uint64_t deadline) {
     while (pos != timers.end() && pos->deadline <= deadline)
         ++pos;
     const bool first = pos == timers.begin();
-    timers.insert(pos, std::move(ref));
+    timers.insert(pos, timer);
     if (first)
         wake.notify_one();
 }
@@ -540,14 +549,14 @@ void TimerService::disarm(Timer &timer) {
 
 bool TimerService::take_due(Timer &timer, uint64_t cutoff) {
     const std::lock_guard<std::mutex> guard(mutex);
-    if (!timer.linked() || timer.deadline > cutoff)
+    if (!timer.service_link.linked() || timer.deadline > cutoff)
         return false;
     unlink(timer);
     return true;
 }
 
 void TimerService::unlink(Timer &timer) {
-    if (!timer.linked())
+    if (!timer.service_link.linked())
         return;
     // A batch that would fire it next moves on
     if (cursor != timers.end() && &*cursor == &timer)
@@ -800,7 +809,7 @@ void Mutex::set_owner(ThreadState &thread) {
     if (owner_thread)
         owner_thread->remove_held(*this);
     owner_thread = &thread;
-    thread.add_held(MutexRef::from(*this));
+    thread.add_held(*this);
 }
 
 void Mutex::clear_owner() {
@@ -1087,7 +1096,7 @@ void RWLock::set_write_owner(ThreadState &thread) {
     if (write_owner)
         write_owner->remove_held(*this);
     write_owner = &thread;
-    thread.add_held(RWLockRef::from(*this));
+    thread.add_held(*this);
 }
 
 void RWLock::clear_write_owner() {
@@ -1576,7 +1585,7 @@ void EventFlag::drop_hold() {
 void EventFlag::set_holder(ThreadState &thread) {
     assert(!holder);
     holder = &thread;
-    thread.add_held(EventFlagRef::from(*this));
+    thread.add_held(*this);
 }
 
 void EventFlag::clear_holder() {

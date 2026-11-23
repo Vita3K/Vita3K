@@ -27,6 +27,10 @@
 
 struct ThreadState;
 
+// Picks the wait link of a thread, for the queue declared before ThreadState is complete
+template <class T>
+struct WaitLink : MemberLink<&T::wait_link> {};
+
 // A kernel object threads can wait on, with the lock that guards its fields and its waiters
 class Waitable : public WithClass<Waitable, KernelObject> {
 public:
@@ -99,7 +103,7 @@ protected:
 
     // The waiting threads in queue order, borrowed, guarded by the lock. Only queue() and try_requeue()
     // link one.
-    IntrusiveList<ThreadState> waiters;
+    IntrusiveList<ThreadState, WaitLink<ThreadState>> waiters;
 
 private:
     const bool openable;

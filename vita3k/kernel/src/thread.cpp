@@ -240,24 +240,27 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
 
         // The event flags the thread holds are free again, and its mutexes and write locks go to
         // their next waiters. Each release unlists the object, unless a cancel or a delete already did.
-        while (const Ref<EventFlag> flag = held_flags.front()) {
+        while (!held_flags.empty()) {
+            const Ref<EventFlag> flag = Ref<EventFlag>::from(held_flags.front());
             lock.unlock();
             flag->release_if_held_by(*this);
             lock.lock();
         }
-        while (const Ref<Mutex> mutex = held_mutexes.front()) {
+        while (!held_mutexes.empty()) {
+            const Ref<Mutex> mutex = Ref<Mutex>::from(held_mutexes.front());
             lock.unlock();
             mutex->release_if_owned_by(*this);
             lock.lock();
         }
-        while (const Ref<RWLock> rwlock = held_rwlocks.front()) {
+        while (!held_rwlocks.empty()) {
+            const Ref<RWLock> rwlock = Ref<RWLock>::from(held_rwlocks.front());
             lock.unlock();
             rwlock->release_if_write_locked_by(*this);
             lock.lock();
         }
         // The callbacks the thread created end with it, with their pending notifications
         while (!callbacks.empty())
-            close_callback(*callbacks.begin());
+            close_callback(callbacks.front());
         lock.unlock();
         // The end waiters see the status and the exit status together. Both locks stay held until
         // they are woken, so a start can't come in between.
@@ -644,7 +647,7 @@ void ThreadState::end_wait() {
 
 bool ThreadState::notify_callback(Callback &cb, SceInt32 arg, SceUID notifier_id) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    if (!cb.linked())
+    if (!cb.owner_link.linked())
         return false;
     cb.pending.notifier_id = notifier_id;
     cb.pending.arg = arg;
@@ -672,7 +675,7 @@ Callback::Notification ThreadState::callback_notifications(const Callback &cb) {
 
 SceUID ThreadState::add_callback(CallbackRef cb) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    callbacks.push_back(cb);
+    callbacks.push_back(*cb);
     return kernel.objects.add(std::move(cb), kernel.get_next_uid());
 }
 
@@ -687,42 +690,42 @@ bool ThreadState::delete_callback(Callback &cb) {
 }
 
 void ThreadState::close_callback(Callback &cb) {
-    // The list's reference keeps cb alive until its UID is gone
-    const CallbackRef listed = callbacks.remove(cb);
+    // Unlisted first, since removing the UID can free cb
+    callbacks.remove(cb);
     kernel.objects.remove<Callback>(cb.uid, id);
 }
 
-void ThreadState::add_held(Ref<EventFlag> flag) {
+void ThreadState::add_held(EventFlag &flag) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    held_flags.push_back(std::move(flag));
+    held_flags.push_back(flag);
 }
 
 void ThreadState::remove_held(EventFlag &flag) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    [[maybe_unused]] const Ref<EventFlag> listed = held_flags.remove(flag);
-    assert(listed);
+    assert(flag.held_link.linked());
+    held_flags.remove(flag);
 }
 
-void ThreadState::add_held(Ref<Mutex> mutex) {
+void ThreadState::add_held(Mutex &mutex) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    held_mutexes.push_back(std::move(mutex));
+    held_mutexes.push_back(mutex);
 }
 
 void ThreadState::remove_held(Mutex &mutex) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    [[maybe_unused]] const Ref<Mutex> listed = held_mutexes.remove(mutex);
-    assert(listed);
+    assert(mutex.held_link.linked());
+    held_mutexes.remove(mutex);
 }
 
-void ThreadState::add_held(Ref<RWLock> rwlock) {
+void ThreadState::add_held(RWLock &rwlock) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    held_rwlocks.push_back(std::move(rwlock));
+    held_rwlocks.push_back(rwlock);
 }
 
 void ThreadState::remove_held(RWLock &rwlock) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    [[maybe_unused]] const Ref<RWLock> listed = held_rwlocks.remove(rwlock);
-    assert(listed);
+    assert(rwlock.held_link.linked());
+    held_rwlocks.remove(rwlock);
 }
 
 bool ThreadState::has_pending_callbacks() {
@@ -785,8 +788,10 @@ void ThreadState::run_event_handlers(std::unique_lock<std::mutex> &lock, SceUInt
             ++it;
             continue;
         }
-        // The run keeps the handler listed, and the list keeps it alive
+        // The run keeps the handler listed, and its reference keeps it alive once an unregister
+        // removes the UID
         ++handler.runs;
+        const ThreadEventHandlerRef held = ThreadEventHandlerRef::from(handler);
         list_lock.unlock();
         // Set before the handler calls, so with no handler a start racing this one gets NOT_DORMANT
         lock.lock();

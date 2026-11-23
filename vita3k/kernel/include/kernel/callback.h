@@ -23,7 +23,7 @@
 
 // A callback a thread created, which only that thread runs. Its notifications, runs and link in the
 // owner's list are guarded by the owner's mutex, and the owner's callback calls change them.
-class Callback final : public WithUidClass<Callback, KernelObject, UidClass::callback>, public IntrusiveLink<Callback> {
+class Callback final : public WithUidClass<Callback, KernelObject, UidClass::callback> {
     friend class Ref<Callback>;
 
     Callback(SceUID thread_id, const char *name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
@@ -43,6 +43,8 @@ public:
     const SceUID thread_id;
     const Ptr<SceKernelCallbackFunction> cb_func; // Function to execute when the callback should run
     const Ptr<void> userdata; // User-provided data - passed as pCommon
+    // The callback's place in its owner's list, which holds it until it is closed
+    IntrusiveLink<Callback> owner_link;
 
 private:
     friend struct ThreadState;
@@ -59,7 +61,7 @@ using CallbackRef = Ref<Callback>;
 
 // A registered thread event handler, run on the threads of target for the event types in mask. Its
 // deleted flag, its runs and its link in the kernel's list are guarded by the list's mutex.
-class ThreadEventHandler final : public WithUidClass<ThreadEventHandler, KernelObject, UidClass::thread_event>, public IntrusiveLink<ThreadEventHandler> {
+class ThreadEventHandler final : public WithUidClass<ThreadEventHandler, KernelObject, UidClass::thread_event> {
     friend class Ref<ThreadEventHandler>;
 
     ThreadEventHandler(const char *name, SceUID target, SceUInt32 mask, Address handler, Address common);
@@ -79,6 +81,8 @@ public:
     bool deleted = false;
     // The runs of the handler going on, on any thread
     int runs = 0;
+    // The handler's place in the kernel's list, which holds it until it is unlisted
+    IntrusiveLink<ThreadEventHandler> kernel_link;
 };
 
 using ThreadEventHandlerRef = Ref<ThreadEventHandler>;

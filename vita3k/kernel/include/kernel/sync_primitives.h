@@ -40,7 +40,7 @@ constexpr SceUInt64 system_event_user_data(SceUID thread_id) {
 }
 
 // A callback registered to an event, with the notify ID its function gets
-struct CallbackRegistration : IntrusiveLink<CallbackRegistration> {
+struct CallbackRegistration {
     CallbackRegistration(KernelState &kernel, CallbackRef callback, SceUID notify_id)
         : kernel(kernel)
         , callback(std::move(callback))
@@ -50,6 +50,8 @@ struct CallbackRegistration : IntrusiveLink<CallbackRegistration> {
     KernelState &kernel;
     const CallbackRef callback;
     const SceUID notify_id;
+    // The registration's place in the event's list
+    IntrusiveLink<CallbackRegistration> event_link;
 };
 
 class TimerService;
@@ -87,6 +89,7 @@ public:
 
 protected:
     Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
+    ~Event() override;
 
     void end_waits(SceUID deleter) override;
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
@@ -102,12 +105,15 @@ protected:
     // Notifies the registered callbacks with arg and drops the ones that are gone. The lock must be
     // held.
     void notify_callbacks(SceInt32 arg);
+    // Takes registration off the event and frees it
+    void drop_registration(CallbackRegistration &registration);
 
     // Guarded by the lock
     SceUInt32 pattern;
     SceUInt64 last_user_data;
-    // In callback UID order
-    UniqueList<CallbackRegistration> registrations;
+    // In callback UID order. The event owns them: register_callback makes each with new, and
+    // drop_registration frees it.
+    IntrusiveList<CallbackRegistration, MemberLink<&CallbackRegistration::event_link>> registrations;
 };
 
 class SimpleEvent final : public WithUidClass<SimpleEvent, Event, UidClass::simple_event> {
@@ -128,13 +134,16 @@ using SimpleEventRef = Ref<SimpleEvent>;
 
 using EventRef = Ref<Event>;
 
-class Timer final : public WithUidClass<Timer, Event, UidClass::timer>, public IntrusiveLink<Timer> {
+class Timer final : public WithUidClass<Timer, Event, UidClass::timer> {
     friend class Ref<Timer>;
     friend class TimerService;
 
     Timer(TimerService &timers, SceUInt32 attr, const char *name, SceUID creator);
 
 public:
+    // The timer's place in the service's list while it is armed
+    IntrusiveLink<Timer> service_link;
+
     // Returns the error for arguments a create can't use, or 0.
     static SceInt32 check_create(const char *name, SceUInt32 attr);
 
@@ -203,9 +212,10 @@ private:
 
     std::mutex mutex;
     std::condition_variable wake;
-    RefList<Timer> timers;
+    // The armed timers by deadline, borrowed. A delete disarms a timer before its UID goes.
+    IntrusiveList<Timer, MemberLink<&Timer::service_link>> timers;
     // The next timer of the batch being fired, guarded by the lock
-    IntrusiveList<Timer>::iterator cursor = timers.end();
+    decltype(timers)::iterator cursor = timers.end();
     bool stopping = false;
     std::thread thread;
 };
@@ -244,8 +254,10 @@ private:
 
 using SemaphoreRef = Ref<Semaphore>;
 
-class Mutex : public Waitable, public IntrusiveLink<Mutex> {
+class Mutex : public Waitable {
 public:
+    // The mutex's place in its owner's list
+    IntrusiveLink<Mutex> held_link;
     const SceInt32 init_count;
     const Ptr<SceKernelLwMutexWork> workarea;
     // The ceiling priority a heavy mutex was created with, SCE_KERNEL_LOWEST_PRIORITY_KERNEL for none.
@@ -323,12 +335,15 @@ public:
 
 using MutexRef = Ref<Mutex>;
 
-class RWLock final : public WithUidClass<RWLock, Waitable, UidClass::rw_lock>, public IntrusiveLink<RWLock> {
+class RWLock final : public WithUidClass<RWLock, Waitable, UidClass::rw_lock> {
     friend class Ref<RWLock>;
 
     RWLock(SceUInt32 attr, const char *name);
 
 public:
+    // The lock's place in its write owner's list
+    IntrusiveLink<RWLock> held_link;
+
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 attr);
 
@@ -370,12 +385,14 @@ private:
 
 using RWLockRef = Ref<RWLock>;
 
-class EventFlag final : public WithUidClass<EventFlag, Waitable, UidClass::event_flag>, public IntrusiveLink<EventFlag> {
+class EventFlag final : public WithUidClass<EventFlag, Waitable, UidClass::event_flag> {
     friend class Ref<EventFlag>;
 
     EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
 
 public:
+    // The flag's place in its holder's list
+    IntrusiveLink<EventFlag> held_link;
     // The pattern the event flag was created with, for its info
     const SceUInt32 init_pattern;
 

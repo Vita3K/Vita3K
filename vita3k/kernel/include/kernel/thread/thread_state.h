@@ -41,6 +41,11 @@ class EventFlag;
 class Mutex;
 class RWLock;
 
+// Picks the held link of an event flag, mutex or rwlock, for the lists declared before those are
+// complete
+template <class T>
+struct HeldLink : MemberLink<&T::held_link> {};
+
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
     running = SCE_KERNEL_THREAD_STATUS_RUNNING,
@@ -61,7 +66,7 @@ struct DisplayWaitBases {
     uint32_t depth = 0;
 };
 
-struct ThreadState final : public WithUidClass<ThreadState, Waitable, UidClass::thread>, public IntrusiveLink<ThreadState> {
+struct ThreadState final : public WithUidClass<ThreadState, Waitable, UidClass::thread> {
 private:
     friend class Ref<ThreadState>;
 
@@ -69,6 +74,9 @@ private:
     ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUStatePtr cpu, const char *name, Address entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr);
 
 public:
+    // The thread's place in the queue of the object it waits on
+    IntrusiveLink<ThreadState> wait_link;
+
     // Fixed when the thread is created
     const SceUID id;
     const Address entry_point;
@@ -195,11 +203,11 @@ public:
     bool has_pending_callbacks();
 
     // What the thread holds, which its end gives back. Called with the object's lock held.
-    void add_held(Ref<EventFlag> flag);
+    void add_held(EventFlag &flag);
     void remove_held(EventFlag &flag);
-    void add_held(Ref<Mutex> mutex);
+    void add_held(Mutex &mutex);
     void remove_held(Mutex &mutex);
-    void add_held(Ref<RWLock> rwlock);
+    void add_held(RWLock &rwlock);
     void remove_held(RWLock &rwlock);
 
     // Thread event handlers
@@ -357,14 +365,16 @@ private:
     bool callback_pending = false;
     // The callback runs going on, nested ones too
     int callback_depth = 0;
-    // The thread's callbacks in creation order, including one whose delete is in progress
-    RefList<Callback> callbacks;
+    // The thread's callbacks in creation order, including one whose delete is in progress. Borrowed,
+    // each callback's UID holds it until close_callback unlists it.
+    IntrusiveList<Callback, MemberLink<&Callback::owner_link>> callbacks;
 
     // What the thread holds, each list in the order it took them: its event flag holds, its heavy
-    // mutexes and its write locks
-    RefList<EventFlag> held_flags;
-    RefList<Mutex> held_mutexes;
-    RefList<RWLock> held_rwlocks;
+    // mutexes and its write locks. Borrowed, each object's UID holds it, and a delete unlists it
+    // before the UID goes.
+    IntrusiveList<EventFlag, HeldLink<EventFlag>> held_flags;
+    IntrusiveList<Mutex, HeldLink<Mutex>> held_mutexes;
+    IntrusiveList<RWLock, HeldLink<RWLock>> held_rwlocks;
 
     // ForVM suspend
     // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet
