@@ -20,11 +20,19 @@
 #include <cassert>
 #include <cstddef>
 #include <iterator>
-#include <memory>
 #include <type_traits>
 
-// A T's place in one IntrusiveList, a base class of the T. A node in no list points at itself.
-// A T in a list must stay where it is, so the link can't be copied or moved.
+// Picks the link member a list uses in its Ts. The list reads it only inside its methods, so T can
+// be incomplete where the list is declared, through a template like
+// template <class T> struct WaitLink : MemberLink<&T::wait_link> {}.
+template <auto Member>
+struct MemberLink {
+    static constexpr auto member = Member;
+};
+
+// A T's place in one IntrusiveList, a member of the T. Null when the T is in no list. linked() is
+// read under the lock that guards the list it joins. A T in a list must stay where it is, so the
+// link can't be copied or moved.
 template <class T>
 class IntrusiveLink {
 public:
@@ -35,36 +43,36 @@ public:
         assert(!linked());
     }
 
-    // Whether the T is in a list, which tells an unlinked T from a list's only one
     bool linked() const {
-        return next != this;
+        return next != nullptr;
     }
 
 private:
-    template <class U>
+    template <class U, class Selector>
     friend class IntrusiveList;
 
-    // Takes the node out of its list and points it back at itself
-    void unlink() {
-        prev->next = next;
-        next->prev = prev;
-        prev = this;
-        next = this;
-    }
-
-    IntrusiveLink *prev = this;
-    IntrusiveLink *next = this;
+    T *prev = nullptr;
+    T *next = nullptr;
 };
 
-// A circular doubly linked list of Ts around a sentinel head, so adding and removing allocates
-// nothing. It never owns or destroys its Ts, and the caller locks it.
-template <class T>
+// A circular doubly linked list of Ts through the link Selector picks, so adding and removing
+// allocates nothing. The first T's prev is the last one, and a list's only T points at itself. It
+// never owns or destroys its Ts, and the caller locks it.
+template <class T, class Selector>
 class IntrusiveList {
+    static IntrusiveLink<T> &link(T &item) {
+        static_assert(std::is_same_v<decltype(Selector::member), IntrusiveLink<T> T::*const>);
+        return item.*Selector::member;
+    }
+    static const IntrusiveLink<T> &link(const T &item) {
+        return item.*Selector::member;
+    }
+
 public:
-    // Goes through the list in order, giving each T
+    // Goes through the list in order, giving each T. It stays valid while its T is in the list.
     template <bool Const>
     class Iterator {
-        using Link = std::conditional_t<Const, const IntrusiveLink<T>, IntrusiveLink<T>>;
+        using List = std::conditional_t<Const, const IntrusiveList, IntrusiveList>;
 
     public:
         using iterator_category = std::forward_iterator_tag;
@@ -76,13 +84,16 @@ public:
         Iterator() = default;
 
         reference operator*() const {
-            return static_cast<reference>(*node);
+            return *node;
         }
         pointer operator->() const {
-            return &**this;
+            return node;
         }
+        // The last T leads back to the first, which is the end
         Iterator &operator++() {
-            node = node->next;
+            node = link(*node).next;
+            if (node == list->first)
+                node = nullptr;
             return *this;
         }
         Iterator operator++(int) {
@@ -95,74 +106,105 @@ public:
     private:
         friend class IntrusiveList;
 
-        explicit Iterator(Link *node)
-            : node(node) {}
+        Iterator(List *list, T *node)
+            : list(list)
+            , node(node) {}
 
-        Link *node = nullptr;
+        List *list = nullptr;
+        // Null at the end
+        T *node = nullptr;
     };
 
     using iterator = Iterator<false>;
     using const_iterator = Iterator<true>;
 
+    IntrusiveList() = default;
+    IntrusiveList(const IntrusiveList &) = delete;
+    IntrusiveList &operator=(const IntrusiveList &) = delete;
+    ~IntrusiveList() {
+        assert(empty());
+    }
+
     bool empty() const {
-        return !head.linked();
+        return first == nullptr;
     }
     std::size_t size() const {
         return count;
     }
     iterator begin() {
-        return iterator(head.next);
+        return iterator(this, first);
     }
     iterator end() {
-        return iterator(&head);
+        return iterator(this, nullptr);
     }
     const_iterator begin() const {
-        return const_iterator(head.next);
+        return const_iterator(this, first);
     }
     const_iterator end() const {
-        return const_iterator(&head);
+        return const_iterator(this, nullptr);
     }
 
     T &front() {
         assert(!empty());
-        return *begin();
+        return *first;
     }
     const T &front() const {
         assert(!empty());
-        return *begin();
+        return *first;
     }
 
-    // Adds value, which must be in no list, before position
-    void insert(iterator position, T &value) {
-        IntrusiveLink<T> &node = value;
+    // Adds item, which must be in no list through this link, before position
+    void insert(iterator position, T &item) {
+        assert(position.list == this);
+        IntrusiveLink<T> &node = link(item);
         assert(!node.linked());
-        IntrusiveLink<T> *const next = position.node;
-        node.prev = next->prev;
-        node.next = next;
-        next->prev->next = &node;
-        next->prev = &node;
         ++count;
+        if (!first) {
+            node.prev = &item;
+            node.next = &item;
+            first = &item;
+            return;
+        }
+        // The end is behind the last T, which is in front of the first
+        T &next = position.node ? *position.node : *first;
+        node.prev = link(next).prev;
+        node.next = &next;
+        link(*node.prev).next = &item;
+        link(next).prev = &item;
+        if (position.node == first)
+            first = &item;
     }
-    void push_back(T &value) {
-        insert(end(), value);
+    void push_back(T &item) {
+        insert(end(), item);
     }
 
-    // Takes value out of the list if it is in it. value must not be in another list.
-    void remove(T &value) {
-        IntrusiveLink<T> &node = value;
+    // Takes item out of the list if it is in it. item must be in this list or in none through this
+    // link.
+    void remove(T &item) {
+        IntrusiveLink<T> &node = link(item);
         if (!node.linked())
             return;
-        node.unlink();
         --count;
+        if (node.next == &item) {
+            first = nullptr;
+        } else {
+            link(*node.prev).next = node.next;
+            link(*node.next).prev = node.prev;
+            if (first == &item)
+                first = node.next;
+        }
+        node.prev = nullptr;
+        node.next = nullptr;
     }
 
 private:
-    IntrusiveLink<T> head;
+    T *first = nullptr;
     std::size_t count = 0;
 };
 
-// A T's place in one IntrusiveForwardList, a base class of the T. A node in no list points at
-// itself. A T in a list must stay where it is, so the link can't be copied or moved.
+// A T's place in one IntrusiveForwardList, a member of the T. Null when the T is in no list, and
+// the list's last T points at itself. linked() is read under the lock that guards the list it
+// joins. A T in a list must stay where it is, so the link can't be copied or moved.
 template <class T>
 class IntrusiveForwardLink {
 public:
@@ -173,98 +215,62 @@ public:
         assert(!linked());
     }
 
-    // Whether the T is in a list, which tells an unlinked T from a list's last one
     bool linked() const {
-        return next != this;
+        return next != nullptr;
     }
 
 private:
-    template <class U>
+    template <class U, class Selector>
     friend class IntrusiveForwardList;
 
-    IntrusiveForwardLink *next = this;
+    T *next = nullptr;
 };
 
-// A circular singly linked list of Ts around a sentinel head, added to and taken from the front
-// only, so a change writes only the head and the T it adds or takes. Adding and taking allocates
-// nothing. It never owns or destroys its Ts, and the caller locks it.
-template <class T>
+// A stack of Ts through the link Selector picks, added to and taken from the front only, so a
+// change writes only the head and the link of the T it adds or takes, never another T's link.
+// Adding and taking allocates nothing. It never owns or destroys its Ts, and the caller locks it.
+template <class T, class Selector>
 class IntrusiveForwardList {
+    static IntrusiveForwardLink<T> &link(T &item) {
+        static_assert(std::is_same_v<decltype(Selector::member), IntrusiveForwardLink<T> T::*const>);
+        return item.*Selector::member;
+    }
+
 public:
+    IntrusiveForwardList() = default;
+    IntrusiveForwardList(const IntrusiveForwardList &) = delete;
+    IntrusiveForwardList &operator=(const IntrusiveForwardList &) = delete;
+    ~IntrusiveForwardList() {
+        assert(empty());
+    }
+
     bool empty() const {
-        return !head.linked();
+        return first == nullptr;
     }
 
     T &front() {
         assert(!empty());
-        return static_cast<T &>(*head.next);
+        return *first;
     }
 
-    // Whether value is in a forward list
-    static bool linked(const T &value) {
-        const IntrusiveForwardLink<T> &node = value;
-        return node.linked();
-    }
-
-    // Adds value, which must be in no list, at the front
-    void push_front(T &value) {
-        IntrusiveForwardLink<T> &node = value;
+    // Adds item, which must be in no list through this link, at the front
+    void push_front(T &item) {
+        IntrusiveForwardLink<T> &node = link(item);
         assert(!node.linked());
-        node.next = head.next;
-        head.next = &node;
+        node.next = first ? first : &item;
+        first = &item;
     }
 
     // Takes the first T off the list and returns it
     T &pop_front() {
         assert(!empty());
-        IntrusiveForwardLink<T> *const node = head.next;
-        head.next = node->next;
-        node->next = node;
-        return static_cast<T &>(*node);
+        T &item = *first;
+        IntrusiveForwardLink<T> &node = link(item);
+        first = node.next == &item ? nullptr : node.next;
+        node.next = nullptr;
+        return item;
     }
 
 private:
-    IntrusiveForwardLink<T> head;
-};
-
-// An intrusive list that owns the objects on it. The caller locks it.
-template <class T>
-class UniqueList {
-public:
-    // Destroys every object still on the list
-    ~UniqueList() {
-        while (!list.empty())
-            remove(list.front());
-    }
-
-    // Whether no object is on the list
-    bool empty() const {
-        return list.empty();
-    }
-
-    // The objects in list order
-    auto begin() {
-        return list.begin();
-    }
-
-    // The end of the objects in list order
-    auto end() {
-        return list.end();
-    }
-
-    // Links object before position and takes it over
-    void insert(typename IntrusiveList<T>::iterator position, std::unique_ptr<T> object) {
-        assert(object);
-        list.insert(position, *object.release());
-    }
-
-    // Takes object, which must be on the list, off it and gives it back to the caller
-    std::unique_ptr<T> remove(T &object) {
-        assert(object.linked());
-        list.remove(object);
-        return std::unique_ptr<T>(&object);
-    }
-
-private:
-    IntrusiveList<T> list;
+    T *first = nullptr;
 };

@@ -138,10 +138,7 @@ private:
     template <class U>
     friend class Ref;
 
-    template <class U>
-    friend class RefList;
-
-    template <class U>
+    template <class U, class Selector>
     friend class RefForwardList;
 
     // Adds this reference to the object's count
@@ -180,63 +177,8 @@ private:
     T *ptr = nullptr;
 };
 
-// An intrusive list that holds one reference to each object on it. The caller locks it.
-template <class T>
-class RefList {
-public:
-    // Drops the reference to every object still on the list
-    ~RefList() {
-        while (!list.empty())
-            remove(*list.begin());
-    }
-
-    // Whether no object is on the list
-    bool empty() const {
-        return list.empty();
-    }
-
-    // The objects in list order
-    auto begin() {
-        return list.begin();
-    }
-
-    // The end of the objects in list order
-    auto end() {
-        return list.end();
-    }
-
-    // A new reference to the first object, or nothing if the list is empty
-    Ref<T> front() {
-        if (list.empty())
-            return nullptr;
-        return Ref<T>::from(list.front());
-    }
-
-    // Links object before position and takes its reference over.
-    void insert(typename IntrusiveList<T>::iterator position, Ref<T> object) {
-        list.insert(position, *object.release_ownership());
-    }
-
-    // Links object at the end and takes its reference over
-    void push_back(Ref<T> object) {
-        list.push_back(*object.release_ownership());
-    }
-
-    // Takes object off the list and returns the list's reference to it, or nothing if it isn't on a
-    // list. object must not be on another list.
-    Ref<T> remove(T &object) {
-        if (!object.linked())
-            return nullptr;
-        list.remove(object);
-        return Ref<T>::adopt(&object);
-    }
-
-private:
-    IntrusiveList<T> list;
-};
-
 // An intrusive forward list that holds one reference to each object on it. The caller locks it.
-template <class T>
+template <class T, class Selector>
 class RefForwardList {
 public:
     // Drops the reference to every object still on the list
@@ -250,9 +192,16 @@ public:
         return list.empty();
     }
 
-    // Links object at the front and takes its reference over
+    // The first object, which the list keeps alive while it is on it
+    T &front() {
+        return list.front();
+    }
+
+    // Links the object at the front and keeps object's reference
     void push_front(Ref<T> object) {
-        list.push_front(*object.release_ownership());
+        assert(object);
+        list.push_front(*object);
+        (void)object.release_ownership();
     }
 
     // Takes the first object off the list and returns the list's reference to it
@@ -261,5 +210,5 @@ public:
     }
 
 private:
-    IntrusiveForwardList<T> list;
+    IntrusiveForwardList<T, Selector> list;
 };
