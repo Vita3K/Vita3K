@@ -243,7 +243,11 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
             } else {
                 fs::create_directories(file_output.parent_path());
                 LOG_INFO("Extracting {}", file_output);
-                mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0);
+                if (!mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0)) {
+                    LOG_ERROR("Failed to extract {}: {}", file_output, miniz_get_error(zip));
+                    fs::remove_all(output_path);
+                    return false;
+                }
             }
         }
     }
