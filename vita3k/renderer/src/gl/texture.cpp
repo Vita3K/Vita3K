@@ -27,7 +27,7 @@ namespace renderer::gl {
 
 using namespace texture;
 
-static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum texture_bind_type, const int anisotropic_filtering) {
+static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum texture_bind_type, const int anisotropic_filtering, const bool has_mipmaps) {
     const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
 
@@ -45,7 +45,7 @@ static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum t
 
     // anisotropic filtering
     // textures that are point-sampled or have no mipmaps (lookup tables...) can contain data other than color
-    const bool use_anisotropy = anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST) && renderer::texture::has_uploaded_mipmaps(gxm_texture);
+    const bool use_anisotropy = anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST) && has_mipmaps;
     // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
     glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, use_anisotropy ? static_cast<float>(anisotropic_filtering) : 1.f);
 }
@@ -194,7 +194,7 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 #endif
 
-    apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
+    apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering, mip_count > 1);
 
     const auto texture_type = gxm_texture.texture_type();
     const auto base_fmt = gxm::get_base_format(fmt);
@@ -326,7 +326,7 @@ void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 #endif
 
-    apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
+    apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering, mipcount > 1);
 
     bool compressed = gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format);
     const GLenum internal_format = translate_internal_format(base_format);

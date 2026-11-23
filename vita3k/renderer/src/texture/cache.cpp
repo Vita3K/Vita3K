@@ -878,10 +878,10 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
     // retrieve the appropriate sampler if needed
     if (use_sampler_cache)
-        cache_and_bind_sampler(gxm_texture);
+        cache_and_bind_sampler(gxm_texture, false, info->is_imported ? info->mip_count > 1 : has_uploaded_mipmaps(gxm_texture));
 }
 
-int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth) {
+int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth, bool has_mipmaps) {
     uint32_t compact_repr = 0;
     if (gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         compact_repr = 0b01
@@ -905,7 +905,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool 
     is_depth &= !support_depth_linear_filtering;
     compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
     // anisotropic filtering is only applied to mipmapped textures
-    compact_repr |= (static_cast<uint32_t>(has_uploaded_mipmaps(gxm_texture)) << 24);
+    compact_repr |= (static_cast<uint32_t>(has_mipmaps) << 24);
 
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {
@@ -925,7 +925,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool 
     sampler_lookup[compact_repr] = info;
 
     info->value = compact_repr;
-    configure_sampler(info->index, gxm_texture, is_depth);
+    configure_sampler(info->index, gxm_texture, is_depth, has_mipmaps);
     last_bound_sampler_index = info->index;
     return last_bound_sampler_index;
 }
