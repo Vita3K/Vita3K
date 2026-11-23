@@ -366,6 +366,9 @@ bool init_paths(Root &root_paths) {
         }
 
         const constexpr char *static_asset_paths[] = {
+#ifdef VITA3K_INSTALL_DATADIR
+            VITA3K_INSTALL_DATADIR,
+#endif
             "/usr/local/share/Vita3K",
             "/usr/share/Vita3K",
             "/app/share/Vita3K",
