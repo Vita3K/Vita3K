@@ -174,7 +174,10 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write situation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
-        bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
+        // The last row of the region ends at its width, not a whole stride later: a region in the bottom right
+        // corner of the surface (an atlas tile, for example) ends exactly where the surface ends
+        const std::size_t region_end = original_height ? bytes_per_stride * (original_height - 1) + original_width * color::bytes_per_pixel(base_format) : 0;
+        bool addr_in_range_of_cache = ((key + region_end) <= (ite->first + info.total_bytes));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
