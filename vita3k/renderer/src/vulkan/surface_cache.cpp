@@ -20,7 +20,9 @@
 #include <gxm/functions.h>
 #include <renderer/vulkan/gxm_to_vulkan.h>
 #include <renderer/vulkan/state.h>
+#include <renderer/vulkan/surface_readback.h>
 #include <renderer/vulkan/types.h>
+#include <vkutil/readback.h>
 #include <vkutil/vkutil.h>
 
 #include <vulkan/vulkan_format_traits.hpp>
@@ -144,7 +146,7 @@ static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
     // Don't track dirty for small surfaces to avoid false positives from unrelated writes
     std::shared_ptr<bool> dirty = small_surface ? nullptr : info.dirty;
 
-    add_protect(mem, addr_start, addr_end - addr_start, perm,
+    add_cache_protect(mem, addr_start, addr_end - addr_start, perm,
         [dirty, need_sync](Address, bool write) {
             if (write && dirty)
                 *dirty = true;
@@ -154,8 +156,30 @@ static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
         });
 }
 
-ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
-    sws_freeContext(sws_context);
+static void arm_unmapped_readback(MemState &mem, ColorSurfaceCacheInfo &info,
+    const SceGxmColorSurface &surface, VKContext &context) {
+    // Do not re-arm a canceled watch after another draw in the same scene.
+    if (info.readback_context == &context && info.readback_scene == context.scene_timestamp)
+        return;
+    finish_gpu_readback_watch(mem, info.readback_watch);
+    info.readback_watch.reset();
+    info.readback_context = &context;
+    info.readback_scene = context.scene_timestamp;
+    if (!gpu_readback_supported() || context.state.features.enable_memory_mapping
+        || context.state.disable_surface_sync || surface.surfaceType != SCE_GXM_COLOR_SURFACE_LINEAR)
+        return;
+    uint32_t bpp = 0;
+    switch (gxm::get_base_format(surface.colorFormat)) {
+    case SCE_GXM_COLOR_BASE_FORMAT_U5U6U5: bpp = 2; break;
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8: bpp = 3; break;
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8: bpp = 4; break;
+    default: return;
+    }
+    const uint64_t stride = uint64_t(surface.strideInPixels) * bpp;
+    if (stride > UINT32_MAX)
+        return;
+    info.readback_watch = begin_gpu_readback_watch(mem, info.readback_allocation,
+        surface.data.address(), surface.width * bpp, surface.height, uint32_t(stride));
 }
 
 void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
@@ -173,6 +197,8 @@ void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
 }
 
 void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
+    info.readback_watch.reset();
+    info.readback_context = nullptr;
     vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
 
     // don't forget to destroy in the right order
@@ -324,6 +350,10 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
 
     uint32_t bytes_per_stride = color->strideInPixels * gxm::bits_per_pixel(base_format) / 8;
     uint32_t total_surface_size = bytes_per_stride * original_height;
+    const bool track_allocation = !state.features.enable_memory_mapping;
+    const auto allocation = track_allocation
+        ? capture_mem_allocation(mem, address, uint64_t(bytes_per_stride) * original_height)
+        : MemAllocationToken{};
 
     VKContext *context = reinterpret_cast<VKContext *>(state.context);
 
@@ -345,7 +375,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         if (ite->first == address)
             surface_stat_changed = surface_extent_changed || info.width < width || base_format != info.format;
 
-        const bool invalidated = cache_probably_freed || surface_stat_changed || !addr_in_range_of_cache;
+        const bool allocation_changed = track_allocation && info.readback_allocation != allocation;
+        const bool invalidated = cache_probably_freed || surface_stat_changed || !addr_in_range_of_cache || allocation_changed;
         if (invalidated) {
             destroy_surface(info);
             color_address_lookup.erase(ite);
@@ -356,6 +387,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             if (info.data && *info.dirty)
                 protect_surface(mem, info);
             *info.dirty = false;
+            arm_unmapped_readback(mem, info, *color, *context);
 
             last_written_surface = &info;
 
@@ -405,6 +437,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     info_added.original_height = original_height;
     info_added.stride_bytes = bytes_per_stride;
     info_added.data = color->data;
+    info_added.readback_allocation = allocation;
     info_added.total_bytes = total_surface_size;
     info_added.format = base_format;
     info_added.tiling = tiling;
@@ -459,6 +492,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     } else {
         protect_surface(mem, info_added);
     }
+    arm_unmapped_readback(mem, info_added, *color, *context);
 
     // it's not impossible that this surface will be rendered once and only used after, so do not skip any shader on it
     state.pipeline_cache.can_use_deferred_compilation = false;
@@ -1290,6 +1324,16 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
         cpu_surfaces_changed.push_back(target_address);
 
     return true;
+}
+
+bool VKSurfaceCache::readback_surface(MemState &mem, const SceGxmColorSurface &surface) {
+    const auto found = color_address_lookup.find(surface.data.address());
+    if (found == color_address_lookup.end())
+        return false;
+    SurfaceReadbackContext context{ state.physical_device, state.device, state.general_queue,
+        state.queue_mutex, state.multithread_command_pool, state.multithread_pool_mutex,
+        state.allocator, state.res_multiplier, state.features.enable_memory_mapping, state.disable_surface_sync };
+    return readback_cached_surface(mem, *found->second, surface, context);
 }
 
 ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
