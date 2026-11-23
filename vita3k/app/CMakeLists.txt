@@ -27,4 +27,8 @@ endif()
 if (LINUX)
     find_package(X11 REQUIRED)
     target_link_libraries(app PRIVATE ${X11_LIBRARIES})
+
+    # Where the static assets are installed, for prefixes other than /usr and /usr/local
+    include(GNUInstallDirs)
+    target_compile_definitions(app PRIVATE "VITA3K_INSTALL_DATADIR=\"${CMAKE_INSTALL_FULL_DATADIR}/Vita3K\"")
 endif()
