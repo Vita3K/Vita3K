@@ -63,7 +63,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          submodules: recursive
+
+      # Not by checkout, which would fetch the whole history of every submodule too
+      - name: Check out submodules
+        run: git submodule update --init --recursive --depth 1 --jobs 8
 
       - name: Restore cache
         uses: actions/cache@v6
@@ -284,7 +287,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          submodules: recursive
+
+      - name: Check out submodules
+        run: git submodule update --init --recursive --depth 1 --jobs 8
 
       - name: Restore vcpkg binary cache
         uses: actions/cache@v6
@@ -312,14 +317,16 @@ jobs:
         with:
           packages: ''
 
+      # vcpkg installs the packages when Gradle configures CMake
       - name: Set up Android build environment
-        env:
-          VCPKG_ROOT: /usr/local/share/vcpkg
         run: |
           mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
           bash ./.ci/setup-android.sh
 
+      # The default 500M holds a fraction of the two ABIs' objects, so the cache barely hits
       - uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          max-size: 5G
 
       - name: Decode Android keystore
         env:

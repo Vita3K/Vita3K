@@ -8,8 +8,6 @@ android_ndk_version="${ANDROID_NDK_VERSION:-30.0.16248370}"
 sudo apt-get update
 sudo apt-get install -y ninja-build
 
-repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-
 if command -v sdkmanager > /dev/null; then
     set +o pipefail
     yes | sdkmanager --licenses > /dev/null
@@ -27,9 +25,3 @@ if command -v sdkmanager > /dev/null; then
         fi
     fi
 fi
-
-pushd "$repo_root" > /dev/null
-for triplet in arm64-android x64-android; do
-    vcpkg install --triplet "$triplet"
-done
-popd > /dev/null
