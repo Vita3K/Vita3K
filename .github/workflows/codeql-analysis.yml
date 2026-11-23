@@ -23,7 +23,6 @@ on:
 env:
   BUILD_CONFIG: Release
   QT_VERSION: '6.11.0'
-  SCCACHE_GHA_ENABLED: "true"
 
 jobs:
   analyze:
@@ -49,10 +48,6 @@ jobs:
 
       - name: Set up build environment
         run: bash ./.ci/setup-linux.sh x86_64 without-appimage
-
-      - uses: mozilla-actions/sccache-action@v0.0.11
-        with:
-          disable_annotations: true
 
       - name: Install Qt6
         uses: jurplel/install-qt-action@v4
