@@ -28,7 +28,7 @@ jobs:
             runs_on: ubuntu-26.04-arm
             arch: aarch64
             cmake_preset: ci-linux-clang-appimage
-            cache_path: ''
+            cache_path: ~/.cache/ccache
             qt_install_deps: 'true'
 
           - platform: windows-x64
@@ -73,7 +73,8 @@ jobs:
         if: ${{ matrix.cache_path != '' }}
         with:
           path: ${{ matrix.cache_path }}
-          key: cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'cmake/**', '.ci/**', '.github/workflows/c-cpp.yml', 'vcpkg.json') }}
+          # A key of its own every run, since a cache is never saved again under a key it was restored from
+          key: cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'cmake/**', '.ci/**', '.github/workflows/c-cpp.yml', 'vcpkg.json') }}-${{ github.run_id }}
           restore-keys: |
             cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-
 
@@ -101,7 +102,7 @@ jobs:
         if: matrix.platform == 'windows-x64'
 
       - uses: mozilla-actions/sccache-action@v0.0.11
-        if: startsWith(matrix.platform, 'linux-') || matrix.platform == 'windows-x64'
+        if: matrix.platform == 'windows-x64'
         with:
           disable_annotations: true
 
@@ -131,7 +132,7 @@ jobs:
 
       - name: Reset ccache statistics
         run: ccache -z
-        if: startsWith(matrix.platform, 'macos-')
+        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
 
       - name: Install Qt 6.11.0 (Windows MSVC)
         uses: jurplel/install-qt-action@v4
@@ -199,11 +200,11 @@ jobs:
 
       - name: Print ccache statistics
         run: ccache -s
-        if: startsWith(matrix.platform, 'macos-')
+        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
 
       - name: Print sccache statistics
         run: sccache --show-stats
-        if: startsWith(matrix.platform, 'linux-') || matrix.platform == 'windows-x64'
+        if: matrix.platform == 'windows-x64'
 
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v7
@@ -223,7 +224,7 @@ jobs:
             runs_on: ubuntu-26.04
             arch: x86_64
             cmake_preset: ci-linux-clang-appimage
-            cache_path: ''
+            cache_path: ~/.cache/ccache
             qt_install_deps: 'true'
 
     steps: *desktop-build-steps
