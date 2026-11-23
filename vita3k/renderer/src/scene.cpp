@@ -241,15 +241,18 @@ COMMAND(handle_draw) {
     const std::uint32_t instance_count = helper.pop<const std::uint32_t>();
 
     // Without a color surface the fragment color is never written to memory. It can only matter if
-    // a later draw of the scene reads it back and uses it to discard or to replace the depth.
-    // Until a render target shows such a draw, skip the color output of its color-less scenes:
-    // this lets the host GPU drop the fragment shader of depth only passes altogether.
+    // a later draw of the scene reads it back and uses it to discard, to replace the depth or to
+    // store to guest memory. Until a render target shows such a draw, skip the color output of its
+    // color-less scenes: this lets the host GPU drop the fragment shader of depth only passes altogether.
+    // The commands of a scene can be submitted in several parts, so the first reader is only seen
+    // when it is drawn: the draws before it in that one scene keep their color skipped.
     GxmRecordState &record = render_context->record;
     RenderTarget *target = render_context->current_render_target;
     const bool has_color_surface = static_cast<bool>(record.color_surface.data);
     if (!has_color_surface && target && !target->color_observed_without_surface) {
         const SceGxmProgram &fragment_program = *record.fragment_program.get(mem)->program.get(mem);
-        if (fragment_program.is_frag_color_used() && (fragment_program.is_discard_used() || fragment_program.is_depth_replace_used())) {
+        const bool stores_to_memory = (fragment_program.program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE) != 0;
+        if (fragment_program.is_frag_color_used() && (fragment_program.is_discard_used() || fragment_program.is_depth_replace_used() || stores_to_memory)) {
             LOG_INFO_ONCE("A scene without color surface reads back the fragment color, keeping its color output");
             target->color_observed_without_surface = true;
         }
