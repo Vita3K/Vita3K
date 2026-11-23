@@ -131,6 +131,12 @@ endmacro(get_boost)
 
 get_boost()
 
+option(VITA3K_USE_SYSTEM_SDL "Use the SDL3 version in the system instead of building the one included with Vita3K" OFF)
+
+if(VITA3K_USE_SYSTEM_SDL)
+	find_package(SDL3 3.4 REQUIRED CONFIG)
+endif()
+
 if(WIN32)
 	add_compile_definitions("_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "_CRT_SECURE_NO_WARNINGS" "NOMINMAX")
 endif()
