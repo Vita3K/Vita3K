@@ -197,9 +197,22 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     // Upload vertex stream
     sync_vertex_streams_and_attributes(context, context.record, mem);
 
+    GLenum mode = translate_primitive(type);
+    const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+
+    // A texture barrier only makes the writes of the previous draws visible: when primitives of the same draw overlap,
+    // a fragment can read the color before an earlier primitive of the draw wrote it. With high accuracy, draw each
+    // primitive on its own with a barrier in between, as the Vulkan renderer does without rasterization order access.
+    // This is slow when the GPU is the bottleneck, so standard accuracy keeps a single draw.
+    // gl_InstanceID would not count instances drawn one by one, so instanced draws are left as they are.
+    const bool order_primitives = config.current_config.high_accuracy && fragment_program_gxp.is_frag_color_used()
+        && features.should_use_texture_barrier() && instance_count == 1;
+    const bool expand_to_triangles = order_primitives && (mode == GL_TRIANGLE_STRIP || mode == GL_TRIANGLE_FAN);
+
     // Upload index data.
     const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
-    const std::size_t index_buffer_size = index_size * count;
+    const std::size_t upload_count = expand_to_triangles ? (count > 2 ? (count - 2) * 3 : 0) : count;
+    const std::size_t index_buffer_size = index_size * upload_count;
 
     std::pair<std::uint8_t *, std::size_t> index_gpu_ptr = context.index_stream_ring_buffer.allocate(index_buffer_size);
     if (!index_gpu_ptr.first) {
@@ -207,7 +220,25 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         return;
     }
 
-    std::memcpy(index_gpu_ptr.first, indices, index_buffer_size);
+    if (expand_to_triangles) {
+        // The same triangles, with their vertices in the same order, as GL makes of the strip or fan
+        const auto expand = [&](auto *dst, const auto *src) {
+            for (std::size_t i = 0; i + 2 < count; i++) {
+                const bool odd = mode == GL_TRIANGLE_STRIP && (i & 1);
+                dst[i * 3 + 0] = mode == GL_TRIANGLE_FAN ? src[0] : src[odd ? i + 1 : i];
+                dst[i * 3 + 1] = src[odd ? i : i + 1];
+                dst[i * 3 + 2] = src[i + 2];
+            }
+        };
+        if (format == SCE_GXM_INDEX_FORMAT_U16)
+            expand(reinterpret_cast<std::uint16_t *>(index_gpu_ptr.first), static_cast<const std::uint16_t *>(indices));
+        else
+            expand(reinterpret_cast<std::uint32_t *>(index_gpu_ptr.first), static_cast<const std::uint32_t *>(indices));
+        mode = GL_TRIANGLES;
+        count = upload_count;
+    } else {
+        std::memcpy(index_gpu_ptr.first, indices, index_buffer_size);
+    }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
 
     // The shader reads the color attachment whenever it uses the fragment color, so writes from the previous draws
@@ -235,10 +266,15 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
 
     // Draw.
-    const GLenum mode = translate_primitive(type);
-    const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-
-    if (instance_count == 1) {
+    if (order_primitives) {
+        const std::size_t per_primitive = mode == GL_POINTS ? 1 : mode == GL_LINES ? 2 : 3;
+        for (std::size_t first = 0; first + per_primitive <= count; first += per_primitive) {
+            // the barrier before the first primitive was issued above
+            if (first)
+                glTextureBarrier();
+            glDrawElements(mode, static_cast<GLsizei>(per_primitive), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second + first * index_size));
+        }
+    } else if (instance_count == 1) {
         glDrawElements(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second));
     } else {
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);

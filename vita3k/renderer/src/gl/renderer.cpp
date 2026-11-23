@@ -230,6 +230,8 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
     } else if (gl_state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
         LOG_WARN("Consider upgrading to a GPU that has shader interlock.");
+        if (config.current_config.high_accuracy)
+            LOG_INFO("High accuracy: programmable blending is drawn one primitive at a time");
     } else {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
