@@ -424,16 +424,28 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         }
     }
 
+    // linear strided textures use the mag filter as the min filter too
+    const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+        && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
     if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
         const uint32_t bit = 1U << index;
-        // linear strided textures use the mag filter as the min filter too
-        const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
-            && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
         if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))
             context.current_frag_render_info.surface_mask |= bit;
         else
             context.current_frag_render_info.surface_mask &= ~bit;
     }
+
+    // point-sampled reads of a mipmapped surface stay on the base level, as before mipmaps were added
+    GLuint sampler = 0;
+    if (filterable_surface && point_sampled && (state.res_multiplier > 1.0f)) {
+        if (!context.point_surface_sampler[0]) {
+            context.point_surface_sampler.init(glGenSamplers, glDeleteSamplers);
+            glSamplerParameteri(context.point_surface_sampler[0], GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glSamplerParameteri(context.point_surface_sampler[0], GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        sampler = context.point_surface_sampler[0];
+    }
+    glBindSampler(static_cast<GLuint>(index), sampler);
 
     if (texture_as_surface != 0) {
         glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));

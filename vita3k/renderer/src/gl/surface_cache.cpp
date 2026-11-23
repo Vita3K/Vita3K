@@ -745,6 +745,8 @@ void GLSurfaceCache::set_color_surface_srgb(Ptr<void> address, bool srgb) {
     respecify_keeping_content(info.gl_texture[0], internal_format, info.width, info.height);
     if (info.gl_ping_pong_texture[0])
         respecify_keeping_content(info.gl_ping_pong_texture[0], internal_format, info.width, info.height);
+    info.is_mipmap_dirty = true;
+    info.is_ping_pong_mipmapped = false;
 }
 
 void GLSurfaceCache::set_gamma_sampling(std::size_t unit, GLuint surface) {
@@ -797,6 +799,10 @@ void GLSurfaceCache::refresh_gamma_samplings() {
             if (!sampling.on_copy || created)
                 copy_sampling_parameters(sampling.surface, copy);
             glBindTexture(GL_TEXTURE_2D, copy);
+            GLint min_filter = 0;
+            glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &min_filter);
+            if ((min_filter != GL_LINEAR) && (min_filter != GL_NEAREST))
+                glGenerateMipmap(GL_TEXTURE_2D);
         }
         sampling.on_copy = !srgb_storage;
         rebound = true;
@@ -808,7 +814,7 @@ void GLSurfaceCache::refresh_gamma_samplings() {
         glActiveTexture(GL_TEXTURE0);
 }
 
-GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) {
+GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address, float mipmap_res_multiplier) {
     auto ite = color_surface_textures.find(address.address());
     if (ite == color_surface_textures.end()) {
         return 0;
@@ -816,29 +822,34 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
 
     GLColorSurfaceCacheInfo &info = *ite->second;
 
-    if (!info.is_ping_pong_dirty)
-        return info.gl_ping_pong_texture[0];
+    if (info.is_ping_pong_dirty) {
+        GLenum surface_internal_format = info.srgb ? GL_SRGB8_ALPHA8 : color::translate_internal_format(info.format);
+        GLenum surface_upload_format = color::translate_format(info.format);
+        GLenum surface_data_type = color::translate_type(info.format);
 
-    GLenum surface_internal_format = info.srgb ? GL_SRGB8_ALPHA8 : color::translate_internal_format(info.format);
-    GLenum surface_upload_format = color::translate_format(info.format);
-    GLenum surface_data_type = color::translate_type(info.format);
+        if (!info.gl_ping_pong_texture[0]) {
+            if (!info.gl_ping_pong_texture.init(glGenTextures, glDeleteTextures)) {
+                LOG_ERROR("Failed to initialise ping pong surface texture!");
+                return 0;
+            }
 
-    if (!info.gl_ping_pong_texture[0]) {
-        if (!info.gl_ping_pong_texture.init(glGenTextures, glDeleteTextures)) {
-            LOG_ERROR("Failed to initialise ping pong surface texture!");
-            return 0;
+            glBindTexture(GL_TEXTURE_2D, info.gl_ping_pong_texture[0]);
+            glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, info.width, info.height, 0, surface_upload_format, surface_data_type, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, info.gl_ping_pong_texture[0]);
         }
 
-        glBindTexture(GL_TEXTURE_2D, info.gl_ping_pong_texture[0]);
-        glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, info.width, info.height, 0, surface_upload_format, surface_data_type, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    } else {
-        glBindTexture(GL_TEXTURE_2D, info.gl_ping_pong_texture[0]);
+        glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_ping_pong_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.width, info.height, 1);
+        info.is_ping_pong_dirty = false;
+        info.is_ping_pong_mipmapped = false;
     }
 
-    glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_ping_pong_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.width, info.height, 1);
-    info.is_ping_pong_dirty = false;
+    if ((mipmap_res_multiplier > 1.0f) && !info.is_ping_pong_mipmapped) {
+        generate_surface_mipmaps(info.gl_ping_pong_texture[0], mipmap_res_multiplier);
+        info.is_ping_pong_mipmapped = true;
+    }
 
     return info.gl_ping_pong_texture[0];
 }

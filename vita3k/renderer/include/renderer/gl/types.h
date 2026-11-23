@@ -100,6 +100,7 @@ struct GLContext : public renderer::Context {
 
     std::vector<size_t> self_sampling_indices;
     bool self_sampling_needs_mipmaps = false;
+    GLObjectArray<1> point_surface_sampler;
 
     explicit GLContext();
     ~GLContext() override = default;

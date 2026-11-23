@@ -313,10 +313,9 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             glTextureBarrier();
         } else {
             glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[0]);
-            std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data);
+            const float mipmap_res_multiplier = context.self_sampling_needs_mipmaps ? renderer.res_multiplier : 1.0f;
+            std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data, mipmap_res_multiplier);
             if (ping_pong != 0) {
-                if (context.self_sampling_needs_mipmaps)
-                    generate_surface_mipmaps(static_cast<GLuint>(ping_pong), renderer.res_multiplier);
                 for (std::size_t i = 0; i < context.self_sampling_indices.size(); i++) {
                     glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[i]);
                     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(ping_pong));
