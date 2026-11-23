@@ -328,7 +328,15 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     const GLint *swizzle_surface = nullptr;
     bool only_nearest = false;
 
-    if (context.record.color_surface.data.address() == data_addr) {
+    // A texture covering only the top left part of the surface being rendered (the first tile of an atlas, for example)
+    // must be cropped out of it like the other parts: binding the whole attachment would squeeze the surface into it
+    const SceGxmColorSurface &target = context.record.color_surface;
+    const std::uint32_t texture_width = gxm::get_width(texture);
+    const std::uint32_t texture_height = gxm::get_height(texture);
+    const bool covers_part_of_target = texture_width <= target.width && texture_height <= target.height
+        && (texture_width < target.width || texture_height < target.height);
+
+    if (target.data.address() == data_addr && !covers_part_of_target) {
         texture_as_surface = context.current_color_attachment;
         swizzle_surface = color::translate_swizzle(context.record.color_surface.colorFormat);
 
