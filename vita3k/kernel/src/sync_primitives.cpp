@@ -821,17 +821,22 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
     return SCE_KERNEL_OK;
 }
 
-void Mutex::end_waits(SceUID, std::unique_lock<std::mutex> &) {
+void Mutex::end_waits(SceUID, std::unique_lock<std::mutex> &guard) {
+    // The owner is freed first, then the waiters
+    const ThreadStateRef freed = clear_owner();
     wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
-    (void)clear_owner();
+    // The owner runs at its new priority already, and moves in the queue of another object it may
+    // wait on once the lock is let go
+    guard.unlock();
+    if (freed)
+        freed->take_priority_place();
 }
 
 void Mutex::set_owner(ThreadState &thread) {
     owner = thread.id;
-    if (lightweight() || owner_thread == &thread)
+    if (lightweight())
         return;
-    if (owner_thread)
-        (void)owner_thread->free_mutex(*this);
+    assert(!owner_thread);
     owner_thread = &thread;
     thread.hold_mutex(*this);
 }
@@ -1030,7 +1035,7 @@ void Mutex::serve() {
 }
 
 SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_wait_threads) {
-    const auto guard = lock();
+    auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
 
@@ -1040,14 +1045,19 @@ SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_w
     if (new_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE))
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
+    // The owner is freed first, then the waiters, and a count left gives the mutex to the caller
+    const ThreadStateRef freed = clear_owner();
     const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     lock_count = new_count;
     if (new_count > 0)
         set_owner(thread);
-    else
-        (void)clear_owner();
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
+    // The freed owner runs at its new priority already, and moves in the queue of another object it
+    // may wait on once the lock is let go
+    guard.unlock();
+    if (freed)
+        freed->take_priority_place();
 
     return SCE_KERNEL_OK;
 }

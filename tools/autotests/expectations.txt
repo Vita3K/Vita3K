@@ -116,11 +116,11 @@ cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # threads ignore their priority, so a thread raised above the main thread runs in host order
 ceiling_cancel_drops_boost      pass
 ceiling_cancel_gives_caller     pass
-ceiling_cancel_requeue_waiter   fail     # a cancel drops the owner's ceiling but leaves the owner at its old place in the queue it waits on
+ceiling_cancel_requeue_waiter   pass
 ceiling_change_running_thread   pass
 ceiling_cond_relock_priority    pass
 ceiling_create_check_order      pass
-ceiling_delete_drops_waiting_owner fail     # a delete drops the owner's ceiling but leaves the owner at its old place in the queue it waits on
+ceiling_delete_drops_waiting_owner pass
 ceiling_handover_suspended_and_end pass
 ceiling_init_count_base_rule    pass
 ceiling_init_count_owner        pass
