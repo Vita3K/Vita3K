@@ -212,7 +212,37 @@ static SharedGLObject link_program_sync(ProgramCache &program_cache, const Share
     return program;
 }
 
+static SharedGLObject get_or_compile_source(GLState &renderer, ShaderCache &cache, const Sha256Hash &hash, GLenum type, const ShaderTranslation &source, bool spirv) {
+    const auto cached = cache.find(hash);
+    if (cached != cache.end() && cached->second)
+        return cached->second;
+
+    SharedGLObject obj = spirv ? compile_spirv(type, source.spirv, false) : compile_glsl(type, source.glsl, false);
+    cache[hash] = obj;
+    renderer.shaders_count_compiled++;
+    return obj;
+}
+
 void GLState::poll_pending_programs() {
+    if (compile_worker && !worker_programs.empty()) {
+        for (const uint64_t id : compile_worker->take_done()) {
+            const auto it = worker_programs.find(id);
+            if (it == worker_programs.end())
+                continue;
+
+            // The driver has it in its cache now, so this is cheap
+            const WorkerProgram &job = it->second;
+            const SharedGLObject frag = get_or_compile_source(*this, fragment_shader_cache, std::get<0>(job.hashes), GL_FRAGMENT_SHADER, *job.frag, job.spirv);
+            const SharedGLObject vert = get_or_compile_source(*this, vertex_shader_cache, std::get<1>(job.hashes), GL_VERTEX_SHADER, *job.vert, job.spirv);
+            if (!frag || !vert || !link_program_sync(program_cache, frag, vert, job.hashes)) {
+                LOG_CRITICAL("Failed to link program");
+                program_cache[job.hashes] = { SharedGLObject(), ProgramStatus::Failed };
+            }
+
+            worker_programs.erase(it);
+        }
+    }
+
     if (pending_programs.empty())
         return;
 
@@ -350,6 +380,69 @@ static SharedGLObject get_or_translate_shader(GLState &renderer, const SceGxmPro
     return obj;
 }
 
+// Same as get_or_translate_shader, but keeps the source for the compile worker instead of
+// creating the GL shader object.
+static std::shared_ptr<const ShaderTranslation> get_translated_source(GLState &renderer, const SceGxmProgram *program, std::atomic<uint32_t> *refcount,
+    const Sha256Hash &hash, const GLenum type, const shader::Hints &hints, bool shader_cache, bool spirv, bool maskupdate, bool &is_translating) {
+    is_translating = false;
+
+    auto &sources = renderer.shader_sources[type == GL_VERTEX_SHADER];
+    const auto cached = sources.find(hash);
+    if (cached != sources.end())
+        return cached->second;
+
+    std::shared_ptr<ShaderTranslation> entry;
+    {
+        std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
+
+        const auto it = renderer.shader_translations.find(hash);
+        if (it == renderer.shader_translations.end()) {
+            entry = std::make_shared<ShaderTranslation>();
+            renderer.shader_translations.emplace(hash, entry);
+
+            auto *request = new ShaderTranslateRequest();
+            request->target = entry;
+            request->program = program;
+            request->refcount = refcount;
+            request->is_vertex = (type == GL_VERTEX_SHADER);
+            request->maskupdate = maskupdate;
+            request->spirv = spirv;
+            request->use_shader_cache = shader_cache;
+            request->hints = hints;
+            if (hints.attributes)
+                request->attributes = *hints.attributes;
+            request->hints.attributes = &request->attributes;
+
+            refcount->fetch_add(1, std::memory_order_relaxed);
+            renderer.enqueue_shader_translation(request);
+
+            is_translating = true;
+            return nullptr;
+        }
+
+        entry = it->second;
+    }
+
+    const ShaderStatus status = entry->status.load(std::memory_order_acquire);
+    if (status == ShaderStatus::Translating) {
+        is_translating = true;
+        return nullptr;
+    }
+
+    if (status != ShaderStatus::Ready) {
+        LOG_CRITICAL("Failed to translate shader:\n{}", hex_string(hash));
+        entry = nullptr;
+    }
+    sources.emplace(hash, entry);
+
+    {
+        std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
+        renderer.shader_translations.erase(hash);
+    }
+
+    return entry;
+}
+
 static SharedGLObject compile_shader(const fs::path &shader_cache_path, const std::string &shader_version, const std::string &hash_hex,
     const char *type_str, const GLenum type, ShaderCache &cache, const Sha256Hash &hash) {
     // Set Shader version with hash
@@ -478,6 +571,44 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
 
     SharedGLObject fragment_shader;
     SharedGLObject vertex_shader;
+
+    CompileWorker *compile_worker = renderer.use_async_compilation ? renderer.get_compile_worker() : nullptr;
+    if (compile_worker) {
+        const bool use_spirv = features.spirv_shader && spirv;
+        bool frag_translating = false;
+        bool vert_translating = false;
+
+        auto frag_source = get_translated_source(renderer, fragment_program_gxm.program.get(mem), &fragment_program_gxm.compile_threads_on,
+            fragment_program.hash, GL_FRAGMENT_SHADER, context.shader_hints, shader_cache, use_spirv, maskupdate, frag_translating);
+        auto vert_source = get_translated_source(renderer, vertex_program_gxm.program.get(mem), &vertex_program_gxm.compile_threads_on,
+            vertex_program.hash, GL_VERTEX_SHADER, context.shader_hints, shader_cache, use_spirv, maskupdate, vert_translating);
+
+        if (frag_translating || vert_translating) {
+            if (is_compiling)
+                *is_compiling = true;
+            return SharedGLObject();
+        }
+
+        if (!frag_source || !vert_source) {
+            renderer.program_cache[hashes] = { SharedGLObject(), ProgramStatus::Failed };
+            return SharedGLObject();
+        }
+
+        const auto shader_cache_hash_index = get_shaders_hash_index(renderer.shaders_cache_hashs, fragment_program.hash, vertex_program.hash);
+        if (shader_cache_hash_index == renderer.shaders_cache_hashs.end()) {
+            renderer.shaders_cache_hashs.push_back({ fragment_program.hash, vertex_program.hash });
+            save_shaders_cache_hashs(renderer, renderer.shaders_cache_hashs);
+        }
+
+        const uint64_t id = renderer.next_worker_job++;
+        renderer.worker_programs[id] = { hashes, frag_source, vert_source, use_spirv };
+        renderer.program_cache[hashes] = { SharedGLObject(), ProgramStatus::Compiling };
+        compile_worker->submit({ id, std::move(frag_source), std::move(vert_source), use_spirv });
+
+        if (is_compiling)
+            *is_compiling = true;
+        return SharedGLObject();
+    }
 
     if (renderer.use_async_compilation) {
         // Both are requested before bailing out, so that they are translated in parallel

@@ -1057,6 +1057,14 @@ void GLState::set_async_compilation(bool enable) {
     LOG_INFO("Asynchronous shader compilation is now {}", enable ? "enabled" : "disabled");
 }
 
+CompileWorker *GLState::get_compile_worker() {
+    if (!compile_worker && !compile_worker_unavailable) {
+        compile_worker = CompileWorker::create();
+        compile_worker_unavailable = !compile_worker;
+    }
+    return compile_worker.get();
+}
+
 void GLState::start_shader_translate_threads() {
     if (!shader_translate_threads.empty())
         return;
@@ -1169,6 +1177,11 @@ void GLState::cleanup() {
         shader_translations.clear();
     }
 
+    compile_worker = nullptr;
+    compile_worker_unavailable = false;
+    worker_programs.clear();
+    shader_sources[0].clear();
+    shader_sources[1].clear();
     pending_programs.clear();
     program_cache.clear();
     fragment_shader_cache.clear();

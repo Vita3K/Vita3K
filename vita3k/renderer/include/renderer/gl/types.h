@@ -82,6 +82,16 @@ struct PendingProgram {
     SharedGLObject vert_shader;
 };
 
+struct ShaderTranslation;
+
+// A program linked by the compile worker, linked again on the render thread once it is done
+struct WorkerProgram {
+    ProgramHashes hashes;
+    std::shared_ptr<const ShaderTranslation> frag;
+    std::shared_ptr<const ShaderTranslation> vert;
+    bool spirv;
+};
+
 enum class ShaderStatus {
     // A worker thread is turning the gxp program into GLSL or SPIR-V.
     Translating,

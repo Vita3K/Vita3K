@@ -4,6 +4,7 @@ add_library(
 	src/gl/attribute_formats.cpp
 	src/gl/color_formats.cpp
 	src/gl/compile_program.cpp
+	src/gl/compile_worker.cpp
 	src/gl/draw.cpp
 	src/gl/fence.cpp
 	src/gl/renderer.cpp

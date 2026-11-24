@@ -81,7 +81,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         return;
     }
 
-    if (renderer.defer_gl_status_checks)
+    if (renderer.defer_gl_status_checks || renderer.compile_worker)
         renderer.poll_pending_programs();
 
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?

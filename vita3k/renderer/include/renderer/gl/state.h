@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <renderer/gl/compile_worker.h>
 #include <renderer/gl/overlay_renderer.h>
 #include <renderer/gl/screen_render.h>
 #include <renderer/gl/surface_cache.h>
@@ -103,6 +104,14 @@ struct GLState : public renderer::State {
     std::mutex shader_translations_mutex;
     std::map<Sha256Hash, std::shared_ptr<ShaderTranslation>> shader_translations;
 
+    std::unique_ptr<CompileWorker> compile_worker;
+    bool compile_worker_unavailable = false;
+    // Programs being linked by compile_worker, by job id
+    std::map<uint64_t, WorkerProgram> worker_programs;
+    uint64_t next_worker_job = 0;
+    // Translated sources of the fragment [0] and vertex [1] shaders, to link new pairs on the worker
+    std::map<Sha256Hash, std::shared_ptr<const ShaderTranslation>> shader_sources[2];
+
     std::vector<std::thread> shader_translate_threads;
     std::mutex shader_translate_queue_mutex;
     std::condition_variable shader_translate_queue_cond;
@@ -133,6 +142,8 @@ struct GLState : public renderer::State {
     // Move every pending program that the driver has finished linking to its final state.
     // Must be called from the render thread. Cheap when nothing is pending.
     void poll_pending_programs();
+    // Created on first use, as it needs the render context to be current. Null if not supported.
+    CompileWorker *get_compile_worker();
 
     void start_shader_translate_threads();
     void stop_shader_translate_threads();
