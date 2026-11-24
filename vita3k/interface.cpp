@@ -245,7 +245,10 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
                 LOG_INFO("Extracting {}", file_output);
                 if (!mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0)) {
                     LOG_ERROR("Failed to extract {}: {}", file_output, miniz_get_error(zip));
-                    fs::remove_all(output_path);
+                    std::error_code ec;
+                    fs::remove_all(output_path, ec);
+                    if (ec)
+                        LOG_WARN("Failed to remove {}: {}", output_path, ec.message());
                     return false;
                 }
             }
