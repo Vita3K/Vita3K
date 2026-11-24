@@ -202,8 +202,6 @@ public:
     void remove_held(EventFlag &flag);
     // remove_held() for an end of this thread's own wait, with thread_mutex held
     void unlist_held(EventFlag &flag);
-    void add_held(Mutex &mutex);
-    void remove_held(Mutex &mutex);
     void add_held(RWLock &rwlock);
     void remove_held(RWLock &rwlock);
 
@@ -243,6 +241,7 @@ public:
 private:
     friend class Waitable;
     friend class Event;
+    friend class Mutex;
 
     WaitRequest request;
 
@@ -289,6 +288,16 @@ private:
     // Moves the thread to its place for its priority in the queue it waits on, if any, with
     // thread_mutex held through lock and no object's lock held. Returns with lock dropped.
     void take_priority_place(std::unique_lock<std::mutex> &lock);
+    // take_priority_place() with no lock held
+    void take_priority_place();
+    // Lists mutex as held, a ceiling mutex by its ceiling, and raises the thread to the ceiling if it
+    // runs below it. Called with the mutex's lock held, for a thread that runs or is about to.
+    void hold_mutex(Mutex &mutex);
+    // Unlists mutex, recomputes the ceiling bound from the mutexes still held and runs the thread at
+    // its base priority, or at the bound if that is higher. Returns whether the priority changed, so
+    // that a waiting thread must move in its queue with take_priority_place(). Called with the
+    // mutex's lock held.
+    [[nodiscard]] bool free_mutex(Mutex &mutex);
     // Runs step on the object the thread is queued on, or on null when it is queued on none, with
     // thread_mutex held through lock and no object's lock held. Returns with lock dropped, and whether
     // the step ran, which it doesn't when the wait moved to another object meanwhile. A caller that
@@ -355,6 +364,8 @@ private:
     // Priority and affinity
     // The priority the guest set, which a start resets to init_priority
     int base_priority;
+    // The highest ceiling of the mutexes it holds, SCE_KERNEL_LOWEST_PRIORITY_KERNEL for none
+    int ceiling_bound = SCE_KERNEL_LOWEST_PRIORITY_KERNEL;
     // The priority the thread runs at, which its TLS and info show
     int priority;
     SceInt32 affinity_mask;
@@ -383,7 +394,7 @@ private:
     IntrusiveList<Callback, MemberLink<&Callback::owner_link>> callbacks;
 
     // What the thread holds, each list in the order it took them: its event flag holds, its heavy
-    // mutexes and its write locks. Borrowed, each object's UID holds it, and a delete unlists it
+    // mutexes, the ceiling ones first by their ceiling, and its write locks. Borrowed, each object's UID holds it, and a delete unlists it
     // before the UID goes.
     IntrusiveList<EventFlag, HeldLink<EventFlag>> held_flags;
     IntrusiveList<Mutex, HeldLink<Mutex>> held_mutexes;

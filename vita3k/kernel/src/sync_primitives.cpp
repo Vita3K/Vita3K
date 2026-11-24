@@ -823,7 +823,7 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
 
 void Mutex::end_waits(SceUID, std::unique_lock<std::mutex> &) {
     wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
-    clear_owner();
+    (void)clear_owner();
 }
 
 void Mutex::set_owner(ThreadState &thread) {
@@ -831,17 +831,20 @@ void Mutex::set_owner(ThreadState &thread) {
     if (lightweight() || owner_thread == &thread)
         return;
     if (owner_thread)
-        owner_thread->remove_held(*this);
+        (void)owner_thread->free_mutex(*this);
     owner_thread = &thread;
-    thread.add_held(*this);
+    thread.hold_mutex(*this);
 }
 
-void Mutex::clear_owner() {
+ThreadStateRef Mutex::clear_owner() {
     owner = 0;
     if (!owner_thread)
-        return;
-    owner_thread->remove_held(*this);
-    owner_thread = nullptr;
+        return {};
+    // Taken while the owner still holds the mutex, since its end gives the mutex back first
+    ThreadStateRef freed = ThreadStateRef::from(*std::exchange(owner_thread, nullptr));
+    if (!freed->free_mutex(*this))
+        return {};
+    return freed;
 }
 
 SceInt32 Mutex::try_take(MemState &mem, ThreadState &thread, SceInt32 count) {
@@ -994,7 +997,8 @@ SceInt32 Mutex::release(MemState &mem, ThreadState &thread, SceInt32 unlock_coun
 
     lock_count -= unlock_count;
     if (lock_count == 0) {
-        clear_owner();
+        // The owner is the caller, which waits on nothing, so it has no queue place to move
+        (void)clear_owner();
         serve();
         // A hand over leaves the number of the other waiters as a lightweight mutex's wait count
         if (owner && lightweight())
@@ -1010,7 +1014,8 @@ void Mutex::release_if_owned_by(ThreadState &thread) {
     if (!guard || owner_thread != &thread)
         return;
     lock_count = 0;
-    clear_owner();
+    // The thread end sets its priority itself once every mutex is given back
+    (void)clear_owner();
     serve();
 }
 
@@ -1040,7 +1045,7 @@ SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_w
     if (new_count > 0)
         set_owner(thread);
     else
-        clear_owner();
+        (void)clear_owner();
     if (num_wait_threads)
         *num_wait_threads = nb_threads;
 
