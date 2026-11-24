@@ -138,7 +138,7 @@ clocks                          pass
 cond                            pass
 cond_callback_after_wake        skip     # threads ignore their core and priority, so whether the waiter ran before the notify is a race
 cond_callback_departure         pass
-cond_callback_departure_deletes fail     # a condition wait whose mutex was deleted before the relock returns 0x800281A2 instead of the unknown mutex error
+cond_callback_departure_deletes pass
 cond_callback_rejoin            pass
 cond_callback_takes_mutex       pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
