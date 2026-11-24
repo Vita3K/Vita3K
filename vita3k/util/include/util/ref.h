@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <util/intrusive_list.h>
-
 #include <atomic>
 #include <cassert>
 #include <concepts>
@@ -138,9 +136,6 @@ private:
     template <class U>
     friend class Ref;
 
-    template <class U, class Selector>
-    friend class RefForwardList;
-
     // Adds this reference to the object's count
     void retain() noexcept {
         if (ptr)
@@ -175,40 +170,4 @@ private:
     }
 
     T *ptr = nullptr;
-};
-
-// An intrusive forward list that holds one reference to each object on it. The caller locks it.
-template <class T, class Selector>
-class RefForwardList {
-public:
-    // Drops the reference to every object still on the list
-    ~RefForwardList() {
-        while (!list.empty())
-            pop_front();
-    }
-
-    // Whether no object is on the list
-    bool empty() const {
-        return list.empty();
-    }
-
-    // The first object, which the list keeps alive while it is on it
-    T &front() {
-        return list.front();
-    }
-
-    // Links the object at the front and keeps object's reference
-    void push_front(Ref<T> object) {
-        assert(object);
-        list.push_front(*object);
-        (void)object.release_ownership();
-    }
-
-    // Takes the first object off the list and returns the list's reference to it
-    Ref<T> pop_front() {
-        return Ref<T>::adopt(&list.pop_front());
-    }
-
-private:
-    IntrusiveForwardList<T, Selector> list;
 };
