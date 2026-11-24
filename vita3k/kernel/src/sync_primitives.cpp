@@ -1539,6 +1539,9 @@ SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, b
     const bool timed_out = r == SCE_KERNEL_ERROR_WAIT_TIMEOUT;
     if (r != SCE_KERNEL_OK && !timed_out)
         return r;
+    // A condition variable deleted after the signal or the timeout ends the wait without the mutex
+    if (deleted)
+        return r;
 
     guard.unlock();
     // Taking the mutex back is still part of the condition variable wait, a wait on the mutex with no

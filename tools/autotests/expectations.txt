@@ -141,7 +141,7 @@ cond_callback_departure         pass
 cond_callback_departure_deletes pass
 cond_callback_rejoin            pass
 cond_callback_takes_mutex       pass
-cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
+cond_delete_relock              fail     # threads ignore their core and priority, so a signaled waiter usually relocks before the delete the test orders first, and a lightweight waiter whose mutex was deleted returns instead of staying blocked
 cond_error_time_left            pass
 cond_errors                     fail     # signal to a thread errors
 cond_final_check_kinds          fail     # threads ignore their core and priority, so the waiter runs as soon as its wait ends, returns before the notify and runs the callback only at its check
