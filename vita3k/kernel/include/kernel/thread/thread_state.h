@@ -140,8 +140,9 @@ public:
     // Priority and affinity
     // The priority the thread runs at
     int get_priority() const;
-    // Sets the base priority, which the thread then runs at, and the one its TLS shows. Returns the
-    // priority it ran at before.
+    // Sets the base priority, which the thread then runs at, and the one its TLS shows, unless it is
+    // below the ceiling of a mutex it holds, which applies it at its free. Returns the priority it ran
+    // at before.
     int change_base_priority(int new_priority);
     // Changes the cores the thread may run on, and the ones its TLS shows. Returns the old mask.
     SceInt32 change_affinity_mask(SceInt32 new_affinity_mask);

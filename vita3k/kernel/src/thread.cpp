@@ -870,6 +870,9 @@ int ThreadState::change_base_priority(int new_priority) {
     // What the call returns
     const int old_priority = priority;
     base_priority = new_priority;
+    // A base below the ceiling of a held mutex waits for that mutex's free
+    if (new_priority > ceiling_bound)
+        return old_priority;
     set_priority(new_priority);
     take_priority_place(lock);
     return old_priority;
