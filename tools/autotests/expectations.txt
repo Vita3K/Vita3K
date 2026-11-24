@@ -115,18 +115,23 @@ cb_wait_zero_timeout_notify_more pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
 ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_cancel_drops_boost      fail     # a ceiling mutex doesn't raise its owner's priority
+ceiling_cancel_gives_caller     fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_cancel_requeue_waiter   fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_change_running_thread   fail     # a mutex ceiling doesn't raise its owner's priority, and a priority change below one applies at once
 ceiling_cond_relock_priority    fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_create_check_order      pass
+ceiling_delete_drops_waiting_owner fail     # a ceiling mutex doesn't raise its owner's priority
+ceiling_handover_suspended_and_end fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_init_count_base_rule    pass
 ceiling_init_count_owner        fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_init_count_raised_creator fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_owner_end_handover      fail     # a ceiling mutex doesn't raise its owner's priority
+ceiling_priority2_returns       fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_three_nested_unlock     fail     # a ceiling mutex doesn't raise its owner's priority
 ceiling_unlock_order            fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_waiter                  fail     # a mutex ceiling doesn't raise its owner's priority
 ceiling_waiter_base_change_order fail     # a mutex ceiling doesn't raise its owner's priority, and a priority change below one applies at once
+ceiling_with_plain_mutex        fail     # a ceiling mutex doesn't raise its owner's priority
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 claim_races_more                fail     # a woken thread runs at once, so it has ended when the main thread reads its status
 clocks                          pass
