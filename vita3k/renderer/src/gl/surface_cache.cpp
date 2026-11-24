@@ -362,6 +362,13 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                     return 0;
                 }
 
+                if (start_x * bytes_per_pixel_requested >= info.width * bytes_per_pixel_in_store) {
+                    LOG_ERROR("Trying to present a segment right of the cached color surface!");
+                    return 0;
+                }
+                // the part of the region past the right edge of the surface is not copied
+                const GLsizei copy_width = std::min<GLsizei>(width, static_cast<GLsizei>(info.width) - static_cast<GLsizei>(start_x));
+
                 if ((start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
                     std::uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
                         std::chrono::steady_clock::now().time_since_epoch())
@@ -397,7 +404,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
                                 if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
                                     glCopyImageSubData(source_texture, GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
-                                        0, 0, 0, 0, width, height, 1);
+                                        0, 0, 0, 0, copy_width, height, 1);
                                 } else {
                                     do_typeless_copy(casted_vec[i]->texture[0], source_texture, surface_internal_format, surface_upload_format,
                                         surface_data_type, static_cast<int>(bytes_per_pixel_requested), source_format, source_data_type, static_cast<int>(bytes_per_pixel_in_store),
@@ -437,7 +444,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
                         glCopyImageSubData(source_texture, GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_info.texture[0], GL_TEXTURE_2D,
-                            0, 0, 0, 0, width, height, 1);
+                            0, 0, 0, 0, copy_width, height, 1);
                     } else {
                         // We must do a typeless copy (RPCS3)
                         do_typeless_copy(casted_info.texture[0], source_texture, surface_internal_format, surface_upload_format,
@@ -852,6 +859,11 @@ GLuint GLSurfaceCache::retrieve_depth_samples(GLDepthStencilSurfaceCacheInfo &in
     glDisable(GL_SCISSOR_TEST);
     glDepthMask(GL_TRUE);
 
+    if (width > info.width * scale_x || height > info.height * scale_y) {
+        // the texels past the surface get the far depth instead of what was there before
+        const GLfloat far_depth = 1.0f;
+        glClearBufferfv(GL_DEPTH, 0, &far_depth);
+    }
     // texels beyond the destination are clipped without changing the scale
     glBlitFramebuffer(0, 0, info.width, info.height, 0, 0, info.width * scale_x, info.height * scale_y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
