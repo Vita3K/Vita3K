@@ -142,15 +142,15 @@ cond_callback_departure_deletes fail     # a condition wait whose mutex was dele
 cond_callback_rejoin            pass
 cond_callback_takes_mutex       pass
 cond_delete_relock              fail     # a condition or a mutex deleted after a signal, before the waiter relocks
-cond_error_time_left            fail     # a mutex delete ends its conditions' waits only at their timeout
+cond_error_time_left            pass
 cond_errors                     fail     # signal to a thread errors
 cond_final_check_kinds          fail     # threads ignore their core and priority, so the waiter runs as soon as its wait ends, returns before the notify and runs the callback only at its check
-cond_info_after_mutex_delete    fail     # a condition's info still names its mutex after the mutex's delete
+cond_info_after_mutex_delete    pass
 cond_mutex_cancel_during_wait   pass
 cond_mutex_delete               pass
-cond_mutex_delete_order         timeout  # a mutex delete ends its conditions' waits only at their timeout, 20 s in each of the four cases
+cond_mutex_delete_order         skip     # threads ignore their core and priority, so the order in which the condition waiter and the mutex waiter run after the mutex delete ends both waits is host thread order
 cond_mutex_delete_wake_dispatch fail     # threads ignore their priority, so a mutex or lightweight condition waiter a mutex delete wakes runs only later
-cond_mutex_delete_wakes         fail     # a mutex delete ends its conditions' waits only at their timeout
+cond_mutex_delete_wakes         pass
 cond_owner_end_relock           pass
 cond_relock_callback_notify     pass
 cond_relock_callback_preempt    skip     # threads ignore their core and priority, so whether a notified relocker above the notifier runs its callback before the notifier's next line is a race
@@ -166,7 +166,7 @@ cond_signal_all_order           pass
 cond_signal_before_relock       fail     # a signaled waiter runs at once on its host thread, so it is in its relock before the main thread reads
 cond_signal_to_mixed_priority   pass
 cond_signal_to_race             pass
-cond_suspend_for_vm_steps       fail     # a waiter suspended for VM waits for a held mutex after its signal or timeout instead of staying suspended, and a mutex delete doesn't end its conditions' waits
+cond_suspend_for_vm_steps       fail     # a waiter suspended for VM waits for a held mutex after its signal or timeout instead of staying suspended
 cond_suspend_relock_no_timeout  fail     # a waiter suspended for VM waits for the mutex once its wait times out, and the wait returns 0x80028005, not 0
 cond_timeout_claim_races        fail     # a woken thread runs at once, so it has relocked before the main thread acts
 cond_waits                      pass
@@ -343,7 +343,7 @@ lock_calls_callback_runs        pass
 lock_failed_at_once_state       pass
 lowered_to_shared               fail     # threads ignore their core
 lw_cond                         pass
-lw_cond_after_mutex_delete      fail     # a wait on a lightweight condition variable whose mutex was deleted returns 0x80028186 instead of the unknown lightweight mutex error
+lw_cond_after_mutex_delete      pass
 lw_cond_errors                  fail     # a signal to thread 0 gives 0x80028021
 lw_cond_relock_requeue          pass
 lw_cond_semantics               pass

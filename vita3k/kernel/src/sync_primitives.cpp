@@ -822,14 +822,41 @@ SceInt32 Mutex::check_count(SceInt32 count) const {
 }
 
 void Mutex::end_waits(SceUID, std::unique_lock<std::mutex> &guard) {
-    // The owner is freed first, then the waiters
+    // Freed before the lock is let go, since an ending owner only gives back a mutex that isn't deleted
     const ThreadStateRef freed = clear_owner();
+    // Then the waits on its condition variables end, each with the lock let go since a condition
+    // variable's lock comes first
+    while (!conditions.empty()) {
+        {
+            const CondvarRef condition = CondvarRef::from(conditions.front());
+            conditions.remove(*condition);
+            guard.unlock();
+            condition->end_mutex_waits();
+        }
+        // Taken again once the reference is gone, since a last one leaves the list under this lock
+        guard.lock();
+    }
     wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     // The owner runs at its new priority already, and moves in the queue of another object it may
     // wait on once the lock is let go
     guard.unlock();
     if (freed)
         freed->take_priority_place();
+}
+
+SceInt32 Mutex::add_condition(Condvar &condition) {
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
+        return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+    conditions.push_back(condition);
+    return SCE_KERNEL_OK;
+}
+
+void Mutex::remove_condition(Condvar &condition) {
+    // Also once the mutex was deleted, whose delete may not have reached the condition variable yet
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (condition.mutex_link.linked())
+        conditions.remove(condition);
 }
 
 void Mutex::set_owner(ThreadState &thread) {
@@ -989,10 +1016,9 @@ SceInt32 Mutex::try_acquire(MemState &mem, ThreadState &thread, SceInt32 count) 
 
 SceInt32 Mutex::release(MemState &mem, ThreadState &thread, SceInt32 unlock_count) {
     const std::lock_guard<std::mutex> guard(mutex);
-    // Deleted meanwhile, which a lightweight mutex reports as not owned
+    // Deleted since the lookup, or before a condition variable wait's unlock
     if (deleted)
-        return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
-
+        return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
     if (const SceInt32 error = check_count(unlock_count))
         return error;
     if (thread.id != owner)
@@ -1450,7 +1476,13 @@ SceInt32 Semaphore::info(SceKernelSemaInfo &info) const {
 
 Condvar::Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex)
     : Waitable(attr, name)
-    , associated_mutex(std::move(associated_mutex)) {}
+    , associated_mutex(std::move(associated_mutex))
+    , mutex_id(this->associated_mutex->uid) {}
+
+Condvar::~Condvar() {
+    // One that was never deleted leaves its mutex's list here
+    associated_mutex->remove_condition(*this);
+}
 
 SceInt32 Condvar::check_create(const char *name, SceUInt32 attr) {
     if (!name)
@@ -1463,6 +1495,16 @@ SceInt32 Condvar::check_create(const char *name, SceUInt32 attr) {
 void Condvar::end_waits(SceUID, std::unique_lock<std::mutex> &) {
     // wait() maps this to the condition's own delete error
     wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
+    associated_mutex->remove_condition(*this);
+}
+
+void Condvar::end_mutex_waits() {
+    const std::lock_guard<std::mutex> guard(mutex);
+    // Deleted meanwhile, which ended its waits already
+    if (deleted)
+        return;
+    mutex_id = -1;
+    wake_all(lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_MUTEX : SCE_KERNEL_ERROR_WAIT_DELETE_MUTEX);
 }
 
 SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, bool callbacks) {
@@ -1470,6 +1512,7 @@ SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, b
     if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID : SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
 
+    // A deleted mutex gives the unknown mutex error
     if (const SceInt32 error = associated_mutex->release(mem, thread, 1))
         return error;
 
@@ -1550,7 +1593,7 @@ SceInt32 HeavyCond::info(SceKernelCondInfo &info) const {
     info.condId = uid;
     std::ranges::copy(name, info.name);
     info.attr = attr;
-    info.mutexId = associated_mutex->uid;
+    info.mutexId = mutex_id;
     info.numWaitThreads = static_cast<SceUInt32>(waiters.size());
     return SCE_KERNEL_OK;
 }

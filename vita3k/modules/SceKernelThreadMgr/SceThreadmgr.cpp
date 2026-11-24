@@ -260,6 +260,8 @@ EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID m
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
 
     const auto condvar = Ref<HeavyCond>::make(attr, pName, mutex);
+    if (const SceInt32 error = mutex->add_condition(*condvar))
+        return RET_ERROR(error);
     return emuenv.kernel.objects.add(condvar, emuenv.kernel.get_next_uid());
 }
 
@@ -288,6 +290,8 @@ EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const cha
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
 
     const auto condvar = Ref<LwCond>::make(attr, name, mutex, workarea);
+    if (const SceInt32 error = mutex->add_condition(*condvar))
+        return RET_ERROR(error);
     SceKernelLwCondWork *work = workarea.get(emuenv.mem);
     *work = {};
     work->uid = emuenv.kernel.objects.add(condvar, emuenv.kernel.get_next_uid());
