@@ -214,6 +214,8 @@ static QString thread_status_string(ThreadStatus status) {
     switch (status) {
     case ThreadStatus::running:
         return QStringLiteral("Running");
+    case ThreadStatus::ready:
+        return QStringLiteral("Ready");
     case ThreadStatus::waiting:
         return QStringLiteral("Waiting");
     case ThreadStatus::dormant:

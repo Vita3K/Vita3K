@@ -211,6 +211,10 @@ struct KernelState {
     SceKernelModuleInfo *find_module_by_addr(Address address);
 
 private:
+    // Deletes every thread, with mutex not held: a delete of a waiting thread may wait for the lock
+    // of the object it waits on, whose holder may need mutex to go on
+    void remove_threads();
+
     std::atomic<uint32_t> next_uid{ 1 };
     std::atomic<bool> threads_paused{ false };
     bool threads_suspended = false;

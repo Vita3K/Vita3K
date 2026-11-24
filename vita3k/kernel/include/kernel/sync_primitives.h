@@ -91,7 +91,7 @@ protected:
     Event(SceUInt32 attr, const char *name, SceUInt32 init_pattern, SceUInt64 init_user_data);
     ~Event() override;
 
-    void end_waits(SceUID deleter) override;
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
     SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     // Returns the guest's result of a wait, and gives a wait that a delete or a cancel ended the error
@@ -102,9 +102,10 @@ protected:
     void fire(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     // Gives the event's bits to the waits they match.
     void serve() override;
-    // Notifies the registered callbacks with arg and drops the ones that are gone. The lock must be
-    // held.
-    void notify_callbacks(SceInt32 arg);
+    // Notifies the registered callbacks with arg and drops the ones that are gone, with the lock held
+    // through guard. The waits with callbacks on other objects end with the lock let go, so the event
+    // can change before it returns.
+    void notify_event_callbacks(std::unique_lock<std::mutex> &guard, SceInt32 arg);
     // Takes registration off the event and frees it
     void drop_registration(CallbackRegistration &registration);
 
@@ -168,7 +169,7 @@ public:
 private:
     // Fires an event still due by cutoff, then rearms a repeating event.
     void expire(uint64_t cutoff);
-    void end_waits(SceUID deleter) override;
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     // Returns how much time the timer counted. The lock must be held.
     uint64_t count() const;
 
@@ -241,7 +242,7 @@ public:
     SceInt32 info(SceKernelSemaInfo &info) const;
 
 private:
-    void end_waits(SceUID deleter) override;
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     // Takes need_count if the count covers it and no waiter is queued ahead of thread. The lock
     // must be held.
     bool try_take(ThreadState &thread, SceInt32 need_count);
@@ -295,7 +296,7 @@ private:
     // The owner of a heavy mutex, which lists it, or null
     ThreadState *owner_thread = nullptr;
 
-    void end_waits(SceUID deleter) override;
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
     // Returns ILLEGAL_COUNT for a lock or unlock count the mutex can't take, or SCE_KERNEL_OK
     SceInt32 check_count(SceInt32 count) const;
@@ -361,7 +362,7 @@ public:
     SceInt32 info(SceKernelRWLockInfo &info) const;
 
 private:
-    void end_waits(SceUID deleter) override;
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     SceInt32 acquire(ThreadState &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
     SceInt32 try_acquire(ThreadState &thread, bool is_write);
     SceInt32 release(ThreadState &thread, bool is_write);
@@ -412,20 +413,20 @@ public:
     void release_if_held_by(ThreadState &thread);
 
 private:
-    void end_waits(SceUID deleter) override;
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     // Returns whether another thread's wait holds the flag. The lock must be held.
     bool held_by_other(SceUID thread_id) const;
     // Takes the flags for the thread if pattern matches them, or returns why it can't. The lock must
     // be held.
     SceInt32 try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
-    // Completes wait if the flags match its pattern: writes its out bits, clears the flags its mode
-    // asks for and releases its hold. Returns false if they don't match. The lock must be held.
+    // Completes wait if the flags match its pattern: writes its out bits and clears the flags its
+    // mode asks for. Returns false if they don't match. The lock must be held.
     bool take(const WaitRequest &wait);
     // Gives the flags to the waits they match, in queue order.
     void serve() override;
-    // Gives a wait that timed out the flag's bits and gives back its hold.
+    // Writes the bits for every end but a callback's, unless a set did, and gives back the hold.
     void wait_ended(ThreadState &thread, SceInt32 result) override;
-    // Gives back one hold of the holder, the wait that took it ended. The lock must be held.
+    // Gives back one hold of the holder for its own take. The lock must be held.
     void drop_hold();
     // Makes thread the holder and lists the flag in what it holds. The lock must be held.
     void set_holder(ThreadState &thread);
@@ -478,7 +479,7 @@ protected:
     Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex);
 
 private:
-    void end_waits(SceUID deleter) override;
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_cond; }
 };
 
@@ -581,8 +582,8 @@ private:
     void waiter_added(ThreadState &thread) override;
     bool queues_behind_head(const ThreadState &thread) const override;
     void wait_ended(ThreadState &thread, SceInt32 result) override;
-    SceInt32 transfer_result(SceInt32 result, const MsgPipeTransfer &transfer, bool sending);
-    void end_waits(SceUID deleter) override;
+    SceInt32 transfer_result(std::unique_lock<std::mutex> &guard, SceInt32 result, const MsgPipeTransfer &transfer, bool sending);
+    void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     // Carries on the waiters' transfers from the head, up to the first that doesn't end
     void serve() override;
     // Returns the first waiting sender or receiver, or null

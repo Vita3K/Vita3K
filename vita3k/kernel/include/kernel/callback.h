@@ -46,6 +46,9 @@ public:
     // The callback's place in its owner's list, which holds it until it is closed
     IntrusiveLink<Callback> owner_link;
 
+    // Records a notify with arg from notifier_id, with the owner's mutex held
+    void note(SceInt32 arg, SceUID notifier_id);
+
 private:
     friend struct ThreadState;
 
