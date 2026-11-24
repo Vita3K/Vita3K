@@ -865,6 +865,11 @@ int ThreadState::get_priority() const {
     return priority;
 }
 
+int ThreadState::get_base_priority() const {
+    const std::lock_guard<std::mutex> lock(thread_mutex);
+    return base_priority;
+}
+
 int ThreadState::change_base_priority(int new_priority) {
     std::unique_lock<std::mutex> lock(thread_mutex);
     // What the call returns

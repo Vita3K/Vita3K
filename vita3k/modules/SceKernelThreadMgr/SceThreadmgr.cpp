@@ -322,8 +322,8 @@ EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_coun
     int ceiling = SCE_KERNEL_LOWEST_PRIORITY_KERNEL;
     if (attr & SCE_KERNEL_MUTEX_ATTR_CEILING) {
         ceiling = resolve_priority(opt->ceilingPriority, *thread);
-        // A creator that takes the mutex at once can't have a priority below its ceiling
-        if (ceiling < 0 || (init_count > 0 && ceiling > thread->get_priority()))
+        // A creator that takes the mutex at once can't have a base priority below its ceiling
+        if (ceiling < 0 || (init_count > 0 && ceiling > thread->get_base_priority()))
             return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
     }
 

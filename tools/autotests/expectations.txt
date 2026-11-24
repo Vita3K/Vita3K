@@ -124,7 +124,7 @@ ceiling_delete_drops_waiting_owner pass
 ceiling_handover_suspended_and_end pass
 ceiling_init_count_base_rule    pass
 ceiling_init_count_owner        pass
-ceiling_init_count_raised_creator fail     # the create checks the ceiling against the creator's raised priority, not its base
+ceiling_init_count_raised_creator pass
 ceiling_owner_end_handover      pass
 ceiling_priority2_returns       pass
 ceiling_three_nested_unlock     pass
