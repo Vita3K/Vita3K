@@ -267,7 +267,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     // Draw.
     if (order_primitives) {
-        const std::size_t per_primitive = mode == GL_POINTS ? 1 : mode == GL_LINES ? 2 : 3;
+        const std::size_t per_primitive = mode == GL_POINTS ? 1 : (mode == GL_LINES ? 2 : 3);
         for (std::size_t first = 0; first + per_primitive <= count; first += per_primitive) {
             // the barrier before the first primitive was issued above
             if (first)
