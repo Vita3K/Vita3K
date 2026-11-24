@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <util/intrusive_list.h>
-#include <util/ref.h>
 
 #include <gtest/gtest.h>
 
@@ -39,12 +38,10 @@ struct Item {
     int value;
     IntrusiveLink<Item> link;
     IntrusiveLink<Item> other_link;
-    IntrusiveForwardLink<Item> forward_link;
 };
 
 using List = IntrusiveList<Item, MemberLink<&Item::link>>;
 using OtherList = IntrusiveList<Item, MemberLink<&Item::other_link>>;
-using ForwardList = IntrusiveForwardList<Item, MemberLink<&Item::forward_link>>;
 
 static std::vector<int> values(const List &list) {
     std::vector<int> result;
@@ -182,133 +179,4 @@ TEST(IntrusiveList, TwoLinks) {
     list.remove(b);
     other.remove(a);
     other.remove(b);
-}
-
-TEST(IntrusiveForwardList, Empty) {
-    ForwardList list;
-    EXPECT_TRUE(list.empty());
-}
-
-TEST(IntrusiveForwardList, PushPop) {
-    Item a{ 1 }, b{ 2 }, c{ 3 };
-    ForwardList list;
-    list.push_front(a);
-    list.push_front(b);
-    list.push_front(c);
-    EXPECT_FALSE(list.empty());
-    EXPECT_EQ(list.front().value, 3);
-
-    // The last T added is the first taken
-    EXPECT_EQ(list.pop_front().value, 3);
-    EXPECT_EQ(list.pop_front().value, 2);
-    EXPECT_EQ(list.front().value, 1);
-    EXPECT_EQ(list.pop_front().value, 1);
-    EXPECT_TRUE(list.empty());
-}
-
-TEST(IntrusiveForwardList, Linked) {
-    Item a{ 1 }, b{ 2 };
-    ForwardList list;
-    EXPECT_FALSE(a.forward_link.linked());
-    list.push_front(a);
-    EXPECT_TRUE(a.forward_link.linked());
-    EXPECT_FALSE(b.forward_link.linked());
-
-    // The last T of the list is linked too
-    list.push_front(b);
-    EXPECT_TRUE(a.forward_link.linked());
-    EXPECT_TRUE(b.forward_link.linked());
-
-    list.pop_front();
-    EXPECT_FALSE(b.forward_link.linked());
-    EXPECT_TRUE(a.forward_link.linked());
-    list.pop_front();
-    EXPECT_FALSE(a.forward_link.linked());
-
-    // A T taken off can be added again
-    list.push_front(a);
-    EXPECT_EQ(list.pop_front().value, 1);
-}
-
-TEST(IntrusiveForwardList, TurnedAround) {
-    // Moving every T to a second list gives them back in the order they were added
-    Item a{ 1 }, b{ 2 }, c{ 3 };
-    ForwardList found;
-    for (Item *item : { &a, &b, &c })
-        found.push_front(*item);
-    ForwardList ordered;
-    while (!found.empty())
-        ordered.push_front(found.pop_front());
-    EXPECT_EQ(ordered.pop_front().value, 1);
-    EXPECT_EQ(ordered.pop_front().value, 2);
-    EXPECT_EQ(ordered.pop_front().value, 3);
-}
-
-TEST(IntrusiveLists, OneItemInBoth) {
-    // A T's list link and forward link are separate, so it can be in both lists at once
-    Item a{ 1 };
-    List list;
-    ForwardList forward;
-    list.push_back(a);
-    forward.push_front(a);
-    EXPECT_TRUE(a.link.linked());
-    EXPECT_TRUE(a.forward_link.linked());
-    list.remove(a);
-    EXPECT_FALSE(a.link.linked());
-    EXPECT_TRUE(a.forward_link.linked());
-    EXPECT_EQ(&forward.pop_front(), &a);
-}
-
-struct Counted : RefCounted {
-    explicit Counted(int value, int &destroyed)
-        : value(value)
-        , destroyed(destroyed) {}
-    ~Counted() override {
-        ++destroyed;
-    }
-    int value;
-    int &destroyed;
-    IntrusiveForwardLink<Counted> link;
-};
-
-using CountedList = RefForwardList<Counted, MemberLink<&Counted::link>>;
-
-TEST(RefForwardList, HoldsReferences) {
-    int destroyed = 0;
-    {
-        CountedList list;
-        Ref<Counted> one = Ref<Counted>::make(1, destroyed);
-        list.push_front(one);
-        list.push_front(Ref<Counted>::make(2, destroyed));
-        one = nullptr;
-        // The list keeps the objects alive
-        EXPECT_EQ(destroyed, 0);
-        EXPECT_EQ(list.front().value, 2);
-
-        Ref<Counted> first = list.pop_front();
-        EXPECT_EQ(first->value, 2);
-        EXPECT_FALSE(first->link.linked());
-        first = nullptr;
-        EXPECT_EQ(destroyed, 1);
-    }
-    // The list drops the reference to what is left on it
-    EXPECT_EQ(destroyed, 2);
-}
-
-TEST(RefForwardList, MovesReferences) {
-    // Moving from one list to another keeps the one reference the first list held
-    int destroyed = 0;
-    CountedList found;
-    for (int value : { 1, 2, 3 })
-        found.push_front(Ref<Counted>::make(value, destroyed));
-    CountedList wakes;
-    while (!found.empty())
-        wakes.push_front(found.pop_front());
-    EXPECT_EQ(destroyed, 0);
-    for (int value : { 1, 2, 3 }) {
-        EXPECT_EQ(wakes.front().value, value);
-        // Dropping the popped reference destroys the object, so the list held exactly one
-        wakes.pop_front();
-        EXPECT_EQ(destroyed, value);
-    }
 }
