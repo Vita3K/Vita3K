@@ -112,7 +112,6 @@ OUTPUT_DIR="build/$PRESET/bin/$CONFIG"
 export APPDIR
 export ARCH
 export OUTPATH="$OUTPUT_DIR"
-export ADD_HOOKS="self-updater.hook"
 export UPINFO="gh-releases-zsync|Vita3K|Vita3K|continuous|Vita3K-$ARCH.AppImage.zsync"
 export ICON="$INSTALL_PREFIX/share/icons/hicolor/scalable/apps/org.vita3k.vita3k.svg"
 export DESKTOP="$INSTALL_PREFIX/share/applications/org.vita3k.vita3k.desktop"

@@ -4,6 +4,7 @@
   "builtin-baseline": "77df67cfff9c12ccfdb52284e07c87c75092f723",
   "dependencies": [
     "boost-icl",
+    "boost-json",
     "boost-program-options",
     "boost-variant",
     "curl",

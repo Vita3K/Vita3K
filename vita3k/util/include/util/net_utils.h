@@ -37,7 +37,7 @@ struct AssignedAddr {
     std::string addr; // Assigned address
     std::string netMask; // Network mask
 };
-std::string get_web_response(const std::string &url);
+std::string get_web_response(const std::string &url, std::string *effective_url = nullptr, bool follow_redirects = true);
 std::string get_web_regex_result(const std::string &url, const std::regex &regex);
 
 SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out);

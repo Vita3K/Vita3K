@@ -40,11 +40,23 @@ enum class UpdateCheckStatus {
     CustomBuildCanUpdate,
 };
 
+enum class UpdateCheckFailureReason {
+    None,
+    InvalidReleaseResponse,
+    InvalidBuildMetadata,
+};
+
 struct ChangelogEntry {
     // Version label shown for this changelog entry.
     std::string version;
     // Short summary line for this changelog entry.
     std::string title;
+};
+
+struct UpdateAsset {
+    std::string name;
+    std::string download_url;
+    std::uint64_t size = 0;
 };
 
 struct UpdateInfo {
@@ -60,10 +72,13 @@ struct UpdateInfo {
     std::string notes;
     // Optional changelog entries returned by the release payload.
     std::vector<ChangelogEntry> changelog;
+    // Files published for this release, used to select the current platform package.
+    std::vector<UpdateAsset> assets;
 };
 
 struct UpdateCheckResult {
     UpdateCheckStatus status = UpdateCheckStatus::Failed;
+    UpdateCheckFailureReason failure_reason = UpdateCheckFailureReason::None;
     std::string message;
     // Parsed release metadata for dialogs and notifications.
     UpdateInfo info;

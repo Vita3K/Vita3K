@@ -1,13 +1,25 @@
 package org.vita3k.emulator.data
 
+import android.content.pm.PackageManager
+import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.vita3k.emulator.NativeLib
 import org.vita3k.emulator.ui.viewmodel.AppAction
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.UUID
+import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicReference
 
 internal object AppRepository {
     private const val TAG = "Vita3K"
@@ -15,16 +27,8 @@ internal object AppRepository {
         "https://api.github.com/repos/Vita3K/compatibility/releases/latest"
     private const val COMPAT_DB_URL =
         "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml.zip"
-    private const val UPDATE_RELEASE_URL =
-        "https://api.github.com/repos/Vita3K/Vita3K/releases/tags/continuous"
-    private const val UPDATE_PAGE_URL =
-        "https://github.com/Vita3K/Vita3K/releases/tag/continuous"
     private val compatVersionRegex =
         Regex("""Last updated: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z)""")
-    private val updateBuildRegex = Regex("""Vita3K Build:\s*(\d+)""")
-    private val currentBuildRegex = Regex("""^[^-]+-(\d+)(?:-|$)""")
-    private val updateMetadataLineRegex =
-        Regex("""^\s*(Corresponding commit:|Vita3K Build:)""", RegexOption.IGNORE_CASE)
 
     suspend fun initialize(storagePath: String): Boolean = withContext(Dispatchers.IO) {
         NativeLib.init(storagePath)
@@ -83,72 +87,182 @@ internal object AppRepository {
         appVersion: String,
         officialBuild: Boolean
     ): UpdateCheckResult = withContext(Dispatchers.IO) {
-        val currentDisplayVersion = currentDisplayVersion(appVersion)
-        val response = httpGetString(UPDATE_RELEASE_URL)
+        val response = httpGetString(NativeLib.getReleaseApiUrl(), validateReleaseApiUrl = true)
             ?: return@withContext UpdateCheckResult(
                 status = UpdateCheckStatus.Failed,
                 message = "Could not retrieve the latest Vita3K release information. Please try again later.",
-                currentDisplayVersion = currentDisplayVersion
+                currentDisplayVersion = formatCurrentVersion(appVersion)
             )
-
-        val root = try {
-            JSONObject(response)
-        } catch (_: Exception) {
-            return@withContext UpdateCheckResult(
-                status = UpdateCheckStatus.Failed,
-                message = "The GitHub release response could not be parsed.",
-                currentDisplayVersion = currentDisplayVersion
-            )
-        }
-
-        val body = root.optString("body").orEmpty()
-        val latestBuildNumber = updateBuildRegex.find(body)?.groupValues?.getOrNull(1)?.toLongOrNull()
-            ?: return@withContext UpdateCheckResult(
-                status = UpdateCheckStatus.Failed,
-                message = "The latest release does not advertise a usable Vita3K build number.",
-                currentDisplayVersion = currentDisplayVersion
-            )
-
-        val releaseName = root.optString("name").trim()
-        val tagName = root.optString("tag_name").trim()
-        val releaseUrl = root.optString("html_url").trim().ifBlank { UPDATE_PAGE_URL }
+        val fields = NativeLib.checkReleaseResponse(response, appVersion, officialBuild)
         val info = UpdateInfo(
-            version = releaseName.ifBlank { tagName },
-            buildNumber = latestBuildNumber,
-            releaseUrl = releaseUrl,
-            publishedAt = root.optString("published_at").trim(),
-            notes = normalizedUpdateNotes(body)
+            version = fields[2],
+            buildNumber = fields[3].toLongOrNull() ?: 0L,
+            releaseUrl = fields[4],
+            androidApkUrl = fields[8],
+            androidApkSize = fields[9].toLongOrNull() ?: 0L,
+            publishedAt = fields[5],
+            notes = fields[6]
         )
+        UpdateCheckResult(
+            status = UpdateCheckStatus.valueOf(fields[0]),
+            message = fields[1],
+            info = info,
+            currentDisplayVersion = fields[7],
+            failureReason = UpdateCheckFailureReason.valueOf(fields[10])
+        )
+    }
 
-        val currentBuildNumber = currentBuildRegex.find(appVersion)?.groupValues?.getOrNull(1)?.toLongOrNull() ?: 0L
-        val buildDelta = latestBuildNumber - currentBuildNumber
+    @OptIn(InternalCoroutinesApi::class)
+    suspend fun downloadAndroidUpdateApk(
+        downloadUrl: String,
+        expectedSize: Long,
+        cacheDirectory: File,
+        packageManager: PackageManager,
+        onProgress: suspend (downloadedBytes: Long, totalBytes: Long) -> Unit
+    ): File {
+        var renamedApkFile: File? = null
+        return try {
+            val apkFile = withContext(Dispatchers.IO) {
+                if (!NativeLib.isTrustedReleaseAssetUrl(downloadUrl)) {
+                    throw IOException("The Android update link is not a trusted Vita3K release asset.")
+                }
+                if (expectedSize <= 0L || expectedSize > MAX_ANDROID_UPDATE_SIZE) {
+                    throw IOException("The Android update package has an invalid size.")
+                }
 
-        when {
-            !officialBuild -> UpdateCheckResult(
-                status = UpdateCheckStatus.CustomBuildCanUpdate,
-                message = "",
-                info = info,
-                currentDisplayVersion = currentDisplayVersion
-            )
-            buildDelta > 0L -> UpdateCheckResult(
-                status = UpdateCheckStatus.UpdateAvailable,
-                message = "",
-                info = info,
-                currentDisplayVersion = currentDisplayVersion
-            )
-            buildDelta < 0L -> UpdateCheckResult(
-                status = UpdateCheckStatus.CurrentBuildNewerThanLatest,
-                message = "This installation appears newer than the latest official continuous build.",
-                info = info,
-                currentDisplayVersion = currentDisplayVersion
-            )
-            else -> UpdateCheckResult(
-                status = UpdateCheckStatus.UpToDate,
-                message = "You already have the latest official build installed.",
-                info = info,
-                currentDisplayVersion = currentDisplayVersion
-            )
+                val updateDirectory = File(cacheDirectory, "updates")
+                if (!updateDirectory.isDirectory && !updateDirectory.mkdirs() && !updateDirectory.isDirectory) {
+                    throw IOException("The update download folder could not be created.")
+                }
+                val updateId = UUID.randomUUID().toString()
+                val partialFile = File(updateDirectory, "android-update-$updateId.apk.part")
+                val apkFile = File(updateDirectory, "android-update-$updateId.apk")
+                val connection = AtomicReference<HttpURLConnection?>()
+                val cancellationHandle = currentCoroutineContext()[Job]?.invokeOnCompletion(
+                    onCancelling = true,
+                    invokeImmediately = true
+                ) { cause ->
+                    if (cause is CancellationException) {
+                        connection.getAndSet(null)?.disconnect()
+                    }
+                }
+
+                try {
+                    val activeConnection = openReleaseAssetConnection(downloadUrl, connection)
+                    var downloadedBytes = 0L
+                    var lastProgressUpdate = 0L
+                    val totalBytes = expectedSize
+                    activeConnection.inputStream.use { input ->
+                        FileOutputStream(partialFile).use { output ->
+                            val buffer = ByteArray(64 * 1024)
+                            while (true) {
+                                val count = input.read(buffer)
+                                if (count < 0) break
+                                if (count == 0) continue
+                                downloadedBytes += count
+                                if (downloadedBytes > expectedSize || downloadedBytes > MAX_ANDROID_UPDATE_SIZE) {
+                                    throw IOException("The downloaded Android update is larger than expected.")
+                                }
+                                output.write(buffer, 0, count)
+                                val now = SystemClock.elapsedRealtime()
+                                val reportFinalProgress = downloadedBytes == expectedSize
+                                if (reportFinalProgress) {
+                                    withContext(Dispatchers.Main.immediate) {
+                                        onProgress(downloadedBytes, totalBytes)
+                                    }
+                                    lastProgressUpdate = now
+                                } else if (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL_MS) {
+                                    withContext(Dispatchers.Main.immediate) {
+                                        onProgress(downloadedBytes, totalBytes)
+                                    }
+                                    lastProgressUpdate = now
+                                }
+                            }
+                            output.fd.sync()
+                        }
+                    }
+
+                    if (downloadedBytes != expectedSize || !partialFile.isFile || partialFile.length() != expectedSize) {
+                        throw IOException("The Android update download was incomplete.")
+                    }
+                    if (!partialFile.renameTo(apkFile)) {
+                        throw IOException("The downloaded Android update could not be prepared for installation.")
+                    }
+                    if (packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0) == null) {
+                        throw IOException("The downloaded file is not a valid Android package archive.")
+                    }
+                    renamedApkFile = apkFile
+                    withContext(Dispatchers.Main.immediate) {
+                        onProgress(expectedSize, totalBytes)
+                    }
+                    apkFile
+                } catch (error: Exception) {
+                    partialFile.delete()
+                    apkFile.delete()
+                    throw error
+                } finally {
+                    cancellationHandle?.dispose()
+                    connection.getAndSet(null)?.disconnect()
+                }
+            }
+            renamedApkFile = null
+            apkFile
+        } catch (error: Exception) {
+            renamedApkFile?.delete()
+            throw error
         }
+    }
+
+    private suspend fun openReleaseAssetConnection(
+        downloadUrl: String,
+        activeConnection: AtomicReference<HttpURLConnection?>
+    ): HttpURLConnection {
+        var currentUrl = URL(downloadUrl)
+        repeat(MAX_RELEASE_REDIRECTS + 1) { redirectCount ->
+            currentCoroutineContext().ensureActive()
+            val host = currentUrl.host.lowercase()
+            val trustedHost = host == "github.com" || host == "release-assets.githubusercontent.com" || host == "objects.githubusercontent.com"
+            if (currentUrl.protocol != "https" || !trustedHost ||
+                (host == "github.com" && !NativeLib.isTrustedReleaseAssetUrl(currentUrl.toString()))
+            ) {
+                throw IOException("The Android update download redirected to an untrusted location.")
+            }
+
+            val connection = (currentUrl.openConnection() as HttpURLConnection).apply {
+                activeConnection.set(this)
+                requestMethod = "GET"
+                instanceFollowRedirects = false
+                connectTimeout = HTTP_TIMEOUT_MS
+                readTimeout = HTTP_TIMEOUT_MS
+                setRequestProperty("User-Agent", "Vita3K-Android")
+                setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream")
+            }
+            var transferOwnership = false
+            try {
+                currentCoroutineContext().ensureActive()
+                val status = connection.responseCode
+                if (status in 300..399) {
+                    val location = connection.getHeaderField("Location")
+                    if (redirectCount == MAX_RELEASE_REDIRECTS || location.isNullOrBlank()) {
+                        throw IOException("The Android update download could not be reached.")
+                    }
+                    currentUrl = URL(currentUrl, location)
+                    activeConnection.compareAndSet(connection, null)
+                    return@repeat
+                }
+                if (status !in 200..299) {
+                    throw IOException("The Android update server returned HTTP $status.")
+                }
+                transferOwnership = true
+                return connection
+            } finally {
+                if (!transferOwnership) {
+                    connection.disconnect()
+                    activeConnection.compareAndSet(connection, null)
+                }
+            }
+        }
+        throw IOException("The Android update download redirected too many times.")
     }
 
     private fun toAppInfo(native: NativeAppInfo): AppInfo = AppInfo(
@@ -163,36 +277,22 @@ internal object AppRepository {
         playtime = native.playtime
     )
 
-    private fun currentDisplayVersion(appVersion: String): String {
-        if (appVersion.isBlank()) {
-            return ""
-        }
-
+    private fun formatCurrentVersion(appVersion: String): String {
+        if (appVersion.isBlank()) return ""
         val parts = appVersion.split("-", limit = 3)
         val version = parts.getOrNull(0).orEmpty().ifBlank { appVersion }
         val build = parts.getOrNull(1).orEmpty()
         return if (build.isBlank()) version else "$version ($build)"
     }
 
-    private fun normalizedUpdateNotes(body: String): String {
-        val cleaned = body
-            .replace("\r\n", "\n")
-            .lineSequence()
-            .filterNot { line -> updateMetadataLineRegex.containsMatchIn(line.trim()) }
-            .dropWhile { it.isBlank() }
-            .toList()
-            .dropLastWhile { it.isBlank() }
+    private fun httpGetString(url: String, validateReleaseApiUrl: Boolean = false): String? =
+        httpGetBytes(url, validateReleaseApiUrl)?.toString(Charsets.UTF_8)
 
-        return cleaned.joinToString("\n").trim()
-    }
-
-    private fun httpGetString(url: String): String? =
-        httpGetBytes(url)?.toString(Charsets.UTF_8)
-
-    private fun httpGetBytes(url: String): ByteArray? {
+    private fun httpGetBytes(url: String, validateReleaseApiUrl: Boolean = false): ByteArray? {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
-            instanceFollowRedirects = true
+            // The update metadata endpoint must remain on GitHub's API host.
+            instanceFollowRedirects = !validateReleaseApiUrl
             connectTimeout = 10000
             readTimeout = 15000
             setRequestProperty("User-Agent", "Vita3K-Android")
@@ -201,6 +301,9 @@ internal object AppRepository {
 
         return try {
             connection.connect()
+            if (validateReleaseApiUrl && !NativeLib.isTrustedReleaseApiUrl(connection.url.toString())) {
+                return null
+            }
             if (connection.responseCode !in 200..299) {
                 null
             } else {
@@ -210,4 +313,10 @@ internal object AppRepository {
             connection.disconnect()
         }
     }
+
+    private const val MAX_RELEASE_REDIRECTS = 5
+    private const val HTTP_TIMEOUT_MS = 15000
+    private const val PROGRESS_UPDATE_INTERVAL_MS = 150L
 }
+
+internal const val MAX_ANDROID_UPDATE_SIZE = 150L * 1024L * 1024L

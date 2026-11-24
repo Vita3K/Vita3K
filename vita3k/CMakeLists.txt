@@ -144,7 +144,7 @@ if(WIN32)
 	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
 endif()
 
-target_link_libraries(vita3k PRIVATE app audio cheat compat config ctrl dialog display ime lang gdbstub gxm io miniz modules motion packages patch renderer sdl-frontend shader touch util psvpfsparser)
+target_link_libraries(vita3k PRIVATE app audio cheat compat config ctrl dialog display ime lang gdbstub gxm io miniz modules motion packages patch renderer sdl-frontend shader touch updater util psvpfsparser)
 if(NOT ANDROID)
 	target_link_libraries(vita3k PRIVATE gui-qt)
 endif()

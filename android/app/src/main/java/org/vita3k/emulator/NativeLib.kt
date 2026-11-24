@@ -21,6 +21,14 @@ object NativeLib {
     external fun init(storagePath: String): Boolean
     external fun isInitialized(): Boolean
     external fun isOfficialBuild(): Boolean
+    /** Shared C++ release parsing and build comparison used by every UI. */
+    external fun checkReleaseResponse(response: String, currentVersion: String, officialBuild: Boolean): Array<String>
+    /** Validates the release metadata response URL against the official API endpoint. */
+    external fun isTrustedReleaseApiUrl(url: String): Boolean
+    /** Validates a direct download link from the official release assets. */
+    external fun isTrustedReleaseAssetUrl(url: String): Boolean
+    /** Shared location of the continuous release metadata. */
+    external fun getReleaseApiUrl(): String
 
     // --- Apps list ---
     /** Returns detailed app info objects. */
