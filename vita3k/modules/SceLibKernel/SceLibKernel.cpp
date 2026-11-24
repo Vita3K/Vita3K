@@ -541,38 +541,53 @@ EXPORT(int, sceIoCompleteMultiple) {
 
 EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, const void *indata, SceSize inlen, void *outdata, SceSize outlen) {
     TRACY_FUNC(sceIoDevctl, dev, cmd, indata, inlen, outdata, outlen);
-    if (!dev || !outdata)
-        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-
-    // TODO: Turn the commands into an enum of commands
+    // The device name is copied with a limit of 0x400 bytes
+    if (dev && strnlen(dev, 0x400) == 0x400)
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+    // Commands with these bits are for system programs
+    if (cmd & 0xE00)
+        return RET_ERROR(SCE_ERROR_ERRNO_EUNSUP);
+    if (!dev)
+        return RET_ERROR(SCE_ERROR_ERRNO_EFAULT);
+    // Only the root of a device takes commands
+    const VitaIoDevice device = device::get_device(dev);
+    if (device == VitaIoDevice::_INVALID || !device::remove_device_from_path(dev, device).empty())
+        return RET_ERROR(SCE_ERROR_ERRNO_ENODEV);
     switch (cmd) {
-    case 12289: { // Get device capacity info?
-        assert(outlen == sizeof(SceIoDevInfo));
+    case SCE_IO_DEVCTL_GET_FREE_SPACE: {
+        // The short answer ends before the volume fields
+        if (outlen != offsetof(SceIoDevInfo, serial) && outlen != sizeof(SceIoDevInfo))
+            return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
 
-        auto device = device::get_device(dev);
-        if (device == VitaIoDevice::_INVALID) {
-            LOG_ERROR("Cannot find device for path: {}", dev);
-            return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        // A device with no host directory has no volume to report on
+        std::error_code error;
+        const fs::space_info space = fs::space(emuenv.vita_fs_path / device::get_device_string(device, false), error);
+        if (error)
+            return RET_ERROR(SCE_ERROR_ERRNO_ENODEV);
+        // The devices are host directories with no cluster size, so the answer uses a fixed one that
+        // the sizes are rounded to
+        constexpr SceSize cluster_size = 4096;
+        // The answer is built in a buffer filled with 0xFF, which is copied whole
+        SceIoDevInfo info;
+        std::memset(&info, 0xFF, sizeof(info));
+        info.max_size = space.capacity / cluster_size * cluster_size;
+        info.free_size = space.available / cluster_size * cluster_size;
+        info.cluster_size = cluster_size;
+        if (outlen == sizeof(SceIoDevInfo)) {
+            info.unused = 0;
+            info.serial = 0;
+            std::ranges::fill(info.label, ' ');
+            info.end = 0;
         }
-
-        fs::path dev_path = boost::describe::enum_to_string(device, "");
-        fs::path path = emuenv.vita_fs_path / dev_path;
-        fs::space_info space = fs::space(path);
-
-        ((SceIoDevInfo *)outdata)->max_size = space.capacity;
-        ((SceIoDevInfo *)outdata)->free_size = space.available;
-        STUBBED("cluster size = 4096");
-        ((SceIoDevInfo *)outdata)->cluster_size = 4096;
-        break;
-    }
-    default: {
-        LOG_WARN("Unhandled case for sceIoDevctl cmd={}", cmd);
-        assert(false);
+        if (outdata)
+            std::memcpy(outdata, &info, outlen);
         return 0;
     }
+    default:
+        // The free space query is the only command a game can use
+        LOG_WARN("sceIoDevctl command {:#x} on {} refused", cmd, dev);
+        return RET_ERROR(SCE_ERROR_ERRNO_EUNSUP);
     }
-
-    return 0;
 }
 
 EXPORT(int, sceIoDevctlAsync) {

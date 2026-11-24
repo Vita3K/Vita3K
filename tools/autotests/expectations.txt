@@ -210,7 +210,7 @@ delay_wait_id                   pass
 delete_race_end_waiters         pass
 delete_with_waiters             pass
 delete_with_waiters_more        fail     # sceKernelWaitMultipleEvents
-devctl_ioctl                    fail     # sceIoDevctl and sceIoIoctl commands and sizes, Vita3K accepts any ioctl and 0x3001 with any output size
+devctl_ioctl                    fail     # sceIoDevctl and sceIoIoctl commands and sizes, Vita3K answers the 0x3001 free space query the test expects refused, and accepts any ioctl
 directories                     fail     # directory mode and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
 display_framebuf_blocks         fail     # no framebuffer base alignment check
