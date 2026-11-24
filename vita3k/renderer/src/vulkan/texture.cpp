@@ -125,7 +125,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     if (lookup_result.has_value()) {
         // get the sampler now
-        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);
+        // surfaces have a single level
+        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface, false);
     } else {
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
         auto &image = context.state.texture_cache.current_texture->texture;
@@ -555,7 +556,7 @@ void VKTextureCache::upload_done() {
     is_texture_transfer_ready = false;
 }
 
-void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {
+void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear, bool has_mipmaps) {
     vk::Sampler &sampler = samplers[index];
     if (sampler) {
         // the previous one has not been used for a while, we can destroy it
@@ -592,8 +593,9 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .unnormalizedCoordinates = VK_FALSE,
     };
 
-    // when using nearest filter, disable anisotropy as the pixels can contain data other than color
-    sampler_info.anisotropyEnable = (anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest);
+    // textures that are point-sampled or have no mipmaps (lookup tables...) can contain data other than color
+    sampler_info.anisotropyEnable = (anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest)
+        && has_mipmaps;
 
     sampler = state.device.createSampler(sampler_info);
 }

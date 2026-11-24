@@ -158,13 +158,14 @@ public:
     virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;
     virtual void upload_done() {}
 
-    virtual void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {}
+    virtual void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear, bool has_mipmaps) {}
 
     void upload_texture(const SceGxmTexture &gxm_texture, MemState &mem);
     void cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem);
 
     // is called by cache_and_bind_texture if use_sampler_cache is set to true
-    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth = false);
+    // has_mipmaps tells whether the bound image has more than one level (anisotropy is only applied then)
+    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth, bool has_mipmaps);
 
     // look at the texture folder and update the available imported / exported hashes
     void refresh_available_textures();
