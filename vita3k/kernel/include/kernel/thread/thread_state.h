@@ -140,6 +140,8 @@ public:
     // Priority and affinity
     // The priority the thread runs at
     int get_priority() const;
+    // The priority the guest set, which a held ceiling may raise the one it runs at above
+    int get_base_priority() const;
     // Sets the base priority, which the thread then runs at, and the one its TLS shows, unless it is
     // below the ceiling of a mutex it holds, which applies it at its free. Returns the priority it ran
     // at before.
