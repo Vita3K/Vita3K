@@ -243,14 +243,18 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     // The shader reads the color attachment whenever it uses the fragment color, so writes from the previous draws
     // must be made visible to it, native color or not
+    bool color_synced = false;
     if (fragment_program_gxp.is_frag_color_used() || fragment_program_gxp.is_native_color()) {
         if (features.should_use_shader_interlock() && !config.spirv_shader) {
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+            color_synced = true;
         } else if (features.should_use_texture_barrier()) {
             // Needs texture barrier
             glTextureBarrier();
+            color_synced = true;
         }
-    } else if (!context.self_sampling_indices.empty()) {
+    }
+    if (!color_synced && !context.self_sampling_indices.empty()) {
         if (features.support_texture_barrier) {
             glTextureBarrier();
         } else {

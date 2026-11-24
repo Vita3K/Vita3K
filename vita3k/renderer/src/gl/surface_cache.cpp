@@ -36,12 +36,17 @@ void GLSurfaceCache::cleanup() {
 
     for (auto &ds : depth_stencil_textures) {
         ds.gl_texture.cleanup();
+        ds.sample_texture.cleanup();
         ds.flags = GLSurfaceCacheInfo::FLAG_FREE;
         ds.width = 0;
         ds.height = 0;
+        ds.multisample_mode = SCE_GXM_MULTISAMPLE_NONE;
+        ds.sample_texture_width = 0;
+        ds.sample_texture_height = 0;
     }
 
     framebuffer_array.clear();
+    depth_scale_framebuffers.cleanup();
 
     typeless_copy_buffer.cleanup();
     typeless_copy_buffer_size = 0;
@@ -847,9 +852,8 @@ GLuint GLSurfaceCache::retrieve_depth_samples(GLDepthStencilSurfaceCacheInfo &in
     glDisable(GL_SCISSOR_TEST);
     glDepthMask(GL_TRUE);
 
-    const GLint dest_width = std::min(width, info.width * scale_x);
-    const GLint dest_height = std::min(height, info.height * scale_y);
-    glBlitFramebuffer(0, 0, dest_width / scale_x, dest_height / scale_y, 0, 0, dest_width, dest_height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    // texels beyond the destination are clipped without changing the scale
+    glBlitFramebuffer(0, 0, info.width, info.height, 0, 0, info.width * scale_x, info.height * scale_y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
     glDepthMask(depth_mask);
     if (scissor_enabled)
