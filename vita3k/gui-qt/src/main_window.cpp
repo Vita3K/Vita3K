@@ -525,7 +525,7 @@ void MainWindow::initialize() {
     setAcceptDrops(true);
 
     setup_status_bar();
-    m_update_manager = new UpdateManager(this);
+    m_update_manager = new UpdateManager(m_gui_settings, this);
     connect(m_update_manager, &UpdateManager::update_available_changed, this, [this](const bool available) {
         m_update_available = available;
         update_update_available_button();

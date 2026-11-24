@@ -26,6 +26,7 @@
 #include <config/version.h>
 #include <modules/module_parent.h>
 #include <renderer/functions.h>
+#include <updater/functions.h>
 #include <util/log.h>
 #include <util/sysinfo.h>
 
@@ -35,8 +36,10 @@
 
 #include <sys/system_properties.h>
 
+#include <cstdint>
 #include <filesystem>
 #include <span>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -165,6 +168,38 @@ jint to_firmware_state_mask(const app::FirmwareState &state) {
     return mask;
 }
 
+jstring utf8_to_jstring(JNIEnv *env, std::string_view text) {
+    std::vector<jchar> utf16;
+    utf16.reserve(text.size());
+    for (std::size_t i = 0; i < text.size();) {
+        const auto first = static_cast<unsigned char>(text[i++]);
+        std::uint32_t codepoint = first;
+        if ((first & 0xE0) == 0xC0 && i < text.size()) {
+            codepoint = (first & 0x1F) << 6;
+            codepoint |= static_cast<unsigned char>(text[i++]) & 0x3F;
+        } else if ((first & 0xF0) == 0xE0 && i + 1 < text.size()) {
+            codepoint = (first & 0x0F) << 12;
+            codepoint |= (static_cast<unsigned char>(text[i++]) & 0x3F) << 6;
+            codepoint |= static_cast<unsigned char>(text[i++]) & 0x3F;
+        } else if ((first & 0xF8) == 0xF0 && i + 2 < text.size()) {
+            codepoint = (first & 0x07) << 18;
+            codepoint |= (static_cast<unsigned char>(text[i++]) & 0x3F) << 12;
+            codepoint |= (static_cast<unsigned char>(text[i++]) & 0x3F) << 6;
+            codepoint |= static_cast<unsigned char>(text[i++]) & 0x3F;
+        }
+        if (codepoint <= 0xFFFF) {
+            utf16.push_back(static_cast<jchar>(codepoint));
+        } else if (codepoint <= 0x10FFFF) {
+            codepoint -= 0x10000;
+            utf16.push_back(static_cast<jchar>(0xD800 + (codepoint >> 10)));
+            utf16.push_back(static_cast<jchar>(0xDC00 + (codepoint & 0x3FF)));
+        } else {
+            utf16.push_back(static_cast<jchar>(0xFFFD));
+        }
+    }
+    return env->NewString(utf16.data(), static_cast<jsize>(utf16.size()));
+}
+
 } // namespace
 
 extern "C" {
@@ -230,6 +265,58 @@ JNIEXPORT jstring JNICALL
 Java_org_vita3k_emulator_NativeLib_getAppVersion(JNIEnv *env, jclass) {
     const std::string version = format_app_version();
     return env->NewStringUTF(version.c_str());
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_org_vita3k_emulator_NativeLib_checkReleaseResponse(JNIEnv *env, jclass, jstring response, jstring current_version, jboolean official_build) {
+    const auto result = updater::check_release_response(
+        jstring_to_string(env, response), jstring_to_string(env, current_version), official_build == JNI_TRUE);
+    const char *class_name = "java/lang/String";
+    jclass string_class = env->FindClass(class_name);
+    if (!string_class)
+        return nullptr;
+    jobjectArray values = env->NewObjectArray(11, string_class, nullptr);
+    env->DeleteLocalRef(string_class);
+    if (!values)
+        return nullptr;
+    const auto apk_asset = updater::find_asset(result.info, "android-latest.apk");
+    const std::string fields[] = {
+        std::string(updater::update_status_name(result.status)),
+        result.message,
+        result.info.version,
+        std::to_string(result.info.build_number),
+        result.info.release_url,
+        result.info.published_at,
+        result.info.notes,
+        result.current_display_version,
+        apk_asset ? apk_asset->download_url : std::string(),
+        apk_asset ? std::to_string(apk_asset->size) : std::string("0"),
+        std::string(updater::update_failure_reason_name(result.failure_reason)),
+    };
+    for (jsize i = 0; i < 11; ++i) {
+        jstring value = utf8_to_jstring(env, fields[i]);
+        if (!value)
+            return nullptr;
+        env->SetObjectArrayElement(values, i, value);
+        env->DeleteLocalRef(value);
+    }
+    return values;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_vita3k_emulator_NativeLib_isTrustedReleaseApiUrl(JNIEnv *env, jclass, jstring url) {
+    return updater::is_release_api_url(jstring_to_string(env, url)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_vita3k_emulator_NativeLib_isTrustedReleaseAssetUrl(JNIEnv *env, jclass, jstring url) {
+    return updater::is_release_asset_url(jstring_to_string(env, url)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_vita3k_emulator_NativeLib_getReleaseApiUrl(JNIEnv *env, jclass) {
+    const std::string url = updater::release_api_url();
+    return env->NewStringUTF(url.c_str());
 }
 
 JNIEXPORT jstring JNICALL

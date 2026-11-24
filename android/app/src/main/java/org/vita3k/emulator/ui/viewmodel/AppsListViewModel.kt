@@ -12,12 +12,16 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import org.vita3k.emulator.NativeLib
 import org.vita3k.emulator.R
 import org.vita3k.emulator.data.FirmwareInstallState
 import org.vita3k.emulator.data.AppInfo
 import org.vita3k.emulator.data.AppRepository
+import org.vita3k.emulator.data.MAX_ANDROID_UPDATE_SIZE
 import org.vita3k.emulator.data.SortOption
 import org.vita3k.emulator.data.UpdateCheckResult
 import org.vita3k.emulator.data.UpdateCheckStatus
@@ -67,6 +71,16 @@ class AppsListViewModel(application: Application) : AndroidViewModel(application
         private set
     var updateCheckResult by mutableStateOf<UpdateCheckResult?>(null)
         private set
+    var updateDownloadProgress by mutableStateOf<Float?>(null)
+        private set
+    var updateDownloadError by mutableStateOf<String?>(null)
+        private set
+    var downloadedUpdateApk by mutableStateOf<String?>(null)
+        private set
+    var updateInstallerLaunched by mutableStateOf(false)
+        private set
+    private var installerApkPath: String? = null
+    private var updateDownloadJob: Job? = null
 
     // --- App info dialog ---
     var infoDialogApp by mutableStateOf<AppInfo?>(null)
@@ -136,6 +150,80 @@ class AppsListViewModel(application: Application) : AndroidViewModel(application
 
     fun dismissUpdateCheckResult() {
         updateCheckResult = null
+    }
+
+    fun downloadAndroidUpdate() {
+        if (updateDownloadJob?.isActive == true) return
+        val info = updateCheckResult?.info ?: return
+        if (info.androidApkUrl.isBlank() || info.androidApkSize <= 0L || info.androidApkSize > MAX_ANDROID_UPDATE_SIZE) {
+            updateDownloadError = str(R.string.updates_download_failed)
+            return
+        }
+
+        updateCheckResult = null
+        updateDownloadError = null
+        downloadedUpdateApk = null
+        updateDownloadProgress = 0f
+        val downloadJob = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                val apk = AppRepository.downloadAndroidUpdateApk(
+                    downloadUrl = info.androidApkUrl,
+                    expectedSize = info.androidApkSize,
+                    cacheDirectory = getApplication<Application>().cacheDir
+                ) { downloadedBytes, totalBytes ->
+                    updateDownloadProgress = if (totalBytes > 0L) {
+                        (downloadedBytes.toFloat() / totalBytes).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    }
+                }
+                updateDownloadProgress = null
+                downloadedUpdateApk = apk.absolutePath
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                val currentJob = currentCoroutineContext()[Job]
+                if (currentJob?.isActive == true && updateDownloadJob === currentJob) {
+                    updateDownloadProgress = null
+                    updateDownloadError = str(R.string.updates_download_failed)
+                }
+            } finally {
+                if (updateDownloadJob === currentCoroutineContext()[Job]) {
+                    updateDownloadJob = null
+                }
+            }
+        }
+        updateDownloadJob = downloadJob
+        downloadJob.start()
+    }
+
+    fun cancelAndroidUpdateDownload() {
+        updateDownloadJob?.cancel()
+        updateDownloadProgress = null
+    }
+
+    fun onUpdateInstallerLaunched() {
+        installerApkPath = downloadedUpdateApk
+        updateInstallerLaunched = true
+    }
+
+    fun onUpdateInstallerFinished() {
+        (installerApkPath ?: downloadedUpdateApk)?.let { java.io.File(it).delete() }
+        installerApkPath = null
+        downloadedUpdateApk = null
+        updateInstallerLaunched = false
+    }
+
+    fun onUpdateInstallerLaunchFailed() {
+        downloadedUpdateApk?.let { java.io.File(it).delete() }
+        installerApkPath = null
+        downloadedUpdateApk = null
+        updateInstallerLaunched = false
+        updateDownloadError = str(R.string.updates_install_launch_failed)
+    }
+
+    fun dismissUpdateDownloadError() {
+        updateDownloadError = null
     }
 
     // Returns the actions available for a title, defaulting to emptySet() until the

@@ -96,6 +96,8 @@ const GuiSave vt_bgmEnabled = GuiSave(vita_themes, QStringLiteral("bgmEnabled"),
 const GuiSave ch_installedOnly = GuiSave(cheats, QStringLiteral("installedOnly"), false);
 const GuiSave vt_bgmVolume = GuiSave(vita_themes, QStringLiteral("bgmVolume"), 50);
 
+const GuiSave um_dontShowUpdateComplete = GuiSave(meta, QStringLiteral("dontShowUpdateComplete"), false);
+
 } // namespace gui
 
 class GuiSettings : public GuiSettingsBase {

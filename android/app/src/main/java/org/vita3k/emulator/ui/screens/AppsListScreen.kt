@@ -38,6 +38,8 @@ import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -60,9 +62,11 @@ import coil.compose.AsyncImage
 import org.vita3k.emulator.R
 import org.vita3k.emulator.data.FirmwareInstallState
 import org.vita3k.emulator.data.AppInfo
+import org.vita3k.emulator.data.MAX_ANDROID_UPDATE_SIZE
 import org.vita3k.emulator.data.FirmwareComponent
 import org.vita3k.emulator.data.SortOption
 import org.vita3k.emulator.data.UpdateCheckResult
+import org.vita3k.emulator.data.UpdateCheckFailureReason
 import org.vita3k.emulator.data.UpdateCheckStatus
 import org.vita3k.emulator.data.ViewMode
 import org.vita3k.emulator.ui.components.HtmlText
@@ -72,6 +76,8 @@ import org.vita3k.emulator.ui.viewmodel.AppAction
 import org.vita3k.emulator.ui.viewmodel.AppActionGroup
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.FileProvider
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,6 +91,10 @@ fun AppsListScreen(
     viewMode: ViewMode,
     updateCheckInProgress: Boolean,
     updateCheckResult: UpdateCheckResult?,
+    updateDownloadProgress: Float?,
+    updateDownloadError: String?,
+    downloadedUpdateApk: String?,
+    updateInstallerLaunched: Boolean,
     firmwareInstallState: FirmwareInstallState,
     actionInProgress: Boolean,
     actionResultMessage: String?,
@@ -105,6 +115,12 @@ fun AppsListScreen(
     onViewModeToggle: () -> Unit,
     onCheckForUpdates: () -> Unit,
     onDismissUpdateCheckResult: () -> Unit,
+    onDownloadAndroidUpdate: () -> Unit,
+    onCancelAndroidUpdateDownload: () -> Unit,
+    onUpdateInstallerLaunched: () -> Unit,
+    onUpdateInstallerFinished: () -> Unit,
+    onUpdateInstallerLaunchFailed: () -> Unit,
+    onDismissUpdateDownloadError: () -> Unit,
     onRefresh: () -> Unit,
     onInstallClick: () -> Unit,
     onOpenSettings: () -> Unit = {},
@@ -114,6 +130,29 @@ fun AppsListScreen(
     onOpenCustomConfig: (AppInfo) -> Unit = {},
     onCreateAppShortcut: (AppInfo) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val installerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        onUpdateInstallerFinished()
+    }
+    LaunchedEffect(downloadedUpdateApk, updateInstallerLaunched) {
+        if (updateInstallerLaunched) return@LaunchedEffect
+        val apkPath = downloadedUpdateApk ?: return@LaunchedEffect
+        try {
+            val apkUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.updatefiles",
+                File(apkPath)
+            )
+            val installIntent = Intent(Intent.ACTION_VIEW)
+                .setDataAndType(apkUri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            installerLauncher.launch(installIntent)
+            onUpdateInstallerLaunched()
+        } catch (_: Exception) {
+            onUpdateInstallerLaunchFailed()
+        }
+    }
+
     var showSearchBar by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
@@ -456,7 +495,44 @@ fun AppsListScreen(
     updateCheckResult?.let { result ->
         UpdateCheckDialog(
             result = result,
-            onDismiss = onDismissUpdateCheckResult
+            onDismiss = onDismissUpdateCheckResult,
+            onDownloadAndroidUpdate = onDownloadAndroidUpdate
+        )
+    }
+
+    if (updateDownloadProgress != null) {
+        AlertDialog(
+            onDismissRequest = onCancelAndroidUpdateDownload,
+            title = { Text(stringResource(R.string.updates_download_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.updates_download_progress))
+                    LinearProgressIndicator(
+                        progress = { updateDownloadProgress.coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth(),
+                        drawStopIndicator = {}
+                    )
+                    Text("${(updateDownloadProgress * 100).toInt()}%")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onCancelAndroidUpdateDownload) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
+    updateDownloadError?.let { message ->
+        AlertDialog(
+            onDismissRequest = onDismissUpdateDownloadError,
+            title = { Text(stringResource(R.string.updates_download_failed_title)) },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = onDismissUpdateDownloadError) {
+                    Text(stringResource(R.string.action_ok))
+                }
+            }
         )
     }
 
@@ -1039,7 +1115,8 @@ private fun AppGridItem(
 @Composable
 private fun UpdateCheckDialog(
     result: UpdateCheckResult,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onDownloadAndroidUpdate: () -> Unit
 ) {
     val context = LocalContext.current
     val defaultDownloadUrl = "https://github.com/Vita3K/Vita3K/releases/tag/continuous"
@@ -1078,12 +1155,18 @@ private fun UpdateCheckDialog(
                 } else {
                     context.getString(R.string.updates_summary_custom_build_with_date, latestVersion, publishedAt)
                 }
-            else -> result.message
+            else -> when (result.failureReason) {
+                UpdateCheckFailureReason.InvalidReleaseResponse -> context.getString(R.string.updates_response_parse_failed)
+                UpdateCheckFailureReason.InvalidBuildMetadata -> context.getString(R.string.updates_build_metadata_invalid)
+                UpdateCheckFailureReason.None -> result.message
+            }
         }
     }
 
     val showDownloadAction = result.status == UpdateCheckStatus.UpdateAvailable ||
         result.status == UpdateCheckStatus.CustomBuildCanUpdate
+    val hasAndroidApk = result.info.androidApkUrl.isNotBlank() &&
+        result.info.androidApkSize > 0L && result.info.androidApkSize <= MAX_ANDROID_UPDATE_SIZE
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1110,10 +1193,14 @@ private fun UpdateCheckDialog(
         confirmButton = {
             if (showDownloadAction) {
                 TextButton(onClick = {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)))
-                    onDismiss()
+                    if (hasAndroidApk) {
+                        onDownloadAndroidUpdate()
+                    } else {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)))
+                        onDismiss()
+                    }
                 }) {
-                    Text(stringResource(R.string.updates_open_download_page))
+                    Text(stringResource(if (hasAndroidApk) R.string.updates_download_install else R.string.updates_open_download_page))
                 }
             } else {
                 TextButton(onClick = onDismiss) {

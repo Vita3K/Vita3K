@@ -334,14 +334,14 @@ bool socketSetBlocking(int sockfd, bool blocking) {
     return true;
 }
 
-std::string get_web_response(const std::string &url) {
+std::string get_web_response(const std::string &url, std::string *effective_url, const bool follow_redirects) {
     auto curl = curl_easy_init();
     if (!curl)
         return {};
 
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Vita3K Emulator");
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, follow_redirects ? 1L : 0L);
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 
 #ifdef __ANDROID__
@@ -355,13 +355,20 @@ std::string get_web_response(const std::string &url) {
     };
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunc);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
-    long response_code;
-    curl_easy_perform(curl);
+    long response_code = 0;
+    const CURLcode transfer_result = curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    if (effective_url) {
+        char *effective = nullptr;
+        if (curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effective) == CURLE_OK && effective)
+            *effective_url = effective;
+        else
+            effective_url->clear();
+    }
 
     curl_easy_cleanup(curl);
 
-    if (response_code / 100 == 2)
+    if (transfer_result == CURLE_OK && response_code / 100 == 2)
         return response_string;
 
     return {};
