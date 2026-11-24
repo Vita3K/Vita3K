@@ -114,11 +114,18 @@ struct SceIoDirent {
     int dummy;
 };
 
+// The answer to the free space query, 0x18 bytes, or 0x28 with the volume fields
 struct SceIoDevInfo {
     SceInt64 max_size;
     SceInt64 free_size;
     SceSize cluster_size;
+    // 0 in the long answer, the 0xFF fill in the short one
+    SceUInt32 unused;
+    SceUInt32 serial;
+    char label[11];
+    char end;
 };
+static_assert(sizeof(SceIoDevInfo) == 0x28);
 
 enum SceFiosOverlayType : uint8_t {
     SCE_FIOS_OVERLAY_TYPE_OPAQUE,
