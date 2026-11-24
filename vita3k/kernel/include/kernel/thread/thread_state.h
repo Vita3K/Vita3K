@@ -140,8 +140,9 @@ public:
     // Priority and affinity
     // The priority the thread runs at
     int get_priority() const;
-    // Changes the priority the thread runs at, and the one its TLS shows. Returns the old priority.
-    int change_priority(int new_priority);
+    // Sets the base priority, which the thread then runs at, and the one its TLS shows. Returns the
+    // priority it ran at before.
+    int change_base_priority(int new_priority);
     // Changes the cores the thread may run on, and the ones its TLS shows. Returns the old mask.
     SceInt32 change_affinity_mask(SceInt32 new_affinity_mask);
 
@@ -285,6 +286,9 @@ private:
     void request_ending(Ending how) { set_ending(std::max(ending, how)); }
     // Sets the priority and its copy in TLS, with thread_mutex held.
     void set_priority(int new_priority);
+    // Moves the thread to its place for its priority in the queue it waits on, if any, with
+    // thread_mutex held through lock and no object's lock held. Returns with lock dropped.
+    void take_priority_place(std::unique_lock<std::mutex> &lock);
     // Runs step on the object the thread is queued on, or on null when it is queued on none, with
     // thread_mutex held through lock and no object's lock held. Returns with lock dropped, and whether
     // the step ran, which it doesn't when the wait moved to another object meanwhile. A caller that
@@ -349,6 +353,9 @@ private:
     bool running_event_handlers = false;
 
     // Priority and affinity
+    // The priority the guest set, which a start resets to init_priority
+    int base_priority;
+    // The priority the thread runs at, which its TLS and info show
     int priority;
     SceInt32 affinity_mask;
 

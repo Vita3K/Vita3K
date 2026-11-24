@@ -77,6 +77,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     , init_affinity_mask(affinity_mask)
     , kernel(kernel)
     , mem(mem)
+    , base_priority(this->init_priority)
     , priority(this->init_priority)
     , affinity_mask(affinity_mask) {
     uid = id;
@@ -141,6 +142,7 @@ void ThreadState::begin_run(CPUContext ctx, std::initializer_list<uint32_t> args
     signal_pending = false;
     // Each run starts at the priority and on the cores the thread was created with, and its TLS
     // shows them
+    base_priority = init_priority;
     priority = init_priority;
     affinity_mask = init_affinity_mask;
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
@@ -837,26 +839,31 @@ int ThreadState::get_priority() const {
     return priority;
 }
 
-int ThreadState::change_priority(int new_priority) {
+int ThreadState::change_base_priority(int new_priority) {
     std::unique_lock<std::mutex> lock(thread_mutex);
-    // Read once, so a change that starts over still returns the priority it first saw
+    // What the call returns
     const int old_priority = priority;
-    // The priority and the queue change together, and a wait that moved to another object
-    // meanwhile is changed there
-    while (!change_wait(lock, [&](Waitable *queue) {
-        set_priority(new_priority);
-        if (queue) {
-            queued_priority = new_priority;
-            queue->requeue(*this);
-        }
-    }))
-        lock.lock();
+    base_priority = new_priority;
+    set_priority(new_priority);
+    take_priority_place(lock);
     return old_priority;
 }
 
 void ThreadState::set_priority(int new_priority) {
     priority = new_priority;
     tls_slot(TLS_CURRENT_PRIORITY) = new_priority;
+}
+
+void ThreadState::take_priority_place(std::unique_lock<std::mutex> &lock) {
+    // A wait that moved to another object meanwhile moves there. The priority is read in the step,
+    // since a newer change may come in while no lock is held, and the last one wins.
+    while (!change_wait(lock, [&](Waitable *queue) {
+        if (queue) {
+            queued_priority = priority;
+            queue->requeue(*this);
+        }
+    }))
+        lock.lock();
 }
 
 SceInt32 ThreadState::change_affinity_mask(SceInt32 new_affinity_mask) {

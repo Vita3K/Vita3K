@@ -1332,7 +1332,7 @@ EXPORT(SceInt32, sceKernelChangeThreadPriority2, SceUID thid, SceInt32 priority)
     const int resolved = resolve_priority(priority, *emuenv.kernel.get_thread(thread_id));
     if (resolved < 0)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
-    return thread->change_priority(resolved);
+    return thread->change_base_priority(resolved);
 }
 
 EXPORT(SceInt32, sceKernelChangeThreadPriority, SceUID thid, SceInt32 priority) {
