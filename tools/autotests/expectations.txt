@@ -113,25 +113,25 @@ cb_wait_timeout_copy_more       fail     # sceKernelWaitMultipleEvents
 cb_wait_zero_timeout_notify     pass
 cb_wait_zero_timeout_notify_more pass
 cb_waits                        fail     # sceKernelWaitMultipleEvents
-ceiling_base_change             fail     # a mutex ceiling doesn't raise its owner's priority
-ceiling_cancel_drops_boost      fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_cancel_gives_caller     fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_cancel_requeue_waiter   fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_change_running_thread   fail     # a mutex ceiling doesn't raise its owner's priority, and a priority change below one applies at once
-ceiling_cond_relock_priority    fail     # a ceiling mutex doesn't raise its owner's priority
+ceiling_base_change             fail     # a priority change below a held ceiling applies at once
+ceiling_cancel_drops_boost      pass
+ceiling_cancel_gives_caller     fail     # a priority change below a held ceiling applies at once
+ceiling_cancel_requeue_waiter   fail     # a cancel drops the owner's ceiling but leaves the owner at its old place in the queue it waits on
+ceiling_change_running_thread   fail     # a priority change below a held ceiling applies at once
+ceiling_cond_relock_priority    pass
 ceiling_create_check_order      pass
-ceiling_delete_drops_waiting_owner fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_handover_suspended_and_end fail     # a ceiling mutex doesn't raise its owner's priority
+ceiling_delete_drops_waiting_owner fail     # a delete drops the owner's ceiling but leaves the owner at its old place in the queue it waits on
+ceiling_handover_suspended_and_end pass
 ceiling_init_count_base_rule    pass
-ceiling_init_count_owner        fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_init_count_raised_creator fail     # a mutex ceiling doesn't raise its owner's priority
-ceiling_owner_end_handover      fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_priority2_returns       fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_three_nested_unlock     fail     # a ceiling mutex doesn't raise its owner's priority
-ceiling_unlock_order            fail     # a mutex ceiling doesn't raise its owner's priority
-ceiling_waiter                  fail     # a mutex ceiling doesn't raise its owner's priority
-ceiling_waiter_base_change_order fail     # a mutex ceiling doesn't raise its owner's priority, and a priority change below one applies at once
-ceiling_with_plain_mutex        fail     # a ceiling mutex doesn't raise its owner's priority
+ceiling_init_count_owner        pass
+ceiling_init_count_raised_creator fail     # the create checks the ceiling against the creator's raised priority, not its base
+ceiling_owner_end_handover      pass
+ceiling_priority2_returns       fail     # a priority change below a held ceiling applies at once
+ceiling_three_nested_unlock     pass
+ceiling_unlock_order            fail     # a priority change below a held ceiling applies at once
+ceiling_waiter                  fail     # threads ignore their priority, so the owner and the waiter it raised run in host order
+ceiling_waiter_base_change_order fail     # a priority change below a held ceiling applies at once
+ceiling_with_plain_mutex        fail     # a priority change below a held ceiling applies at once
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 claim_races_more                fail     # a woken thread runs at once, so it has ended when the main thread reads its status
 clocks                          pass
@@ -523,7 +523,7 @@ multi_events_unknown_uid        fail     # sceKernelWaitMultipleEvents with unus
 multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
 mutex_cancel_counts             pass
-mutex_ceiling                   fail     # mutex priority ceilings
+mutex_ceiling                   fail     # a priority change below a held ceiling applies at once, and threads ignore their priority
 mutex_ceiling_options           pass
 mutex_count_check_order         pass
 mutex_create_unmapped_options   fail     # the first page reads as mapped, so an option struct at 0x4 isn't refused
@@ -729,7 +729,7 @@ thread_create_current_priority  pass
 thread_create_edges             pass
 thread_create_entry_check_order fail     # sceKernelCreateThread checks attr, priority and stack before the entry address, and takes a data address as entry
 thread_create_option_unreadable pass
-thread_create_prio0_ceiling     fail     # a ceiling mutex doesn't raise its owner's priority
+thread_create_prio0_ceiling     fail     # a priority change below a held ceiling applies at once
 thread_create_relative_priority pass
 thread_creator_ends             pass
 thread_delete_lookup            pass

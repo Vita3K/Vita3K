@@ -143,6 +143,7 @@ void ThreadState::begin_run(CPUContext ctx, std::initializer_list<uint32_t> args
     // Each run starts at the priority and on the cores the thread was created with, and its TLS
     // shows them
     base_priority = init_priority;
+    ceiling_bound = SCE_KERNEL_LOWEST_PRIORITY_KERNEL;
     priority = init_priority;
     affinity_mask = init_affinity_mask;
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
@@ -263,6 +264,10 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
             mutex->release_if_owned_by(*this);
             lock.lock();
         }
+        // With no mutex left, the thread is back at its base priority
+        ceiling_bound = SCE_KERNEL_LOWEST_PRIORITY_KERNEL;
+        if (priority != base_priority)
+            set_priority(base_priority);
         while (!held_rwlocks.empty()) {
             const Ref<RWLock> rwlock = Ref<RWLock>::from(held_rwlocks.front());
             lock.unlock();
@@ -702,17 +707,38 @@ void ThreadState::unlist_held(EventFlag &flag) {
     held_flags.remove(flag);
 }
 
-void ThreadState::add_held(Mutex &mutex) {
+void ThreadState::hold_mutex(Mutex &mutex) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
-    held_mutexes.push_back(mutex);
+    // A plain mutex goes at the tail and changes nothing else
+    if (!(mutex.attr & SCE_KERNEL_MUTEX_ATTR_CEILING)) {
+        held_mutexes.push_back(mutex);
+        return;
+    }
+    // Behind the held ceilings at or above this one, and ahead of every plain mutex, whose ceiling is
+    // the lowest priority
+    auto pos = held_mutexes.begin();
+    while (pos != held_mutexes.end() && pos->ceiling <= mutex.ceiling)
+        ++pos;
+    held_mutexes.insert(pos, mutex);
+    ceiling_bound = std::min(ceiling_bound, mutex.ceiling);
+    // A thread that runs at or above the ceiling keeps its priority
+    if (priority > ceiling_bound)
+        set_priority(ceiling_bound);
 }
 
-void ThreadState::remove_held(Mutex &mutex) {
+bool ThreadState::free_mutex(Mutex &mutex) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
     assert(mutex.held_link.linked());
     held_mutexes.remove(mutex);
+    // The first held mutex has the highest ceiling, if it has one at all
+    const bool ceiling = !held_mutexes.empty() && (held_mutexes.front().attr & SCE_KERNEL_MUTEX_ATTR_CEILING);
+    ceiling_bound = ceiling ? held_mutexes.front().ceiling : SCE_KERNEL_LOWEST_PRIORITY_KERNEL;
+    const int bounded = std::min(base_priority, ceiling_bound);
+    if (bounded == priority)
+        return false;
+    set_priority(bounded);
+    return true;
 }
-
 void ThreadState::add_held(RWLock &rwlock) {
     const std::lock_guard<std::mutex> lock(thread_mutex);
     held_rwlocks.push_back(rwlock);
@@ -852,6 +878,11 @@ int ThreadState::change_base_priority(int new_priority) {
 void ThreadState::set_priority(int new_priority) {
     priority = new_priority;
     tls_slot(TLS_CURRENT_PRIORITY) = new_priority;
+}
+
+void ThreadState::take_priority_place() {
+    std::unique_lock<std::mutex> lock(thread_mutex);
+    take_priority_place(lock);
 }
 
 void ThreadState::take_priority_place(std::unique_lock<std::mutex> &lock) {

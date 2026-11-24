@@ -262,7 +262,7 @@ public:
     const SceInt32 init_count;
     const Ptr<SceKernelLwMutexWork> workarea;
     // The ceiling priority a heavy mutex was created with, SCE_KERNEL_LOWEST_PRIORITY_KERNEL for none.
-    // It's reported, not applied yet.
+    // Its owner runs at least at it.
     const int ceiling;
 
     // Returns the error for arguments the caller can't use, or 0. Kernel callers may use more attributes.
@@ -280,11 +280,13 @@ public:
 protected:
     Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea = {});
 
-    // Makes thread the owner, and lists a heavy mutex in what it holds. The lock must be held, except
-    // while the mutex is created.
+    // Makes thread the owner, and lists a heavy mutex in what it holds, which raises it to a ceiling.
+    // The lock must be held, except while the mutex is created.
     void set_owner(ThreadState &thread);
-    // Leaves the mutex with no owner and unlists it. The lock must be held.
-    void clear_owner();
+    // Leaves the mutex with no owner and unlists it, which drops the owner's ceiling. The lock must be
+    // held. Returns the old owner if its priority changed, so that it moves in the queue it waits on
+    // with take_priority_place() once no object's lock is held.
+    [[nodiscard]] ThreadStateRef clear_owner();
 
     // Guarded by the lock, read by the info of each kind of mutex
     SceInt32 lock_count;
