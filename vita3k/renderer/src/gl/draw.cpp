@@ -141,10 +141,16 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         }
     }
 
-    if (renderer.features.use_mask_bit)
+    if (renderer.features.use_mask_bit) {
         // The shader only reads it, but on AMD integrated GPUs a read-only binding does not see the
         // fast clear done by glClearTexImage in sync_mask: every load returns 0 and all fragments are discarded
         glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        if (config.spirv_shader) {
+            glActiveTexture(GL_TEXTURE0 + shader::MASK_TEXTURE_SLOT_SAMPLER);
+            glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
+            glActiveTexture(GL_TEXTURE0);
+        }
+    }
 
     shader::RenderVertUniformBlock &vert_ublock = context.current_vert_render_info;
     vert_ublock.viewport_flip = context.record.viewport_flip;
