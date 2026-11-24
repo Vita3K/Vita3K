@@ -58,18 +58,10 @@ struct SettingsCommitResult {
     std::vector<config::RestartRequiredSetting> restart_required_settings;
 };
 
-/// Describes the state of the application to be run
-enum class AppRunType {
-    /// Run type is unknown
-    Unknown,
-    /// Extracted, files are as they are on console
-    Extracted,
-};
-
 bool init_paths(Root &root_paths);
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
 void shutdown_app_runtime(EmuEnvState &state);
-void reset_app_state(EmuEnvState &state);
+void reset_app_state(EmuEnvState &state, bool update_discord_presence = true);
 bool late_init(EmuEnvState &state);
 void apply_renderer_config(EmuEnvState &emuenv);
 void apply_runtime_settings(EmuEnvState &emuenv);
@@ -83,6 +75,7 @@ bool scan_apps(EmuEnvState &emuenv);
 bool load_cached_apps(EmuEnvState &emuenv);
 void save_apps_cache(EmuEnvState &emuenv);
 AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id);
+void update_app(EmuEnvState &emuenv, const AppEntry &app);
 void load_app_times(EmuEnvState &emuenv);
 void save_app_times(EmuEnvState &emuenv);
 void update_last_time_app_used(EmuEnvState &emuenv, const std::string &app_path);
