@@ -403,13 +403,7 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
                         || key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_toggle_touch_alt))
                         toggle_touchscreen(emuenv.touch);
 
-                    if (key == input::physical_key_to_sdl_scancode(cfg.keyboard_toggle_texture_replacement)
-                        || key == input::physical_key_to_sdl_scancode(cfg.keyboard_toggle_texture_replacement_alt))
-                        toggle_texture_replacement(emuenv);
-
-                    if (key == input::physical_key_to_sdl_scancode(cfg.keyboard_take_screenshot)
-                        || key == input::physical_key_to_sdl_scancode(cfg.keyboard_take_screenshot_alt))
-                        take_screenshot(emuenv);
+                    // TODO: Implement texture replacement screenshot hotkeys, they need to be thread-safe and not be blocking
 
                     if (key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_exit)
                         || key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_exit_alt))
