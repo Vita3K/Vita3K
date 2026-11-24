@@ -703,7 +703,7 @@ sync_object_memory_cost         fail     # kernel objects take no main memory
 syscall_callee_saved            pass
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
-syscall_vfp_clobber             fail     # a delay or a timed-out semaphore wait keeps every d register, none read the NaN 0x7FF8DEAD7F80DEAD
+syscall_vfp_clobber             pass
 syscall_vfp_helpers             fail     # kernel calls change FPSCR and keep d0, d1 and d16, the Vita keeps FPSCR and clobbers those in some calls
 sysmodule                       fail     # system modules don't load without firmware
 system_font_blocks              crash    # opening the system font blocks by name
@@ -717,7 +717,7 @@ thread_context_core_registers   pass
 thread_context_for_vm           pass
 thread_context_for_vm_error_order pass
 thread_context_never_ran        skip     # threads ignore their core and priority, so whether W runs before the suspend is a race
-thread_context_set_for_vm       fail     # a d16 written into a waiting thread doesn't show in the next read, and the thread keeps its own d16 across the wait
+thread_context_set_for_vm       pass
 thread_context_set_fpscr        pass
 thread_context_set_frame        fail     # a thread whose call frame was written runs the new pc with all the written registers, on the Vita the landing doesn't run and the thread doesn't end
 thread_context_set_frame_registers fail     # after a write into the call frame r1 to r3 aren't 0xDEADBEEF and r4 to r11 keep the written values
@@ -780,7 +780,7 @@ thread_limit_count              fail     # sceKernelCreateThread has no thread l
 thread_limit_release            fail     # thread creates aren't refused at the Vita's limit, which gives 0x8002450D
 thread_limits                   fail     # no limit on the number of threads
 thread_names                    pass
-thread_nouse_vfp                fail     # a waiting thread keeps d16 across its wait
+thread_nouse_vfp                pass
 thread_null_name                pass
 thread_opt_fields               pass
 thread_opt_param                pass

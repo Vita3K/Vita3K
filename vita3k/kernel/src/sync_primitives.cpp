@@ -62,8 +62,7 @@ void Waitable::wake_one(ThreadState &thread, Waitable *queue, SceInt32 result) {
         *std::exchange(thread.time_left, nullptr) = time_left_until(thread.wait_deadline);
     if (queue)
         queue->wait_ended(thread, result);
-    thread.wait_target = {};
-    thread.update_status(ThreadStatus::ready);
+    thread.make_ready();
 }
 
 std::size_t Waitable::wake_all(SceInt32 result) {
@@ -90,11 +89,10 @@ SceInt32 Waitable::queue(ThreadState &thread, SceUInt32 type, const WaitRequest 
     thread.queued_priority = thread.priority;
     waiter_added(thread);
     // The thread shows the wait from here, and its link and its target change together
-    thread.wait_target = { type, uid };
     thread.time_left = deadline == Deadline::max() ? nullptr : timeout;
     thread.wait_deadline = deadline;
     thread.waited = this;
-    thread.update_status(ThreadStatus::waiting);
+    thread.enter_wait({ type, uid });
     if (attr & SCE_KERNEL_ATTR_TH_PRIO)
         insert_waiter_by_priority(thread);
     else

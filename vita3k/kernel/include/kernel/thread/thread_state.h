@@ -67,6 +67,24 @@ struct DisplayWaitBases {
     uint32_t depth = 0;
 };
 
+// A thread's VFP save area, which the kernel saves into when a call switches the thread out, and
+// which the ForVM calls read and write while the thread is in a call
+struct VfpArea {
+    // d0 to d31
+    std::array<float, arm::EXT_REG_WORDS> regs;
+    // The FPSCR the save took, the kernel's
+    uint32_t fpscr;
+
+    // Fills every d register and gives the kernel's FPSCR, as each start and callback entry does
+    void init();
+    // Takes d8 to d15 of context and the kernel's FPSCR, when a call switches the thread out
+    void save(const CPUContext &context);
+    // Gives context d8 to d15 back and fills the others but d2 and d3, when the call goes on
+    void resume(CPUContext &context) const;
+    // Gives context d8 to d15 back and leaves the others, after a hold right after a call
+    void give_back(CPUContext &context) const;
+};
+
 struct ThreadState final : public WithUidClass<ThreadState, Waitable, UidClass::thread> {
 private:
     friend class Ref<ThreadState>;
@@ -264,6 +282,14 @@ private:
 
     // The private methods are called with thread_mutex held, unless they say otherwise
     void update_status(ThreadStatus status);
+    // Shows the thread WAITING on the target, which switches it out in its call, so its VFP state goes
+    // to the save area first. The lock must be held.
+    void enter_wait(WaitTarget target);
+    // Clears the target and shows the thread READY, as whoever ends the wait does. The lock must be held.
+    void make_ready();
+    // Gives the thread its VFP state back as it runs again in its call, and shows it RUNNING. The lock
+    // must be held.
+    void switch_in();
     // The status the guest sees: SUSPENDED for a thread a ForVM suspend holds at its stop
     ThreadStatus shown_status() const;
     // Whether the thread is ending
@@ -406,6 +432,8 @@ private:
     // ForVM suspend
     // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet
     int vm_suspend_count = 0;
+    // The VFP save area, guarded by the lock
+    VfpArea vfp_area;
     // Whether the guest code of the level about to run last stopped right after a kernel call, which
     // a hold there reports. run_guest() sets it before the holds.
     bool stopped_after_kernel_call = false;

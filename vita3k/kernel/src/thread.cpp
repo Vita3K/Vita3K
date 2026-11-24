@@ -54,14 +54,66 @@ static CPUContext initial_context(Address stack_top) {
     return ctx;
 }
 
-// Puts the fill value in the d registers the kernel doesn't keep when it resumes a thread
+// Puts the fill value the kernel uses for the d registers it doesn't keep in d register d
+static void fill_d(std::span<float, arm::EXT_REG_WORDS> regs, uint32_t d) {
+    regs[arm::WORDS_PER_D_REG * d] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_LOW);
+    regs[arm::WORDS_PER_D_REG * d + 1] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_HIGH);
+}
+
+// The d8 to d15 part of a set of VFP registers, which a call keeps
+template <class T>
+static std::span<T, arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT> callee_saved(std::span<T, arm::EXT_REG_WORDS> regs) {
+    return regs.template subspan<arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S, arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT>();
+}
+
+// Puts the fill value in the d registers the kernel doesn't keep when it resumes a thread that it
+// switched out in a kernel call
 static void fill_unkept_vfp(CPUContext &ctx) {
     for (uint32_t d = 0; d < arm::D_REG_COUNT; d++) {
         if (d == 2 || d == 3 || (d >= arm::AAPCS_VFP_CALLEE_SAVED_FIRST_D && d <= arm::AAPCS_VFP_CALLEE_SAVED_LAST_D))
             continue;
-        ctx.fpu_registers[arm::WORDS_PER_D_REG * d] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_LOW);
-        ctx.fpu_registers[arm::WORDS_PER_D_REG * d + 1] = std::bit_cast<float>(SCE_KERNEL_VFP_REGISTER_FILL_HIGH);
+        fill_d(ctx.fpu_registers, d);
     }
+}
+
+void VfpArea::init() {
+    for (uint32_t d = 0; d < arm::D_REG_COUNT; d++)
+        fill_d(regs, d);
+    fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
+}
+
+void VfpArea::save(const CPUContext &context) {
+    std::ranges::copy(callee_saved(std::span(context.fpu_registers)), callee_saved(std::span(regs)).begin());
+    // The FPSCR the kernel runs with
+    fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
+}
+
+void VfpArea::resume(CPUContext &context) const {
+    give_back(context);
+    fill_unkept_vfp(context);
+}
+
+void VfpArea::give_back(CPUContext &context) const {
+    std::ranges::copy(callee_saved(std::span(regs)), callee_saved(std::span(context.fpu_registers)).begin());
+}
+
+void ThreadState::enter_wait(WaitTarget target) {
+    wait_target = target;
+    vfp_area.save(cpu->get_context());
+    update_status(ThreadStatus::waiting);
+}
+
+void ThreadState::make_ready() {
+    wait_target = {};
+    update_status(ThreadStatus::ready);
+}
+
+void ThreadState::switch_in() {
+    // The way back to the thread's code, where it keeps its own FPSCR
+    CPUContext context = cpu->get_context();
+    vfp_area.resume(context);
+    cpu->set_context(context);
+    update_status(ThreadStatus::running);
 }
 
 ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUStatePtr cpu, const char *name, Address entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, SceUInt32 attr)
@@ -92,6 +144,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
     tls_slot(TLS_STACK_CHECK_GUARD) = static_cast<int>(KernelState::STACK_CHECK_GUARD);
     tls_slot(TLS_CURRENT_PRIORITY) = priority;
     tls_slot(TLS_CPU_AFFINITY_MASK) = affinity_mask;
+    vfp_area.init();
 
     const Ptr<uint8_t> user_tls_ptr = tls.get_ptr<uint8_t>() + SCE_KERNEL_TLS_SIZE;
     this->cpu->set_tpidruro(user_tls_ptr.address());
@@ -140,6 +193,7 @@ void ThreadState::begin_run(CPUContext ctx, std::initializer_list<uint32_t> args
     // A start clears a callback notification and a signal left from before, which its end keeps
     callback_pending = false;
     signal_pending = false;
+    vfp_area.init();
     // Each run starts at the priority and on the cores the thread was created with, and its TLS
     // shows them
     base_priority = init_priority;
@@ -391,6 +445,7 @@ std::optional<uint32_t> ThreadState::run_callback(Address fn, std::initializer_l
     CPUContext saved = cpu->get_context();
     const uint32_t tpidruro = cpu->get_tpidruro();
     CPUContext entry = initial_context(saved.get_sp());
+    vfp_area.init();
     // The callback sees the thread's TPIDRURW, and the thread gets its own value back after it
     entry.tpidrurw = saved.tpidrurw;
     const int vfp_exception = std::exchange(tls_slot(TLS_VFP_EXCEPTION), 0);
@@ -487,10 +542,9 @@ SceInt32 ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
             if (exiting())
                 return SCE_KERNEL_ERROR_THREAD_STOPPED;
             // A signal wait sleeps with a callback pending, only a notify during the sleep ends it
-            wait_target = { wait_type(SCE_KERNEL_WAITTYPE_SIGNAL, callbacks), SCE_KERNEL_SIGNAL_WAIT_ID };
             time_left = deadline == Deadline::max() ? nullptr : timeout;
             wait_deadline = deadline;
-            update_status(ThreadStatus::waiting);
+            enter_wait({ wait_type(SCE_KERNEL_WAITTYPE_SIGNAL, callbacks), SCE_KERNEL_SIGNAL_WAIT_ID });
             r = sleep(lock, deadline);
         }
         // A signal sent during the sleep ends it with 0, a notify runs the callbacks and waits again
@@ -539,11 +593,21 @@ bool ThreadState::held() const {
 void ThreadState::stop_for_holds(std::unique_lock<std::mutex> &lock) {
     if (!held())
         return;
+    // Held right after a call, the thread is switched out in it
+    const bool in_call = stopped_after_kernel_call;
+    if (in_call)
+        vfp_area.save(cpu->get_context());
     parked = true;
     cv.notify_all();
     // The holds can change while the thread waits
     cv.wait(lock, [&] { return !held(); });
     parked = false;
+    // Without the fill, since an import's float result is already in d0
+    if (in_call) {
+        CPUContext context = cpu->get_context();
+        vfp_area.give_back(context);
+        cpu->set_context(context);
+    }
 }
 
 int ThreadState::stack_free_size() const {
@@ -558,20 +622,18 @@ ThreadState::HostWait::HostWait(ThreadState &thread, std::optional<WaitTarget> s
     : thread(thread) {
     const std::lock_guard<std::mutex> lock(thread.thread_mutex);
     thread.host_waiting = true;
-    if (shown) {
-        thread.wait_target = *shown;
-        thread.update_status(ThreadStatus::waiting);
-    } else {
+    if (shown)
+        thread.enter_wait(*shown);
+    else
         thread.cv.notify_all();
-    }
 }
 
 ThreadState::HostWait::~HostWait() {
     const std::lock_guard<std::mutex> lock(thread.thread_mutex);
     thread.host_waiting = false;
     if (thread.status == ThreadStatus::waiting) {
-        thread.wait_target = {};
-        thread.update_status(ThreadStatus::running);
+        thread.make_ready();
+        thread.switch_in();
     }
 }
 
@@ -606,8 +668,7 @@ SceInt32 ThreadState::wait(WaitTarget target, Deadline deadline) {
     // timeout ends it at once
     if ((target.type & SCE_KERNEL_WAITTYPE_CB_BIT) && callback_pending && std::chrono::steady_clock::now() < deadline)
         return SCE_KERNEL_ERROR_NOTIFY_CALLBACK;
-    wait_target = target;
-    update_status(ThreadStatus::waiting);
+    enter_wait(target);
     return sleep(lock, deadline);
 }
 
@@ -628,7 +689,7 @@ SceInt32 ThreadState::sleep(std::unique_lock<std::mutex> &lock, Deadline deadlin
     }
     // Before the call writes its result to the registers. A thread something holds goes on to its
     // holds, which keep it from its callbacks and its code.
-    update_status(ThreadStatus::running);
+    switch_in();
     return wait_result;
 }
 
@@ -999,14 +1060,10 @@ SceInt32 ThreadState::get_vm_context(SceKernelThreadCpuRegisterInfo *cpu_info, S
         cpu_info->st = tls_slot(TLS_SP_BOTTOM);
     }
     if (vfp_info) {
+        // Inside a kernel call it is the save area
         if (stopped_in_kernel_call()) {
-            // Inside a kernel call the FPSCR is the one the kernel runs with, and only d8 to d15,
-            // which a call keeps, are the thread's. Every other d register reads this NaN.
-            constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
-            vfp_info->fpscr = SCE_KERNEL_THREAD_INITIAL_FPSCR;
-            for (size_t i = 0; i < std::size(vfp_info->reg); i += arm::WORDS_PER_D_REG)
-                memcpy(&vfp_info->reg[i], SCRUBBED, sizeof(SCRUBBED));
-            std::ranges::copy(std::span(context.fpu_registers).subspan(arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S, arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT), vfp_info->reg + arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S);
+            vfp_info->fpscr = vfp_area.fpscr;
+            std::ranges::copy(vfp_area.regs, vfp_info->reg);
         } else {
             vfp_info->fpscr = context.fpscr;
             std::ranges::copy(context.fpu_registers, vfp_info->reg);
@@ -1028,11 +1085,10 @@ SceInt32 ThreadState::set_vm_context(const SceKernelThreadCpuRegisterInfo *cpu_i
         tls_slot(TLS_SP_BOTTOM) = static_cast<int>(cpu_info->st);
     }
     if (vfp_info) {
+        // The FPSCR goes to the thread, and inside a kernel call the d registers go to the save area
         context.fpscr = vfp_info->fpscr;
-        // Inside a kernel call they go to the save area, and the way back to the thread's code
-        // loads only d8 to d15 from it
         if (stopped_in_kernel_call())
-            std::ranges::copy(std::span(vfp_info->reg).subspan(arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S, arm::AAPCS_VFP_CALLEE_SAVED_S_COUNT), context.fpu_registers.begin() + arm::AAPCS_VFP_CALLEE_SAVED_FIRST_S);
+            std::ranges::copy(vfp_info->reg, vfp_area.regs.begin());
         else
             std::ranges::copy(vfp_info->reg, context.fpu_registers.begin());
     }
