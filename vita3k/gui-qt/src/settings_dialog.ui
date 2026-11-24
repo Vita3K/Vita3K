@@ -2942,25 +2942,6 @@ QGroupBox[flat=&quot;true&quot;]::title {
               </widget>
              </item>
              <item>
-              <widget class="QGroupBox" name="gb_advanced_shader_section">
-               <property name="title">
-                <string>Shader</string>
-               </property>
-               <layout class="QVBoxLayout" name="gb_advanced_shader_section_layout">
-                <property name="spacing">
-                 <number>8</number>
-                </property>
-                <item>
-                 <widget class="QCheckBox" name="spirv_shader">
-                  <property name="text">
-                   <string>Use SPIR-V Shader (deprecated)</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
               <widget class="QGroupBox" name="gb_advanced_gl_section">
                <property name="title">
                 <string>OpenGL</string>
@@ -2969,6 +2950,13 @@ QGroupBox[flat=&quot;true&quot;]::title {
                 <property name="spacing">
                  <number>8</number>
                 </property>
+                <item>
+                 <widget class="QCheckBox" name="spirv_shader">
+                  <property name="text">
+                   <string>Use SPIR-V Shader</string>
+                  </property>
+                 </widget>
+                </item>
                 <item>
                  <widget class="QCheckBox" name="disable_mask_bit">
                   <property name="text">
