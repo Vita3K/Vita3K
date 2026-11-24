@@ -255,6 +255,12 @@ private:
 
 using SemaphoreRef = Ref<Semaphore>;
 
+class Condvar;
+
+// Picks the link of a condition variable in its mutex's list, declared before Condvar is complete
+template <class T>
+struct MutexLink : MemberLink<&T::mutex_link> {};
+
 class Mutex : public Waitable {
 public:
     // The mutex's place in its owner's list
@@ -276,6 +282,9 @@ public:
     SceInt32 cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
     // Gives a heavy mutex to its next waiter if thread, which is ending, still owns it.
     void release_if_owned_by(ThreadState &thread);
+    // Lists a new condition variable on the mutex, or returns the unknown mutex error if the mutex
+    // was deleted.
+    SceInt32 add_condition(Condvar &condition);
 
 protected:
     Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateRef thread, int ceiling, Ptr<SceKernelLwMutexWork> workarea = {});
@@ -295,8 +304,16 @@ protected:
     SceUID owner;
 
 private:
+    friend class Condvar;
+
     // The owner of a heavy mutex, which lists it, or null
     ThreadState *owner_thread = nullptr;
+    // The condition variables on the mutex, borrowed, each until it or the mutex is deleted. The lock
+    // guards the list also once the mutex was deleted.
+    IntrusiveList<Condvar, MutexLink<Condvar>> conditions;
+
+    // Takes a condition variable that is deleted or destroyed off the list.
+    void remove_condition(Condvar &condition);
 
     void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
@@ -467,7 +484,10 @@ public:
             , thread_id(thread_id) {}
     };
 
+    // Kept for the condition variable's whole life, so it can always leave the mutex's list
     const MutexRef associated_mutex;
+    // The condition variable's place in its mutex's list, which it leaves when either is deleted
+    IntrusiveLink<Condvar> mutex_link;
 
     // Returns the error for arguments a create can't use, or 0.
     static SceInt32 check_create(const char *name, SceUInt32 attr);
@@ -477,11 +497,20 @@ public:
     // Returns how many threads wait on the condition variable, 0 once it was deleted.
     SceUInt32 num_waiters() const;
 
+    ~Condvar();
+
 protected:
+    // The mutex's UID, which the mutex's delete sets to -1 under the lock
+    SceUID mutex_id;
+
     Condvar(SceUInt32 attr, const char *name, MutexRef associated_mutex);
 
 private:
+    friend class Mutex;
+
     void end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) override;
+    // Ends the waits on the condition variable when its mutex is deleted.
+    void end_mutex_waits();
     bool lightweight() const { return get_uid_class() == UidClass::lw_cond; }
 };
 
