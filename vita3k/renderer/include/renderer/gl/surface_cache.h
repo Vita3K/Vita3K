@@ -80,6 +80,8 @@ struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
     bool srgb = false;
     bool is_ping_pong_mipmapped = false;
     bool is_mipmap_dirty;
+    // sRGB decode mode the mips were generated with
+    bool mipmap_decode = true;
     GLObjectArray<1> gl_texture;
     GLObjectArray<1> gl_ping_pong_texture;
     GLObjectArray<1> gl_expected_read_texture_view;

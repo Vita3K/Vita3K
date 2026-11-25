@@ -338,6 +338,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                     // earlier draws may have written the surface through image stores
                     if (state.features.should_use_shader_interlock())
                         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+                    // mips of an sRGB surface are averaged in the color space it is sampled in
+                    if (support_srgb_decode) {
+                        glBindTexture(GL_TEXTURE_2D, texture);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, srgb ? GL_DECODE_EXT : GL_SKIP_DECODE_EXT);
+                    }
                     generate_surface_mipmaps(texture, state.res_multiplier);
                 }
                 return texture;
@@ -504,9 +509,10 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         return prepare_sampling(info.gl_expected_read_texture_view[0]);
                     }
 
-                    if (info.is_mipmap_dirty && (purpose == SurfaceTextureRetrievePurpose::SAMPLING)) {
+                    if ((info.is_mipmap_dirty || (info.mipmap_decode != srgb)) && (purpose == SurfaceTextureRetrievePurpose::SAMPLING)) {
                         prepare_sampling(info.gl_texture[0]);
                         info.is_mipmap_dirty = false;
+                        info.mipmap_decode = srgb;
                     }
 
                     return info.gl_texture[0];
