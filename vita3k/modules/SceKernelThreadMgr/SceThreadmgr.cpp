@@ -1099,7 +1099,7 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     if (emuenv.kernel.get_thread(thread_id)->in_event_handler())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CONTEXT);
-    const int res = thread->start(arglen, argp, true);
+    const int res = thread->start(arglen, argp);
     if (res < 0)
         return RET_ERROR(res);
     return res;
@@ -1512,7 +1512,7 @@ static SceInt32 check_thread_options(const SceKernelThreadOptParam &opt) {
 }
 
 // The attributes sceKernelCreateThread takes
-constexpr SceUInt32 THREAD_CREATE_ATTRS = SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 | SCE_KERNEL_THREAD_ATTR_NOUSE_VFP | SCE_KERNEL_THREAD_ATTR_VM | SCE_KERNEL_THREAD_ATTR_USER;
+constexpr SceUInt32 THREAD_CREATE_ATTRS = SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_THREAD_ATTR_NOUSE_VFP | SCE_KERNEL_THREAD_ATTR_VM | SCE_KERNEL_THREAD_ATTR_USER;
 
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);

@@ -540,6 +540,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
+        emuenv.kernel.auth_id = module->auth_id;
         uint32_t module_nid = 0;
         {
             const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
@@ -604,6 +605,8 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     for (const auto &module_path : lib_load_list) {
         auto res = load_module(emuenv, module_path);
         LOG_ERROR_IF(res < 0, "Failed to load preloaded module: {}. Ignoring this error.", module_path);
+        if (res >= 0)
+            emuenv.kernel.loaded_modules[res]->flags |= SCE_KERNEL_MODULE_FLAG_PRELOAD;
     }
 
     // Load taiHEN plugins configured for this title
@@ -761,7 +764,7 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
     // Run `module_start` export (entry point) of loaded libraries
     for (auto &[_, module] : emuenv.kernel.loaded_modules) {
         if (module->info.modid != main_module_id)
-            start_module(emuenv, module->info);
+            start_module(emuenv, *module);
     }
 
     SceKernelThreadOptParam param{ 0, 0 };
@@ -781,7 +784,7 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
         param.size = static_cast<SceSize>(buf.size());
         param.attr = arr.address();
     }
-    if (main_thread->start(param.size, Ptr<void>(param.attr), true) < 0) {
+    if (main_thread->start(param.size, Ptr<void>(param.attr)) < 0) {
         LOG_ERROR("Failed to run main thread.");
         return RunThreadFailed;
     }

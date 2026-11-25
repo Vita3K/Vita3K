@@ -122,8 +122,8 @@ public:
     int queued_priority = 0;
 
     // Lifecycle
-    // Starts a dormant thread at entry_point.
-    int start(SceSize arglen, Ptr<void> argp, bool run_entry_callback = false);
+    // Starts a dormant thread at entry_point, and its START handlers run first
+    int start(SceSize arglen, Ptr<void> argp);
     // Ends the thread like sceKernelExitThread: the end handler runs, then it parks dormant
     void exit(SceInt32 status);
     // Ends the thread like sceKernelExitDeleteThread: the end handler runs, then it's deleted

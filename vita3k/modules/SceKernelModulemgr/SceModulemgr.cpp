@@ -42,7 +42,7 @@ static SceUID kernel_start_module(EmuEnvState &emuenv, SceUID module_id, SceSize
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
     }
-    auto result = start_module(emuenv, module->info, args, argp);
+    auto result = start_module(emuenv, *module, args, argp);
     if (pRes)
         *pRes = result;
 
@@ -55,7 +55,7 @@ static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize arg
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
     }
-    auto result = stop_module(emuenv, module->info, args, argp);
+    auto result = stop_module(emuenv, *module, args, argp);
     if (pRes)
         *pRes = result;
     return 0;

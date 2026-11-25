@@ -158,7 +158,7 @@ ThreadState::~ThreadState() {
     assert(held_flags.empty() && held_mutexes.empty() && held_rwlocks.empty());
 }
 
-int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
+int ThreadState::start(SceSize arglen, const Ptr<void> argp) {
     const std::lock_guard<std::mutex> thread_lock(thread_mutex);
     if (running_event_handlers)
         return SCE_KERNEL_ERROR_ILLEGAL_CONTEXT;
@@ -177,7 +177,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     } else {
         arglen = 0;
     }
-    begin_run(ctx, { arglen, data_addr }, run_entry_callback);
+    begin_run(ctx, { arglen, data_addr }, true);
     return SCE_KERNEL_OK;
 }
 

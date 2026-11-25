@@ -742,6 +742,9 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
     kernelModuleInfo->info_segment_address = module_info_segment_address;
     kernelModuleInfo->info_offset = module_info_offset;
+    // The app info starts with the program authority ID
+    if (is_self)
+        memcpy(&kernelModuleInfo->auth_id, image_bytes + self_header.appinfo_offset, sizeof(kernelModuleInfo->auth_id));
 
     auto *sceKernelModuleInfo = &kernelModuleInfo->info;
     sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);

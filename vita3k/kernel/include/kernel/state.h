@@ -50,6 +50,10 @@ struct KernelModule {
     SceKernelModuleInfo info;
     Ptr<const uint8_t> info_segment_address;
     uint32_t info_offset;
+    // SCE_KERNEL_MODULE_FLAG_* bits
+    uint16_t flags;
+    // The program authority ID from the SELF's app info, 0 for a plain ELF
+    uint64_t auth_id;
 };
 using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 
@@ -124,6 +128,8 @@ struct KernelState {
     void *jni_activity;
 
     SceKernelModuleInfoPtrs loaded_modules;
+    // The app's program authority ID, the one of its main module
+    uint64_t auth_id = 0;
     LoadedSysmodules loaded_sysmodules;
     LoadedInternalSysmodules loaded_internal_sysmodules;
 

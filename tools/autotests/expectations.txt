@@ -444,8 +444,8 @@ module_library_nolink           fail     # a library is exported from the load o
 module_library_partial_start    fail     # a library is exported from the load on, so its imports link at the load
 module_library_partial_stop     fail     # a library is exported from the load on, so its imports link at the load
 module_start_no_thread          fail     # there is no thread limit per process, so the threads for module start and stop are always made
-module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
-module_start_threads            fail     # thread event handlers don't run for module start and stop threads
+module_start_thread             pass
+module_start_threads            fail     # libfiber and libjson don't load without firmware
 module_start_vfp                pass
 module_states                   fail     # a module has no state, so the module calls never refuse a start, stop or unload and two loads of a file give the same module
 module_text_padding             fail     # the app's code isn't a memory block

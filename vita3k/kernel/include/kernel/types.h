@@ -50,12 +50,13 @@
 #define SCE_KERNEL_STACK_SIZE_USER_MAIN KiB(256)
 #define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KiB(4)
 #define SCE_KERNEL_THREAD_STACK_SIZE_MAX MiB(32)
+#define SCE_KERNEL_MODULE_ENTRY_STACK_SIZE KiB(16)
+#define SCE_KERNEL_MODULE_ENTRY_STACK_SIZE_GAME KiB(256)
 
 // The thread attributes that can be set when creating a thread. SCE_KERNEL_THREAD_ATTR_USER is always set, and the others are optional.
 #define SCE_KERNEL_THREAD_ATTR_USER 0x80000000U
 #define SCE_KERNEL_THREAD_ATTR_NOUSE_VFP 0x01000000U
 #define SCE_KERNEL_THREAD_ATTR_VM 0x04000000U
-#define SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 0x00002000U
 
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
 #define SCE_KERNEL_THREAD_INITIAL_FPSCR (arm::FPSCR_DN | arm::FPSCR_FZ)
@@ -73,6 +74,8 @@
 // The bits that order the threads waiting on a sync object, separately for each object type
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
 #define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
+// Lets a suspend request end a kernel mode wait on the object, only a kernel caller sets it
+#define SCE_KERNEL_ATTR_SUSPEND_ENDS_WAITS 0x00008000U
 
 // Lets sceKernelOpen* find the object by name
 #define SCE_KERNEL_ATTR_OPENABLE 0x00000080U
@@ -171,6 +174,8 @@
 #define SCE_ERROR_ERRNO_ENOSYS 0x80010058
 
 constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
+
+#define SCE_KERNEL_MODULE_FLAG_PRELOAD 0x1000
 
 enum SceKernelModel {
     SCE_KERNEL_MODEL_VITA,
