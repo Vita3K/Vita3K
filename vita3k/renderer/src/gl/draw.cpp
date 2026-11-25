@@ -55,17 +55,22 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     return GL_TRIANGLES;
 }
 
+// Data of a draw that is skipped must not leak into the next one, which would copy the stale streams
+static void drop_draw_data(GLContext &context) {
+    for (auto &stream : context.record.vertex_streams) {
+        stream.data = nullptr;
+        stream.size = 0;
+    }
+    clear_previous_uniform_storage(context);
+}
+
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
     MemState &mem, const Config &config) {
     R_PROFILE(__func__);
 
     // a draw whose color nothing observes and which leaves depth, stencil and guest memory untouched has no effect
     if (context.record.skip_color_output && !may_write_depth_stencil(context.record) && !may_store_to_memory(context.record, mem)) {
-        for (auto &stream : context.record.vertex_streams) {
-            stream.data = nullptr;
-            stream.size = 0;
-        }
-        clear_previous_uniform_storage(context);
+        drop_draw_data(context);
         return;
     }
 
@@ -99,7 +104,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             // draw using this pair goes through the cache lookup again and picks the program
             // up as soon as the driver is done with it.
             LOG_ERROR_IF(!is_compiling, "Fail to get program!");
-            clear_previous_uniform_storage(context);
+            drop_draw_data(context);
             return;
         }
 
