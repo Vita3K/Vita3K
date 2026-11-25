@@ -246,6 +246,10 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         LOG_WARN("Mask bit emulation is disabled by the settings");
 #endif
 
+    GLint max_texture_units = 0;
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_texture_units);
+    gl_state.support_mask_sampler = max_texture_units > shader::MASK_TEXTURE_SLOT_SAMPLER;
+
     return gl_state.init();
 }
 

@@ -74,6 +74,9 @@ struct GLState : public renderer::State {
 
     bool context_is_current = false;
 
+    // Does the context have the texture unit the SPIR-V shaders read the mask from?
+    bool support_mask_sampler = false;
+
     std::deque<PendingReadback> pending_readbacks;
     std::vector<ReadbackBuffer> free_readback_buffers;
     std::vector<uint8_t> readback_scratch;
