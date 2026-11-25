@@ -26,7 +26,9 @@
 
 #include <shader/spirv_recompiler.h>
 
+#include <chrono>
 #include <iomanip>
+#include <thread>
 #include <vector>
 
 namespace renderer::gl {
@@ -382,6 +384,26 @@ static SharedGLObject get_or_translate_shader(GLState &renderer, const SceGxmPro
     return obj;
 }
 
+// A shader compiled right away must not be translated next to a worker doing the same: both go
+// through the same cache file. Wait for that worker and drop its result, the caller translates again.
+static void wait_for_translation(GLState &renderer, const Sha256Hash &hash, bool use_spirv) {
+    const auto key = std::make_pair(hash, use_spirv);
+    std::shared_ptr<ShaderTranslation> entry;
+    {
+        std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
+        const auto it = renderer.shader_translations.find(key);
+        if (it == renderer.shader_translations.end())
+            return;
+        entry = it->second;
+    }
+
+    while (entry->status.load(std::memory_order_acquire) == ShaderStatus::Translating)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+    std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
+    renderer.shader_translations.erase(key);
+}
+
 // Same as get_or_translate_shader, but keeps the source for the compile worker instead of
 // creating the GL shader object.
 static std::shared_ptr<const ShaderTranslation> get_translated_source(GLState &renderer, const SceGxmProgram *program, std::atomic<uint32_t> *refcount,
@@ -641,6 +663,10 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
             return SharedGLObject();
         }
     } else {
+        const bool use_spirv = features.spirv_shader && spirv;
+        wait_for_translation(renderer, fragment_program.hash, use_spirv);
+        wait_for_translation(renderer, vertex_program.hash, use_spirv);
+
         fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem), features, fragment_program.hash, renderer.fragment_shader_cache,
             GL_FRAGMENT_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled, defer_check);
 
