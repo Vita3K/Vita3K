@@ -218,8 +218,8 @@ void Event::end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) {
 }
 
 SceInt32 Event::register_callback(KernelState &kernel, CallbackRef callback, SceUID notify_id) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     // After the registrations of the same callback
     auto pos = registrations.begin();
@@ -231,8 +231,8 @@ SceInt32 Event::register_callback(KernelState &kernel, CallbackRef callback, Sce
 }
 
 SceInt32 Event::unregister_callback(SceUID callback_id) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     for (CallbackRegistration &registration : registrations) {
         if (registration.callback && registration.callback->uid == callback_id) {
@@ -244,8 +244,8 @@ SceInt32 Event::unregister_callback(SceUID callback_id) {
 }
 
 SceInt32 Event::unregister_callbacks() {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     // Leaves the places of walks in progress
     for (auto it = registrations.begin(); it != registrations.end();) {
@@ -322,8 +322,8 @@ SceInt32 Event::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceU
 }
 
 SceInt32 Event::wait(ThreadState &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
 
     // A wait for pattern 0 matches nothing, so it lasts until its timeout, a cancel or a delete
@@ -351,8 +351,8 @@ SceInt32 Event::wait_result(SceInt32 err, SceUInt32 *result_pattern) {
 }
 
 SceInt32 Event::poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     if (wait_pattern == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -361,8 +361,8 @@ SceInt32 Event::poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt6
 }
 
 SceInt32 Event::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
@@ -372,8 +372,8 @@ SceInt32 Event::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is
 }
 
 SceInt32 Event::set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set, SceInt32 notify_arg) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
@@ -387,16 +387,16 @@ SceInt32 Event::set_or_pulse_and_notify(SceUInt32 set_pattern, SceUInt64 user_da
 }
 
 void SimpleEvent::pulse_and_notify(SceUInt32 pattern, SceInt32 notify_arg) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return;
     fire(pattern, 0, false);
     notify_event_callbacks(guard, notify_arg);
 }
 
 SceInt32 Event::set_system_event(SceUInt32 event, SceUInt64 user_data) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     fire(event, user_data, true);
     // The callbacks get the event's bit as the argument
@@ -440,8 +440,8 @@ void Event::serve() {
 }
 
 SceInt32 Event::clear(SceUInt32 clear_pattern) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     if (clear_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
@@ -452,8 +452,8 @@ SceInt32 Event::clear(SceUInt32 clear_pattern) {
 }
 
 SceInt32 Event::cancel(SceUInt32 *num_wait_threads) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
 
     const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
@@ -464,8 +464,8 @@ SceInt32 Event::cancel(SceUInt32 *num_wait_threads) {
 }
 
 SceInt32 Event::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *num_wait_threads) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     if (set_pattern & ~SCE_KERNEL_EVENT_USER_DEFINED_MASK)
         return SCE_KERNEL_ERROR_ILLEGAL_PATTERN;
@@ -481,16 +481,16 @@ SceInt32 Event::cancel(SceUInt32 set_pattern, SceUInt64 user_data, SceUInt32 *nu
 }
 
 SceInt32 Event::get_pattern(SceUInt32 &result) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
     result = pattern;
     return SCE_KERNEL_OK;
 }
 
 SceInt32 Event::info(SceKernelEventInfo &info) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
 
     info = {};
@@ -619,9 +619,9 @@ void TimerService::run() {
 }
 
 void Timer::expire(uint64_t cutoff) {
-    auto guard = lock();
+    std::unique_lock<std::mutex> guard(mutex);
     // A delete, stop, cancel or new event since the service took the timer can leave nothing due
-    if (!guard || !timers.take_due(*this, cutoff))
+    if (deleted || !timers.take_due(*this, cutoff))
         return;
     fire(SCE_KERNEL_EVENT_TIMER, 0, !is_pulse);
     // A one shot event stays armed, so a start or a set time arms it again
@@ -639,8 +639,8 @@ void Timer::end_waits(SceUID deleter, std::unique_lock<std::mutex> &guard) {
 }
 
 SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
     if (type != SCE_KERNEL_TIMER_TYPE_SET_EVENT && type != SCE_KERNEL_TIMER_TYPE_PULSE_EVENT)
         return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
@@ -660,8 +660,8 @@ SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repe
 }
 
 SceInt32 Timer::start() {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
     if (is_started)
@@ -679,8 +679,8 @@ SceInt32 Timer::start() {
 }
 
 SceInt32 Timer::stop() {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
     if (!is_started)
@@ -694,8 +694,8 @@ SceInt32 Timer::stop() {
 }
 
 std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     const uint64_t old_count = count();
@@ -717,24 +717,24 @@ uint64_t Timer::count() const {
 }
 
 SceInt32 Timer::get_time(uint64_t &time) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
     time = count();
     return SCE_KERNEL_OK;
 }
 
 SceInt32 Timer::get_base(uint64_t &time) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
     time = is_started ? base : 0;
     return SCE_KERNEL_OK;
 }
 
 SceInt32 Timer::remaining_time(uint64_t &time) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
     if (!armed)
         return SCE_KERNEL_ERROR_EVENT_NOT_SET;
@@ -743,8 +743,8 @@ SceInt32 Timer::remaining_time(uint64_t &time) {
 }
 
 SceInt32 Timer::timer_info(SceKernelTimerInfo &info) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
     info = {};
@@ -764,8 +764,8 @@ SceInt32 Timer::timer_info(SceKernelTimerInfo &info) {
 }
 
 SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
     const auto nb_threads = static_cast<SceUInt32>(wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
@@ -909,8 +909,8 @@ void Mutex::update_workarea(MemState &mem) {
 }
 
 SceInt32 Mutex::acquire(MemState &mem, ThreadState &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
     if (const SceInt32 error = check_count(count))
         return error;
@@ -945,8 +945,8 @@ SceInt32 Mutex::acquire(MemState &mem, ThreadState &thread, SceInt32 count, SceU
 }
 
 SceInt32 Mutex::relock(MemState &mem, ThreadState &thread, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
     // The owner's own relock takes or fails at once, like its lock
     if (owner == thread.id)
@@ -978,8 +978,8 @@ SceInt32 Mutex::relock(MemState &mem, ThreadState &thread, bool callbacks) {
 }
 
 SceInt32 Mutex::try_acquire(MemState &mem, ThreadState &thread, SceInt32 count) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
     if (const SceInt32 error = check_count(count))
         return error;
@@ -988,9 +988,9 @@ SceInt32 Mutex::try_acquire(MemState &mem, ThreadState &thread, SceInt32 count) 
 }
 
 SceInt32 Mutex::release(MemState &mem, ThreadState &thread, SceInt32 unlock_count) {
-    const auto guard = lock();
+    const std::lock_guard<std::mutex> guard(mutex);
     // Deleted meanwhile, which a lightweight mutex reports as not owned
-    if (!guard)
+    if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
 
     if (const SceInt32 error = check_count(unlock_count))
@@ -1015,8 +1015,8 @@ SceInt32 Mutex::release(MemState &mem, ThreadState &thread, SceInt32 unlock_coun
 }
 
 void Mutex::release_if_owned_by(ThreadState &thread) {
-    const auto guard = lock();
-    if (!guard || owner_thread != &thread)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted || owner_thread != &thread)
         return;
     lock_count = 0;
     // The thread end sets its priority itself once every mutex is given back
@@ -1035,8 +1035,8 @@ void Mutex::serve() {
 }
 
 SceInt32 Mutex::cancel(ThreadState &thread, SceInt32 new_count, SceUInt32 *num_wait_threads) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
 
     // Any negative count restores the lock count the mutex was created with
@@ -1075,8 +1075,8 @@ SceInt32 LwMutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_c
 }
 
 SceInt32 LwMutex::info(SceKernelLwMutexInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID;
 
     info = {};
@@ -1092,8 +1092,8 @@ SceInt32 LwMutex::info(SceKernelLwMutexInfo &info) const {
 }
 
 SceInt32 HeavyMutex::info(SceKernelMutexInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
 
     info = {};
@@ -1170,8 +1170,8 @@ SceInt32 RWLock::try_take(ThreadState &thread, bool is_write) {
 }
 
 SceInt32 RWLock::acquire(ThreadState &thread, bool is_write, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
     // The writer locking again succeeds or fails at once, without callbacks. A reader asking for a
     // write lock waits, since readers aren't tracked individually.
@@ -1198,8 +1198,8 @@ SceInt32 RWLock::acquire(ThreadState &thread, bool is_write, SceUInt32 *timeout,
 }
 
 SceInt32 RWLock::try_acquire(ThreadState &thread, bool is_write) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
     return try_take(thread, is_write);
@@ -1230,8 +1230,8 @@ SceInt32 RWLock::release_write(ThreadState &thread) {
 }
 
 SceInt32 RWLock::release(ThreadState &thread, bool is_write) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
     if (is_write) {
@@ -1252,8 +1252,8 @@ SceInt32 RWLock::release(ThreadState &thread, bool is_write) {
 }
 
 void RWLock::release_if_write_locked_by(ThreadState &thread) {
-    const auto guard = lock();
-    if (!guard || write_owner != &thread)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted || write_owner != &thread)
         return;
     lock_count = 0;
     clear_write_owner();
@@ -1261,8 +1261,8 @@ void RWLock::release_if_write_locked_by(ThreadState &thread) {
 }
 
 SceInt32 RWLock::info(SceKernelRWLockInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
     info = {};
@@ -1298,8 +1298,8 @@ void RWLock::serve() {
 }
 
 SceInt32 RWLock::cancel(ThreadState &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
     const auto is_writer = [](auto &waiter) { return waiter.wait_request().write; };
@@ -1349,8 +1349,8 @@ void Semaphore::end_waits(SceUID, std::unique_lock<std::mutex> &) {
 }
 
 SceInt32 Semaphore::wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
     if (need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
@@ -1369,8 +1369,8 @@ SceInt32 Semaphore::wait(ThreadState &thread, SceInt32 need_count, SceUInt32 *ti
 }
 
 SceInt32 Semaphore::poll(ThreadState &thread, SceInt32 need_count) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
     if (need_count > max)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
@@ -1387,8 +1387,8 @@ bool Semaphore::try_take(ThreadState &thread, SceInt32 need_count) {
 }
 
 SceInt32 Semaphore::signal(SceInt32 count) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
 
     if (count > max - val) {
@@ -1410,8 +1410,8 @@ void Semaphore::serve() {
 }
 
 SceInt32 Semaphore::cancel(SceInt32 set_count, SceUInt32 *num_wait_threads) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
 
     if (set_count > max)
@@ -1429,8 +1429,8 @@ SceInt32 Semaphore::cancel(SceInt32 set_count, SceUInt32 *num_wait_threads) {
 }
 
 SceInt32 Semaphore::info(SceKernelSemaInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
 
     info = {};
@@ -1466,8 +1466,8 @@ void Condvar::end_waits(SceUID, std::unique_lock<std::mutex> &) {
 }
 
 SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID : SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
 
     if (const SceInt32 error = associated_mutex->release(mem, thread, 1))
@@ -1515,8 +1515,8 @@ SceInt32 Condvar::wait(MemState &mem, ThreadState &thread, SceUInt32 *timeout, b
 }
 
 SceInt32 Condvar::signal(SignalTarget target) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID : SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
 
     if (target.type == SignalTarget::Type::Specific) {
@@ -1537,13 +1537,13 @@ SceInt32 Condvar::signal(SignalTarget target) {
 }
 
 SceUInt32 Condvar::num_waiters() const {
-    const auto guard = lock();
-    return guard ? static_cast<SceUInt32>(waiters.size()) : 0;
+    const std::lock_guard<std::mutex> guard(mutex);
+    return deleted ? 0 : static_cast<SceUInt32>(waiters.size());
 }
 
 SceInt32 HeavyCond::info(SceKernelCondInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
 
     info = {};
@@ -1560,8 +1560,8 @@ LwCond::LwCond(SceUInt32 attr, const char *name, MutexRef associated_mutex, Ptr<
     , workarea(workarea) {}
 
 SceInt32 LwCond::info(SceKernelLwCondInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID;
 
     info = {};
@@ -1673,8 +1673,8 @@ SceInt32 EventFlag::try_take(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait
 }
 
 SceInt32 EventFlag::wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
     // A wait checks the mode before the pattern, a poll the other way round
     if (const SceInt32 error = check_mode(wait_mode))
@@ -1716,8 +1716,8 @@ SceInt32 EventFlag::wait(ThreadState &thread, SceUInt32 pattern, SceUInt32 wait_
 }
 
 SceInt32 EventFlag::poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
     if (pattern == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -1728,16 +1728,16 @@ SceInt32 EventFlag::poll(SceUID thread_id, SceUInt32 pattern, SceUInt32 wait_mod
 }
 
 void EventFlag::release_if_held_by(ThreadState &thread) {
-    const auto guard = lock();
-    if (!guard || holder != &thread)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted || holder != &thread)
         return;
     holds = 0;
     clear_holder();
 }
 
 SceInt32 EventFlag::set(SceUInt32 pattern) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
 
     flags |= pattern;
@@ -1765,8 +1765,8 @@ void EventFlag::serve() {
 }
 
 SceInt32 EventFlag::clear(SceUInt32 pattern) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
 
     flags &= pattern;
@@ -1775,8 +1775,8 @@ SceInt32 EventFlag::clear(SceUInt32 pattern) {
 }
 
 SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
 
     // The waiters get the new bits as their out bits
@@ -1790,8 +1790,8 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
 }
 
 SceInt32 EventFlag::info(SceKernelEventFlagInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
 
     info = {};
@@ -2115,8 +2115,8 @@ SceInt32 MsgPipe::receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mod
             thread.process_callbacks();
         return result;
     }
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
     const std::expected<SceSize, SceInt32> total = check_pieces(pieces);
     if (!total)
@@ -2158,8 +2158,8 @@ SceInt32 MsgPipe::send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, 
             thread.process_callbacks();
         return result;
     }
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
     const std::expected<SceSize, SceInt32> total = check_pieces(pieces);
     if (!total)
@@ -2191,8 +2191,8 @@ SceInt32 MsgPipe::send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, 
 }
 
 SceInt32 MsgPipe::try_receive(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
     const std::expected<SceSize, SceInt32> total = check_pieces(pieces);
     if (!total)
@@ -2206,8 +2206,8 @@ SceInt32 MsgPipe::try_receive(ThreadState &thread, MemState &mem, SceUInt32 wait
 }
 
 SceInt32 MsgPipe::try_send(ThreadState &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceSize *size) {
-    auto guard = lock();
-    if (!guard)
+    std::unique_lock<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
     const std::expected<SceSize, SceInt32> total = check_pieces(pieces);
     if (!total)
@@ -2221,8 +2221,8 @@ SceInt32 MsgPipe::try_send(ThreadState &thread, MemState &mem, SceUInt32 wait_mo
 }
 
 SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads) {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
 
     const SceUInt32 senders = waiting_side == Side::senders ? side_count : 0;
@@ -2246,8 +2246,8 @@ SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receiv
 }
 
 SceInt32 MsgPipe::info(SceKernelMppInfo &info) const {
-    const auto guard = lock();
-    if (!guard)
+    const std::lock_guard<std::mutex> guard(mutex);
+    if (deleted)
         return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
 
     info = {};

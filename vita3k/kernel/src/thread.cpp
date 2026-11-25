@@ -280,7 +280,7 @@ bool ThreadState::finish_run(std::unique_lock<std::mutex> &lock) {
         lock.unlock();
         // The end waiters see the status and the exit status together. Both locks stay held until
         // they are woken, so a start can't come in between.
-        const auto end_guard = this->lock();
+        const std::lock_guard<std::mutex> end_guard(mutex);
         lock.lock();
         update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
         wake_all_if([&](auto &waiter) {
@@ -576,7 +576,7 @@ ThreadState::HostWait::~HostWait() {
 }
 
 SceInt32 ThreadState::wait_for_thread_end(ThreadState &waiter, SceInt32 *exit_status, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
+    std::unique_lock<std::mutex> guard(mutex);
     // An ended run gives its exit status at once with the timeout as it was. No callback runs after
     // the wait, and a thread is never deleted from the object table.
     const SceUInt32 type = wait_type(SCE_KERNEL_WAITTYPE_WAITTHEND, callbacks);
