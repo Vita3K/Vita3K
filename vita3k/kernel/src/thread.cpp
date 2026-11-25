@@ -492,13 +492,14 @@ void ThreadState::dispatch_abort(Address fault_addr) {
     cpu.set_context(interrupted);
 }
 
-uint32_t ThreadState::start_and_wait(SceSize args, const Ptr<void> argp) {
-    // A refused start leaves the thread dormant, so its error is the result
+int ThreadState::start_and_wait(SceSize args, const Ptr<void> argp, uint32_t &exit_status) {
+    // A refused start leaves the thread dormant
     if (const int error = start(args, argp))
         return error;
     std::unique_lock<std::mutex> lock(thread_mutex);
     cv.wait(lock, [&] { return status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
-    return returned_value;
+    exit_status = returned_value;
+    return SCE_KERNEL_OK;
 }
 
 uint32_t ThreadState::call_and_wait(Address arg) {

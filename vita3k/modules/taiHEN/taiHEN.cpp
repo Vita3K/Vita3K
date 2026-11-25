@@ -24,6 +24,7 @@
 #include <mem/functions.h>
 #include <modules/module_parent.h>
 #include <nids/functions.h>
+#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/tracy.h>
 
@@ -923,13 +924,9 @@ EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args
     if (uid < 0)
         return uid;
 
-    {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-        if (mod_it != emuenv.kernel.loaded_modules.end()) {
-            start_module(emuenv, *mod_it->second);
-        }
-    }
+    // The start thread takes the kernel lock, so it runs after the lookup lets it go
+    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
+        start_module(emuenv, *module);
     return uid;
 }
 
@@ -943,13 +940,9 @@ EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args
     if (uid < 0)
         return uid;
 
-    {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-        if (mod_it != emuenv.kernel.loaded_modules.end()) {
-            start_module(emuenv, *mod_it->second);
-        }
-    }
+    // The start thread takes the kernel lock, so it runs after the lookup lets it go
+    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
+        start_module(emuenv, *module);
     return uid;
 }
 

@@ -26,5 +26,5 @@ struct KernelState;
 struct MemState;
 struct KernelModule;
 
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path);
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path, uint16_t flags);
 int unload_self(KernelState &kernel, MemState &mem, KernelModule &module);

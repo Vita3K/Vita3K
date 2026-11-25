@@ -46,6 +46,8 @@ static constexpr uint32_t NID_MODULE_START = 0x935CD196;
 static constexpr uint32_t NID_MODULE_INFO = 0x6C2224BA;
 static constexpr uint32_t NID_SYSLYB = 0x936c8a78;
 static constexpr uint32_t NID_PROCESS_PARAM = 0x70FBA1E7;
+static constexpr uint32_t NID_MODULE_START_THREAD_PARAM = 0x1A9822A4;
+static constexpr uint32_t NID_MODULE_STOP_THREAD_PARAM = 0xD20886EB;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 
@@ -340,7 +342,7 @@ static bool unload_func_exports(const uint32_t *nids, const Ptr<uint32_t> *entri
     return true;
 }
 
-static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
+static bool load_var_exports(KernelModule &module, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -355,6 +357,16 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
         if (nid == NID_MODULE_INFO) {
             LOG_DEBUG("\tNID {} (NID_MODULE_INFO) at {}", log_hex(nid), log_hex(entry.address()));
+            continue;
+        }
+
+        if (nid == NID_MODULE_START_THREAD_PARAM) {
+            module.start_thread_param = entry.address();
+            continue;
+        }
+
+        if (nid == NID_MODULE_STOP_THREAD_PARAM) {
+            module.stop_thread_param = entry.address();
             continue;
         }
 
@@ -421,7 +433,7 @@ static bool unload_var_exports(const uint32_t *nids, size_t count, KernelState &
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
 
-        if (nid == NID_PROCESS_PARAM || nid == NID_MODULE_INFO || nid == NID_SYSLYB)
+        if (nid == NID_PROCESS_PARAM || nid == NID_MODULE_INFO || nid == NID_SYSLYB || nid == NID_MODULE_START_THREAD_PARAM || nid == NID_MODULE_STOP_THREAD_PARAM)
             continue;
 
         // replace again the nid by a stub
@@ -465,7 +477,7 @@ static bool unload_var_exports(const uint32_t *nids, size_t count, KernelState &
     return true;
 }
 
-static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem, bool is_unload = false) {
+static bool load_exports(KernelModule &kernel_module, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem, bool is_unload = false) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
@@ -478,7 +490,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, exports->library_nid, kernel, mem))
+        if (!is_unload && !load_func_exports(&kernel_module.info, nids, entries, exports->num_syms_funcs, exports->library_nid, kernel, mem))
             return false;
         if (is_unload && !unload_func_exports(nids, entries, exports->num_syms_funcs, exports->library_nid, kernel, mem))
             return false;
@@ -489,7 +501,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
             LOG_INFO("Loading var exports from {}", lib_name ? lib_name : "unknown");
         }
 
-        if (!is_unload && !load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem))
+        if (!is_unload && !load_var_exports(kernel_module, &nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem))
             return false;
         if (is_unload && !unload_var_exports(&nids[exports->num_syms_funcs], var_count, kernel, mem))
             return false;
@@ -501,7 +513,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 /**
  * \return Negative on failure
  */
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path) {
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path, uint16_t flags) {
     const uint8_t *const image_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
@@ -742,6 +754,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
     kernelModuleInfo->info_segment_address = module_info_segment_address;
     kernelModuleInfo->info_offset = module_info_offset;
+    kernelModuleInfo->flags = flags;
     // The app info starts with the program authority ID
     if (is_self)
         memcpy(&kernelModuleInfo->auth_id, image_bytes + self_header.appinfo_offset, sizeof(kernelModuleInfo->auth_id));
@@ -799,7 +812,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     if (self_path.contains("eboot.bin"))
         LOG_INFO("eboot.bin module NID: {}", log_hex(module_info->module_nid));
 
-    if (!load_exports(sceKernelModuleInfo, *module_info, module_info_segment_address, kernel, mem)) {
+    if (!load_exports(*kernelModuleInfo, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
 
@@ -823,7 +836,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 int unload_self(KernelState &kernel, MemState &mem, KernelModule &module) {
     LOG_INFO("Unlinking self...");
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module.info_segment_address.get(mem) + module.info_offset);
-    if (!load_exports(&module.info, *module_info, module.info_segment_address, kernel, mem, true)) {
+    if (!load_exports(module, *module_info, module.info_segment_address, kernel, mem, true)) {
         return -1;
     }
 

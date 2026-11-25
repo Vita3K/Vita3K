@@ -42,10 +42,14 @@ static SceUID kernel_start_module(EmuEnvState &emuenv, SceUID module_id, SceSize
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
     }
-    auto result = start_module(emuenv, *module, args, argp);
+    // The status is 0 unless module_start ran
     if (pRes)
-        *pRes = result;
-
+        *pRes = 0;
+    uint32_t status = 0;
+    if (const SceInt32 error = start_module(emuenv, *module, args, argp, &status); error < 0)
+        return error;
+    if (pRes)
+        *pRes = status;
     return module->info.modid;
 }
 
@@ -55,9 +59,14 @@ static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize arg
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
     }
-    auto result = stop_module(emuenv, *module, args, argp);
+    // A stop that can't run leaves the module loaded
     if (pRes)
-        *pRes = result;
+        *pRes = 0;
+    uint32_t status = 0;
+    if (const SceInt32 error = stop_module(emuenv, *module, args, argp, &status); error < 0)
+        return error;
+    if (pRes)
+        *pRes = status;
     return 0;
 }
 

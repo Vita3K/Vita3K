@@ -765,6 +765,16 @@ struct SceKernelModuleInfo {
 };
 static_assert(sizeof(SceKernelModuleInfo) == 0x1B8);
 
+// The thread parameters a module exports for the thread its start or stop function runs on
+struct SceKernelModuleThreadParam {
+    SceUInt32 size; // only a block of size 4 is taken
+    SceInt32 priority;
+    SceSize stack_size;
+    SceUInt32 unused;
+    SceInt32 cpu_affinity_mask;
+};
+static_assert(sizeof(SceKernelModuleThreadParam) == 0x14);
+
 struct SceKernelStartModuleOpt {
     SceSize size;
     SceUInt32 flags;

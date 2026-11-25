@@ -46,6 +46,12 @@ class RWLock;
 template <class T>
 struct HeldLink : MemberLink<&T::held_link> {};
 
+// Whether a game may create a thread with this priority, absolute or relative to the default one
+inline bool is_user_priority(int priority) {
+    return (priority >= SCE_KERNEL_HIGHEST_PRIORITY_USER && priority <= SCE_KERNEL_LOWEST_PRIORITY_USER)
+        || (priority >= SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY && priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY);
+}
+
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
     running = SCE_KERNEL_THREAD_STATUS_RUNNING,
@@ -139,9 +145,9 @@ public:
     // itself made, like a function pointer call from library code. The registers are then the ones
     // the function leaves. Returns its r0, or nothing if the thread's or the app's end cut it short.
     std::optional<uint32_t> call_guest(Address fn, std::initializer_list<uint32_t> args);
-    // Starts the dormant thread from another thread and returns its exit status once it ends, or the
-    // start's error. Used for module start and stop.
-    uint32_t start_and_wait(SceSize args, Ptr<void> argp);
+    // Starts the dormant thread from another thread and stores its exit status in status once it
+    // ends. Returns the start's error. Used for module start and stop.
+    int start_and_wait(SceSize args, Ptr<void> argp, uint32_t &status);
     // Runs the dormant thread's entry as a call with one argument from another thread and returns
     // its exit status once it ends. Used for the GXM display queue callback.
     uint32_t call_and_wait(Address arg);

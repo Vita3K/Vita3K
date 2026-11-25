@@ -449,8 +449,8 @@ module_start_threads            fail     # libfiber and libjson don't load witho
 module_start_vfp                pass
 module_states                   fail     # a module has no state, so the module calls never refuse a start, stop or unload and two loads of a file give the same module
 module_text_padding             fail     # the app's code isn't a memory block
-module_thread_param_affinity    fail     # the mask in a module's start thread parameters isn't checked
-module_thread_params            fail     # the thread parameter blocks a module exports for its start and stop threads are ignored
+module_thread_param_affinity    pass
+module_thread_params            pass
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_async_partial_receive   fail     # message pipe calls with DONT_WAIT finish at once like a try instead of in the background

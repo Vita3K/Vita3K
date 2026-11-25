@@ -1483,12 +1483,6 @@ EXPORT(SceUID, sceKernelCreateCallback, Ptr<const char> name, SceUInt32 attr, Pt
     return emuenv.kernel.get_thread(thread_id)->add_callback(Ref<Callback>::make(thread_id, name_copy, callbackFunc, pCommon));
 }
 
-// Whether a game may create a thread with this priority, absolute or relative to the default one
-static bool is_user_priority(int priority) {
-    return (priority >= SCE_KERNEL_HIGHEST_PRIORITY_USER && priority <= SCE_KERNEL_LOWEST_PRIORITY_USER)
-        || (priority >= SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY && priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY);
-}
-
 // The option attributes that ask for the fields after them
 constexpr SceUInt32 THREAD_OPT_FIELDS = SCE_KERNEL_THREAD_OPT_KSTACK_MEMTYPE | SCE_KERNEL_THREAD_OPT_USTACK_MEMTYPE | SCE_KERNEL_THREAD_OPT_UTLS_MEMTYPE | SCE_KERNEL_THREAD_OPT_USTACK_MEMID | SCE_KERNEL_THREAD_OPT_DATA_0X18;
 

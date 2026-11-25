@@ -40,11 +40,13 @@ bool has_hle_implementation(uint32_t nid);
  * \param module_path Full path of module file (with device)
  * \return UID of the loaded module object or SCE_ERROR on failure
  */
-SceUID load_module(EmuEnvState &emuenv, const std::string &module_path);
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t flags = 0);
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
 
-uint32_t start_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
-uint32_t stop_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
+// Run a module's module_start or module_stop and store what it returned in status. They return the
+// error when no thread can run it.
+SceInt32 start_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
+SceInt32 stop_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
 
 /**
  * \brief Loads and run a system module

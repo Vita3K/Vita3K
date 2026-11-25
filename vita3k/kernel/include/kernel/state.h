@@ -54,6 +54,9 @@ struct KernelModule {
     uint16_t flags;
     // The program authority ID from the SELF's app info, 0 for a plain ELF
     uint64_t auth_id;
+    // The SceKernelModuleThreadParam blocks its start and stop threads take, 0 for none
+    Address start_thread_param;
+    Address stop_thread_param;
 };
 using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 

@@ -187,7 +187,7 @@ struct SceKernelBootimageInfo {
 
 constexpr uint32_t nid_sceKernelBootimageInfo = 0x9C08E88A;
 
-SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t flags) {
     // Check if module is already loaded
     {
         const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
@@ -216,6 +216,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
             strncpy(sceKernelModuleInfo->path, module_path.c_str(), sizeof(sceKernelModuleInfo->path) - 1);
             // module_name is stubbed.
             strncpy(sceKernelModuleInfo->module_name, module_name.c_str(), 28);
+            kernelModuleInfo->flags = flags;
 
             const SceUID uid = emuenv.kernel.get_next_uid();
             sceKernelModuleInfo->modid = uid;
@@ -228,7 +229,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     }
 
     const auto load_module_data = [&](const void *module_data) -> SceUID {
-        SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_data, module_path, emuenv.log_path / "elfdumps" / emuenv.io.title_id);
+        SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_data, module_path, emuenv.log_path / "elfdumps" / emuenv.io.title_id, flags);
 
         if (module_id >= 0) {
             const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
@@ -327,39 +328,71 @@ static bool is_game_program(uint64_t auth_id) {
     return ((auth_id >> 32) & 0xFFF00000) == 0x21000000 || auth_id == 0x2F00000000000001ULL;
 }
 
-// Runs a module's start or stop function on a thread of its own and returns what it returned
-static uint32_t run_module_entry(EmuEnvState &emuenv, const KernelModule &module, Ptr<const void> entry, SceSize args, Ptr<const void> argp) {
+// Runs a module's start or stop function on a thread of its own and stores what it returned in
+// status. Returns the error when no thread can run it.
+static SceInt32 run_module_entry(EmuEnvState &emuenv, const KernelModule &module, Ptr<const void> entry, Address thread_param, SceSize args, Ptr<const void> argp, uint32_t &status) {
     const std::string name = fmt::format("{} EntryCall", module.info.module_name);
     // Only a game's own modules get the bigger stack
     const bool game_stack = is_game_program(emuenv.kernel.auth_id) && !(module.flags & SCE_KERNEL_MODULE_FLAG_PRELOAD);
-    const SceSize stack_size = game_stack ? SCE_KERNEL_MODULE_ENTRY_STACK_SIZE_GAME : SCE_KERNEL_MODULE_ENTRY_STACK_SIZE;
-    const ThreadStateRef thread = emuenv.kernel.create_thread(emuenv.mem, name.c_str(), entry, SCE_KERNEL_DEFAULT_PRIORITY_USER,
-        SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, stack_size, SCE_KERNEL_ATTR_SUSPEND_ENDS_WAITS);
-    const uint32_t ret = thread->start_and_wait(args, argp.cast<void>());
+    SceInt32 priority = SCE_KERNEL_DEFAULT_PRIORITY_USER;
+    SceSize stack_size = game_stack ? SCE_KERNEL_MODULE_ENTRY_STACK_SIZE_GAME : SCE_KERNEL_MODULE_ENTRY_STACK_SIZE;
+    SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
+    // The module's own thread parameters replace all three, a block that can't be read is ignored
+    if (thread_param && is_valid_addr_len(emuenv.mem, thread_param, sizeof(SceKernelModuleThreadParam))) {
+        const SceKernelModuleThreadParam &param = *Ptr<const SceKernelModuleThreadParam>(thread_param).get(emuenv.mem);
+        if (param.size == 4) {
+            priority = param.priority;
+            stack_size = param.stack_size;
+            affinity = param.cpu_affinity_mask;
+            if (!is_user_priority(priority))
+                return SCE_KERNEL_ERROR_ILLEGAL_PRIORITY;
+            if (affinity & ~SCE_KERNEL_CPU_MASK_USER_ALL)
+                return SCE_KERNEL_ERROR_ILLEGAL_CPU_AFFINITY_MASK;
+            if (stack_size == 0 || stack_size > SCE_KERNEL_THREAD_STACK_SIZE_MAX)
+                return SCE_KERNEL_ERROR_ILLEGAL_STACK_SIZE;
+        }
+    }
+    const ThreadStateRef thread = emuenv.kernel.create_thread(emuenv.mem, name.c_str(), entry, priority, affinity, stack_size,
+        SCE_KERNEL_ATTR_SUSPEND_ENDS_WAITS);
+    if (!thread)
+        return SCE_KERNEL_ERROR_ERROR;
+    const int error = thread->start_and_wait(args, argp.cast<void>(), status);
     thread->remove();
-    return ret;
+    return error;
 }
 
-uint32_t start_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args, Ptr<const void> argp) {
-    if (!module.info.start_entry)
-        return 0;
-    LOG_DEBUG("Running module_start of library: {} at address {}", module.info.module_name, log_hex(module.info.start_entry.address()));
-    const uint32_t ret = run_module_entry(emuenv, module, module.info.start_entry, args, argp);
-    LOG_INFO("Module {} (at \"{}\") module_start returned {}", module.info.module_name, module.info.path, log_hex(ret));
-    if (ret != SCE_KERNEL_START_SUCCESS)
-        LOG_ERROR("Module {} did not return successfully!", module.info.module_name);
-    return ret;
+SceInt32 start_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args, Ptr<const void> argp, uint32_t *status) {
+    uint32_t ret = 0;
+    if (module.info.start_entry) {
+        LOG_DEBUG("Running module_start of library: {} at address {}", module.info.module_name, log_hex(module.info.start_entry.address()));
+        if (const SceInt32 error = run_module_entry(emuenv, module, module.info.start_entry, module.start_thread_param, args, argp, ret); error < 0) {
+            LOG_ERROR("Module {} can't run its module_start: {}", module.info.module_name, log_hex(error));
+            return error;
+        }
+        LOG_INFO("Module {} (at \"{}\") module_start returned {}", module.info.module_name, module.info.path, log_hex(ret));
+        if (ret != SCE_KERNEL_START_SUCCESS)
+            LOG_ERROR("Module {} did not return successfully!", module.info.module_name);
+    }
+    if (status)
+        *status = ret;
+    return SCE_KERNEL_OK;
 }
 
-uint32_t stop_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args, Ptr<const void> argp) {
-    if (!module.info.stop_entry)
-        return 0;
-    LOG_DEBUG("Running module_stop of library: {} at address {}", module.info.module_name, log_hex(module.info.stop_entry.address()));
-    const uint32_t ret = run_module_entry(emuenv, module, module.info.stop_entry, args, argp);
-    LOG_INFO("Module {} (at \"{}\") module_stop returned {}", module.info.module_name, module.info.path, log_hex(ret));
-    if (ret != SCE_KERNEL_STOP_SUCCESS)
-        LOG_ERROR("Module {} did not stop successfully!", module.info.module_name);
-    return ret;
+SceInt32 stop_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args, Ptr<const void> argp, uint32_t *status) {
+    uint32_t ret = 0;
+    if (module.info.stop_entry) {
+        LOG_DEBUG("Running module_stop of library: {} at address {}", module.info.module_name, log_hex(module.info.stop_entry.address()));
+        if (const SceInt32 error = run_module_entry(emuenv, module, module.info.stop_entry, module.stop_thread_param, args, argp, ret); error < 0) {
+            LOG_ERROR("Module {} can't run its module_stop: {}", module.info.module_name, log_hex(error));
+            return error;
+        }
+        LOG_INFO("Module {} (at \"{}\") module_stop returned {}", module.info.module_name, module.info.path, log_hex(ret));
+        if (ret != SCE_KERNEL_STOP_SUCCESS)
+            LOG_ERROR("Module {} did not stop successfully!", module.info.module_name);
+    }
+    if (status)
+        *status = ret;
+    return SCE_KERNEL_OK;
 }
 
 /**
@@ -376,12 +409,12 @@ bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
             module_path = fmt::format("vs0:sys/external/{}.suprx", module_filename);
         }
 
-        auto loaded_module_uid = load_module(emuenv, module_path);
+        auto loaded_module_uid = load_module(emuenv, module_path, SCE_KERNEL_MODULE_FLAG_PRELOAD);
 
         if (loaded_module_uid < 0) {
             if (module_id == SCE_SYSMODULE_ULT && loaded_module_uid == SCE_ERROR_ERRNO_ENOENT) {
                 module_path = fmt::format("vs0:sys/external/{}.suprx", module_filename);
-                loaded_module_uid = load_module(emuenv, module_path);
+                loaded_module_uid = load_module(emuenv, module_path, SCE_KERNEL_MODULE_FLAG_PRELOAD);
                 if (loaded_module_uid < 0)
                     return false;
             } else
@@ -389,7 +422,6 @@ bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
         }
         loaded_uids.push_back(loaded_module_uid);
         const auto module = lock_and_find(loaded_module_uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
-        module->flags |= SCE_KERNEL_MODULE_FLAG_PRELOAD;
         start_module(emuenv, *module);
     }
 
@@ -441,16 +473,16 @@ bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceSysmoduleInternal
 
     for (auto module_filename : module_paths) {
         std::string module_path = fmt::format("vs0:sys/external/{}.suprx", module_filename);
-        auto loaded_module_uid = load_module(emuenv, module_path);
+        auto loaded_module_uid = load_module(emuenv, module_path, SCE_KERNEL_MODULE_FLAG_PRELOAD);
 
         if (loaded_module_uid < 0) {
             return false;
         }
         const auto module = lock_and_find(loaded_module_uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
-        module->flags |= SCE_KERNEL_MODULE_FLAG_PRELOAD;
-        auto ret = start_module(emuenv, *module, args, argp);
+        uint32_t status = 0;
+        const SceInt32 error = start_module(emuenv, *module, args, argp, &status);
         if (retcode)
-            *retcode = static_cast<int>(ret);
+            *retcode = error < 0 ? error : static_cast<int>(status);
     }
     emuenv.kernel.loaded_internal_sysmodules.push_back(module_id);
     return true;
