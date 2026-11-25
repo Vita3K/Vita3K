@@ -145,11 +145,11 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         // The shader only reads it, but on AMD integrated GPUs a read-only binding does not see the
         // fast clear done by glClearTexImage in sync_mask: every load returns 0 and all fragments are discarded
         glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
-        if (config.spirv_shader) {
-            glActiveTexture(GL_TEXTURE0 + shader::MASK_TEXTURE_SLOT_SAMPLER);
-            glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
-            glActiveTexture(GL_TEXTURE0);
-        }
+        // SPIR-V shaders read the mask from this sampler. The setting can change while programs
+        // built with it are cached, so bind it for every draw; GLSL programs do not declare it
+        glActiveTexture(GL_TEXTURE0 + shader::MASK_TEXTURE_SLOT_SAMPLER);
+        glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
+        glActiveTexture(GL_TEXTURE0);
     }
 
     shader::RenderVertUniformBlock &vert_ublock = context.current_vert_render_info;
