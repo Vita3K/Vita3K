@@ -263,9 +263,6 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         LOG_INFO("Your GPU doesn't support parallel shader compilation, shader compilation may cause stutters.");
     }
 
-    // set_async_compilation may have run before the extension was probed, so settle it now
-    gl_state.set_async_compilation(gl_state.async_compilation_requested);
-
 #ifdef __ANDROID__
     gl_state.features.use_mask_bit = false;
 #else
@@ -1039,14 +1036,15 @@ int GLState::get_max_anisotropic_filtering() {
 
 void GLState::set_async_compilation(bool enable) {
     async_compilation_requested = enable;
+}
 
-    // Recomputed unconditionally: create() calls us again once the extension has been probed.
-    defer_gl_status_checks = enable && support_parallel_shader_compile;
-
+void GLState::apply_async_compilation() {
+    const bool enable = async_compilation_requested;
     if (enable == use_async_compilation)
         return;
 
     use_async_compilation = enable;
+    defer_gl_status_checks = enable && support_parallel_shader_compile;
 
     if (enable) {
         start_shader_translate_threads();
@@ -1057,9 +1055,21 @@ void GLState::set_async_compilation(bool enable) {
     LOG_INFO("Asynchronous shader compilation is now {}", enable ? "enabled" : "disabled");
 }
 
+static bool is_amd_driver() {
+    const auto contains = [](const GLubyte *text, std::string_view part) {
+        return text && std::string_view(reinterpret_cast<const char *>(text)).find(part) != std::string_view::npos;
+    };
+    const GLubyte *vendor = glGetString(GL_VENDOR);
+    const GLubyte *renderer = glGetString(GL_RENDERER);
+    return contains(vendor, "ATI") || contains(vendor, "AMD") || contains(renderer, "AMD") || contains(renderer, "Radeon");
+}
+
 CompileWorker *GLState::get_compile_worker() {
     if (!compile_worker && !compile_worker_unavailable) {
-        compile_worker = CompileWorker::create();
+        // Only the AMD driver is known to link on the thread that polls the result and to
+        // reuse a program linked in another context, so other drivers keep the plain path
+        if (is_amd_driver())
+            compile_worker = CompileWorker::create();
         compile_worker_unavailable = !compile_worker;
     }
     return compile_worker.get();
@@ -1134,6 +1144,13 @@ void GLState::stop_shader_translate_threads() {
 void GLState::enqueue_shader_translation(ShaderTranslateRequest *request) {
     {
         std::lock_guard<std::mutex> guard(shader_translate_queue_mutex);
+        if (shader_translate_abort) {
+            // The workers are gone, so this request would hold its reference for good
+            request->target->status.store(ShaderStatus::Failed, std::memory_order_release);
+            request->refcount->fetch_sub(1, std::memory_order_release);
+            delete request;
+            return;
+        }
         shader_translate_queue.push_back(request);
     }
     shader_translate_queue_cond.notify_one();
@@ -1218,6 +1235,7 @@ void GLState::cleanup() {
     should_display = false;
     render_abort = false;
     use_async_compilation = false;
+    defer_gl_status_checks = false;
 
     frame = nullptr;
 }

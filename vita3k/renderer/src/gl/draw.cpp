@@ -81,7 +81,10 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         return;
     }
 
-    if (renderer.defer_gl_status_checks || renderer.compile_worker)
+    renderer.apply_async_compilation();
+
+    // Links already in flight are still polled after the setting is turned off
+    if (renderer.defer_gl_status_checks || renderer.compile_worker || !renderer.pending_programs.empty())
         renderer.poll_pending_programs();
 
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
@@ -96,6 +99,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             // draw using this pair goes through the cache lookup again and picks the program
             // up as soon as the driver is done with it.
             LOG_ERROR_IF(!is_compiling, "Fail to get program!");
+            clear_previous_uniform_storage(context);
             return;
         }
 

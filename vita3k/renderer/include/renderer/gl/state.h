@@ -26,6 +26,7 @@
 
 #include "types.h"
 
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -85,11 +86,11 @@ struct GLState : public renderer::State {
 
     // Does the driver expose GL_ARB_parallel_shader_compile (or its KHR variant)?
     bool support_parallel_shader_compile = false;
-    // What the user asked for. Kept separate because set_async_compilation may be
-    // called before the extension has been probed.
-    bool async_compilation_requested = false;
+    // What the user asked for. set_async_compilation can be called from any thread, so it
+    // only records the request, which the render thread applies between draws.
+    std::atomic<bool> async_compilation_requested{ false };
     // Translate shaders on worker threads and drop draws whose program is not ready.
-    // Does not need any extension.
+    // Does not need any extension. Only used by the render thread.
     bool use_async_compilation = false;
     // Skip the GL status queries that would block the render thread. Only possible
     // with GL_ARB_parallel_shader_compile.
@@ -102,7 +103,8 @@ struct GLState : public renderer::State {
     // Entries are shared so that a worker can safely finish writing to one that has
     // already been dropped from the map.
     std::mutex shader_translations_mutex;
-    std::map<Sha256Hash, std::shared_ptr<ShaderTranslation>> shader_translations;
+    // Keyed by the format too, as the setting can change while a translation is in flight.
+    std::map<std::pair<Sha256Hash, bool>, std::shared_ptr<ShaderTranslation>> shader_translations;
 
     std::unique_ptr<CompileWorker> compile_worker;
     bool compile_worker_unavailable = false;
@@ -110,7 +112,7 @@ struct GLState : public renderer::State {
     std::map<uint64_t, WorkerProgram> worker_programs;
     uint64_t next_worker_job = 0;
     // Translated sources of the fragment [0] and vertex [1] shaders, to link new pairs on the worker
-    std::map<Sha256Hash, std::shared_ptr<const ShaderTranslation>> shader_sources[2];
+    std::map<std::pair<Sha256Hash, bool>, std::shared_ptr<const ShaderTranslation>> shader_sources[2];
 
     std::vector<std::thread> shader_translate_threads;
     std::mutex shader_translate_queue_mutex;
@@ -138,6 +140,8 @@ struct GLState : public renderer::State {
     void set_anisotropic_filtering(int anisotropic_filtering) override;
     int get_max_2d_texture_width() override;
     void set_async_compilation(bool enable) override;
+    // Render thread only: applies what set_async_compilation recorded
+    void apply_async_compilation();
 
     // Move every pending program that the driver has finished linking to its final state.
     // Must be called from the render thread. Cheap when nothing is pending.

@@ -320,16 +320,18 @@ static SharedGLObject get_or_translate_shader(GLState &renderer, const SceGxmPro
     }
 
     const bool use_spirv = renderer.features.spirv_shader && spirv;
+    // The setting can change while a translation is in flight, so the format is part of the key
+    const auto translation_key = std::make_pair(hash, use_spirv);
 
     std::shared_ptr<ShaderTranslation> entry;
     {
         // Lock ordering is always shader_translations_mutex then shader_translate_queue_mutex.
         std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
 
-        const auto it = renderer.shader_translations.find(hash);
+        const auto it = renderer.shader_translations.find(translation_key);
         if (it == renderer.shader_translations.end()) {
             entry = std::make_shared<ShaderTranslation>();
-            renderer.shader_translations.emplace(hash, entry);
+            renderer.shader_translations.emplace(translation_key, entry);
 
             auto *request = new ShaderTranslateRequest();
             request->target = entry;
@@ -374,7 +376,7 @@ static SharedGLObject get_or_translate_shader(GLState &renderer, const SceGxmPro
 
     {
         std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
-        renderer.shader_translations.erase(hash);
+        renderer.shader_translations.erase(translation_key);
     }
 
     return obj;
@@ -386,8 +388,10 @@ static std::shared_ptr<const ShaderTranslation> get_translated_source(GLState &r
     const Sha256Hash &hash, const GLenum type, const shader::Hints &hints, bool shader_cache, bool spirv, bool maskupdate, bool &is_translating) {
     is_translating = false;
 
+    // Translations of the other format are not interchangeable, so the format is part of the key
+    const auto key = std::make_pair(hash, spirv);
     auto &sources = renderer.shader_sources[type == GL_VERTEX_SHADER];
-    const auto cached = sources.find(hash);
+    const auto cached = sources.find(key);
     if (cached != sources.end())
         return cached->second;
 
@@ -395,10 +399,10 @@ static std::shared_ptr<const ShaderTranslation> get_translated_source(GLState &r
     {
         std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
 
-        const auto it = renderer.shader_translations.find(hash);
+        const auto it = renderer.shader_translations.find(key);
         if (it == renderer.shader_translations.end()) {
             entry = std::make_shared<ShaderTranslation>();
-            renderer.shader_translations.emplace(hash, entry);
+            renderer.shader_translations.emplace(key, entry);
 
             auto *request = new ShaderTranslateRequest();
             request->target = entry;
@@ -433,11 +437,11 @@ static std::shared_ptr<const ShaderTranslation> get_translated_source(GLState &r
         LOG_CRITICAL("Failed to translate shader:\n{}", hex_string(hash));
         entry = nullptr;
     }
-    sources.emplace(hash, entry);
+    sources.emplace(key, entry);
 
     {
         std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
-        renderer.shader_translations.erase(hash);
+        renderer.shader_translations.erase(key);
     }
 
     return entry;
