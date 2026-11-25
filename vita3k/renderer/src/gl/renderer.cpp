@@ -405,7 +405,7 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     const bool macroblock_sync = context.render_target && context.render_target->has_macroblock_sync;
     state.surface_cache.begin_scene(macroblock_sync ? Ptr<void>() : context.record.color_surface.data);
     context.self_sampling_indices.clear();
-    context.self_sampling_needs_mipmaps = false;
+    context.self_sampling_mipmap_units = 0;
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
 

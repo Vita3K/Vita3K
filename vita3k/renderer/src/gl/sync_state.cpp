@@ -340,6 +340,10 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
     state.surface_cache.set_gamma_sampling(index, 0);
 
+    // linear strided textures use the mag filter as the min filter too
+    const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+        && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
+
     std::uint64_t texture_as_surface = 0;
     const GLint *swizzle_surface = nullptr;
     bool only_nearest = false;
@@ -360,11 +364,19 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         const SceGxmColorBaseFormat surface_format = gxm::get_base_format(context.record.color_surface.colorFormat);
         const bool stored_rawly = state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(surface_format);
         filterable_surface = !stored_rawly && !color::is_write_surface_non_linearity_filtering(surface_format);
-        context.self_sampling_needs_mipmaps = filterable_surface && (state.res_multiplier > 1.0f);
+        if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
+            const uint32_t bit = 1U << index;
+            if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))
+                context.self_sampling_mipmap_units |= bit;
+            else
+                context.self_sampling_mipmap_units &= ~bit;
+        }
 
         vector_utils::push_if_not_exists(context.self_sampling_indices, index);
     } else {
         vector_utils::erase_first(context.self_sampling_indices, index);
+        if (index < SCE_GXM_MAX_TEXTURE_UNITS)
+            context.self_sampling_mipmap_units &= ~(1U << index);
 
         SceGxmColorBaseFormat format_target_of_texture;
 
@@ -424,9 +436,6 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         }
     }
 
-    // linear strided textures use the mag filter as the min filter too
-    const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
-        && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
     if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
         const uint32_t bit = 1U << index;
         if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))

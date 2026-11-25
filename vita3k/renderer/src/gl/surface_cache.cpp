@@ -334,8 +334,12 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             }
 
             const auto prepare_sampling = [&](GLuint texture) {
-                if ((purpose == SurfaceTextureRetrievePurpose::SAMPLING) && (state.res_multiplier > 1.0f) && !color::is_write_surface_non_linearity_filtering(base_format))
+                if ((purpose == SurfaceTextureRetrievePurpose::SAMPLING) && (state.res_multiplier > 1.0f) && !color::is_write_surface_non_linearity_filtering(base_format)) {
+                    // earlier draws may have written the surface through image stores
+                    if (state.features.should_use_shader_interlock())
+                        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
                     generate_surface_mipmaps(texture, state.res_multiplier);
+                }
                 return texture;
             };
 

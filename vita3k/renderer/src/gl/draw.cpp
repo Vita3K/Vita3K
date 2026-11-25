@@ -33,6 +33,7 @@
 
 #include <spdlog/fmt/bin_to_hex.h>
 
+#include <bit>
 #include <cmath>
 
 namespace renderer::gl {
@@ -284,17 +285,12 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
 
-    if (context.self_sampling_needs_mipmaps) {
-        const TextureInfo &textures_used = gxm_fragment_program.renderer_data->textures_used;
-        for (const size_t index : context.self_sampling_indices) {
-            if ((index < SCE_GXM_MAX_TEXTURE_UNITS) && textures_used[index]) {
-                if (features.should_use_shader_interlock())
-                    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
-                glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + index));
-                generate_surface_mipmaps(context.current_color_attachment, renderer.res_multiplier);
-                break;
-            }
-        }
+    const std::uint32_t used_mipmap_units = static_cast<std::uint32_t>(gxm_fragment_program.renderer_data->textures_used.to_ulong()) & context.self_sampling_mipmap_units;
+    if (used_mipmap_units) {
+        if (features.should_use_shader_interlock())
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+        glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + std::countr_zero(used_mipmap_units)));
+        generate_surface_mipmaps(context.current_color_attachment, renderer.res_multiplier);
     }
 
     // The shader reads the color attachment whenever it uses the fragment color, so writes from the previous draws
@@ -315,7 +311,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             glTextureBarrier();
         } else {
             glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[0]);
-            const float mipmap_res_multiplier = context.self_sampling_needs_mipmaps ? renderer.res_multiplier : 1.0f;
+            const float mipmap_res_multiplier = used_mipmap_units ? renderer.res_multiplier : 1.0f;
             std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data, mipmap_res_multiplier);
             if (ping_pong != 0) {
                 for (std::size_t i = 0; i < context.self_sampling_indices.size(); i++) {
