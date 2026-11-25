@@ -288,6 +288,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         const TextureInfo &textures_used = gxm_fragment_program.renderer_data->textures_used;
         for (const size_t index : context.self_sampling_indices) {
             if ((index < SCE_GXM_MAX_TEXTURE_UNITS) && textures_used[index]) {
+                if (features.should_use_shader_interlock())
+                    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
                 glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + index));
                 generate_surface_mipmaps(context.current_color_attachment, renderer.res_multiplier);
                 break;

@@ -438,12 +438,17 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     // point-sampled reads of a mipmapped surface stay on the base level, as before mipmaps were added
     GLuint sampler = 0;
     if (filterable_surface && point_sampled && (state.res_multiplier > 1.0f)) {
-        if (!context.point_surface_sampler[0]) {
-            context.point_surface_sampler.init(glGenSamplers, glDeleteSamplers);
-            glSamplerParameteri(context.point_surface_sampler[0], GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glSamplerParameteri(context.point_surface_sampler[0], GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        if (!context.point_surface_samplers[0]) {
+            context.point_surface_samplers.init(glGenSamplers, glDeleteSamplers);
+            for (int decode = 0; decode < 2; decode++) {
+                const GLuint point_sampler = context.point_surface_samplers[decode];
+                glSamplerParameteri(point_sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glSamplerParameteri(point_sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                if (state.surface_cache.support_srgb_decode)
+                    glSamplerParameteri(point_sampler, GL_TEXTURE_SRGB_DECODE_EXT, decode ? GL_DECODE_EXT : GL_SKIP_DECODE_EXT);
+            }
         }
-        sampler = context.point_surface_sampler[0];
+        sampler = context.point_surface_samplers[texture.gamma_mode ? 1 : 0];
     }
     glBindSampler(static_cast<GLuint>(index), sampler);
 

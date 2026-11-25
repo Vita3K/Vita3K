@@ -553,7 +553,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     return { info_added.texture.view, &info_added.texture };
 }
 
-std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_texture(const SceGxmTexture &texture, const SceGxmColorBaseFormat base_format, TextureViewport *texture_viewport) {
+std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_texture(const SceGxmTexture &texture, const SceGxmColorBaseFormat base_format, TextureViewport *texture_viewport, bool base_level_only) {
     // Create the key to access the cache struct
     const uint32_t address = (texture.data_addr << 2);
 
@@ -673,7 +673,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     };
 
     const auto sample_whole_surface = [&](bool use_alternate, vk::ComponentMapping mapping) -> TextureLookupResult {
-        if (info.mip_levels == 1) {
+        if ((info.mip_levels == 1) || base_level_only) {
             if (!use_alternate)
                 return { info.texture.view, info.texture.layout, info.texture.format };
 
@@ -743,10 +743,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
                 if (casted->scene_timestamp == scene_timestamp) {
                     // already copied for this scene, don't do it again
                     return TextureLookupResult{
-                        casted->mip_view ? casted->mip_view : casted->texture.view,
+                        (casted->mip_view && !base_level_only) ? casted->mip_view : casted->texture.view,
                         casted->texture.layout,
                         casted->texture.format,
-                        casted->mip_view != nullptr
+                        (casted->mip_view != nullptr) && !base_level_only
                     };
                 }
 
@@ -904,10 +904,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         }
 
         return TextureLookupResult{
-            casted->mip_view ? casted->mip_view : casted->texture.view,
+            (casted->mip_view && !base_level_only) ? casted->mip_view : casted->texture.view,
             casted->texture.layout,
             casted->texture.format,
-            casted->mip_view != nullptr
+            (casted->mip_view != nullptr) && !base_level_only
         };
     } else {
         // the renderpass external dependencies should take care of the barrier

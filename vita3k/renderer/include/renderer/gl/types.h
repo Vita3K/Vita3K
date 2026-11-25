@@ -100,7 +100,8 @@ struct GLContext : public renderer::Context {
 
     std::vector<size_t> self_sampling_indices;
     bool self_sampling_needs_mipmaps = false;
-    GLObjectArray<1> point_surface_sampler;
+    // indexed by the gamma mode of the texture
+    GLObjectArray<2> point_surface_samplers;
 
     explicit GLContext();
     ~GLContext() override = default;

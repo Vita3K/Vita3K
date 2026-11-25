@@ -721,6 +721,8 @@ static void respecify_keeping_content(const GLuint texture, const GLenum interna
     glCopyImageSubData(texture, GL_TEXTURE_2D, 0, 0, 0, 0, temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
 
     glBindTexture(GL_TEXTURE_2D, texture);
+    // the other mip levels keep the old format, only level 0 must be complete until they are regenerated
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glCopyImageSubData(temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, texture, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
 
