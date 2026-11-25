@@ -1486,9 +1486,11 @@ void SettingsDialog::update_gpu_visibility() {
 
     // Shown for both backends: the OpenGL renderer compiles asynchronously too, using its
     // own worker threads. The wording follows the backend because OpenGL has no pipelines.
-    m_ui->async_pipeline_compilation->setText(is_vulkan
-            ? tr("Asynchronous Pipeline Compilation")
-            : tr("Asynchronous Shader Compilation"));
+    const QString async_label = is_vulkan
+        ? tr("Asynchronous Pipeline Compilation")
+        : tr("Asynchronous Shader Compilation");
+    m_ui->async_pipeline_compilation->setText(async_label);
+    m_ui->async_pipeline_compilation->setProperty("_desc_title", async_label);
 
     {
         const QString previous = m_ui->screen_filter_box->currentText().isEmpty()
