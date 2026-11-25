@@ -75,10 +75,12 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
         return;
 
     const int row_length = source_width * source_bpp / dest_bpp;
-    const int copy_width = std::min(dest_width, row_length - skip_pixels);
+    // the skipped pixels are read from the buffer offset, so that the end of a row is the start of the next one
+    const int copy_width = (dest_width <= row_length) ? dest_width : row_length - skip_pixels;
     if (copy_width <= 0)
         return;
     const std::size_t copy_size = static_cast<std::size_t>(source_width) * source_bpp * height;
+    const std::size_t skip_size = static_cast<std::size_t>(skip_pixels) * dest_bpp;
 
     if (!typeless_copy_buffer[0]) {
         if (!typeless_copy_buffer.init(glGenBuffers, glDeleteBuffers)) {
@@ -87,11 +89,11 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
         }
     }
 
-    if (copy_size > typeless_copy_buffer_size) {
+    if (copy_size + skip_size > typeless_copy_buffer_size) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, copy_size, nullptr, GL_STATIC_COPY);
+        glBufferData(GL_PIXEL_PACK_BUFFER, copy_size + skip_size, nullptr, GL_STATIC_COPY);
 
-        typeless_copy_buffer_size = copy_size;
+        typeless_copy_buffer_size = copy_size + skip_size;
     }
 
     GLint pack_alignment, unpack_alignment;
@@ -102,13 +104,16 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
     glGetTextureSubImage(source_texture, 0, source_x, y, 0, source_width, height, 1, source_format, source_type, static_cast<GLsizei>(copy_size), nullptr);
+    if (skip_size != 0) {
+        // past the last row of the surface
+        const GLubyte zero = 0;
+        glClearBufferSubData(GL_PIXEL_PACK_BUFFER, GL_R8, static_cast<GLintptr>(copy_size), static_cast<GLsizeiptr>(skip_size), GL_RED, GL_UNSIGNED_BYTE, &zero);
+    }
     glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_NONE);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, typeless_copy_buffer[0]);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, skip_pixels);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, copy_width, height, dest_upload_format, dest_type, nullptr);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, copy_width, height, dest_upload_format, dest_type, reinterpret_cast<const void *>(skip_size));
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
 
