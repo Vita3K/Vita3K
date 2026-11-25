@@ -571,12 +571,16 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     context.shader_hints.color_format = state.color_surface.colorFormat;
     context.shader_hints.attributes = &vertex_program_gxm.attributes;
 
-    const bool defer_check = renderer.defer_gl_status_checks;
+    // Mask updates and draws that store to guest memory have effects that cannot be dropped, so
+    // they wait for their program instead of being skipped while it compiles
+    const bool synchronous = maskupdate || may_store_to_memory(state, mem);
+    const bool use_async = renderer.use_async_compilation && !synchronous;
+    const bool defer_check = renderer.defer_gl_status_checks && !synchronous;
 
     SharedGLObject fragment_shader;
     SharedGLObject vertex_shader;
 
-    CompileWorker *compile_worker = renderer.use_async_compilation ? renderer.get_compile_worker() : nullptr;
+    CompileWorker *compile_worker = use_async ? renderer.get_compile_worker() : nullptr;
     if (compile_worker) {
         const bool use_spirv = features.spirv_shader && spirv;
         bool frag_translating = false;
@@ -614,7 +618,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
         return SharedGLObject();
     }
 
-    if (renderer.use_async_compilation) {
+    if (use_async) {
         // Both are requested before bailing out, so that they are translated in parallel
         // instead of one draw apart.
         bool frag_translating = false;
@@ -663,7 +667,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
         save_shaders_cache_hashs(renderer, renderer.shaders_cache_hashs);
     }
 
-    if (!renderer.defer_gl_status_checks) {
+    if (!defer_check) {
         // Without GL_ARB_parallel_shader_compile there is no way to poll the link, so it has
         // to be waited on. The translation was still done off the render thread.
         return link_program_sync(renderer.program_cache, fragment_shader, vertex_shader, hashes);
