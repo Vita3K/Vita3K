@@ -940,9 +940,12 @@ void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
 
         // Recompile the instruction, to the current block
         auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
-        if (decoder.has_value())
+        if (decoder.has_value()) {
+            const uint32_t disasm_count_before = usse::disasm::disasm_count;
             decoder->call(visitor, cur_instr);
-        else
+            if (usse::disasm::disasm_count == disasm_count_before)
+                LOG_DISASM("{:016x}: error: no disassembly for {}", cur_instr, decoder->GetName());
+        } else
             LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
     }
 
