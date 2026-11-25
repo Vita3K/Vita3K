@@ -62,14 +62,6 @@ public:
 protected:
     Waitable(SceUInt32 attr, const char *name);
 
-    // Locks the object's fields for its own methods, with an empty lock once it was deleted
-    [[nodiscard]] std::unique_lock<std::mutex> lock() const {
-        std::unique_lock<std::mutex> guard(mutex);
-        if (deleted)
-            guard.unlock();
-        return guard;
-    }
-
     // Runs the pending callbacks of a wait with callbacks and returns why it must end, or 0.
     [[nodiscard]] SceInt32 run_wait_callbacks(std::unique_lock<std::mutex> &lock, ThreadState &thread, bool callbacks);
 
@@ -116,9 +108,11 @@ protected:
     // The waiting threads in queue order, borrowed, guarded by the lock and each thread's lock. Only
     // queue() and requeue() link one.
     IntrusiveList<ThreadState, WaitLink<ThreadState>> waiters;
+    // Guards the object's fields. Its methods check deleted with it held.
+    mutable std::mutex mutex;
+    // The object was deleted, guarded by the lock
+    bool deleted = false;
 
 private:
     const bool openable;
-    mutable std::mutex mutex;
-    bool deleted = false;
 };
