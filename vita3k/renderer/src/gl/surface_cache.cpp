@@ -81,6 +81,8 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
         return;
     const std::size_t copy_size = static_cast<std::size_t>(source_width) * source_bpp * height;
     const std::size_t skip_size = static_cast<std::size_t>(skip_pixels) * dest_bpp;
+    // the skipped bytes are less than a source pixel
+    const std::size_t tail_size = skip_size != 0 ? static_cast<std::size_t>(source_bpp) : 0;
 
     if (!typeless_copy_buffer[0]) {
         if (!typeless_copy_buffer.init(glGenBuffers, glDeleteBuffers)) {
@@ -89,11 +91,11 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
         }
     }
 
-    if (copy_size + skip_size > typeless_copy_buffer_size) {
+    if (copy_size + tail_size > typeless_copy_buffer_size) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, copy_size + skip_size, nullptr, GL_STATIC_COPY);
+        glBufferData(GL_PIXEL_PACK_BUFFER, copy_size + tail_size, nullptr, GL_STATIC_COPY);
 
-        typeless_copy_buffer_size = copy_size + skip_size;
+        typeless_copy_buffer_size = copy_size + tail_size;
     }
 
     GLint pack_alignment, unpack_alignment;
@@ -105,9 +107,16 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
     glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
     glGetTextureSubImage(source_texture, 0, source_x, y, 0, source_width, height, 1, source_format, source_type, static_cast<GLsizei>(copy_size), nullptr);
     if (skip_size != 0) {
-        // past the last row of the surface
-        const GLubyte zero = 0;
-        glClearBufferSubData(GL_PIXEL_PACK_BUFFER, GL_R8, static_cast<GLintptr>(copy_size), static_cast<GLsizeiptr>(skip_size), GL_RED, GL_UNSIGNED_BYTE, &zero);
+        // the last column of the last row holds the start of the next stored row
+        GLint source_height = 0;
+        glGetTextureLevelParameteriv(source_texture, 0, GL_TEXTURE_HEIGHT, &source_height);
+        if (y + height < source_height) {
+            glGetTextureSubImage(source_texture, 0, source_x, y + height, 0, 1, 1, 1, source_format, source_type, static_cast<GLsizei>(tail_size), reinterpret_cast<void *>(copy_size));
+        } else {
+            // past the last row of the surface
+            const GLubyte zero = 0;
+            glClearBufferSubData(GL_PIXEL_PACK_BUFFER, GL_R8, static_cast<GLintptr>(copy_size), static_cast<GLsizeiptr>(skip_size), GL_RED, GL_UNSIGNED_BYTE, &zero);
+        }
     }
     glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_NONE);
 
