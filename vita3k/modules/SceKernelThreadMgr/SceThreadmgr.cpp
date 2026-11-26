@@ -73,7 +73,7 @@ static int copy_guest_string(const MemState &mem, Ptr<const char> str, std::span
 }
 
 // Waits on any event, such as a simple event, a timer or a message pipe.
-static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
+SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
     // The wait writes to local copies that go to the guest when it returns, so callbacks that run
     // during the wait still see the old values. Outputs the wait doesn't write are 0.
     SceUInt32 pattern = 0;
@@ -98,7 +98,7 @@ static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID 
 }
 
 // Waits on an event flag.
-static SceInt32 wait_event_flag(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID evf_id, SceUInt32 bit_pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks) {
+SceInt32 wait_event_flag(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID evf_id, SceUInt32 bit_pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks) {
     // The wait writes to local copies that go to the guest when it returns, also when it fails, so
     // callbacks that run during the wait still see the old values. Out bits the wait doesn't write
     // read 0.
@@ -114,6 +114,15 @@ static SceInt32 wait_event_flag(EmuEnvState &emuenv, const char *export_name, Sc
     if (timeout)
         *timeout = time_left;
     return result;
+}
+
+// Writes a syscall output back to the guest, false when it isn't mapped
+template <typename T>
+static bool copy_out(const MemState &mem, Ptr<T> out, const T &value) {
+    if (!is_valid_addr_len(mem, out.address(), sizeof(T)))
+        return false;
+    *out.get(mem) = value;
+    return true;
 }
 
 // Tells if a create's option pointer is set but its struct can't be read.
@@ -846,19 +855,29 @@ EXPORT(int, _sceKernelGetTimerTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
-    TRACY_FUNC(_sceKernelLockLwMutex, workarea, lock_count, ptimeout);
+// Locks a lightweight mutex, waiting while another thread holds it
+SceInt32 lock_lw_mutex(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, Ptr<SceKernelLwMutexWork> workarea, SceInt32 lock_count, SceUInt32 *timeout, bool callbacks) {
     if (!workarea)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-
-    const auto lwmutexid = workarea.get(emuenv.mem)->uid;
-    const MutexRef mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
+    const MutexRef mutex = emuenv.kernel.objects.find<LwMutex>(workarea.get(emuenv.mem)->uid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    SceUInt32 time_left = ptimeout ? *ptimeout : 0;
-    const SceInt32 result = mutex->acquire(emuenv.mem, *emuenv.kernel.get_thread(thread_id), lock_count, ptimeout ? &time_left : nullptr, false);
-    if (ptimeout)
-        *ptimeout = time_left;
+    SceUInt32 time_left = timeout ? *timeout : 0;
+    const SceInt32 result = mutex->acquire(emuenv.mem, *emuenv.kernel.get_thread(thread_id), lock_count, timeout ? &time_left : nullptr, callbacks);
+    if (timeout)
+        *timeout = time_left;
+    return result;
+}
+
+EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, Ptr<SceUInt32> ptimeout, SceInt32 callbacks) {
+    TRACY_FUNC(_sceKernelLockLwMutex, workarea, lock_count, ptimeout, callbacks);
+    // The lock works on a copy of the timeout, which is written back after it
+    if (ptimeout && !is_valid_addr_len(emuenv.mem, ptimeout.address(), sizeof(SceUInt32)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    SceUInt32 timeout = ptimeout ? *ptimeout.get(emuenv.mem) : 0;
+    const SceInt32 result = lock_lw_mutex(emuenv, export_name, thread_id, workarea, lock_count, ptimeout ? &timeout : nullptr, callbacks != 0);
+    if (ptimeout && !copy_out(emuenv.mem, ptimeout, timeout))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
     return result;
 }
 
@@ -1144,24 +1163,63 @@ EXPORT(SceInt32, _sceKernelWaitCondCB, SceUID condId, SceUInt32 *pTimeout) {
     return result;
 }
 
-EXPORT(SceInt32, _sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
-    TRACY_FUNC(_sceKernelWaitEvent, event_id, bit_pattern, result_pattern, user_data, timeout);
-    return wait_event(emuenv, export_name, thread_id, event_id, bit_pattern, result_pattern, user_data, timeout, false);
+// The block of a wait syscall, or nullptr when its 0x10 bytes or its timeout aren't mapped
+template <typename Block>
+static const Block *wait_block(const MemState &mem, Ptr<const Block> opt) {
+    if (!is_valid_addr_len(mem, opt.address(), 0x10))
+        return nullptr;
+    const Block *const block = opt.get(mem);
+    if (block->timeout && !is_valid_addr_len(mem, block->timeout.address(), sizeof(SceUInt32)))
+        return nullptr;
+    return block;
 }
 
-EXPORT(SceInt32, _sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
-    TRACY_FUNC(_sceKernelWaitEventCB, event_id, bit_pattern, result_pattern, user_data, timeout);
-    return wait_event(emuenv, export_name, thread_id, event_id, bit_pattern, result_pattern, user_data, timeout, true);
+// The wait works on copies of the outputs, which are written back in order after it
+static SceInt32 wait_event_syscall(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, Ptr<SceUInt32> result_pattern, Ptr<const SceKernelWaitEventOpt> opt, bool callbacks) {
+    const SceKernelWaitEventOpt *const opt_block = wait_block(emuenv.mem, opt);
+    if (!opt_block)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const SceKernelWaitEventOpt block = *opt_block;
+    SceUInt32 pattern = 0;
+    SceUInt64 user_data = 0;
+    SceUInt32 timeout = block.timeout ? *block.timeout.get(emuenv.mem) : 0;
+    const SceInt32 result = wait_event(emuenv, export_name, thread_id, event_id, bit_pattern, result_pattern ? &pattern : nullptr, block.user_data ? &user_data : nullptr, block.timeout ? &timeout : nullptr, callbacks);
+    if ((result_pattern && !copy_out(emuenv.mem, result_pattern, pattern)) || (block.user_data && !copy_out(emuenv.mem, block.user_data, user_data)) || (block.timeout && !copy_out(emuenv.mem, block.timeout, timeout)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    return result;
 }
 
-EXPORT(SceInt32, _sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
-    TRACY_FUNC(_sceKernelWaitEventFlag, evfId, bitPattern, waitMode, pResultPat, pTimeout);
-    return wait_event_flag(emuenv, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout, false);
+static SceInt32 wait_event_flag_syscall(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID evf_id, SceUInt32 bit_pattern, SceUInt32 wait_mode, Ptr<const SceKernelWaitEventFlagOpt> opt, bool callbacks) {
+    const SceKernelWaitEventFlagOpt *const opt_block = wait_block(emuenv.mem, opt);
+    if (!opt_block)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const SceKernelWaitEventFlagOpt block = *opt_block;
+    SceUInt32 pattern = 0;
+    SceUInt32 timeout = block.timeout ? *block.timeout.get(emuenv.mem) : 0;
+    const SceInt32 result = wait_event_flag(emuenv, export_name, thread_id, evf_id, bit_pattern, wait_mode, block.result_pattern ? &pattern : nullptr, block.timeout ? &timeout : nullptr, callbacks);
+    if ((block.result_pattern && !copy_out(emuenv.mem, block.result_pattern, pattern)) || (block.timeout && !copy_out(emuenv.mem, block.timeout, timeout)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    return result;
 }
 
-EXPORT(SceInt32, _sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
-    TRACY_FUNC(_sceKernelWaitEventFlagCB, evfId, bitPattern, waitMode, pResultPat, pTimeout);
-    return wait_event_flag(emuenv, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout, true);
+EXPORT(SceInt32, _sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, Ptr<SceUInt32> result_pattern, Ptr<const SceKernelWaitEventOpt> opt) {
+    TRACY_FUNC(_sceKernelWaitEvent, event_id, bit_pattern, result_pattern, opt);
+    return wait_event_syscall(emuenv, export_name, thread_id, event_id, bit_pattern, result_pattern, opt, false);
+}
+
+EXPORT(SceInt32, _sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, Ptr<SceUInt32> result_pattern, Ptr<const SceKernelWaitEventOpt> opt) {
+    TRACY_FUNC(_sceKernelWaitEventCB, event_id, bit_pattern, result_pattern, opt);
+    return wait_event_syscall(emuenv, export_name, thread_id, event_id, bit_pattern, result_pattern, opt, true);
+}
+
+EXPORT(SceInt32, _sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, Ptr<const SceKernelWaitEventFlagOpt> opt) {
+    TRACY_FUNC(_sceKernelWaitEventFlag, evfId, bitPattern, waitMode, opt);
+    return wait_event_flag_syscall(emuenv, export_name, thread_id, evfId, bitPattern, waitMode, opt, false);
+}
+
+EXPORT(SceInt32, _sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, Ptr<const SceKernelWaitEventFlagOpt> opt) {
+    TRACY_FUNC(_sceKernelWaitEventFlagCB, evfId, bitPattern, waitMode, opt);
+    return wait_event_flag_syscall(emuenv, export_name, thread_id, evfId, bitPattern, waitMode, opt, true);
 }
 
 EXPORT(int, _sceKernelWaitException) {
