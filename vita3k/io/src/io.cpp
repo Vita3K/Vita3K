@@ -36,6 +36,8 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
+#include <array>
 #include <cassert>
 #include <cerrno>
 #include <iostream>
@@ -668,6 +670,59 @@ SceSSize pwrite_file(IOState &io, SceUID fd, const void *data, SceSize size, Sce
     file->seek(pos, SCE_SEEK_SET);
     LOG_TRACE_IF(log_file_op, "{}: Writing to fd: {}, size: {}, at {}", export_name, log_hex(fd), size, log_hex(offset));
     return written;
+}
+
+int ioctl_check(IOState &io, SceUID fd, int cmd, const char *export_name) {
+    {
+        const std::lock_guard<std::mutex> lock(io.fd_mutex);
+        if (!io.dir_entries.contains(fd) && !io.std_files.contains(fd) && !io.tty_files.contains(fd))
+            return IO_ERROR(SCE_ERROR_ERRNO_EBADF);
+    }
+    // Commands with these bits are internal or for system programs only
+    if (cmd & 0xE00)
+        return IO_ERROR(SCE_ERROR_ERRNO_EUNSUP);
+    if (cmd >= 0x8000)
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    return 0;
+}
+
+int ioctl_file(IOState &io, SceUID fd, int cmd, const void *in, void *out, SceSize out_size, const char *export_name) {
+    if (const int error = ioctl_check(io, fd, cmd, export_name); error < 0)
+        return error;
+    bool is_dir;
+    {
+        const std::lock_guard<std::mutex> lock(io.fd_mutex);
+        is_dir = io.dir_entries.contains(fd);
+    }
+    switch (cmd) {
+    case SCE_IO_IOCTL_SET_BUFFER_CACHE: {
+        // The settings have word 6 clear
+        const SceUInt32 *const words = static_cast<const SceUInt32 *>(in);
+        if (!words || words[6] != 0)
+            return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+        if (is_dir)
+            return IO_ERROR(SCE_ERROR_ERRNO_EISDIR);
+        // The host files have no buffer cache to change
+        return 0;
+    }
+    case SCE_IO_IOCTL_GET_BUFFER_CACHE: {
+        // The answer needs word 6 clear before the directory check and 0x20 bytes after it
+        SceUInt32 *const words = static_cast<SceUInt32 *>(out);
+        if (!words || out_size < 0x1C || words[6] != 0)
+            return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+        if (is_dir)
+            return IO_ERROR(SCE_ERROR_ERRNO_EISDIR);
+        if (out_size < 0x20)
+            return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+        // The buffer cache of a file on ux0:
+        constexpr std::array<SceUInt32, 6> cache = { 0x2000, 0x200, 2, 0x8000, 0, 0 };
+        std::ranges::copy(cache, words);
+        return 0;
+    }
+    default:
+        LOG_WARN("{}: ioctl command {:#x} on fd {} refused", export_name, cmd, fd);
+        return SCE_ERROR_ERRNO_EUNSUP;
+    }
 }
 
 int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name, const SceUID fd) {

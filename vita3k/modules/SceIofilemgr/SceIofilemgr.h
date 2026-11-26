@@ -48,3 +48,4 @@ T *mapped_buffer(const MemState &mem, Ptr<T> buf, SceSize size) {
 
 int devctl(EmuEnvState &emuenv, const char *export_name, const char *dev, SceInt cmd, Ptr<const void> indata, SceSize inlen, Ptr<void> outdata, SceSize outlen);
 int dread(EmuEnvState &emuenv, const char *export_name, SceUID fd, SceIoDirent *dir);
+int ioctl(EmuEnvState &emuenv, const char *export_name, SceUID fd, int cmd, Ptr<const void> indata, SceSize inlen, Ptr<void> outdata, SceSize outlen);

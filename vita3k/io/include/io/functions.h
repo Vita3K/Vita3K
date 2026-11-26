@@ -66,6 +66,10 @@ SceOff tell_file(IOState &io, const SceUID fd, const char *export_name);
 // Read or write at an offset, the file position doesn't move
 SceSSize pread_file(IOState &io, SceUID fd, void *data, SceSize size, SceOff offset, const char *export_name);
 SceSSize pwrite_file(IOState &io, SceUID fd, const void *data, SceSize size, SceOff offset, const char *export_name);
+// Answers the buffer cache commands of a file and refuses the rest
+// The descriptor and command checks an ioctl makes before it reads its input and output
+int ioctl_check(IOState &io, SceUID fd, int cmd, const char *export_name);
+int ioctl_file(IOState &io, SceUID fd, int cmd, const void *in, void *out, SceSize out_size, const char *export_name);
 int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name, SceUID fd = invalid_fd);
 int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name);
 int close_file(IOState &io, SceUID fd, const char *export_name);

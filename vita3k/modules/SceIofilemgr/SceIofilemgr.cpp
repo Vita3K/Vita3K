@@ -100,6 +100,18 @@ int devctl(EmuEnvState &emuenv, const char *export_name, const char *dev, SceInt
     }
 }
 
+// The ioctl reads its input and output from the guest after the descriptor and command checks
+int ioctl(EmuEnvState &emuenv, const char *export_name, SceUID fd, int cmd, Ptr<const void> indata, SceSize inlen, Ptr<void> outdata, SceSize outlen) {
+    if (const int error = ioctl_check(emuenv.io, fd, cmd, export_name); error < 0)
+        return error;
+    if ((indata && !is_valid_addr_len(emuenv.mem, indata.address(), inlen)) || (outdata && !is_valid_addr_len(emuenv.mem, outdata.address(), outlen)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    // The buffer cache settings take 0x1C bytes, an input or output shorter than that and not mapped counts as none
+    const void *const in = is_valid_addr_len(emuenv.mem, indata.address(), 0x1C) ? indata.get(emuenv.mem) : nullptr;
+    void *const out = is_valid_addr_len(emuenv.mem, outdata.address(), 0x1C) ? outdata.get(emuenv.mem) : nullptr;
+    return ioctl_file(emuenv.io, fd, cmd, in, out, outlen, export_name);
+}
+
 int dread(EmuEnvState &emuenv, const char *export_name, SceUID fd, SceIoDirent *dir) {
     if (!dir)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
@@ -145,9 +157,13 @@ EXPORT(int, _sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
     return stat_file_by_fd(emuenv.io, fd, stat, emuenv.vita_fs_path, export_name);
 }
 
-EXPORT(int, _sceIoIoctl) {
-    TRACY_FUNC(_sceIoIoctl);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoIoctl, SceUID fd, int cmd, Ptr<const void> argp, Ptr<const _sceIoControlOpt> opt) {
+    TRACY_FUNC(_sceIoIoctl, fd, cmd, argp, opt);
+    // The syscall copies 0x10 bytes of the block
+    if (!is_valid_addr_len(emuenv.mem, opt.address(), 0x10))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const _sceIoControlOpt *const block = opt.get(emuenv.mem);
+    return ioctl(emuenv, export_name, fd, cmd, argp, block->inlen, block->outdata, block->outlen);
 }
 
 EXPORT(int, _sceIoIoctlAsync) {
