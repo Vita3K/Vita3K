@@ -176,6 +176,13 @@
 constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
 
 #define SCE_KERNEL_MODULE_FLAG_PRELOAD 0x1000
+// The process's main module, which is linked at its start and runs no module_start
+#define SCE_KERNEL_MODULE_FLAG_MAIN 0x4000
+
+#define SCE_KERNEL_EXPORT_ATTR_AUTO_EXPORT 0x0001
+#define SCE_KERNEL_EXPORT_ATTR_NOLINK_EXPORT 0x0004
+#define SCE_KERNEL_EXPORT_ATTR_SYSLIB 0x8000
+#define SCE_KERNEL_IMPORT_ATTR_WEAK_IMPORT 0x0008
 
 enum SceKernelModel {
     SCE_KERNEL_MODEL_VITA,

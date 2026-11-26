@@ -188,19 +188,6 @@ struct SceKernelBootimageInfo {
 constexpr uint32_t nid_sceKernelBootimageInfo = 0x9C08E88A;
 
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t flags) {
-    // A file loaded already gives the same module, the linker has one export table for all modules
-    {
-        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
-        const auto &loaded_modules = emuenv.kernel.loaded_modules;
-        auto module_iter = std::ranges::find_if(loaded_modules, [&](const auto &p) {
-            return module_path == p.second->info.path;
-        });
-
-        if (module_iter != loaded_modules.end()) {
-            return module_iter->first;
-        }
-    }
-
     LOG_INFO("Loading module \"{}\"", module_path);
     if (module_path.starts_with("vs0:sys/external/")) {
         // check if module is LLEd or not
@@ -209,7 +196,6 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t
         if (!is_lle_module(module_name, emuenv)) {
             LOG_INFO("Module {} is HLE. Skipping load.", module_name);
             const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
-            memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
 
             auto *sceKernelModuleInfo = &kernelModuleInfo->info;
             sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
@@ -249,7 +235,16 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t
 
     if (module_path.starts_with("os0:kd/")) {
         if (!fs::exists(system_path)) {
-            SceKernelBootimageInfo *bootimage_info = Ptr<SceKernelBootimageInfo>(emuenv.kernel.export_nids[nid_sceKernelBootimageInfo]).get(emuenv.mem);
+            // The boot image module's info isn't exported until its start
+            Address bootimage_info_address = 0;
+            {
+                const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+                for (const auto &[_, module] : emuenv.kernel.loaded_modules) {
+                    if (module->state != ModuleState::none && std::string_view(module->info.path) == "os0:kd/bootimage.skprx")
+                        bootimage_info_address = find_module_export(emuenv.mem, *module, nid_sceKernelBootimageInfo);
+                }
+            }
+            SceKernelBootimageInfo *bootimage_info = Ptr<SceKernelBootimageInfo>(bootimage_info_address).get(emuenv.mem);
             if (bootimage_info) {
                 for (SceSize i = 0; i < bootimage_info->number; i++) {
                     const SceKernelBootimageModules &module_content = bootimage_info->list.get(emuenv.mem)[i];
@@ -389,24 +384,34 @@ ModuleStatus start_module(EmuEnvState &emuenv, KernelModule &module, SceSize arg
         }
         module.set_state(ModuleState::starting);
     }
+    // The libraries registered before one that fails stay registered
+    if (const int error = link_module(emuenv.kernel, emuenv.mem, module); error < 0) {
+        LOG_ERROR("Module {} can't link: {}", module.info.module_name, log_hex(error));
+        set_module_state(emuenv, module, ModuleState::loaded);
+        return std::unexpected(error);
+    }
     ModuleStatus status = SCE_KERNEL_START_SUCCESS;
-    if (module.info.start_entry) {
+    if (module.info.start_entry && !(module.flags & SCE_KERNEL_MODULE_FLAG_MAIN)) {
         LOG_DEBUG("Running module_start of library: {} at address {}", module.info.module_name, log_hex(module.info.start_entry.address()));
         status = run_module_entry(emuenv, module, module.info.start_entry, module.start_thread_param, args, argp);
         if (!status) {
             LOG_ERROR("Module {} can't run its module_start: {}", module.info.module_name, log_hex(status.error()));
+            unlink_module(emuenv.kernel, emuenv.mem, module, true);
             set_module_state(emuenv, module, ModuleState::loaded);
             return status;
         }
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module.info.module_name, module.info.path, log_hex(*status));
     }
-    // A failed start leaves the module loaded, one with nothing to keep resident is unloaded
+    // A failed start leaves the module loaded, one with nothing to keep resident is unloaded. Both
+    // take its libraries even with strong imports linked to them.
     if (*status == SCE_KERNEL_START_FAILED) {
         LOG_ERROR("Module {} did not start successfully!", module.info.module_name);
+        unlink_module(emuenv.kernel, emuenv.mem, module, true);
         set_module_state(emuenv, module, ModuleState::loaded);
         return std::unexpected(SCE_KERNEL_ERROR_MODULEMGR_START_FAILED);
     }
     if (*status == SCE_KERNEL_START_NO_RESIDENT) {
+        unlink_module(emuenv.kernel, emuenv.mem, module, true);
         set_module_state(emuenv, module, ModuleState::stopped);
         unload_module(emuenv, module.info.modid);
     } else
@@ -443,6 +448,13 @@ ModuleStatus stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args
         LOG_ERROR("Module {} did not stop successfully!", module.info.module_name);
         set_module_state(emuenv, module, ModuleState::resident);
         return std::unexpected(SCE_KERNEL_ERROR_MODULEMGR_STOP_FAIL);
+    }
+    // A library a strong import links to keeps the module started, the libraries before it stay
+    // unregistered
+    if (const int error = unlink_module(emuenv.kernel, emuenv.mem, module, false); error < 0) {
+        LOG_ERROR("Module {} can't unlink: {}", module.info.module_name, log_hex(error));
+        set_module_state(emuenv, module, ModuleState::resident);
+        return std::unexpected(error);
     }
     set_module_state(emuenv, module, ModuleState::stopped);
     return status;

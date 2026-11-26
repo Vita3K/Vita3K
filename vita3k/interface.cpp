@@ -535,13 +535,16 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
         emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
     }
 
-    main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
+    main_module_id = load_module(emuenv, "app0:" + emuenv.self_path, SCE_KERNEL_MODULE_FLAG_MAIN);
 
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
-        // The main module runs from the main thread, so it is started from the load on
-        module->set_state(ModuleState::resident);
+        // The main module runs from the main thread, its start only links it
+        if (const ModuleStatus status = start_module(emuenv, *module); !status) {
+            LOG_ERROR("Failed to link main executable {}: {}", module->info.module_name, log_hex(status.error()));
+            return ModuleLoadFailed;
+        }
         emuenv.kernel.auth_id = module->auth_id;
         uint32_t module_nid = 0;
         {

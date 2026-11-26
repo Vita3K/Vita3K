@@ -439,15 +439,15 @@ memblock_uid_no_reuse           fail     # an opened block gets its original's U
 memblock_unaligned_access       pass
 memblock_vaddr_paddr            pass
 misc_edges                      fail     # two openable objects with the same name
-module_library_copies           fail     # two loads of a file give the same module, and a library is exported from the load on
-module_library_nolink           fail     # a library is exported from the load on, so its imports link at the load
-module_library_partial_start    fail     # a library is exported from the load on, so its imports link at the load
-module_library_partial_stop     fail     # a library is exported from the load on, so its imports link at the load
+module_library_copies           fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
+module_library_nolink           fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
+module_library_partial_start    fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
+module_library_partial_stop     fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
 module_start_no_thread          fail     # there is no thread limit per process, so the threads for module start and stop are always made
 module_start_thread             pass
 module_start_threads            fail     # libfiber and libjson don't load without firmware
 module_start_vfp                pass
-module_states                   fail     # two loads of one file give the same module, the linker has one export table
+module_states                   pass
 module_text_padding             fail     # the app's code isn't a memory block
 module_thread_param_affinity    pass
 module_thread_params            pass

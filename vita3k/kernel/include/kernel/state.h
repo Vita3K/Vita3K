@@ -57,6 +57,17 @@ enum class ModuleState : uint8_t {
     stopped,
 };
 
+// An export library of a module, in the process list while the module is started
+struct ExportLibrary {
+    // The export entry in the module's memory
+    Address entry;
+    // The next library in the process list
+    ExportLibrary *next;
+    // The library of the same NID and name this one hides from the list
+    ExportLibrary *older;
+    bool registered;
+};
+
 struct KernelModule {
     SceKernelModuleInfo info;
     ModuleState state;
@@ -69,6 +80,7 @@ struct KernelModule {
     // The SceKernelModuleThreadParam blocks its start and stop threads take, 0 for none
     Address start_thread_param;
     Address stop_thread_param;
+    std::vector<ExportLibrary> libraries;
 
     // Sets the state and the state the module info calls report
     void set_state(ModuleState new_state);
@@ -130,12 +142,19 @@ struct CorenumAllocator {
 struct VarBindingInfo {
     void *entries;
     uint32_t size;
-    uint32_t module_nid;
+    const KernelModule *module;
 };
 
+// An imported function's stub and the fields of its import entry
 struct FuncBindingInfo {
     Address entry_address;
     uint32_t library_nid;
+    Address library_name;
+    uint16_t version;
+    // SCE_KERNEL_IMPORT_ATTR_* bits
+    uint16_t attr;
+    // The library the stub is linked to, null when it calls the HLE function or an export no library owns
+    const ExportLibrary *library;
 };
 
 using VarBindingInfos = std::multimap<uint32_t, VarBindingInfo>;
@@ -172,6 +191,10 @@ struct KernelState {
     ExportNids export_nids;
     LibExportNids export_nids_by_lib;
     ExportNidOwners export_nid_owners;
+    // The stub word of each imported variable that no library exports
+    ExportNids var_stubs;
+    // The export libraries an import can link to, the newest first
+    ExportLibrary *libraries = nullptr;
     FuncBindingInfos func_binding_infos;
     VarBindingInfos var_binding_infos;
     ModuleUidByNid module_uid_by_nid;

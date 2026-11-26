@@ -305,6 +305,8 @@ void KernelState::deinit(MemState &mem) {
         export_nids.clear();
         export_nids_by_lib.clear();
         export_nid_owners.clear();
+        var_stubs.clear();
+        libraries = nullptr;
         func_binding_infos.clear();
         var_binding_infos.clear();
         module_uid_by_nid.clear();
