@@ -22,6 +22,7 @@
 #include <packages/license.h>
 #include <util/fs.h>
 
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QInputDialog>
@@ -61,7 +62,8 @@ void LicenseInstallDialog::install_from_file() {
     if (path_qt.isEmpty())
         return;
 
-    const bool ok = copy_license(m_emuenv, gui::utils::to_fs_path(path_qt));
+    const fs::path license_path = gui::utils::to_fs_path(path_qt);
+    const bool ok = copy_license(m_emuenv, license_path);
 
     if (!ok) {
         QMessageBox::critical(this, tr("Installation Failed"),
@@ -75,7 +77,19 @@ void LicenseInstallDialog::install_from_file() {
     info.setText(tr("License installed successfully!\n\nContent ID: %1\nTitle ID:   %2")
             .arg(QString::fromStdString(m_emuenv.license_content_id),
                 QString::fromStdString(m_emuenv.license_title_id)));
+    auto *delete_file = new QCheckBox(tr("Delete .bin / .rif file after install"));
+    info.setCheckBox(delete_file);
     info.exec();
+
+    if (delete_file->isChecked()) {
+        // fs::remove throws and crashes the app when the file is locked so use the non throwing overload
+        std::error_code error;
+        fs::remove(license_path, error);
+        if (error) {
+            QMessageBox::warning(this, tr("Could Not Delete Files"),
+                tr("The following files could not be deleted. They may still be open in another program:\n\n%1").arg(QString::fromStdString(license_path.filename().string())));
+        }
+    }
     accept();
 }
 
