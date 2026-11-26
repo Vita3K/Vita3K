@@ -1076,6 +1076,7 @@ CompileWorker *GLState::get_compile_worker() {
 }
 
 void GLState::start_shader_translate_threads() {
+    std::lock_guard<std::mutex> lifecycle(shader_translate_lifecycle_mutex);
     if (!shader_translate_threads.empty())
         return;
 
@@ -1106,6 +1107,7 @@ void GLState::start_shader_translate_threads() {
 }
 
 void GLState::stop_shader_translate_threads() {
+    std::lock_guard<std::mutex> lifecycle(shader_translate_lifecycle_mutex);
     if (shader_translate_threads.empty())
         return;
 

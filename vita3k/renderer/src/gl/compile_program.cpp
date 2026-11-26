@@ -561,6 +561,15 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     if (is_compiling)
         *is_compiling = false;
 
+    // A program cannot mix GLSL and SPIR-V shaders, so the stage objects of the other format are
+    // dropped when the setting changes. Programs that are linked already stay valid.
+    const bool use_spirv = features.spirv_shader && spirv;
+    if (use_spirv != renderer.shader_cache_spirv) {
+        renderer.fragment_shader_cache.clear();
+        renderer.vertex_shader_cache.clear();
+        renderer.shader_cache_spirv = use_spirv;
+    }
+
     assert(state.fragment_program);
     assert(state.vertex_program);
 
@@ -604,7 +613,6 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
 
     CompileWorker *compile_worker = use_async ? renderer.get_compile_worker() : nullptr;
     if (compile_worker) {
-        const bool use_spirv = features.spirv_shader && spirv;
         bool frag_translating = false;
         bool vert_translating = false;
 
@@ -663,7 +671,6 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
             return SharedGLObject();
         }
     } else {
-        const bool use_spirv = features.spirv_shader && spirv;
         wait_for_translation(renderer, fragment_program.hash, use_spirv);
         wait_for_translation(renderer, vertex_program.hash, use_spirv);
 

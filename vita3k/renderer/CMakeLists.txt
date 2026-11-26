@@ -56,6 +56,11 @@ if(ANDROID)
 	target_link_libraries(renderer PRIVATE android adrenotools)
 endif()
 
+if(WIN32)
+	# the compile worker creates WGL contexts of its own
+	target_link_libraries(renderer PRIVATE opengl32)
+endif()
+
 if(APPLE)
 	target_sources(renderer PRIVATE src/vulkan/metal_layer.mm)
 	target_link_libraries(renderer PRIVATE "-framework QuartzCore" "-framework Cocoa")

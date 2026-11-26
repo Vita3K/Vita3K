@@ -113,7 +113,12 @@ struct GLState : public renderer::State {
     uint64_t next_worker_job = 0;
     // Translated sources of the fragment [0] and vertex [1] shaders, to link new pairs on the worker
     std::map<std::pair<Sha256Hash, bool>, std::shared_ptr<const ShaderTranslation>> shader_sources[2];
+    // Format of the stage objects in the shader caches, they cannot be mixed in a program
+    bool shader_cache_spirv = false;
 
+    // Serializes starting and stopping the translation threads, which the render thread and the
+    // thread closing the game can both do. The workers never take it.
+    std::mutex shader_translate_lifecycle_mutex;
     std::vector<std::thread> shader_translate_threads;
     std::mutex shader_translate_queue_mutex;
     std::condition_variable shader_translate_queue_cond;

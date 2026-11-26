@@ -20,6 +20,7 @@
 #include <util/log.h>
 
 #include <algorithm>
+#include <system_error>
 #include <utility>
 
 #ifdef _WIN32
@@ -89,7 +90,12 @@ std::unique_ptr<CompileWorker> CompileWorker::create() {
     for (int i = 0; i < thread_count; i++) {
         std::promise<bool> started;
         std::future<bool> result = started.get_future();
-        worker->threads.emplace_back(&CompileWorker::run, worker.get(), &info, std::move(started));
+        try {
+            worker->threads.emplace_back(&CompileWorker::run, worker.get(), &info, std::move(started));
+        } catch (const std::system_error &) {
+            LOG_WARN("Could not start a thread to compile shaders on, compiling them on the render thread");
+            return nullptr;
+        }
         if (!result.get()) {
             LOG_WARN("Could not create a context to compile shaders on, compiling them on the render thread");
             return nullptr;
