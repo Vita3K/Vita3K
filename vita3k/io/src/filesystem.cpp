@@ -21,34 +21,16 @@
 #ifdef _WIN32
 // To open wide files for Boost.Filesystem, we also need the appropriate wide mode flags for Windows, and normal flags for other OS
 const wchar_t *translate_open_mode(const int flags) {
-    if (flags & SCE_O_WRONLY) {
-        if (flags & SCE_O_RDONLY) {
-            if (flags & SCE_O_APPEND) {
-                return L"ab+";
-            }
-            return L"rb+";
-        }
-        if (flags & SCE_O_APPEND) {
-            return L"ab";
-        }
+    // An APPEND write goes to the end of the file in write_file, so no host mode appends
+    if (flags & SCE_O_WRONLY)
         return L"rb+";
-    }
     return L"rb";
 }
 #else
 const char *translate_open_mode(const int flags) {
-    if (flags & SCE_O_WRONLY) {
-        if (flags & SCE_O_RDONLY) {
-            if (flags & SCE_O_APPEND) {
-                return "ab+";
-            }
-            return "rb+";
-        }
-        if (flags & SCE_O_APPEND) {
-            return "ab";
-        }
+    // An APPEND write goes to the end of the file in write_file, so no host mode appends
+    if (flags & SCE_O_WRONLY)
         return "rb+";
-    }
     return "rb";
 }
 #endif

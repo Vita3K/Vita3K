@@ -440,6 +440,8 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
         std::lock_guard lock(file->mutex);
         if (file->closed)
             return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+        if (!(file->get_open_mode() & SCE_O_RDONLY))
+            return IO_ERROR(SCE_ERROR_ERRNO_EACCES);
         const auto read = file->read(data, 1, size);
         LOG_TRACE_IF(log_file_op && log_file_read, "{}: Reading {} bytes of fd {}", export_name, read, log_hex(fd));
         return static_cast<int>(read);
@@ -465,6 +467,14 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
     }
 
     return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+}
+
+// Writes at the stream position and flushes, so the other descriptors of the file see the data at once
+static SceSSize write_and_flush(const FileStats &file, const void *data, SceSize size, const char *export_name) {
+    const SceOff written = file.write(data, 1, size);
+    if (std::fflush(file.get_file_pointer()) != 0)
+        return IO_ERROR(host_open_error(errno));
+    return static_cast<SceSSize>(written);
 }
 
 int write_file(SceUID fd, const void *data, const SceSize size, const IOState &io, const char *export_name) {
@@ -512,16 +522,24 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT); // TODO: Is it the right error code?
     }
 
-    if (file->can_write_file()) {
-        std::lock_guard lock(file->mutex);
-        if (file->closed)
-            return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
-        const auto written = file->write(data, 1, size);
-        LOG_TRACE_IF(log_file_op, "{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
+    if (!file->is_regular_file() || !(file->get_open_mode() & SCE_O_WRONLY))
+        return IO_ERROR(SCE_ERROR_ERRNO_EACCES);
+    std::lock_guard lock(file->mutex);
+    if (file->closed)
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    const std::lock_guard write_lock(io.write_mutex);
+    if (file->get_open_mode() & SCE_O_APPEND) {
+        // An APPEND write goes to the end of the file and leaves the position where it was
+        const SceOff pos = file->tell();
+        file->seek(0, SCE_SEEK_END);
+        const SceSSize written = write_and_flush(*file, data, size, export_name);
+        file->seek(pos, SCE_SEEK_SET);
+        LOG_TRACE_IF(log_file_op, "{}: Appending to fd: {}, size: {}", export_name, log_hex(fd), size);
         return static_cast<int>(written);
     }
-
-    return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    const SceSSize written = write_and_flush(*file, data, size, export_name);
+    LOG_TRACE_IF(log_file_op, "{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
+    return static_cast<int>(written);
 }
 
 int truncate_file(const SceUID fd, unsigned long long length, const IOState &io, const char *export_name) {
@@ -534,6 +552,7 @@ int truncate_file(const SceUID fd, unsigned long long length, const IOState &io,
     std::lock_guard lock(file->mutex);
     if (file->closed)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    const std::lock_guard write_lock(io.write_mutex);
     auto trunc = file->truncate(length);
     LOG_TRACE_IF(log_file_op, "{}: Truncating fd: {}, to size: {}", export_name, log_hex(fd), length);
     return trunc;
@@ -583,6 +602,72 @@ SceOff tell_file(IOState &io, const SceUID fd, const char *export_name) {
     if (std_file->closed)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     return std_file->tell();
+}
+
+// The file of a pread or pwrite, or the error for a directory or a descriptor without that access
+static std::shared_ptr<FileStats> positioned_file(IOState &io, SceUID fd, int access, SceSSize &error, const char *export_name) {
+    {
+        const std::lock_guard<std::mutex> lock(io.fd_mutex);
+        if (io.dir_entries.contains(fd)) {
+            error = IO_ERROR(SCE_ERROR_ERRNO_EISDIR);
+            return nullptr;
+        }
+    }
+    auto file = find_file(io, fd);
+    if (!file)
+        error = IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    else if (!(file->get_open_mode() & access)) {
+        error = IO_ERROR(SCE_ERROR_ERRNO_EACCES);
+        file = nullptr;
+    }
+    return file;
+}
+
+// Reads at an offset under the file's lock, and the file position stays where it was. A NULL data
+// stands for a buffer that isn't mapped.
+SceSSize pread_file(IOState &io, SceUID fd, void *data, SceSize size, SceOff offset, const char *export_name) {
+    SceSSize error = 0;
+    const auto file = positioned_file(io, fd, SCE_O_RDONLY, error, export_name);
+    if (!file)
+        return error;
+    if (size && !data)
+        return IO_ERROR(SCE_ERROR_ERRNO_EFAULT);
+    if (offset < 0)
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    std::lock_guard lock(file->mutex);
+    if (file->closed)
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    const SceOff pos = file->tell();
+    if (!file->seek(offset, SCE_SEEK_SET))
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    const SceOff read = file->read(data, 1, size);
+    file->seek(pos, SCE_SEEK_SET);
+    LOG_TRACE_IF(log_file_op && log_file_read, "{}: Reading {} bytes of fd {} at {}", export_name, read, log_hex(fd), log_hex(offset));
+    return static_cast<SceSSize>(read);
+}
+
+// Writes at an offset under the file's lock, also on an APPEND descriptor, and the file position
+// stays where it was. A NULL data stands for a buffer that isn't mapped.
+SceSSize pwrite_file(IOState &io, SceUID fd, const void *data, SceSize size, SceOff offset, const char *export_name) {
+    SceSSize error = 0;
+    const auto file = positioned_file(io, fd, SCE_O_WRONLY, error, export_name);
+    if (!file)
+        return error;
+    if (size && !data)
+        return IO_ERROR(SCE_ERROR_ERRNO_EFAULT);
+    if (offset < 0)
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    std::lock_guard lock(file->mutex);
+    if (file->closed)
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    const std::lock_guard write_lock(io.write_mutex);
+    const SceOff pos = file->tell();
+    if (!file->seek(offset, SCE_SEEK_SET))
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    const SceSSize written = write_and_flush(*file, data, size, export_name);
+    file->seek(pos, SCE_SEEK_SET);
+    LOG_TRACE_IF(log_file_op, "{}: Writing to fd: {}, size: {}, at {}", export_name, log_hex(fd), size, log_hex(offset));
+    return written;
 }
 
 int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name, const SceUID fd) {
@@ -721,6 +806,8 @@ int close_file(IOState &io, const SceUID fd, const char *export_name) {
 }
 
 int remove_file(IOState &io, const char *file, const fs::path &vita_fs_path, const char *export_name) {
+    if (!file)
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
     auto device = device::get_device(file);
     if (device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", file);
@@ -753,6 +840,8 @@ int remove_file(IOState &io, const char *file, const fs::path &vita_fs_path, con
 }
 
 int rename(IOState &io, const char *old_name, const char *new_name, const fs::path &vita_fs_path, const char *export_name) {
+    if (!old_name || !new_name)
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
     auto old_device = device::get_device(old_name);
     if (old_device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", old_name);
@@ -947,6 +1036,8 @@ int close_dir(IOState &io, const SceUID fd, const char *export_name) {
 }
 
 int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const char *export_name, const bool recursive) {
+    if (!dir)
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
     auto device = device::get_device(dir);
     if (device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", dir);

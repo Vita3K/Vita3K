@@ -539,55 +539,9 @@ EXPORT(int, sceIoCompleteMultiple) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, const void *indata, SceSize inlen, void *outdata, SceSize outlen) {
+EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, Ptr<const void> indata, SceSize inlen, Ptr<void> outdata, SceSize outlen) {
     TRACY_FUNC(sceIoDevctl, dev, cmd, indata, inlen, outdata, outlen);
-    // The device name is copied with a limit of 0x400 bytes
-    if (dev && strnlen(dev, 0x400) == 0x400)
-        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
-    // Commands with these bits are for system programs
-    if (cmd & 0xE00)
-        return RET_ERROR(SCE_ERROR_ERRNO_EUNSUP);
-    if (!dev)
-        return RET_ERROR(SCE_ERROR_ERRNO_EFAULT);
-    // Only the root of a device takes commands
-    const VitaIoDevice device = device::get_device(dev);
-    if (device == VitaIoDevice::_INVALID || !device::remove_device_from_path(dev, device).empty())
-        return RET_ERROR(SCE_ERROR_ERRNO_ENODEV);
-    switch (cmd) {
-    case SCE_IO_DEVCTL_GET_FREE_SPACE: {
-        // The short answer ends before the volume fields
-        if (outlen != offsetof(SceIoDevInfo, serial) && outlen != sizeof(SceIoDevInfo))
-            return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-
-        // A device with no host directory has no volume to report on
-        std::error_code error;
-        const fs::space_info space = fs::space(emuenv.vita_fs_path / device::get_device_string(device, false), error);
-        if (error)
-            return RET_ERROR(SCE_ERROR_ERRNO_ENODEV);
-        // The devices are host directories with no cluster size, so the answer uses a fixed one that
-        // the sizes are rounded to
-        constexpr SceSize cluster_size = 4096;
-        // The answer is built in a buffer filled with 0xFF, which is copied whole
-        SceIoDevInfo info;
-        std::memset(&info, 0xFF, sizeof(info));
-        info.max_size = space.capacity / cluster_size * cluster_size;
-        info.free_size = space.available / cluster_size * cluster_size;
-        info.cluster_size = cluster_size;
-        if (outlen == sizeof(SceIoDevInfo)) {
-            info.unused = 0;
-            info.serial = 0;
-            std::ranges::fill(info.label, ' ');
-            info.end = 0;
-        }
-        if (outdata)
-            std::memcpy(outdata, &info, outlen);
-        return 0;
-    }
-    default:
-        // The free space query is the only command a game can use
-        LOG_WARN("sceIoDevctl command {:#x} on {} refused", cmd, dev);
-        return RET_ERROR(SCE_ERROR_ERRNO_EUNSUP);
-    }
+    return devctl(emuenv, export_name, dev, cmd, indata, inlen, outdata, outlen);
 }
 
 EXPORT(int, sceIoDevctlAsync) {
@@ -597,17 +551,17 @@ EXPORT(int, sceIoDevctlAsync) {
 
 EXPORT(int, sceIoDopen, const char *dir) {
     TRACY_FUNC(sceIoDopen, dir);
-    return CALL_EXPORT(_sceIoDopen, dir);
+    return open_dir(emuenv.io, dir, emuenv.vita_fs_path, export_name);
 }
 
 EXPORT(int, sceIoDread, const SceUID fd, SceIoDirent *dir) {
     TRACY_FUNC(sceIoDread, fd, dir);
-    return CALL_EXPORT(_sceIoDread, fd, dir);
+    return dread(emuenv, export_name, fd, dir);
 }
 
 EXPORT(int, sceIoGetstat, const char *file, SceIoStat *stat) {
     TRACY_FUNC(sceIoGetstat, file, stat);
-    return CALL_EXPORT(_sceIoGetstat, file, stat);
+    return stat_file(emuenv.io, file, stat, emuenv.vita_fs_path, export_name);
 }
 
 EXPORT(int, sceIoGetstatAsync) {
@@ -632,14 +586,7 @@ EXPORT(int, sceIoIoctlAsync) {
 
 EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeekMode whence) {
     TRACY_FUNC(sceIoLseek, fd, offset, whence);
-    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
-
-    Ptr<_sceIoLseekOpt> options = Ptr<_sceIoLseekOpt>(thread->cpu->stack_alloc(sizeof(_sceIoLseekOpt)));
-    options.get(emuenv.mem)->offset = offset;
-    options.get(emuenv.mem)->whence = whence;
-    SceOff res = CALL_EXPORT(_sceIoLseek, fd, options);
-    thread->cpu->stack_free(sizeof(_sceIoLseekOpt));
-    return res;
+    return seek_file(fd, offset, whence, emuenv.io, export_name);
 }
 
 EXPORT(int, sceIoLseekAsync) {
@@ -649,7 +596,7 @@ EXPORT(int, sceIoLseekAsync) {
 
 EXPORT(int, sceIoMkdir, const char *dir, const SceMode mode) {
     TRACY_FUNC(sceIoMkdir, dir, mode);
-    return CALL_EXPORT(_sceIoMkdir, dir, mode);
+    return create_dir(emuenv.io, dir, mode, emuenv.vita_fs_path, export_name);
 }
 
 EXPORT(int, sceIoMkdirAsync) {
@@ -675,16 +622,9 @@ EXPORT(int, sceIoOpenAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceSSize, sceIoPread, SceUID fd, void *buf, SceSize nbyte, SceOff offset) {
+EXPORT(SceSSize, sceIoPread, SceUID fd, Ptr<void> buf, SceSize nbyte, SceOff offset) {
     TRACY_FUNC(sceIoPread, fd, buf, nbyte, offset);
-    auto pos = tell_file(emuenv.io, fd, export_name);
-    if (pos < 0) {
-        return static_cast<SceSSize>(pos);
-    }
-    seek_file(fd, offset, SCE_SEEK_SET, emuenv.io, export_name);
-    const auto res = read_file(buf, emuenv.io, fd, nbyte, export_name);
-    seek_file(fd, pos, SCE_SEEK_SET, emuenv.io, export_name);
-    return res;
+    return pread_file(emuenv.io, fd, mapped_buffer(emuenv.mem, buf, nbyte), nbyte, offset, export_name);
 }
 
 EXPORT(int, sceIoPreadAsync) {
@@ -692,16 +632,9 @@ EXPORT(int, sceIoPreadAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceSSize, sceIoPwrite, SceUID fd, const void *buf, SceSize nbyte, SceOff offset) {
+EXPORT(SceSSize, sceIoPwrite, SceUID fd, Ptr<const void> buf, SceSize nbyte, SceOff offset) {
     TRACY_FUNC(sceIoPwrite, fd, buf, nbyte, offset);
-    auto pos = tell_file(emuenv.io, fd, export_name);
-    if (pos < 0) {
-        return static_cast<SceSSize>(pos);
-    }
-    seek_file(fd, offset, SCE_SEEK_SET, emuenv.io, export_name);
-    const auto res = write_file(fd, buf, nbyte, emuenv.io, export_name);
-    seek_file(fd, pos, SCE_SEEK_SET, emuenv.io, export_name);
-    return res;
+    return pwrite_file(emuenv.io, fd, mapped_buffer(emuenv.mem, buf, nbyte), nbyte, offset, export_name);
 }
 
 EXPORT(int, sceIoPwriteAsync) {
@@ -716,9 +649,6 @@ EXPORT(int, sceIoRead2) {
 
 EXPORT(int, sceIoRemove, const char *path) {
     TRACY_FUNC(sceIoRemove, path);
-    if (path == nullptr) {
-        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-    }
     return remove_file(emuenv.io, path, emuenv.vita_fs_path, export_name);
 }
 
@@ -729,10 +659,6 @@ EXPORT(int, sceIoRemoveAsync) {
 
 EXPORT(int, sceIoRename, const char *oldname, const char *newname) {
     TRACY_FUNC(sceIoRename, oldname, newname);
-    if (!oldname || !newname)
-        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-
-    LOG_INFO("Renaming: {} to {}", oldname, newname);
     return rename(emuenv.io, oldname, newname, emuenv.vita_fs_path, export_name);
 }
 
@@ -743,9 +669,6 @@ EXPORT(int, sceIoRenameAsync) {
 
 EXPORT(int, sceIoRmdir, const char *path) {
     TRACY_FUNC(sceIoRmdir, path);
-    if (path == nullptr) {
-        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-    }
     return remove_dir(emuenv.io, path, emuenv.vita_fs_path, export_name);
 }
 
