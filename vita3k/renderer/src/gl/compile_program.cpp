@@ -560,6 +560,24 @@ static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const 
     return cached->second;
 }
 
+// A program that started compiling for a draw that could be dropped, and is now needed by one that
+// cannot be. Gives up after a while, the draw is then dropped like the others.
+static void wait_for_program(GLState &renderer, const ProgramHashes &hashes) {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (std::chrono::steady_clock::now() < deadline) {
+        const auto it = renderer.program_cache.find(hashes);
+        if (it == renderer.program_cache.end() || it->second.status != ProgramStatus::Compiling)
+            return;
+
+        renderer.poll_pending_programs();
+
+        const auto again = renderer.program_cache.find(hashes);
+        if (again == renderer.program_cache.end() || again->second.status != ProgramStatus::Compiling)
+            return;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
+
 SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmRecordState &state, const FeatureState &features, const MemState &mem,
     bool shader_cache, bool spirv, bool maskupdate, bool *is_compiling) {
     R_PROFILE(__func__);
@@ -592,6 +610,12 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
 
     const ProgramHashes hashes(fragment_program.hash, vertex_program.hash);
 
+    // Draws with effects that cannot be dropped wait for their program instead of being skipped while
+    // it compiles: mask updates, stores to guest memory and passes that only write depth or stencil
+    const bool synchronous = maskupdate || may_store_to_memory(state, mem) || (state.skip_color_output && may_write_depth_stencil(state));
+    if (synchronous)
+        wait_for_program(renderer, hashes);
+
     // First pass, trying to find the program, since link is costly
     const ProgramCache::const_iterator cached = renderer.program_cache.find(hashes);
     if (cached != renderer.program_cache.end()) {
@@ -608,9 +632,6 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     context.shader_hints.color_format = state.color_surface.colorFormat;
     context.shader_hints.attributes = &vertex_program_gxm.attributes;
 
-    // Mask updates and draws that store to guest memory have effects that cannot be dropped, so
-    // they wait for their program instead of being skipped while it compiles
-    const bool synchronous = maskupdate || may_store_to_memory(state, mem);
     const bool use_async = renderer.use_async_compilation && !synchronous;
     const bool defer_check = renderer.defer_gl_status_checks && !synchronous;
 
