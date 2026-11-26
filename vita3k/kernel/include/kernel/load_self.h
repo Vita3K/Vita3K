@@ -47,3 +47,5 @@ int unlink_module(KernelState &kernel, MemState &mem, KernelModule &module, bool
 ExportFunctions export_functions(const MemState &mem, const ExportLibrary &library);
 // The address of an export of the module, 0 if it exports no such NID
 Address find_module_export(const MemState &mem, const KernelModule &module, uint32_t nid);
+// The NID in a module's module info
+uint32_t module_nid(const MemState &mem, const KernelModule &module);

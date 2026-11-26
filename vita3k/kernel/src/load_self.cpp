@@ -523,6 +523,10 @@ ExportFunctions export_functions(const MemState &mem, const ExportLibrary &libra
     return { Ptr<const uint32_t>(entry.nid_table).get(mem), Ptr<Ptr<uint32_t>>(entry.entry_table).get(mem), entry.num_syms_funcs };
 }
 
+uint32_t module_nid(const MemState &mem, const KernelModule &module) {
+    return module_info_of(mem, module).module_nid;
+}
+
 Address find_module_export(const MemState &mem, const KernelModule &module, uint32_t nid) {
     for (const ExportLibrary &library : module.libraries) {
         const sce_module_exports_raw &entry = entry_of(mem, library);

@@ -564,8 +564,8 @@ EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
     // Find the import stub for this NID in the specified module
     Address stub_addr;
     {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         stub_addr = find_import_stub_in_module(emuenv, module_name, func_nid);
     }
 
@@ -665,18 +665,9 @@ EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
         const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const auto &loaded_modules = emuenv.kernel.loaded_modules;
         for (const auto &[uid, mod] : loaded_modules) {
-            if (std::string(mod->info.module_name) == module) {
-                // Find module_nid via reverse lookup in module_uid_by_nid
-                uint32_t mod_nid = 0;
-                {
-                    const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
-                    for (const auto &[nid, mapped_uid] : emuenv.kernel.module_uid_by_nid) {
-                        if (mapped_uid == uid) {
-                            mod_nid = nid;
-                            break;
-                        }
-                    }
-                }
+            // A module being unloaded may have freed its segments already
+            if (mod->state != ModuleState::none && std::string(mod->info.module_name) == module) {
+                const uint32_t mod_nid = mod->info_segment_address ? module_nid(emuenv.mem, *mod) : 0;
                 fill_info(uid, mod->info.module_name, mod_nid,
                     mod->info.segments[0].vaddr.address(),
                     mod->info.segments[0].memsz);
@@ -1061,8 +1052,8 @@ EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 
     Address stub_addr;
     {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         stub_addr = find_import_stub_in_module(emuenv, module, import_func_nid);
     }
 
