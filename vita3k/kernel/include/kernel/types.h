@@ -728,6 +728,11 @@ enum SceSysmoduleErrorCode : uint32_t {
     SCE_SYSMODULE_ERROR_FATAL = 0x805A10FF
 };
 
+// The sizes of the module table and the public and internal id tables of sysmodule
+#define SYSMODULE_MODULE_COUNT 125
+#define SYSMODULE_COUNT 0x56
+#define SYSMODULE_INTERNAL_COUNT 0x2A
+
 typedef SceUInt64 SceKernelSysClock;
 typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
 

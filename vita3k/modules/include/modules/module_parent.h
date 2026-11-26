@@ -48,15 +48,14 @@ int unload_module(EmuEnvState &emuenv, SceUID module_id);
 SceInt32 start_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
 SceInt32 stop_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
 
-/**
- * \brief Loads and run a system module
- * \param emuenv PlayStation Vita emulated environment
- * \param module_id System Module ID of the module to load
- * \return False on failure, true on success
- */
-bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
-int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
-bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
+// Load, unload and check a sysmodule id like sysmodule does, for an id the caller has checked. The
+// loads and unloads return the error of the module that failed.
+SceInt32 load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
+SceInt32 unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
+bool is_sys_module_loaded(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
+SceInt32 load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
+SceInt32 unload_sys_module_internal(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id);
+bool is_sys_module_internal_loaded(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id);
 
 void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid);
 

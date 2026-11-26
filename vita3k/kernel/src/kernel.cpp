@@ -296,8 +296,9 @@ void KernelState::deinit(MemState &mem) {
     objects.clear();
 
     loaded_modules.clear();
-    loaded_sysmodules.clear();
-    loaded_internal_sysmodules.clear();
+    sysmodules.records = {};
+    sysmodules.ids = {};
+    sysmodules.internal_ids = {};
 
     {
         std::lock_guard<std::mutex> lock(export_nids_mutex);

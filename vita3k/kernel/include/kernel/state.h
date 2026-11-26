@@ -33,6 +33,7 @@
 
 #include <emuenv/app_launch_request.h>
 
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <functional>
@@ -82,8 +83,25 @@ struct CodecEngineBlock {
     int32_t vaddr;
 };
 
-using LoadedSysmodules = std::map<SceSysmoduleModuleId, std::vector<SceUID>>;
-using LoadedInternalSysmodules = std::vector<SceSysmoduleInternalModuleId>;
+// A module of the sysmodule table: how many loaded ids use it and its UID, -1 for one it skipped
+struct SysmoduleRecord {
+    uint32_t count = 0;
+    SceUID uid = 0;
+};
+
+// A sysmodule id: how many loads it has and how many of its modules are loaded so far
+struct SysmoduleSlot {
+    uint16_t count = 0;
+    uint16_t progress = 0;
+};
+
+// What sysmodule keeps for the process, a load or unload holds the mutex all along
+struct Sysmodules {
+    std::mutex mutex;
+    std::array<SysmoduleRecord, SYSMODULE_MODULE_COUNT> records;
+    std::array<SysmoduleSlot, SYSMODULE_COUNT> ids;
+    std::array<SysmoduleSlot, SYSMODULE_INTERNAL_COUNT> internal_ids;
+};
 
 struct CorenumAllocator {
     BitmapAllocator alloc;
@@ -133,8 +151,7 @@ struct KernelState {
     SceKernelModuleInfoPtrs loaded_modules;
     // The app's program authority ID, the one of its main module
     uint64_t auth_id = 0;
-    LoadedSysmodules loaded_sysmodules;
-    LoadedInternalSysmodules loaded_internal_sysmodules;
+    Sysmodules sysmodules;
 
     // the variables in this block must be accessed by first locking export_nids_mutex
     std::mutex export_nids_mutex;

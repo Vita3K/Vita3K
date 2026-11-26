@@ -576,7 +576,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
 
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
-    auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
+    auto add_preload_module = [&](uint32_t code, const std::string &name, bool load_from_app) {
         if ((process_preload_disabled & code) == 0) {
             if (is_lle_module(name, emuenv)) {
                 const auto module_name_file = fmt::format("{}.suprx", name);
@@ -585,22 +585,19 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
                 else if (fs::exists(emuenv.vita_fs_path / "vs0/sys/external" / module_name_file))
                     lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
             }
-
-            if (module_id != SCE_SYSMODULE_INVALID)
-                emuenv.kernel.loaded_sysmodules[module_id] = {};
         }
     };
     lib_load_list.emplace_back("os0:kd/bootimage.skprx");
     lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
-    add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
-    add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
-    add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);
-    add_preload_module(0x00100000, SCE_SYSMODULE_INVALID, "libcdlg", false);
-    add_preload_module(0x00200000, SCE_SYSMODULE_FIOS2, "libfios2", true);
-    add_preload_module(0x00400000, SCE_SYSMODULE_APPUTIL, "apputil", false);
-    add_preload_module(0x00800000, SCE_SYSMODULE_INVALID, "libSceFt2", false);
-    add_preload_module(0x01000000, SCE_SYSMODULE_INVALID, "libpvf", false);
-    add_preload_module(0x02000000, SCE_SYSMODULE_PERF, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
+    add_preload_module(0x00010000, "libc", true);
+    add_preload_module(0x00020000, "libdbg", false);
+    add_preload_module(0x00080000, "libshellsvc", false);
+    add_preload_module(0x00100000, "libcdlg", false);
+    add_preload_module(0x00200000, "libfios2", true);
+    add_preload_module(0x00400000, "apputil", false);
+    add_preload_module(0x00800000, "libSceFt2", false);
+    add_preload_module(0x01000000, "libpvf", false);
+    add_preload_module(0x02000000, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
 
     for (const auto &module_path : lib_load_list) {
         auto res = load_module(emuenv, module_path, SCE_KERNEL_MODULE_FLAG_PRELOAD);

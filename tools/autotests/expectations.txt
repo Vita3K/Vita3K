@@ -718,7 +718,7 @@ syscall_vfp_clobber             pass
 syscall_vfp_helpers             fail     # kernel calls change FPSCR and keep d0, d1 and d16, the Vita keeps FPSCR and clobbers those in some calls
 syscall_wait_blocks             timeout  # the event flag and simple event calls don't read the result and timeout block, so a wait with a timeout never ends
 sysmodule                       fail     # system modules don't load without firmware
-sysmodule_ids                   fail     # sceSysmoduleIsLoaded takes every id below 0x56, so it never refuses an id a game can't use
+sysmodule_ids                   pass
 sysmodule_lock_during_start     fail     # libfiber doesn't load without firmware
 sysmodule_partial               fail     # the location modules don't load without firmware, and there is no thread limit per process
 system_font_blocks              crash    # opening the system font blocks by name
