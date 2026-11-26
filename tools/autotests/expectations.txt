@@ -212,7 +212,7 @@ delete_race_end_waiters         pass
 delete_with_waiters             pass
 delete_with_waiters_more        fail     # sceKernelWaitMultipleEvents
 descriptor_access               pass
-devctl_ioctl                    fail     # sceIoDevctl and sceIoIoctl commands and sizes, Vita3K answers the 0x3001 free space query the test expects refused, and accepts any ioctl
+devctl_ioctl                    fail     # Vita3K answers the 0x3001 free space query the test expects refused
 directories                     fail     # directory mode and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
 display_framebuf_blocks         fail     # no framebuffer base alignment check
@@ -339,7 +339,7 @@ info                            pass
 info_fields                     pass
 info_sizes                      pass
 io_priority                     fail     # sceIoGetPriority, sceIoSetPriority and the default priority calls are stubs, no range check and no stored value
-ioctl_bad_pointers              fail     # sceIoIoctl doesn't check its input and output
+ioctl_bad_pointers              pass
 local_ready_requeue             fail     # threads are never READY or STANDBY
 local_standby_raise_preempt     fail     # T reads DORMANT where the Vita has STANDBY, and the steps run in another order
 lock_calls_callback_runs        pass
@@ -716,8 +716,8 @@ sync_chstat_pread_dread         fail     # sync and chstat don't check their arg
 sync_object_memory_cost         fail     # kernel objects take no main memory
 syscall_block_page_end          fail     # the page after a memory block reads as mapped, so a block in its last 8 bytes isn't refused
 syscall_callee_saved            pass
-syscall_io_blocks               fail     # the underscore pread, pwrite, ioctl and devctl calls don't refuse a NULL or unmapped argument block, and devctl doesn't check its input
-syscall_io_calls                fail     # Vita3K answers the 0x3001 free space query the test expects refused, and ioctl is a stub
+syscall_io_blocks               pass
+syscall_io_calls                fail     # Vita3K answers the 0x3001 free space query the test expects refused
 syscall_lw_mutex_lock           pass
 syscall_module_blocks           fail     # the module calls don't read the flags, option and status block
 syscall_module_checks           fail     # the module syscalls don't read the flags and status block

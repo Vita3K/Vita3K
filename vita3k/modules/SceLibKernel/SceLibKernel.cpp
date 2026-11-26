@@ -574,9 +574,9 @@ EXPORT(int, sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
     return stat_file_by_fd(emuenv.io, fd, stat, emuenv.vita_fs_path, export_name);
 }
 
-EXPORT(int, sceIoIoctl, SceUID fd, int cmd, const void *argp, SceSize arglen, void *bufp, SceSize buflen) {
+EXPORT(int, sceIoIoctl, SceUID fd, int cmd, Ptr<const void> argp, SceSize arglen, Ptr<void> bufp, SceSize buflen) {
     TRACY_FUNC(sceIoIoctl, fd, cmd, argp, arglen, bufp, buflen);
-    return UNIMPLEMENTED();
+    return ioctl(emuenv, export_name, fd, cmd, argp, arglen, bufp, buflen);
 }
 
 EXPORT(int, sceIoIoctlAsync) {
