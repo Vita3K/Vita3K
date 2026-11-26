@@ -925,8 +925,10 @@ EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args
         return uid;
 
     // The start thread takes the kernel lock, so it runs after the lookup lets it go
-    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
-        start_module(emuenv, *module);
+    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex)) {
+        if (const SceInt32 error = start_module(emuenv, *module); error < 0)
+            return error;
+    }
     return uid;
 }
 
@@ -941,8 +943,10 @@ EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args
         return uid;
 
     // The start thread takes the kernel lock, so it runs after the lookup lets it go
-    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
-        start_module(emuenv, *module);
+    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex)) {
+        if (const SceInt32 error = start_module(emuenv, *module); error < 0)
+            return error;
+    }
     return uid;
 }
 

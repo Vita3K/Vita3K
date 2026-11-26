@@ -602,7 +602,9 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     add_preload_module(0x02000000, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
 
     for (const auto &module_path : lib_load_list) {
-        auto res = load_module(emuenv, module_path, SCE_KERNEL_MODULE_FLAG_PRELOAD);
+        // The kernel modules aren't preload modules of the process
+        const uint16_t flags = module_path.starts_with("os0:kd/") ? 0 : SCE_KERNEL_MODULE_FLAG_PRELOAD;
+        auto res = load_module(emuenv, module_path, flags);
         LOG_ERROR_IF(res < 0, "Failed to load preloaded module: {}. Ignoring this error.", module_path);
     }
 
@@ -759,14 +761,18 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
     gxm::init_compat_mask(emuenv, main_thread->id);
 
     // Run `module_start` export (entry point) of loaded libraries. A start can unload its module, so
-    // the modules are listed first.
+    // the modules are listed first. A preload module whose start fails ends the launch.
     std::vector<SceKernelModulePtr> libraries;
     for (const auto &[_, module] : emuenv.kernel.loaded_modules) {
         if (module->info.modid != main_module_id)
             libraries.push_back(module);
     }
-    for (const SceKernelModulePtr &module : libraries)
-        start_module(emuenv, *module);
+    for (const SceKernelModulePtr &module : libraries) {
+        if (const SceInt32 error = start_module(emuenv, *module); error < 0 && (module->flags & SCE_KERNEL_MODULE_FLAG_PRELOAD)) {
+            LOG_ERROR("Failed to start preload module {}: {}", module->info.module_name, log_hex(error));
+            return ModuleLoadFailed;
+        }
+    }
 
     SceKernelThreadOptParam param{ 0, 0 };
     std::vector<std::string> cfg_args;
