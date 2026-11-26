@@ -215,12 +215,18 @@ static SharedGLObject link_program_sync(ProgramCache &program_cache, const Share
 }
 
 static SharedGLObject get_or_compile_source(GLState &renderer, ShaderCache &cache, const Sha256Hash &hash, GLenum type, const ShaderTranslation &source, bool spirv) {
-    const auto cached = cache.find(hash);
-    if (cached != cache.end() && cached->second)
-        return cached->second;
+    // A job started before the SPIR-V setting changed neither reuses nor leaves objects of its format
+    // in the caches, which only hold the current one
+    const bool cacheable = spirv == renderer.shader_cache_spirv;
+    if (cacheable) {
+        const auto cached = cache.find(hash);
+        if (cached != cache.end() && cached->second)
+            return cached->second;
+    }
 
     SharedGLObject obj = spirv ? compile_spirv(type, source.spirv, false) : compile_glsl(type, source.glsl, false);
-    cache[hash] = obj;
+    if (cacheable)
+        cache[hash] = obj;
     renderer.shaders_count_compiled++;
     return obj;
 }
