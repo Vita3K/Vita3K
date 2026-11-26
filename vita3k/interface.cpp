@@ -768,8 +768,8 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
             libraries.push_back(module);
     }
     for (const SceKernelModulePtr &module : libraries) {
-        if (const SceInt32 error = start_module(emuenv, *module); error < 0 && (module->flags & SCE_KERNEL_MODULE_FLAG_PRELOAD)) {
-            LOG_ERROR("Failed to start preload module {}: {}", module->info.module_name, log_hex(error));
+        if (const ModuleStatus status = start_module(emuenv, *module); !status && (module->flags & SCE_KERNEL_MODULE_FLAG_PRELOAD)) {
+            LOG_ERROR("Failed to start preload module {}: {}", module->info.module_name, log_hex(status.error()));
             return ModuleLoadFailed;
         }
     }

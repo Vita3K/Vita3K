@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <condition_variable>
+#include <expected>
 #include <initializer_list>
 #include <memory>
 #include <mutex>
@@ -145,9 +146,9 @@ public:
     // itself made, like a function pointer call from library code. The registers are then the ones
     // the function leaves. Returns its r0, or nothing if the thread's or the app's end cut it short.
     std::optional<uint32_t> call_guest(Address fn, std::initializer_list<uint32_t> args);
-    // Starts the dormant thread from another thread and stores its exit status in status once it
-    // ends. Returns the start's error. Used for module start and stop.
-    int start_and_wait(SceSize args, Ptr<void> argp, uint32_t &status);
+    // Starts the dormant thread from another thread and returns its exit status once it ends, or
+    // the start's error. Used for module start and stop.
+    std::expected<uint32_t, int> start_and_wait(SceSize args, Ptr<void> argp);
     // Runs the dormant thread's entry as a call with one argument from another thread and returns
     // its exit status once it ends. Used for the GXM display queue callback.
     uint32_t call_and_wait(Address arg);

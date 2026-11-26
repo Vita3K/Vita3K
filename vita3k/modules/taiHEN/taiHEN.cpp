@@ -925,9 +925,14 @@ EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args
         return uid;
 
     // The start thread takes the kernel lock, so it runs after the lookup lets it go
-    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex)) {
-        if (const SceInt32 error = start_module(emuenv, *module); error < 0)
-            return error;
+    const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module)
+        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+    // A start that fails unloads the module again
+    if (const ModuleStatus status = start_module(emuenv, *module); !status) {
+        if (const int unload_error = unload_module(emuenv, uid); unload_error < 0)
+            return unload_error;
+        return status.error();
     }
     return uid;
 }
@@ -943,9 +948,14 @@ EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args
         return uid;
 
     // The start thread takes the kernel lock, so it runs after the lookup lets it go
-    if (const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex)) {
-        if (const SceInt32 error = start_module(emuenv, *module); error < 0)
-            return error;
+    const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module)
+        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+    // A start that fails unloads the module again
+    if (const ModuleStatus status = start_module(emuenv, *module); !status) {
+        if (const int unload_error = unload_module(emuenv, uid); unload_error < 0)
+            return unload_error;
+        return status.error();
     }
     return uid;
 }

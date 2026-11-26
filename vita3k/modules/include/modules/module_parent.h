@@ -21,6 +21,8 @@
 #include <module/bridge.h>
 #include <util/types.h>
 
+#include <expected>
+
 struct CPUState;
 struct EmuEnvState;
 struct KernelModule;
@@ -43,10 +45,14 @@ bool has_hle_implementation(uint32_t nid);
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t flags = 0);
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
 
-// Run a module's module_start or module_stop and store what it returned in status. They return the
-// error for a module in the wrong state, for a start or stop that can't run and for one that fails.
-SceInt32 start_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
-SceInt32 stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
+// What a module's start or stop function returned, or the error that kept it from running or that
+// its result gives
+using ModuleStatus = std::expected<uint32_t, SceInt32>;
+
+// Run a module's module_start or module_stop. They fail for a module in the wrong state, for a start
+// or stop that can't run and for one that fails.
+ModuleStatus start_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
+ModuleStatus stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
 
 // Load, unload and check a sysmodule id like sysmodule does, for an id the caller has checked. The
 // loads and unloads return the error of the module that failed.

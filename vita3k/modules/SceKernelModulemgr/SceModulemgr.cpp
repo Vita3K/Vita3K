@@ -45,11 +45,11 @@ static int kernel_start_module(EmuEnvState &emuenv, SceUID module_id, SceSize ar
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
     }
-    uint32_t status = 0;
-    if (const SceInt32 error = start_module(emuenv, *module, args, argp, &status); error < 0)
-        return error;
+    const ModuleStatus status = start_module(emuenv, *module, args, argp);
+    if (!status)
+        return status.error();
     if (pRes)
-        *pRes = status;
+        *pRes = *status;
     return SCE_KERNEL_OK;
 }
 
@@ -62,11 +62,11 @@ static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize arg
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
     }
-    uint32_t status = 0;
-    if (const SceInt32 error = stop_module(emuenv, *module, args, argp, &status); error < 0)
-        return error;
+    const ModuleStatus status = stop_module(emuenv, *module, args, argp);
+    if (!status)
+        return status.error();
     if (pRes)
-        *pRes = status;
+        *pRes = *status;
     return 0;
 }
 
