@@ -195,9 +195,12 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
         destroy_queue.add_image(*info.blit_image);
         info.blit_image.reset();
     }
-    destroy_queue.add(info.alternate_view);
+    for (auto &alternate : info.alternate_views) {
+        destroy_framebuffers(alternate.view);
+        destroy_queue.add(alternate.view);
+    }
+    info.alternate_views.clear();
     destroy_queue.add(info.mip_view);
-    destroy_queue.add(info.alternate_mip_view);
 
     destroy_framebuffers(info.texture.view);
     destroy_queue.add_image(info.texture);
@@ -242,11 +245,12 @@ void VKSurfaceCache::cleanup() {
         }
         info.casted_textures.clear();
 
-        for (vk::ImageView *view : { &info.alternate_view, &info.mip_view, &info.alternate_mip_view }) {
-            if (*view) {
-                state.device.destroy(*view);
-                *view = nullptr;
-            }
+        for (const auto &alternate : info.alternate_views)
+            state.device.destroy(alternate.view);
+        info.alternate_views.clear();
+        if (info.mip_view) {
+            state.device.destroy(info.mip_view);
+            info.mip_view = nullptr;
         }
         if (info.gamma_view) {
             state.device.destroy(info.gamma_view);
@@ -356,6 +360,28 @@ void VKSurfaceCache::generate_mipmaps(vkutil::Image &image, uint32_t mip_levels)
         vk::DependencyFlags(), {}, {}, end_barrier);
 }
 
+vk::ImageView VKSurfaceCache::retrieve_alternate_view(ColorSurfaceCacheInfo &info, vk::Format format, vk::ComponentMapping mapping, uint32_t levels, bool sampled_only) {
+    for (const auto &alternate : info.alternate_views) {
+        if (alternate.format == format && alternate.mapping == mapping && alternate.levels == levels && alternate.sampled_only == sampled_only)
+            return alternate.view;
+    }
+
+    const vk::ImageViewUsageCreateInfo sampled_usage{
+        .usage = vk::ImageUsageFlagBits::eSampled
+    };
+    const vk::ImageViewCreateInfo view_info{
+        .pNext = sampled_only ? &sampled_usage : nullptr,
+        .image = info.texture.image,
+        .viewType = vk::ImageViewType::e2D,
+        .format = format,
+        .components = mapping,
+        .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, levels, 0, 1 }
+    };
+    const vk::ImageView view = state.device.createImageView(view_info);
+    info.alternate_views.push_back({ view, format, mapping, levels, sampled_only });
+    return view;
+}
+
 SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(MemState &mem, SceGxmColorSurface *color) {
     // Create the key to access the cache struct
     const uint32_t address = color->data.address();
@@ -449,18 +475,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
                 return { info.texture.view, &info.texture };
             } else {
                 // using both srgb/linear
-                if (!info.alternate_view) {
-                    vk::ImageViewCreateInfo view_info{
-                        .image = info.texture.image,
-                        .viewType = vk::ImageViewType::e2D,
-                        .format = vk_format,
-                        .components = vkutil::default_comp_mapping,
-                        .subresourceRange = vkutil::color_subresource_range
-                    };
-                    info.alternate_view = state.device.createImageView(view_info);
-                }
-
-                return { info.alternate_view, &info.texture };
+                return { retrieve_alternate_view(info, vk_format, vkutil::default_comp_mapping, 1, false), &info.texture };
             }
         }
     }
@@ -665,12 +680,11 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     color_surface_queue.set_as_mru(&info);
 
     const vk::ImageView color_handle_view = reinterpret_cast<VKContext *>(state.context)->current_color_view;
-    const bool is_same_image = (color_handle_view == info.texture.view) || (color_handle_view == info.alternate_view)
+    const bool is_same_image = (color_handle_view == info.texture.view)
+        || std::ranges::any_of(info.alternate_views, [&](const auto &alternate) { return alternate.view == color_handle_view; })
         || (info.gamma_view && color_handle_view == info.gamma_view);
-
-    const vk::ImageViewUsageCreateInfo sampled_usage{
-        .usage = vk::ImageUsageFlagBits::eSampled
-    };
+    // the interlock storage image is UNORM, its sRGB views can only be sampled
+    const bool sampled_only = state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb;
 
     const auto sample_whole_surface = [&](bool use_alternate, vk::ComponentMapping mapping) -> TextureLookupResult {
         // blits average in the storage format, which only matches the read when it uses the same format
@@ -678,18 +692,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             if (!use_alternate)
                 return { info.texture.view, info.texture.layout, info.texture.format };
 
-            if (!info.alternate_view) {
-                vk::ImageViewCreateInfo view_info{
-                    .pNext = state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb ? &sampled_usage : nullptr,
-                    .image = info.texture.image,
-                    .viewType = vk::ImageViewType::e2D,
-                    .format = vk_format,
-                    .components = mapping,
-                    .subresourceRange = vkutil::color_subresource_range
-                };
-                info.alternate_view = state.device.createImageView(view_info);
-            }
-            return { info.alternate_view, info.texture.layout, vk_format };
+            return { retrieve_alternate_view(info, vk_format, mapping, 1, sampled_only), info.texture.layout, vk_format };
         }
 
         const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
@@ -698,19 +701,20 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             info.mipmap_scene = scene_timestamp;
         }
 
-        vk::ImageView &view = use_alternate ? info.alternate_mip_view : info.mip_view;
-        if (!view) {
+        if (use_alternate)
+            return { retrieve_alternate_view(info, vk_format, mapping, info.mip_levels, sampled_only), info.texture.layout, vk_format, true };
+
+        if (!info.mip_view) {
             vk::ImageViewCreateInfo view_info{
-                .pNext = use_alternate && state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb ? &sampled_usage : nullptr,
                 .image = info.texture.image,
                 .viewType = vk::ImageViewType::e2D,
-                .format = use_alternate ? vk_format : info.texture.format,
-                .components = use_alternate ? mapping : vkutil::default_comp_mapping,
+                .format = info.texture.format,
+                .components = vkutil::default_comp_mapping,
                 .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, info.mip_levels, 0, 1 }
             };
-            view = state.device.createImageView(view_info);
+            info.mip_view = state.device.createImageView(view_info);
         }
-        return { view, info.texture.layout, use_alternate ? vk_format : info.texture.format, true };
+        return { info.mip_view, info.texture.layout, info.texture.format, true };
     };
 
     if (state.features.use_texture_viewport && base_format == info.format) {
@@ -1680,19 +1684,8 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
             if (info.swizzle == vkutil::rgba_mapping && info.texture.format == vk::Format::eR8G8B8A8Unorm)
                 return info.texture.view;
 
-            if (!info.alternate_view) {
-                // create a view with the right swizzle and without gamma correction
-                vk::ImageViewCreateInfo view_info{
-                    .image = info.texture.image,
-                    .viewType = vk::ImageViewType::e2D,
-                    .format = vk::Format::eR8G8B8A8Unorm,
-                    .components = vkutil::color_to_texture_swizzle(info.swizzle, vkutil::rgba_mapping),
-                    .subresourceRange = vkutil::color_subresource_range
-                };
-                info.alternate_view = state.device.createImageView(view_info);
-            }
-
-            return info.alternate_view;
+            // the right swizzle and without gamma correction
+            return retrieve_alternate_view(info, vk::Format::eR8G8B8A8Unorm, vkutil::color_to_texture_swizzle(info.swizzle, vkutil::rgba_mapping), 1, false);
         }
     }
 

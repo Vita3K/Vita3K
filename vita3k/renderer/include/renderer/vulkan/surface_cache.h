@@ -91,15 +91,21 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     std::vector<CastedTexture> casted_textures;
     // use a unique_ptr for the following objects as they may not be used
 
-    // same image with a different view(swizzle) used for sampling
-    vk::ImageView alternate_view = nullptr;
+    // same image with a different format or swizzle, one view for each of them
+    struct AlternateView {
+        vk::ImageView view;
+        vk::Format format;
+        vk::ComponentMapping mapping;
+        uint32_t levels;
+        bool sampled_only;
+    };
+    std::vector<AlternateView> alternate_views;
 
     // sRGB attachment view of the UNORM image used for interlock storage access
     vk::ImageView gamma_view = nullptr;
     // upscaled surfaces are sampled through all their mip levels to keep the Vita filtering footprint
     uint32_t mip_levels = 1;
     vk::ImageView mip_view = nullptr;
-    vk::ImageView alternate_mip_view = nullptr;
     uint64_t written_scene = 0;
     uint64_t mipmap_scene = 0;
 
@@ -204,6 +210,7 @@ private:
     std::map<vk::Format, bool> mipmappable_formats;
     uint32_t get_surface_mip_levels(vk::Format format, uint32_t width, uint32_t height);
     void generate_mipmaps(vkutil::Image &image, uint32_t mip_levels);
+    vk::ImageView retrieve_alternate_view(ColorSurfaceCacheInfo &info, vk::Format format, vk::ComponentMapping mapping, uint32_t levels, bool sampled_only);
 
 public:
     // when creating a mutable image, can we pass as an argument
