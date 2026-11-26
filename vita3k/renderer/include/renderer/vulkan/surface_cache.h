@@ -23,6 +23,8 @@
 #include <util/containers.h>
 #include <vkutil/objects.h>
 
+#include <atomic>
+#include <memory>
 #include <optional>
 
 struct SwsContext;
@@ -129,6 +131,26 @@ struct DepthSurfaceView {
     uint32_t delta_row;
 };
 
+enum class DepthStencilReadbackState : uint8_t {
+    Free, // owned by the renderer thread, can be reused
+    InFlight, // a GPU copy and a write-back request are pending
+    Abandoned, // dropped before the GPU copy was known to be complete (shutdown), never reused
+};
+
+// Host-visible copy of the stencil aspect of a depth-stencil surface,
+// written back to guest memory after the GPU has finished rendering
+struct DepthStencilReadback {
+    vkutil::Buffer buffer; // tightly packed, 1 byte per sample
+    Address data = 0;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t stride_samples = 0;
+    SceGxmDepthStencilFormat format = SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
+    // Published with release semantics by the thread that last accessed the buffer
+    // and read with acquire semantics before the renderer thread reuses it
+    std::atomic<DepthStencilReadbackState> state = DepthStencilReadbackState::Free;
+};
+
 struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
     SceGxmDepthStencilSurface surface;
     // dimensions of the depth buffer in memory
@@ -170,6 +192,13 @@ private:
 
     std::map<Address, DepthStencilSurfaceCacheInfo *> depth_address_lookup;
     std::map<Address, DepthStencilSurfaceCacheInfo *> stencil_address_lookup;
+
+    // Buffers for depth-stencil write-back. The VMA allocator is externally synchronized,
+    // so they are only created and destroyed on the renderer thread; the wait thread only
+    // reads them and marks a buffer Free once its write-back is done. The pool grows when
+    // every buffer is in flight and shrinks back to this size as extra buffers become free.
+    static constexpr size_t max_stencil_readbacks = 8;
+    std::vector<std::shared_ptr<DepthStencilReadback>> stencil_readback_pool;
 
     // structure allowing to set the lru surface with a good complexity
     lru::Queue<ColorSurfaceCacheInfo> color_surface_queue;
@@ -226,6 +255,14 @@ public:
 
     // Called after the render has been done
     void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);
+
+    // Record a copy of the stencil of a force-stored depth-stencil surface, limited to the
+    // render target extent. If non-null, the return value must be sent as a DepthStencilSyncRequest
+    std::shared_ptr<DepthStencilReadback> perform_depth_stencil_sync(const SceGxmDepthStencilSurface &surface, uint32_t target_width,
+        uint32_t target_height, vk::CommandBuffer cmd_buffer);
+
+    // Called after the render has been done
+    static void perform_post_depth_stencil_sync(const MemState &mem, const DepthStencilReadback &readback);
 
     // destroy all framebuffers associated with render_target
     // (meaning their color or depth-stencil surface is not backed by memory)
