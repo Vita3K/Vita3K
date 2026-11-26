@@ -673,7 +673,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     };
 
     const auto sample_whole_surface = [&](bool use_alternate, vk::ComponentMapping mapping) -> TextureLookupResult {
-        if ((info.mip_levels == 1) || base_level_only) {
+        // blits average in the storage format, which only matches the read when it uses the same format
+        if ((info.mip_levels == 1) || base_level_only || (use_alternate && (vk_format != info.texture.format))) {
             if (!use_alternate)
                 return { info.texture.view, info.texture.layout, info.texture.format };
 
