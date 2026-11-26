@@ -182,7 +182,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // The last row of the region ends at its width, not a whole stride later: a region in the bottom right
         // corner of the surface (an atlas tile, for example) ends exactly where the surface ends
         const std::size_t region_end = original_height ? bytes_per_stride * (original_height - 1) + original_width * color::bytes_per_pixel(base_format) : 0;
-        bool addr_in_range_of_cache = ((key + region_end) <= (ite->first + info.total_bytes));
+        // A texture reading the second half of the stored pixels (Uncharted's normals in its G-buffer)
+        // goes past the surface by less than a stored pixel on its last row
+        const std::size_t stored_bpp = color::bytes_per_pixel(info.format);
+        const std::size_t read_overrun = (purpose == SurfaceTextureRetrievePurpose::READING && stored_bpp > color::bytes_per_pixel(base_format)) ? stored_bpp - 1 : 0;
+        bool addr_in_range_of_cache = ((key + region_end) <= (ite->first + info.total_bytes + read_overrun));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
