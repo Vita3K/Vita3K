@@ -37,6 +37,7 @@
     </property>
     <addaction name="pause_action"/>
     <addaction name="stop_action"/>
+    <addaction name="restart_action"/>
    </widget>
    <widget class="QMenu" name="menuConfiguration">
     <property name="title">
@@ -247,6 +248,14 @@
    </property>
    <property name="text">
     <string>Stop</string>
+   </property>
+  </action>
+  <action name="restart_action">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Restart</string>
    </property>
   </action>
   <action name="trophy_collection_action">

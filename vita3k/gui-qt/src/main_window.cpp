@@ -497,6 +497,8 @@ void MainWindow::initialize() {
         this, &MainWindow::on_toolbar_start);
     connect(m_ui->stop_action, &QAction::triggered,
         this, &MainWindow::on_stop_triggered);
+    connect(m_ui->restart_action, &QAction::triggered,
+        this, &MainWindow::restart_running_app);
 
     connect(m_ui->show_apps_list_action, &QAction::triggered, this, [this](bool checked) {
         m_apps_list_widget->setVisible(checked);
@@ -1410,6 +1412,7 @@ void MainWindow::refresh_emulation_actions() {
 
     m_ui->stop_action->setEnabled(running);
     m_ui->stop_action->setIcon(m_icon_stop);
+    m_ui->restart_action->setEnabled(running);
     m_ui->toolbar_stop->setEnabled(running);
 
     if (running) {
