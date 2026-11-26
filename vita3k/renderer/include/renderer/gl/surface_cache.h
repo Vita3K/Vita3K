@@ -41,6 +41,7 @@ struct GLRenderTarget;
 enum SurfaceTextureRetrievePurpose {
     READING,
     WRITING,
+    SAMPLING,
 };
 
 struct GLSurfaceCacheInfo {
@@ -77,6 +78,10 @@ struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
     bool is_ping_pong_dirty;
     // written with gamma correction, stored as sRGB
     bool srgb = false;
+    bool is_ping_pong_mipmapped = false;
+    bool is_mipmap_dirty;
+    // sRGB decode mode the mips were generated with
+    bool mipmap_decode = true;
     GLObjectArray<1> gl_texture;
     GLObjectArray<1> gl_ping_pong_texture;
     GLObjectArray<1> gl_expected_read_texture_view;
@@ -98,6 +103,8 @@ struct GLDepthStencilSurfaceCacheInfo : public GLSurfaceCacheInfo {
     std::int32_t sample_texture_width = 0;
     std::int32_t sample_texture_height = 0;
 };
+
+void generate_surface_mipmaps(GLuint texture, float res_multiplier);
 
 class GLSurfaceCache {
 private:
@@ -152,7 +159,7 @@ public:
     GLuint retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint32_t pixel_stride,
         const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
         std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr, bool srgb = false);
-    GLuint retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address);
+    GLuint retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address, float mipmap_res_multiplier);
     // created is set when the copy was (re)made and still has the default sampling parameters
     GLuint retrieve_srgb_copy(GLuint texture, bool *created = nullptr);
     void set_color_surface_srgb(Ptr<void> address, bool srgb);

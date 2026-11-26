@@ -104,6 +104,10 @@ struct SpirvShaderParameters {
     spv::Id thread_buffer;
 
     spv::Id render_info_id;
+    spv::Id frag_coord_id;
+
+    // GLSL ES lacks textureQueryLod
+    bool use_surface_lod = false;
 
     // When using shader interlock, specialization constant telling us if the texture is gamma corrected
     spv::Id is_srgb_constant;

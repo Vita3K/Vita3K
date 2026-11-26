@@ -112,15 +112,27 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     TextureViewport texture_viewport{};
 
+    // linear strided textures use the mag filter as the min filter too
+    const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+        && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
+
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
         // try to retrieve it from the color surface cache
-        lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport);
+        lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport, point_sampled);
     }
 
     bool is_depth_surface = false;
     if (!lookup_result.has_value() && is_depth_stencil_compatible_format(base_format, is_depth_surface)) {
         // Try to retrieve depth/stencil cache
         lookup_result = context.state.surface_cache.retrieve_depth_stencil_as_texture(texture, &texture_viewport);
+    }
+
+    if (!is_vertex) {
+        const uint32_t bit = 1U << index;
+        if (lookup_result.has_value() && lookup_result->has_mipmaps)
+            context.curr_frag_ublock.base_block.surface_mask |= bit;
+        else
+            context.curr_frag_ublock.base_block.surface_mask &= ~bit;
     }
 
     if (lookup_result.has_value()) {

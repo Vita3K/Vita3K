@@ -33,6 +33,9 @@
 
 #include <spdlog/fmt/bin_to_hex.h>
 
+#include <bit>
+#include <cmath>
+
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     R_PROFILE(__func__);
@@ -201,6 +204,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     // must match the format used by the surface cache
     frag_ublock.is_srgb = (context.record.color_surface.gamma && renderer.surface_cache.support_srgb_decode && surface_format == GL_RGBA8) ? 1.0f : 0.0f;
     frag_ublock.res_multiplier = renderer.res_multiplier;
+    frag_ublock.surface_lod = std::log2(renderer.res_multiplier);
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)
@@ -281,6 +285,14 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
 
+    const std::uint32_t used_mipmap_units = static_cast<std::uint32_t>(gxm_fragment_program.renderer_data->textures_used.to_ulong()) & context.self_sampling_mipmap_units;
+    if (used_mipmap_units) {
+        if (features.should_use_shader_interlock())
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+        glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + std::countr_zero(used_mipmap_units)));
+        generate_surface_mipmaps(context.current_color_attachment, renderer.res_multiplier);
+    }
+
     // The shader reads the color attachment whenever it uses the fragment color, so writes from the previous draws
     // must be made visible to it, native color or not
     bool color_synced = false;
@@ -299,7 +311,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             glTextureBarrier();
         } else {
             glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[0]);
-            std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data);
+            const float mipmap_res_multiplier = used_mipmap_units ? renderer.res_multiplier : 1.0f;
+            std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data, mipmap_res_multiplier);
             if (ping_pong != 0) {
                 for (std::size_t i = 0; i < context.self_sampling_indices.size(); i++) {
                     glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[i]);

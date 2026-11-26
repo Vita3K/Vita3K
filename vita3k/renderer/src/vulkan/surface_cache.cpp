@@ -32,6 +32,10 @@
 
 extern "C" {
 #include <libswscale/swscale.h>
+
+#include <algorithm>
+#include <bit>
+#include <cmath>
 }
 
 static bool format_support_surface_sync(SceGxmColorBaseFormat format) {
@@ -178,6 +182,7 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
     // don't forget to destroy in the right order
     for (auto &casted : info.casted_textures) {
         destroy_queue.add_buffer(casted.transition_buffer);
+        destroy_queue.add(casted.mip_view);
         destroy_queue.add_image(casted.texture);
     }
     info.casted_textures.clear();
@@ -190,7 +195,12 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
         destroy_queue.add_image(*info.blit_image);
         info.blit_image.reset();
     }
-    destroy_queue.add(info.alternate_view);
+    for (auto &alternate : info.alternate_views) {
+        destroy_framebuffers(alternate.view);
+        destroy_queue.add(alternate.view);
+    }
+    info.alternate_views.clear();
+    destroy_queue.add(info.mip_view);
 
     destroy_framebuffers(info.texture.view);
     destroy_queue.add_image(info.texture);
@@ -229,13 +239,18 @@ void VKSurfaceCache::cleanup() {
         auto &info = item.content;
         for (auto &casted : info.casted_textures) {
             casted.transition_buffer.destroy();
+            if (casted.mip_view)
+                state.device.destroy(casted.mip_view);
             casted.texture.destroy();
         }
         info.casted_textures.clear();
 
-        if (info.alternate_view) {
-            state.device.destroy(info.alternate_view);
-            info.alternate_view = nullptr;
+        for (const auto &alternate : info.alternate_views)
+            state.device.destroy(alternate.view);
+        info.alternate_views.clear();
+        if (info.mip_view) {
+            state.device.destroy(info.mip_view);
+            info.mip_view = nullptr;
         }
         if (info.gamma_view) {
             state.device.destroy(info.gamma_view);
@@ -276,6 +291,95 @@ void VKSurfaceCache::cleanup() {
     cpu_surfaces_changed.clear();
     target = nullptr;
     last_written_surface = nullptr;
+}
+
+uint32_t VKSurfaceCache::get_surface_mip_levels(vk::Format format, uint32_t width, uint32_t height) {
+    if (state.res_multiplier <= 1.0f)
+        return 1;
+
+    auto it = mipmappable_formats.find(format);
+    if (it == mipmappable_formats.end()) {
+        constexpr vk::FormatFeatureFlags needed = vk::FormatFeatureFlagBits::eBlitSrc | vk::FormatFeatureFlagBits::eBlitDst | vk::FormatFeatureFlagBits::eSampledImageFilterLinear;
+        const vk::FormatFeatureFlags features = state.physical_device.getFormatProperties(format).optimalTilingFeatures;
+        it = mipmappable_formats.emplace(format, (features & needed) == needed).first;
+    }
+
+    if (!it->second)
+        return 1;
+
+    const uint32_t wanted = static_cast<uint32_t>(std::ceil(std::log2(state.res_multiplier))) + 1;
+    return std::min<uint32_t>(wanted, std::bit_width(std::max(width, height)));
+}
+
+void VKSurfaceCache::generate_mipmaps(vkutil::Image &image, uint32_t mip_levels) {
+    vk::CommandBuffer cmd_buffer = reinterpret_cast<VKContext *>(state.context)->prerender_cmd;
+
+    const auto level_barrier = [&](uint32_t level, uint32_t count, vk::AccessFlags src_access, vk::AccessFlags dst_access) {
+        return vk::ImageMemoryBarrier{
+            .srcAccessMask = src_access,
+            .dstAccessMask = dst_access,
+            .oldLayout = vk::ImageLayout::eGeneral,
+            .newLayout = vk::ImageLayout::eGeneral,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = image.image,
+            .subresourceRange = { vk::ImageAspectFlagBits::eColor, level, count, 0, 1 }
+        };
+    };
+
+    const vk::ImageMemoryBarrier start_barriers[] = {
+        level_barrier(0, 1, vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead),
+        level_barrier(1, mip_levels - 1, vk::AccessFlags(), vk::AccessFlagBits::eTransferWrite)
+    };
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer,
+        vk::DependencyFlags(), {}, {}, start_barriers);
+
+    int32_t width = static_cast<int32_t>(image.width);
+    int32_t height = static_cast<int32_t>(image.height);
+    for (uint32_t level = 1; level < mip_levels; level++) {
+        const int32_t level_width = std::max(width / 2, 1);
+        const int32_t level_height = std::max(height / 2, 1);
+        const vk::ImageBlit blit{
+            .srcSubresource = { vk::ImageAspectFlagBits::eColor, level - 1, 0, 1 },
+            .srcOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ width, height, 1 } },
+            .dstSubresource = { vk::ImageAspectFlagBits::eColor, level, 0, 1 },
+            .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ level_width, level_height, 1 } }
+        };
+        cmd_buffer.blitImage(image.image, vk::ImageLayout::eGeneral, image.image, vk::ImageLayout::eGeneral, blit, vk::Filter::eLinear);
+
+        const vk::ImageMemoryBarrier barrier = level_barrier(level, 1, vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eTransferRead);
+        cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlags(), {}, {}, barrier);
+
+        width = level_width;
+        height = level_height;
+    }
+
+    const vk::ImageMemoryBarrier end_barrier = level_barrier(0, mip_levels, vk::AccessFlagBits::eTransferWrite,
+        vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        vk::DependencyFlags(), {}, {}, end_barrier);
+}
+
+vk::ImageView VKSurfaceCache::retrieve_alternate_view(ColorSurfaceCacheInfo &info, vk::Format format, vk::ComponentMapping mapping, uint32_t levels, bool sampled_only) {
+    for (const auto &alternate : info.alternate_views) {
+        if (alternate.format == format && alternate.mapping == mapping && alternate.levels == levels && alternate.sampled_only == sampled_only)
+            return alternate.view;
+    }
+
+    const vk::ImageViewUsageCreateInfo sampled_usage{
+        .usage = vk::ImageUsageFlagBits::eSampled
+    };
+    const vk::ImageViewCreateInfo view_info{
+        .pNext = sampled_only ? &sampled_usage : nullptr,
+        .image = info.texture.image,
+        .viewType = vk::ImageViewType::e2D,
+        .format = format,
+        .components = mapping,
+        .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, levels, 0, 1 }
+    };
+    const vk::ImageView view = state.device.createImageView(view_info);
+    info.alternate_views.push_back({ view, format, mapping, levels, sampled_only });
+    return view;
 }
 
 SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(MemState &mem, SceGxmColorSurface *color) {
@@ -358,6 +462,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             *info.dirty = false;
 
             last_written_surface = &info;
+            info.written_scene = context->scene_timestamp;
 
             // if this surface has not been rendered to for the last 60 frames, consider it is not safe not to render all shaders to it
             constexpr uint64_t big_delay_between_frames = 60;
@@ -370,18 +475,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
                 return { info.texture.view, &info.texture };
             } else {
                 // using both srgb/linear
-                if (!info.alternate_view) {
-                    vk::ImageViewCreateInfo view_info{
-                        .image = info.texture.image,
-                        .viewType = vk::ImageViewType::e2D,
-                        .format = vk_format,
-                        .components = vkutil::default_comp_mapping,
-                        .subresourceRange = vkutil::color_subresource_range
-                    };
-                    info.alternate_view = state.device.createImageView(view_info);
-                }
-
-                return { info.alternate_view, &info.texture };
+                return { retrieve_alternate_view(info, vk_format, vkutil::default_comp_mapping, 1, false), &info.texture };
             }
         }
     }
@@ -435,7 +529,10 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     vk::ImageUsageFlags surface_usages = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
     if (state.features.support_shader_interlock)
         surface_usages |= vk::ImageUsageFlagBits::eStorage;
-    image.init_image(surface_usages, vkutil::default_comp_mapping, image_create_flags, image_info_pNext);
+    info_added.mip_levels = get_surface_mip_levels(vk_format, image.width, image.height);
+    info_added.written_scene = context->scene_timestamp;
+    info_added.mipmap_scene = 0;
+    image.init_image(surface_usages, vkutil::default_comp_mapping, image_create_flags, image_info_pNext, info_added.mip_levels);
 
     // do it in the prerender if we read from this texture in the same scene (although this would be useless)
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
@@ -445,6 +542,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
     cmd_buffer.clearColorImage(image.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
     image.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+    if (info_added.mip_levels > 1)
+        vkutil::transition_image_layout_discard(cmd_buffer, image.image, vkutil::ImageLayout::Undefined, vkutil::ImageLayout::ColorAttachmentReadWrite,
+            { vk::ImageAspectFlagBits::eColor, 1, info_added.mip_levels - 1, 0, 1 });
 
     last_written_surface = &info_added;
     info_added.need_surface_sync.reset();
@@ -468,7 +568,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     return { info_added.texture.view, &info_added.texture };
 }
 
-std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_texture(const SceGxmTexture &texture, const SceGxmColorBaseFormat base_format, TextureViewport *texture_viewport) {
+std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_texture(const SceGxmTexture &texture, const SceGxmColorBaseFormat base_format, TextureViewport *texture_viewport, bool base_level_only) {
     // Create the key to access the cache struct
     const uint32_t address = (texture.data_addr << 2);
 
@@ -580,11 +680,41 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     color_surface_queue.set_as_mru(&info);
 
     const vk::ImageView color_handle_view = reinterpret_cast<VKContext *>(state.context)->current_color_view;
-    const bool is_same_image = (color_handle_view == info.texture.view) || (color_handle_view == info.alternate_view)
+    const bool is_same_image = (color_handle_view == info.texture.view)
+        || std::ranges::any_of(info.alternate_views, [&](const auto &alternate) { return alternate.view == color_handle_view; })
         || (info.gamma_view && color_handle_view == info.gamma_view);
+    // the interlock storage image is UNORM, its sRGB views can only be sampled
+    const bool sampled_only = state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb;
 
-    const vk::ImageViewUsageCreateInfo sampled_usage{
-        .usage = vk::ImageUsageFlagBits::eSampled
+    const auto sample_whole_surface = [&](bool use_alternate, vk::ComponentMapping mapping) -> TextureLookupResult {
+        // blits average in the storage format, which only matches the read when it uses the same format
+        if ((info.mip_levels == 1) || base_level_only || (use_alternate && (vk_format != info.texture.format))) {
+            if (!use_alternate)
+                return { info.texture.view, info.texture.layout, info.texture.format };
+
+            return { retrieve_alternate_view(info, vk_format, mapping, 1, sampled_only), info.texture.layout, vk_format };
+        }
+
+        const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
+        if ((info.mipmap_scene <= info.written_scene || &info == last_written_surface) && info.mipmap_scene != scene_timestamp) {
+            generate_mipmaps(info.texture, info.mip_levels);
+            info.mipmap_scene = scene_timestamp;
+        }
+
+        if (use_alternate)
+            return { retrieve_alternate_view(info, vk_format, mapping, info.mip_levels, sampled_only), info.texture.layout, vk_format, true };
+
+        if (!info.mip_view) {
+            vk::ImageViewCreateInfo view_info{
+                .image = info.texture.image,
+                .viewType = vk::ImageViewType::e2D,
+                .format = info.texture.format,
+                .components = vkutil::default_comp_mapping,
+                .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, info.mip_levels, 0, 1 }
+            };
+            info.mip_view = state.device.createImageView(view_info);
+        }
+        return { info.mip_view, info.texture.layout, info.texture.format, true };
     };
 
     if (state.features.use_texture_viewport && base_format == info.format) {
@@ -596,34 +726,11 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             .offset = { start_x / static_cast<float>(info.width), start_sourced_line / static_cast<float>(info.height) }
         };
 
-        // if everything matches
-        if (vk_format == info.texture.format && swizzle == info.swizzle)
-            return TextureLookupResult{
-                info.texture.view,
-                info.texture.layout,
-                info.texture.format
-            };
-
-        // use the other view with the correct swizzle / gamma correction
-        if (!info.alternate_view) {
-            vk::ComponentMapping resulting_mapping = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
-
-            vk::ImageViewCreateInfo view_info{
-                .pNext = state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb ? &sampled_usage : nullptr,
-                .image = info.texture.image,
-                .viewType = vk::ImageViewType::e2D,
-                .format = vk_format,
-                .components = resulting_mapping,
-                .subresourceRange = vkutil::color_subresource_range
-            };
-            info.alternate_view = state.device.createImageView(view_info);
-        }
-
-        return TextureLookupResult{
-            info.alternate_view,
-            info.texture.layout,
-            info.texture.format
-        };
+        // use the other view with the correct swizzle / gamma correction if anything differs
+        const bool use_alternate = vk_format != info.texture.format || swizzle != info.swizzle;
+        TextureLookupResult result = sample_whole_surface(use_alternate, vkutil::color_to_texture_swizzle(info.swizzle, swizzle));
+        result.format = info.texture.format;
+        return result;
     }
 
     if (is_same_image || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
@@ -641,9 +748,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
                 if (casted->scene_timestamp == scene_timestamp) {
                     // already copied for this scene, don't do it again
                     return TextureLookupResult{
-                        casted->texture.view,
+                        (casted->mip_view && !base_level_only) ? casted->mip_view : casted->texture.view,
                         casted->texture.layout,
-                        casted->texture.format
+                        casted->texture.format,
+                        (casted->mip_view != nullptr) && !base_level_only
                     };
                 }
 
@@ -701,13 +809,35 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             else
                 resulting_swizzle = swizzle;
 
-            casted->texture.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, resulting_swizzle);
+            casted->mip_levels = get_surface_mip_levels(vk_format, casted->texture.width, casted->texture.height);
+            casted->texture.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, resulting_swizzle, vk::ImageCreateFlags(), nullptr, casted->mip_levels);
             casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+            if (casted->mip_levels > 1) {
+                const vk::ImageSubresourceRange mip_range{ vk::ImageAspectFlagBits::eColor, 1, casted->mip_levels - 1, 0, 1 };
+                vkutil::transition_image_layout_discard(cmd_buffer, casted->texture.image, vkutil::ImageLayout::Undefined, vkutil::ImageLayout::ColorAttachmentReadWrite, mip_range);
+
+                vk::ImageViewCreateInfo view_info{
+                    .image = casted->texture.image,
+                    .viewType = vk::ImageViewType::e2D,
+                    .format = vk_format,
+                    .components = resulting_swizzle,
+                    .subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, casted->mip_levels, 0, 1 }
+                };
+                casted->mip_view = state.device.createImageView(view_info);
+            }
         } else {
             casted->texture.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
         }
 
         casted->scene_timestamp = scene_timestamp;
+
+        // the surface may have been written by a previous render pass that is still running
+        const vk::MemoryBarrier source_barrier{
+            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderWrite,
+            .dstAccessMask = vk::AccessFlagBits::eTransferRead
+        };
+        cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
+            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlags(), source_barrier, {}, {});
 
         if (bytes_per_pixel_requested == bytes_per_pixel_in_store) {
             vk::ImageCopy image_copy{
@@ -770,43 +900,27 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
                 .setImageExtent({ width, height, 1 });
             cmd_buffer.copyBufferToImage(casted->transition_buffer.buffer, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, copy_image_buffer);
         }
-        // the casted texture is only ever sampled, the copy must be visible to the fragment shaders of this scene
-        casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
-
-        return TextureLookupResult{
-            casted->texture.view,
-            casted->texture.layout,
-            casted->texture.format
-        };
-    } else {
-        // the renderpass external dependencies should take care of the barrier
-        if (swizzle == info.swizzle && vk_format == info.texture.format)
-            // we can use the same texture view
-            return TextureLookupResult{
-                info.texture.view,
-                info.texture.layout,
-                info.texture.format
-            };
-
-        if (!info.alternate_view) {
-            vk::ComponentMapping resulting_mapping = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
-
-            vk::ImageViewCreateInfo view_info{
-                .pNext = state.features.support_shader_interlock && vk_format == vk::Format::eR8G8B8A8Srgb ? &sampled_usage : nullptr,
-                .image = info.texture.image,
-                .viewType = vk::ImageViewType::e2D,
-                .format = vk_format,
-                .components = resulting_mapping,
-                .subresourceRange = vkutil::color_subresource_range
-            };
-            info.alternate_view = state.device.createImageView(view_info);
+        if (casted->mip_view) {
+            casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
+            generate_mipmaps(casted->texture, casted->mip_levels);
+        } else {
+            // the casted texture is only ever sampled, the copy must be visible to the fragment shaders of this scene
+            casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
         }
 
         return TextureLookupResult{
-            info.alternate_view,
-            vkutil::ImageLayout::ColorAttachmentReadWrite,
-            vk_format
+            (casted->mip_view && !base_level_only) ? casted->mip_view : casted->texture.view,
+            casted->texture.layout,
+            casted->texture.format,
+            (casted->mip_view != nullptr) && !base_level_only
         };
+    } else {
+        // the renderpass external dependencies should take care of the barrier
+        const bool use_alternate = swizzle != info.swizzle || vk_format != info.texture.format;
+        TextureLookupResult result = sample_whole_surface(use_alternate, vkutil::color_to_texture_swizzle(info.swizzle, swizzle));
+        if (use_alternate)
+            result.layout = vkutil::ImageLayout::ColorAttachmentReadWrite;
+        return result;
     }
 }
 
@@ -1570,19 +1684,8 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
             if (info.swizzle == vkutil::rgba_mapping && info.texture.format == vk::Format::eR8G8B8A8Unorm)
                 return info.texture.view;
 
-            if (!info.alternate_view) {
-                // create a view with the right swizzle and without gamma correction
-                vk::ImageViewCreateInfo view_info{
-                    .image = info.texture.image,
-                    .viewType = vk::ImageViewType::e2D,
-                    .format = vk::Format::eR8G8B8A8Unorm,
-                    .components = vkutil::color_to_texture_swizzle(info.swizzle, vkutil::rgba_mapping),
-                    .subresourceRange = vkutil::color_subresource_range
-                };
-                info.alternate_view = state.device.createImageView(view_info);
-            }
-
-            return info.alternate_view;
+            // the right swizzle and without gamma correction
+            return retrieve_alternate_view(info, vk::Format::eR8G8B8A8Unorm, vkutil::color_to_texture_swizzle(info.swizzle, vkutil::rgba_mapping), 1, false);
         }
     }
 

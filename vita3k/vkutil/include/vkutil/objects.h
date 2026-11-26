@@ -52,7 +52,8 @@ struct Image {
     Image(const Image &) = delete;
     Image &operator=(Image const &) = delete;
 
-    void init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping = default_comp_mapping, const vk::ImageCreateFlags image_create_flags = vk::ImageCreateFlags(), const void *pNext = nullptr);
+    // the view only covers the first mip level
+    void init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping = default_comp_mapping, const vk::ImageCreateFlags image_create_flags = vk::ImageCreateFlags(), const void *pNext = nullptr, uint32_t mip_levels = 1);
     // called by ~Image
     void destroy();
 

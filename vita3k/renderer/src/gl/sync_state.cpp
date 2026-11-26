@@ -340,9 +340,14 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
     state.surface_cache.set_gamma_sampling(index, 0);
 
+    // linear strided textures use the mag filter as the min filter too
+    const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+        && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
+
     std::uint64_t texture_as_surface = 0;
     const GLint *swizzle_surface = nullptr;
     bool only_nearest = false;
+    bool filterable_surface = false;
 
     // A texture covering only the top left part of the surface being rendered (the first tile of an atlas, for example)
     // must be cropped out of it like the other parts: binding the whole attachment would squeeze the surface into it
@@ -356,9 +361,22 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         texture_as_surface = context.current_color_attachment;
         swizzle_surface = color::translate_swizzle(context.record.color_surface.colorFormat);
 
+        const SceGxmColorBaseFormat surface_format = gxm::get_base_format(context.record.color_surface.colorFormat);
+        const bool stored_rawly = state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(surface_format);
+        filterable_surface = !stored_rawly && !color::is_write_surface_non_linearity_filtering(surface_format);
+        if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
+            const uint32_t bit = 1U << index;
+            if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))
+                context.self_sampling_mipmap_units |= bit;
+            else
+                context.self_sampling_mipmap_units &= ~bit;
+        }
+
         vector_utils::push_if_not_exists(context.self_sampling_indices, index);
     } else {
         vector_utils::erase_first(context.self_sampling_indices, index);
+        if (index < SCE_GXM_MAX_TEXTURE_UNITS)
+            context.self_sampling_mipmap_units &= ~(1U << index);
 
         SceGxmColorBaseFormat format_target_of_texture;
 
@@ -388,10 +406,11 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
             texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
                 state, width, height, stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
-                SurfaceTextureRetrievePurpose::READING, swizz_raw);
+                SurfaceTextureRetrievePurpose::SAMPLING, swizz_raw, nullptr, nullptr, texture.gamma_mode != 0);
 
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
             only_nearest = color::is_write_surface_non_linearity_filtering(format_target_of_texture);
+            filterable_surface = (texture_as_surface != 0) && !only_nearest;
 
             if (texture_as_surface && texture.gamma_mode) {
                 const GLuint surface = static_cast<GLuint>(texture_as_surface);
@@ -399,6 +418,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                 if (texture_as_surface == surface)
                     // stored as sRGB: if a later draw stores it as RGBA8, the unit must still decode
                     state.surface_cache.set_gamma_sampling(index, surface);
+                else if (filterable_surface && (state.res_multiplier > 1.0f))
+                    generate_surface_mipmaps(static_cast<GLuint>(texture_as_surface), state.res_multiplier);
             }
         }
 
@@ -414,6 +435,31 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             }
         }
     }
+
+    if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
+        const uint32_t bit = 1U << index;
+        if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))
+            context.current_frag_render_info.surface_mask |= bit;
+        else
+            context.current_frag_render_info.surface_mask &= ~bit;
+    }
+
+    // point-sampled reads of a mipmapped surface stay on the base level, as before mipmaps were added
+    GLuint sampler = 0;
+    if (filterable_surface && point_sampled && (state.res_multiplier > 1.0f)) {
+        if (!context.point_surface_samplers[0]) {
+            context.point_surface_samplers.init(glGenSamplers, glDeleteSamplers);
+            for (int decode = 0; decode < 2; decode++) {
+                const GLuint point_sampler = context.point_surface_samplers[decode];
+                glSamplerParameteri(point_sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glSamplerParameteri(point_sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                if (state.surface_cache.support_srgb_decode)
+                    glSamplerParameteri(point_sampler, GL_TEXTURE_SRGB_DECODE_EXT, decode ? GL_DECODE_EXT : GL_SKIP_DECODE_EXT);
+            }
+        }
+        sampler = context.point_surface_samplers[texture.gamma_mode ? 1 : 0];
+    }
+    glBindSampler(static_cast<GLuint>(index), sampler);
 
     if (texture_as_surface != 0) {
         glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));

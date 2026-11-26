@@ -99,6 +99,10 @@ struct GLContext : public renderer::Context {
     shader::RenderFragUniformBlock current_frag_render_info{};
 
     std::vector<size_t> self_sampling_indices;
+    // fragment texture units that filter the self-sampled color attachment through its mips
+    std::uint32_t self_sampling_mipmap_units = 0;
+    // indexed by the gamma mode of the texture
+    GLObjectArray<2> point_surface_samplers;
 
     explicit GLContext();
     ~GLContext() override = default;
