@@ -172,7 +172,10 @@ struct SceAvPlayerStreamInfo {
     MediaType stream_type;
     uint32_t unknown;
     SceAvPlayerStreamDetails stream_details;
+    uint64_t duration;
+    uint64_t start_time;
 };
+static_assert(sizeof(SceAvPlayerStreamInfo) == 0x28);
 
 enum SceAvPlayerErrorCode : uint32_t {
     SCE_AVPLAYER_ERROR_ILLEGAL_ADDR = 0x806a0001,
@@ -375,6 +378,8 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, SceUInt32 strea
         stream_info->stream_details.video.height = size.height;
         stream_info->stream_details.video.aspect_ratio = static_cast<float>(size.width) / static_cast<float>(size.height);
         strcpy(stream_info->stream_details.video.language, "ENG");
+        stream_info->duration = player_info->player.get_duration_ms(player_info->player.video_stream_id);
+        stream_info->start_time = player_info->player.get_start_time_ms(player_info->player.video_stream_id);
     } else if (stream_no == 1) { // audio
         player_info->player.receive_audio(); // TODO: Get audio info without skipping data frames
         stream_info->stream_type = MediaType::AUDIO;
@@ -382,6 +387,8 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, SceUInt32 strea
         stream_info->stream_details.audio.sample_rate = player_info->player.last_sample_rate;
         stream_info->stream_details.audio.size = player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
         strcpy(stream_info->stream_details.audio.language, "ENG");
+        stream_info->duration = player_info->player.get_duration_ms(player_info->player.audio_stream_id);
+        stream_info->start_time = player_info->player.get_start_time_ms(player_info->player.audio_stream_id);
     } else {
         return SCE_AVPLAYER_ERROR_INVALID_ARGUMENT;
     }

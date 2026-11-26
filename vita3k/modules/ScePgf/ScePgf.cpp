@@ -19,65 +19,72 @@
 
 typedef void *SceFontLibHandle;
 typedef void *SceFontHandle;
-struct SceFontNewLibParams {
-    void *userData;
 
-    unsigned int numFonts;
-
-    // Cache system instance handle
-    void *cache;
-
-    // Memory allocation functions (allocFunc, freeFunc)
-    void *(*allocFunc)(
-        void *, // Pointer to user data
-        unsigned int // Request size
-    );
-
-    void (*freeFunc)(
-        void *, // Pointer to user data
-        void * // Pointer to area to be freed
-    );
-
-    // File access functions
-    void *(*openFunc)
-        // Open (Read only)
-        (
-            void *, // Pointer to user data
-            void *, // File name
-            signed int * // Error value
-        );
-    signed int(*closeFunc)
-        // Close
-        (
-            void *, // Pointer to user data
-            void * // Identifier for file access
-        );
-    unsigned int(*readFunc)
-        // Read
-        (
-            void *, // Pointer to user data
-            void *, // Identifier for file access
-            void *, // Buffer address
-            unsigned int, // Number of bytes per read unit
-            unsigned int, // Number of reads
-            signed int * // Error value
-        );
-    signed int (*seekFunc)(
-        void *, // Pointer to user data
-        void *, // Identifier for file access
-        unsigned int // Seek destination (absolute position from beginning of file)
-    );
-    // Callback when error occurs
-    int (*onErrorFunc)(
-        void *, // Pointer to user data
-        int // Error value
-    );
-    // Callback when reading ends
-    int (*whenDoneReadFunc)(
-        void *, // Pointer to user data
-        int // Status value
-    );
+enum SceFontErrorCode : uint32_t {
+    SCE_FONT_ERROR_OUT_OF_MEMORY = 0x80460001,
+    SCE_FONT_ERROR_INVALID_LIBID = 0x80460002,
+    SCE_FONT_ERROR_INVALID_PARAMETER = 0x80460003,
+    SCE_FONT_ERROR_HANDLER_OPEN_FAILED = 0x80460005,
+    SCE_FONT_ERROR_TOO_MANY_OPEN_FONTS = 0x80460009,
+    SCE_FONT_ERROR_INVALID_FONT_DATA = 0x8046000A,
 };
+
+enum SceFontFamilyCode {
+    SCE_FONT_FAMILY_DEFAULT = 0,
+    SCE_FONT_FAMILY_SANS_SERIF = 1,
+    SCE_FONT_FAMILY_SERIF = 2,
+    SCE_FONT_FAMILY_ROUNDED = 3,
+};
+
+enum SceFontStyleCode {
+    SCE_FONT_STYLE_DEFAULT = 0,
+    SCE_FONT_STYLE_REGULAR = 1,
+    SCE_FONT_STYLE_ITALIC = 2,
+    SCE_FONT_STYLE_NARROW = 3,
+    SCE_FONT_STYLE_NARROW_ITALIC = 4,
+    SCE_FONT_STYLE_BOLD = 5,
+    SCE_FONT_STYLE_BOLD_ITALIC = 6,
+    SCE_FONT_STYLE_BLACK = 7,
+    SCE_FONT_STYLE_BLACK_ITALIC = 8,
+    SCE_FONT_STYLE_L = 101,
+    SCE_FONT_STYLE_M = 102,
+    SCE_FONT_STYLE_DB = 103,
+    SCE_FONT_STYLE_B = 104,
+    SCE_FONT_STYLE_EB = 105,
+    SCE_FONT_STYLE_UB = 106,
+};
+
+enum SceFontLanguageCode {
+    SCE_FONT_LANGUAGE_DEFAULT = 0,
+    SCE_FONT_LANGUAGE_JAPANESE = 1,
+    SCE_FONT_LANGUAGE_LATIN = 2,
+    SCE_FONT_LANGUAGE_KOREAN = 3,
+    SCE_FONT_LANGUAGE_CHINESE = 4,
+    SCE_FONT_LANGUAGE_CJK = 5,
+};
+
+enum SceFontPixelFormatCode {
+    SCE_FONT_PIXELFORMAT_4 = 0,
+    SCE_FONT_PIXELFORMAT_4_REV = 1,
+    SCE_FONT_PIXELFORMAT_8 = 2,
+    SCE_FONT_PIXELFORMAT_24 = 3,
+    SCE_FONT_PIXELFORMAT_32 = 4,
+};
+
+struct SceFontNewLibParams {
+    Ptr<void> userData;
+    unsigned int numFonts;
+    Ptr<void> cacheData;
+    Ptr<void *(void *, unsigned int)> allocFunc;
+    Ptr<void(void *, void *)> freeFunc;
+    Ptr<void> openFunc;
+    Ptr<void> closeFunc;
+    Ptr<void> readFunc;
+    Ptr<void> seekFunc;
+    Ptr<void> errorFunc;
+    Ptr<void> ioFinishFunc;
+};
+static_assert(sizeof(SceFontNewLibParams) == 0x2C);
 
 struct SceFontStyle {
     float fontH;
