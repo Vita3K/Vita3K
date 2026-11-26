@@ -105,6 +105,7 @@ struct TranslationState {
     spv::Id color_attachment_id = spv::NoResult;
     spv::Id color_attachment_raw_id = spv::NoResult;
     spv::Id mask_id = spv::NoResult;
+    bool mask_is_sampled = false;
     spv::Id frag_coord_id = spv::NoResult;
     spv::Id render_info_id = spv::NoResult;
     std::vector<VarToReg> var_to_regs;
@@ -696,14 +697,22 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     }
 
     if (features.use_mask_bit) {
-        const spv::Id mask = create_builtin_sampler(b, features, translation_state, "f_mask");
-        translation_state.mask_id = mask;
-
-        if (translation_state.is_vulkan) {
-            b.addDecoration(mask, spv::DecorationBinding, 1);
-            b.addDecoration(mask, spv::DecorationDescriptorSet, 1);
+        if (!translation_state.is_vulkan && !translation_state.is_target_glsl) {
+            // AMD reads zeros from storage images in OpenGL SPIR-V shaders, which discarded every fragment
+            const spv::Id mask = create_param_sampler(b, "f_mask", spv::Dim2D);
+            b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_SAMPLER);
+            translation_state.mask_id = mask;
+            translation_state.mask_is_sampled = true;
         } else {
-            b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+            const spv::Id mask = create_builtin_sampler(b, features, translation_state, "f_mask");
+            translation_state.mask_id = mask;
+
+            if (translation_state.is_vulkan) {
+                b.addDecoration(mask, spv::DecorationBinding, 1);
+                b.addDecoration(mask, spv::DecorationDescriptorSet, 1);
+            } else {
+                b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+            }
         }
     }
 
@@ -1474,7 +1483,14 @@ static void discard_masked_fragments(spv::Builder &b, const TranslationState &tr
 
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(sampled_type, 4);
-    spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
+    spv::Id texel;
+    if (translate_state.mask_is_sampled) {
+        const spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
+        const spv::Id image = b.createUnaryOp(spv::OpImage, image_type, b.createLoad(translate_state.mask_id, spv::NoPrecision));
+        texel = b.createOp(spv::OpImageFetch, v4, { { true, image }, { true, current_coord }, { false, spv::ImageOperandsLodMask }, { true, b.makeIntConstant(0) } });
+    } else {
+        texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
+    }
     spv::Id rezero = b.makeFloatConstant(0.5f);
     spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
     spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeVectorType(b.makeBoolType(), 4), { texel, zero });

@@ -1475,13 +1475,13 @@ void SettingsDialog::update_gpu_visibility() {
     // Vulkan-only widgets
     m_ui->gb_gpu_device->setVisible(is_vulkan);
     m_ui->gb_vulkan_options->setVisible(is_vulkan);
-    m_ui->spirv_shader->setVisible(is_vulkan);
 
     m_ui->label_memory_mapping->setVisible(has_mapping);
     m_ui->memory_mapping_box->setVisible(has_mapping);
 
     // OpenGL-only widgets
     m_ui->gb_opengl_options->setVisible(!is_vulkan);
+    m_ui->spirv_shader->setVisible(!is_vulkan);
 
     {
         const QString previous = m_ui->screen_filter_box->currentText().isEmpty()

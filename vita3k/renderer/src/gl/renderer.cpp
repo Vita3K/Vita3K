@@ -248,6 +248,18 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         LOG_WARN("Mask bit emulation is disabled by the settings");
 #endif
 
+    // The mask sampler of SPIR-V shaders needs its own unit, and a place among the samplers of the
+    // fragment stage next to the ones of the guest
+    GLint max_combined_units = 0;
+    GLint max_fragment_units = 0;
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_combined_units);
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_fragment_units);
+    gl_state.support_mask_sampler = max_combined_units > shader::MASK_TEXTURE_SLOT_SAMPLER && max_fragment_units > SCE_GXM_MAX_TEXTURE_UNITS;
+    if (gl_state.features.use_mask_bit && gl_state.features.spirv_shader && !gl_state.support_mask_sampler) {
+        LOG_WARN("SPIR-V shaders are not used: the context has no texture unit left for the mask");
+        gl_state.features.spirv_shader = false;
+    }
+
     return gl_state.init();
 }
 
