@@ -35,12 +35,31 @@ struct SceKernelWaitMultipleEventsOpt {
     Ptr<SceUInt32> timeout;
 };
 
+// The result pattern and timeout pointers, packed in a struct by the user wrappers of
+// sceKernelWaitEventFlag and sceKernelWaitEventFlagCB
+struct SceKernelWaitEventFlagOpt {
+    Ptr<SceUInt32> result_pattern;
+    Ptr<SceUInt32> timeout;
+};
+
+// The user data and timeout pointers, packed in a struct by the user wrappers of sceKernelWaitEvent
+// and sceKernelWaitEventCB
+struct SceKernelWaitEventOpt {
+    Ptr<SceUInt64> user_data;
+    Ptr<SceUInt32> timeout;
+};
+
 // The user data and the notify argument, packed in a struct by the user wrappers of
 // sceKernelSetEventWithNotifyCallback and sceKernelPulseEventWithNotifyCallback
 struct SceKernelEventNotifyOpt {
     SceUInt64 user_data;
     SceInt32 notify_arg;
 };
+
+// The waits and the lightweight mutex lock behind both the user exports and their syscalls
+SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
+SceInt32 wait_event_flag(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID evf_id, SceUInt32 bit_pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
+SceInt32 lock_lw_mutex(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, Ptr<SceKernelLwMutexWork> workarea, SceInt32 lock_count, SceUInt32 *timeout, bool callbacks);
 
 DECL_EXPORT(SceInt32, _sceKernelWaitMultipleEvents, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt);
 DECL_EXPORT(SceInt32, _sceKernelWaitMultipleEventsCB, SceKernelWaitEvent *events, SceUInt32 count, SceUInt32 mode, SceKernelWaitMultipleEventsOpt *opt);
@@ -54,12 +73,9 @@ DECL_EXPORT(SceInt32, _sceKernelGetMsgPipeInfo, SceUID msgPipeId, SceKernelMppIn
 DECL_EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, Ptr<const SceKernelSimpleEventOptParam> pOptParam);
 DECL_EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, Ptr<const uint32_t> opt_params);
 DECL_EXPORT(int, _sceKernelPollEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
-DECL_EXPORT(int, _sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout);
-DECL_EXPORT(int, _sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout);
 DECL_EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, Ptr<SceKernelCreateLwMutex_opt> opt);
 DECL_EXPORT(int, _sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea);
 DECL_EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea);
-DECL_EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout);
 DECL_EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info, SceSize size);
 DECL_EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param);
 DECL_EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, Ptr<SceKernelMutexOptParam> opt_param);
@@ -91,8 +107,6 @@ DECL_EXPORT(SceInt32, _sceKernelWaitCondCB, SceUID condId, SceUInt32 *pTimeout);
 DECL_EXPORT(SceInt32, _sceKernelGetTimerEventRemainingTime, SceUID timer_handle, SceKernelSysClock *time);
 DECL_EXPORT(SceInt32, _sceKernelGetTimerInfo, SceUID timer_handle, Ptr<SceKernelTimerInfo> pInfo);
 DECL_EXPORT(SceInt32, _sceKernelSetTimerTime, SceUID timer_handle, SceKernelSysClock *time);
-DECL_EXPORT(SceInt32, _sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout);
-DECL_EXPORT(SceInt32, _sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout);
 DECL_EXPORT(SceInt32, _sceKernelWaitSema, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout);
 DECL_EXPORT(SceInt32, _sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout);
 DECL_EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFlagInfo> pInfo);

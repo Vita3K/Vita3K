@@ -718,18 +718,18 @@ syscall_block_page_end          fail     # the page after a memory block reads a
 syscall_callee_saved            pass
 syscall_io_blocks               fail     # the underscore pread, pwrite, ioctl and devctl calls don't refuse a NULL or unmapped argument block, and devctl doesn't check its input
 syscall_io_calls                fail     # the underscore sceIo calls that the libkernel exports reach aren't implemented
-syscall_lw_mutex_lock           fail     # the lightweight mutex lock call ignores its callback argument, so a waiter's callback doesn't run during the wait
+syscall_lw_mutex_lock           pass
 syscall_module_blocks           fail     # the module calls don't read the flags, option and status block
 syscall_module_checks           fail     # the module syscalls don't read the flags and status block
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
 syscall_vfp_clobber             pass
 syscall_vfp_helpers             fail     # kernel calls change FPSCR and keep d0, d1 and d16, the Vita keeps FPSCR and clobbers those in some calls
-syscall_wait_aliased_outputs    fail     # the wait calls don't copy their block before the wait, so an output written over the block moves the next output
-syscall_wait_bad_blocks         fail     # the event flag and simple event wait calls don't refuse a NULL or unmapped block or timeout
-syscall_wait_bad_outputs        timeout  # the wait calls don't read their block, so a poll of the event with a timeout of 0 never ends
-syscall_wait_blocks             timeout  # the event flag and simple event calls don't read the result and timeout block, so a wait with a timeout never ends
-syscall_wait_copy_back          fail     # the lightweight mutex lock call doesn't copy its timeout in first, so an unmapped one isn't refused
+syscall_wait_aliased_outputs    pass
+syscall_wait_bad_blocks         pass
+syscall_wait_bad_outputs        pass
+syscall_wait_blocks             pass
+syscall_wait_copy_back          pass
 sysmodule                       fail     # system modules don't load without firmware
 sysmodule_ids                   pass
 sysmodule_lock_during_start     fail     # libfiber doesn't load without firmware
