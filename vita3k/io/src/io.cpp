@@ -36,6 +36,7 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <cassert>
 #include <cerrno>
 #include <iostream>
@@ -313,10 +314,81 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
     return relative_path;
 }
 
+// rePatch: files in ux0:rePatch/<title_id>/ replace the game's own files at the same relative path.
+// translated_path is the result of translating an app0: path. Returns the existing rePatch file or directory, or an
+// empty path. The result is always inside the rePatch folder: a path that tries to leave it (rooted, "..", a symlink
+// pointing out) finds nothing.
+fs::path find_repatch_path(const IOState &io, const fs::path &vita_fs_path, const std::string &translated_path) {
+    const std::string prefix = io.device_paths.app0 + '/';
+    const fs::path root = vita_fs_path / "ux0" / "rePatch" / io.title_id;
+    std::error_code ec;
+    if (io.title_id.empty() || !fs::is_directory(root, ec))
+        return {};
+
+    if (translated_path == io.device_paths.app0)
+        return root;
+    if (!translated_path.starts_with(prefix))
+        return {};
+
+    // Never a rooted path, as joining it would replace the rePatch root
+    const fs::path relative = fs::path(translated_path.substr(prefix.size()));
+    if (relative.has_root_name() || relative.has_root_directory())
+        return {};
+
+    // Every component is looked up as is first, then case-insensitively (the Vita file system is)
+    fs::path current = root;
+    for (const auto &component : relative.relative_path()) {
+        const std::string name = component.string();
+#ifdef _WIN32
+        if (name.find(':') != std::string::npos)
+            return {};
+#endif
+        if (name == "..")
+            return {};
+        if (name.empty())
+            continue;
+
+        fs::path next = current / component;
+        if (!fs::exists(next, ec)) {
+            next.clear();
+            if (io.case_isens_find_enabled && fs::is_directory(current, ec)) {
+                const std::string wanted = string_utils::tolower(name);
+                fs::directory_iterator it(current, ec);
+                for (; !ec && it != fs::directory_iterator(); it.increment(ec)) {
+                    if (string_utils::tolower(it->path().filename().string()) == wanted) {
+                        next = it->path();
+                        break;
+                    }
+                }
+            }
+            if (next.empty())
+                return {};
+        }
+        current = std::move(next);
+    }
+
+    // A symlink inside rePatch must not lead out of it either
+    const fs::path canonical_root = fs::canonical(root, ec);
+    const fs::path canonical_path = fs::weakly_canonical(current, ec);
+    if (ec || canonical_root.empty())
+        return {};
+    const auto mismatch = std::mismatch(canonical_root.begin(), canonical_root.end(), canonical_path.begin(), canonical_path.end());
+    if (mismatch.first != canonical_root.end())
+        return {};
+
+    return current;
+}
+
 fs::path expand_path(IOState &io, const char *path, const fs::path &vita_fs_path) {
     auto device = device::get_device(path);
+    const auto original_device = device;
 
     const auto translated_path = translate_path(path, device, io.device_paths);
+    if (original_device == VitaIoDevice::app0) {
+        const auto repatch_path = find_repatch_path(io, vita_fs_path, translated_path);
+        if (fs::is_regular_file(repatch_path))
+            return repatch_path.string();
+    }
     return device::construct_emulated_path(device, translated_path, vita_fs_path, io.redirect_stdio).string();
 }
 
@@ -373,6 +445,12 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
     }
 
     auto system_path = device::construct_emulated_path(device, translated_path, vita_fs_path, io.redirect_stdio);
+    // Only reads consult rePatch. app0 is read-only on hardware, so a write open (and a create) always gets the game's own path.
+    if (device_for_icase == VitaIoDevice::app0 && !can_write(flags)) {
+        const auto repatch_path = find_repatch_path(io, vita_fs_path, translated_path);
+        if (fs::is_regular_file(repatch_path))
+            system_path = repatch_path;
+    }
     if (fs::is_directory(system_path)) {
         LOG_ERROR("Cannot open directory: {}", system_path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -601,6 +679,11 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &v
 
         const auto translated_path = translate_path(file, device, io.device_paths);
         file_path = device::construct_emulated_path(device, translated_path, vita_fs_path, io.redirect_stdio);
+        if (device_for_icase == VitaIoDevice::app0) {
+            const auto repatch_path = find_repatch_path(io, vita_fs_path, translated_path);
+            if (!repatch_path.empty())
+                file_path = repatch_path;
+        }
 
         if (!fs::exists(file_path)) {
             if (io.case_isens_find_enabled) {
@@ -805,38 +888,68 @@ SceUID open_dir(IOState &io, const char *path, const fs::path &vita_fs_path, con
     const auto translated_path = translate_path(path, device, io.device_paths);
 
     auto dir_path = device::construct_emulated_path(device, translated_path, vita_fs_path, io.redirect_stdio) / "";
+
+    // An app0: directory is merged with the one in rePatch, the rePatch entries are listed first and win on a name clash
+    fs::path repatch_dir;
+    if (device_for_icase == VitaIoDevice::app0) {
+        repatch_dir = find_repatch_path(io, vita_fs_path, translated_path);
+        if (!fs::is_directory(repatch_dir))
+            repatch_dir.clear();
+    }
+
+    bool found = true;
     if (!fs::exists(dir_path)) {
+        found = false;
         if (io.case_isens_find_enabled) {
             // Attempt a case-insensitive file search.
             const auto original_dir_path = dir_path;
             const auto cached_path = find_in_cache(io, string_utils::tolower(dir_path.string()));
             if (!cached_path.empty()) {
                 dir_path = cached_path;
+                found = true;
                 LOG_TRACE("Found cached directory path at {}", dir_path);
             } else {
                 const bool path_found = find_case_isens_path(io, device_for_icase, translated_path, dir_path);
                 dir_path = find_in_cache(io, string_utils::tolower(dir_path.string().substr(0, dir_path.string().size() - 1)));
                 if (!dir_path.empty() && path_found) {
+                    found = true;
                     LOG_TRACE("Found directory on case-sensitive filesystem at {}", dir_path);
                 } else {
-                    LOG_ERROR("Directory does not exist at {} (target path: {})", original_dir_path, path);
-                    return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+                    dir_path = original_dir_path;
+                    if (repatch_dir.empty())
+                        LOG_ERROR("Directory does not exist at {} (target path: {})", original_dir_path, path);
                 }
             }
-        } else {
+        } else if (repatch_dir.empty()) {
             LOG_ERROR("Directory does not exist at: {} (target path: {})", dir_path, path);
-            return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
         }
     }
 
-    const DirPtr opened = create_shared_dir(dir_path);
-    if (!opened) {
-        LOG_ERROR("Failed to open directory at: {} (target path: {})", dir_path, path);
+    DirPtr opened;
+    if (found) {
+        opened = create_shared_dir(dir_path);
+    } else if (repatch_dir.empty()) {
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
+    std::shared_ptr<DirStats> dir;
     const auto normalized = device::construct_normalized_path(device, translated_path);
-    auto dir = std::make_shared<DirStats>(path, normalized, dir_path, opened);
+    if (repatch_dir.empty()) {
+        if (!opened) {
+            LOG_ERROR("Failed to open directory at: {} (target path: {})", dir_path, path);
+            return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        }
+        dir = std::make_shared<DirStats>(path, normalized, dir_path, opened);
+    } else {
+        const DirPtr repatch_opened = create_shared_dir(repatch_dir);
+        if (!repatch_opened) {
+            LOG_ERROR("Failed to open directory at: {} (target path: {})", repatch_dir, path);
+            return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        }
+        dir = std::make_shared<DirStats>(path, normalized, repatch_dir, repatch_opened);
+        dir->merge_base(std::move(opened));
+    }
+
     SceUID fd;
     {
         std::lock_guard lock(io.fd_mutex);
@@ -868,12 +981,17 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const fs::path 
     std::string d_name_utf8;
     {
         std::lock_guard lock(dir->mutex);
-        do {
+        while (true) {
             const auto d = dir->get_dir_ptr();
-            if (!d)
+            if (!d) {
+                if (dir->next_dir())
+                    continue;
                 return 0;
+            }
             d_name_utf8 = get_file_in_dir(d);
-        } while (d_name_utf8 == "." || d_name_utf8 == "..");
+            if (d_name_utf8 != "." && d_name_utf8 != ".." && !dir->is_shadowed(string_utils::tolower(d_name_utf8)))
+                break;
+        }
     }
     dent->d_name[d_name_utf8.copy(dent->d_name, sizeof(dent->d_name) - 1)] = '\0';
     const auto file_path = std::string(dir->get_vita_loc()) + '/' + d_name_utf8;

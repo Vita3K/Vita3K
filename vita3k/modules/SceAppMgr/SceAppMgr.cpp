@@ -17,10 +17,12 @@
 
 #include "SceAppMgr.h"
 
+#include <io/functions.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/sfo.h>
 #include <renderer/state.h>
+#include <util/fs.h>
 #include <util/tracy.h>
 
 TRACY_MODULE_NAME(SceAppMgr);
@@ -433,7 +435,9 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
     // Load exec executable
     vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, emuenv.vita_fs_path, emuenv.io.app_path, exec_path)) {
+    const auto repatch_exec = find_repatch_path(emuenv.io, emuenv.vita_fs_path, emuenv.io.device_paths.app0 + '/' + exec_path);
+    const bool exec_read = fs::is_regular_file(repatch_exec) ? fs_utils::read_data(repatch_exec, exec_buffer) : vfs::read_app_file(exec_buffer, emuenv.vita_fs_path, emuenv.io.app_path, exec_path);
+    if (exec_read) {
         std::vector<std::string> exec_argv;
         if (argv && argv->get(emuenv.mem)) {
             size_t args = 0;
