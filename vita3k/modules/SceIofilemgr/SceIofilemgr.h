@@ -26,8 +26,25 @@ typedef struct _sceIoLseekOpt {
     uint32_t unk;
 } _sceIoLseekOpt;
 
-DECL_EXPORT(int, _sceIoDopen, const char *dir);
-DECL_EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir);
-DECL_EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode);
-DECL_EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt);
-DECL_EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat);
+// A 64 bit file offset as libkernel passes it to the pread and pwrite syscalls, low word first
+struct _sceIoOffsetOpt {
+    SceUInt32 low;
+    SceUInt32 high;
+};
+
+// The input length, output buffer and output length of a devctl or ioctl syscall
+struct _sceIoControlOpt {
+    SceSize inlen;
+    Ptr<void> outdata;
+    SceSize outlen;
+};
+
+// The devctl and dread behind both the user exports and their syscalls
+// The host pointer of a guest buffer of size bytes, or nullptr when it isn't all mapped
+template <typename T>
+T *mapped_buffer(const MemState &mem, Ptr<T> buf, SceSize size) {
+    return is_valid_addr_len(mem, buf.address(), size) ? buf.get(mem) : nullptr;
+}
+
+int devctl(EmuEnvState &emuenv, const char *export_name, const char *dev, SceInt cmd, Ptr<const void> indata, SceSize inlen, Ptr<void> outdata, SceSize outlen);
+int dread(EmuEnvState &emuenv, const char *export_name, SceUID fd, SceIoDirent *dir);

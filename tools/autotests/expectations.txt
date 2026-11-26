@@ -13,7 +13,7 @@ app_free_sizes                  fail     # the app's code, data, stack and TLS a
 app_memory_blocks               fail     # the app's code, data, stacks and TLS aren't memory blocks with their types
 app_memory_ranges               fail     # the app's own memory isn't in memory blocks, the find ignores its size
 app_start_free                  fail     # the app's code, data, stack and TLS aren't memory blocks, and the reported free size isn't the Vita's
-append_descriptors              fail     # host files open in append mode, so an APPEND descriptor starts at the end and moves with each write
+append_descriptors              pass
 appmgr_app_data_mount           crash    # sceAppMgrAppDataMount is a stub, a NULL out pointer is written by the host and kills Vita3K
 appmgr_app_param_int            fail     # sceAppMgrAppParamGetInt returns 0 for every param and never writes out, no unknown or shell only errors
 appmgr_app_param_string         fail     # sceAppMgrAppParamGetString sizes, the NUL and the errors
@@ -211,7 +211,7 @@ delay_wait_id                   pass
 delete_race_end_waiters         pass
 delete_with_waiters             pass
 delete_with_waiters_more        fail     # sceKernelWaitMultipleEvents
-descriptor_access               fail     # a read without read access and a write without write access go through, and a plain write stays in the host buffer, so an APPEND write on another descriptor goes over it
+descriptor_access               pass
 devctl_ioctl                    fail     # sceIoDevctl and sceIoIoctl commands and sizes, Vita3K answers the 0x3001 free space query the test expects refused, and accepts any ioctl
 directories                     fail     # directory mode and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
@@ -578,7 +578,7 @@ outside_mask_rerun              fail     # threads ignore their core
 owner_end                       pass
 owner_end_more                  pass
 poll_calls                      pass
-positioned_bad_buffers          fail     # pread and pwrite take an unmapped buffer, and refuse a NULL one of size 0
+positioned_bad_buffers          pass
 preempt_keeps_context           fail     # the FPSCR a preempted thread set is lost when the preempting thread runs
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_migrate                 fail     # threads ignore their core
@@ -597,7 +597,7 @@ queue_order_matrix              pass
 queue_order_matrix_more         skip     # threads ignore their core and priority, so readers and thread end waiters woken together run in host order
 queue_order_timer               pass
 queued_mask_change_busy_core    fail     # a queued affinity change runs T on the held core 0 and reports DORMANT, not STANDBY
-read_only_create_write          fail     # a descriptor opened to read with CREAT writes
+read_only_create_write          pass
 readonly_in                     fail     # setting a timer's time from read only memory isn't refused, and a multiple event wait listed in it gets nothing
 readonly_out_info               fail     # no write check on output parameters
 readonly_out_values             fail     # no write check on output parameters
@@ -712,12 +712,12 @@ suspend_vm_syscall_boundary     pass
 suspend_wake_status_at_once     skip     # whether a woken waiter suspended for VM still shows READY or already parked as SUSPENDED is a race, and so is its relock
 suspend_wake_status_kinds       skip     # whether a woken waiter suspended for VM still shows READY or already parked as SUSPENDED is a race
 suspended_nonobject_waits       pass
-sync_chstat_pread_dread         crash    # sceIoPread into a NULL buffer is written through as a host pointer and segfaults
+sync_chstat_pread_dread         fail     # sync and chstat don't check their arguments, stat gives other modes and attributes, and dread rewrites the caller's private fields
 sync_object_memory_cost         fail     # kernel objects take no main memory
 syscall_block_page_end          fail     # the page after a memory block reads as mapped, so a block in its last 8 bytes isn't refused
 syscall_callee_saved            pass
 syscall_io_blocks               fail     # the underscore pread, pwrite, ioctl and devctl calls don't refuse a NULL or unmapped argument block, and devctl doesn't check its input
-syscall_io_calls                fail     # the underscore sceIo calls that the libkernel exports reach aren't implemented
+syscall_io_calls                fail     # Vita3K answers the 0x3001 free space query the test expects refused, and ioctl is a stub
 syscall_lw_mutex_lock           pass
 syscall_module_blocks           fail     # the module calls don't read the flags, option and status block
 syscall_module_checks           fail     # the module syscalls don't read the flags and status block

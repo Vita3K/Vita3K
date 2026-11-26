@@ -17,7 +17,9 @@
 
 #include "SceIofilemgr.h"
 
+#include <io/device.h>
 #include <io/functions.h>
+#include <io/io.h>
 #include <kernel/types.h>
 
 #include <util/tracy.h>
@@ -43,9 +45,74 @@ EXPORT(int, _sceIoCompleteMultiple) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoDevctl) {
-    TRACY_FUNC(_sceIoDevctl);
-    return UNIMPLEMENTED();
+int devctl(EmuEnvState &emuenv, const char *export_name, const char *dev, SceInt cmd, Ptr<const void> indata, SceSize inlen, Ptr<void> outdata, SceSize outlen) {
+    // The device name is copied with a limit of 0x400 bytes
+    if (dev && strnlen(dev, 0x400) == 0x400)
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+    // Commands with these bits are for system programs
+    if (cmd & 0xE00)
+        return RET_ERROR(SCE_ERROR_ERRNO_EUNSUP);
+    if (indata && !is_valid_addr_len(emuenv.mem, indata.address(), inlen))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (!dev)
+        return RET_ERROR(SCE_ERROR_ERRNO_EFAULT);
+    // Only the root of a device takes commands
+    const VitaIoDevice device = device::get_device(dev);
+    if (device == VitaIoDevice::_INVALID || !device::remove_device_from_path(dev, device).empty())
+        return RET_ERROR(SCE_ERROR_ERRNO_ENODEV);
+    switch (cmd) {
+    case SCE_IO_DEVCTL_GET_FREE_SPACE: {
+        // The short answer ends before the volume fields
+        if (outlen != offsetof(SceIoDevInfo, serial) && outlen != sizeof(SceIoDevInfo))
+            return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+
+        // A device with no host directory has no volume to report on
+        std::error_code error;
+        const fs::space_info space = fs::space(emuenv.vita_fs_path / device::get_device_string(device, false), error);
+        if (error)
+            return RET_ERROR(SCE_ERROR_ERRNO_ENODEV);
+        // The devices are host directories with no cluster size, so the answer uses a fixed one that
+        // the sizes are rounded to
+        constexpr SceSize cluster_size = 4096;
+        // The answer is built in a buffer filled with 0xFF, which is copied whole
+        SceIoDevInfo info;
+        std::memset(&info, 0xFF, sizeof(info));
+        info.max_size = space.capacity / cluster_size * cluster_size;
+        info.free_size = space.available / cluster_size * cluster_size;
+        info.cluster_size = cluster_size;
+        if (outlen == sizeof(SceIoDevInfo)) {
+            info.unused = 0;
+            info.serial = 0;
+            std::ranges::fill(info.label, ' ');
+            info.end = 0;
+        }
+        if (outdata) {
+            if (!is_valid_addr_len(emuenv.mem, outdata.address(), outlen))
+                return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+            std::memcpy(outdata.get(emuenv.mem), &info, outlen);
+        }
+        return 0;
+    }
+    default:
+        // The free space query is the only command a game can use
+        LOG_WARN("{}: devctl command {:#x} on {} refused", export_name, cmd, dev);
+        return RET_ERROR(SCE_ERROR_ERRNO_EUNSUP);
+    }
+}
+
+int dread(EmuEnvState &emuenv, const char *export_name, SceUID fd, SceIoDirent *dir) {
+    if (!dir)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    return read_dir(emuenv.io, fd, dir, emuenv.vita_fs_path, export_name);
+}
+
+EXPORT(int, _sceIoDevctl, const char *dev, SceInt cmd, Ptr<const void> indata, Ptr<const _sceIoControlOpt> opt) {
+    TRACY_FUNC(_sceIoDevctl, dev, cmd, indata, opt);
+    // The syscall copies 0x18 bytes of the block
+    if (!is_valid_addr_len(emuenv.mem, opt.address(), 0x18))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const _sceIoControlOpt *const block = opt.get(emuenv.mem);
+    return devctl(emuenv, export_name, dev, cmd, indata, block->inlen, block->outdata, block->outlen);
 }
 
 EXPORT(int, _sceIoDevctlAsync) {
@@ -60,10 +127,7 @@ EXPORT(int, _sceIoDopen, const char *dir) {
 
 EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir) {
     TRACY_FUNC(_sceIoDread, fd, dir);
-    if (dir == nullptr) {
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
-    }
-    return read_dir(emuenv.io, fd, dir, emuenv.vita_fs_path, export_name);
+    return dread(emuenv, export_name, fd, dir);
 }
 
 EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat) {
@@ -125,9 +189,13 @@ EXPORT(int, _sceIoOpenAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoPread) {
-    TRACY_FUNC(_sceIoPread);
-    return UNIMPLEMENTED();
+EXPORT(SceSSize, _sceIoPread, SceUID fd, Ptr<void> buf, SceSize size, Ptr<const _sceIoOffsetOpt> offset) {
+    TRACY_FUNC(_sceIoPread, fd, buf, size, offset);
+    // The syscall copies 0x10 bytes of the block
+    if (!is_valid_addr_len(emuenv.mem, offset.address(), 0x10))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const _sceIoOffsetOpt *const block = offset.get(emuenv.mem);
+    return pread_file(emuenv.io, fd, mapped_buffer(emuenv.mem, buf, size), size, (static_cast<SceOff>(block->high) << 32) | block->low, export_name);
 }
 
 EXPORT(int, _sceIoPreadAsync) {
@@ -135,9 +203,13 @@ EXPORT(int, _sceIoPreadAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoPwrite) {
-    TRACY_FUNC(_sceIoPwrite);
-    return UNIMPLEMENTED();
+EXPORT(SceSSize, _sceIoPwrite, SceUID fd, Ptr<const void> buf, SceSize size, Ptr<const _sceIoOffsetOpt> offset) {
+    TRACY_FUNC(_sceIoPwrite, fd, buf, size, offset);
+    // The syscall copies 0x10 bytes of the block
+    if (!is_valid_addr_len(emuenv.mem, offset.address(), 0x10))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const _sceIoOffsetOpt *const block = offset.get(emuenv.mem);
+    return pwrite_file(emuenv.io, fd, mapped_buffer(emuenv.mem, buf, size), size, (static_cast<SceOff>(block->high) << 32) | block->low, export_name);
 }
 
 EXPORT(int, _sceIoPwriteAsync) {
@@ -145,9 +217,9 @@ EXPORT(int, _sceIoPwriteAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoRemove) {
-    TRACY_FUNC(_sceIoRemove);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoRemove, const char *path) {
+    TRACY_FUNC(_sceIoRemove, path);
+    return remove_file(emuenv.io, path, emuenv.vita_fs_path, export_name);
 }
 
 EXPORT(int, _sceIoRemoveAsync) {
@@ -155,9 +227,9 @@ EXPORT(int, _sceIoRemoveAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoRename) {
-    TRACY_FUNC(_sceIoRename);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoRename, const char *old_name, const char *new_name) {
+    TRACY_FUNC(_sceIoRename, old_name, new_name);
+    return rename(emuenv.io, old_name, new_name, emuenv.vita_fs_path, export_name);
 }
 
 EXPORT(int, _sceIoRenameAsync) {
@@ -165,9 +237,9 @@ EXPORT(int, _sceIoRenameAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceIoRmdir) {
-    TRACY_FUNC(_sceIoRmdir);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceIoRmdir, const char *path) {
+    TRACY_FUNC(_sceIoRmdir, path);
+    return remove_dir(emuenv.io, path, emuenv.vita_fs_path, export_name);
 }
 
 EXPORT(int, _sceIoRmdirAsync) {

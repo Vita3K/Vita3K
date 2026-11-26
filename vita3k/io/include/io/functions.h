@@ -63,6 +63,9 @@ int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, con
 int truncate_file(SceUID fd, unsigned long long length, const IOState &io, const char *export_name);
 SceOff seek_file(SceUID fd, SceOff offset, SceIoSeekMode whence, IOState &io, const char *export_name);
 SceOff tell_file(IOState &io, const SceUID fd, const char *export_name);
+// Read or write at an offset, the file position doesn't move
+SceSSize pread_file(IOState &io, SceUID fd, void *data, SceSize size, SceOff offset, const char *export_name);
+SceSSize pwrite_file(IOState &io, SceUID fd, const void *data, SceSize size, SceOff offset, const char *export_name);
 int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name, SceUID fd = invalid_fd);
 int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name);
 int close_file(IOState &io, SceUID fd, const char *export_name);

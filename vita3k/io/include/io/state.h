@@ -137,6 +137,8 @@ struct IOState {
     bool case_isens_find_enabled = false;
 
     std::mutex overlay_mutex;
+    // Taken by every write and truncate, so an APPEND write goes to the end the other descriptors left
+    mutable std::mutex write_mutex;
     SceUID next_overlay_id = 1;
     // overlay in the order they should be applied
     std::vector<FiosOverlay> overlays;
