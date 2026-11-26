@@ -32,6 +32,7 @@
 #include <packages/sce_types.h>
 #include <renderer/state.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 #include <util/sysinfo.h>
 
 #include <QApplication>
@@ -148,6 +149,7 @@ AppsListContextMenu::AppPaths AppsListContextMenu::make_app_paths(const app::App
         .shader_log_alt = m_emuenv.log_path / "shaderlog" / title_id,
         .export_textures = m_emuenv.shared_path / "textures/export" / title_id,
         .import_textures = m_emuenv.shared_path / "textures/import" / title_id,
+        .screenshots = m_emuenv.shared_path / "screenshots" / string_utils::remove_special_chars(app.title),
     };
 }
 
@@ -472,6 +474,13 @@ void AppsListContextMenu::add_open_folder_actions(const app::AppEntry &app) {
         auto *a = open_menu->addAction(tr("Import Textures"));
         connect(a, &QAction::triggered, this, [this] {
             gui::utils::open_dir(m_paths.import_textures);
+        });
+    }
+
+    if (fs::exists(m_paths.screenshots)) {
+        auto *a = open_menu->addAction(tr("Screenshots"));
+        connect(a, &QAction::triggered, this, [this] {
+            gui::utils::open_dir(m_paths.screenshots);
         });
     }
 }
