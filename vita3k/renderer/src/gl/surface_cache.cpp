@@ -36,12 +36,17 @@ void GLSurfaceCache::cleanup() {
 
     for (auto &ds : depth_stencil_textures) {
         ds.gl_texture.cleanup();
+        ds.sample_texture.cleanup();
         ds.flags = GLSurfaceCacheInfo::FLAG_FREE;
         ds.width = 0;
         ds.height = 0;
+        ds.multisample_mode = SCE_GXM_MULTISAMPLE_NONE;
+        ds.sample_texture_width = 0;
+        ds.sample_texture_height = 0;
     }
 
     framebuffer_array.clear();
+    depth_scale_framebuffers.cleanup();
 
     typeless_copy_buffer.cleanup();
     typeless_copy_buffer_size = 0;
@@ -174,7 +179,10 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write situation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
-        bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
+        // The last row of the region ends at its width, not a whole stride later: a region in the bottom right
+        // corner of the surface (an atlas tile, for example) ends exactly where the surface ends
+        const std::size_t region_end = original_height ? bytes_per_stride * (original_height - 1) + original_width * color::bytes_per_pixel(base_format) : 0;
+        bool addr_in_range_of_cache = ((key + region_end) <= (ite->first + info.total_bytes));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
@@ -354,6 +362,13 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                     return 0;
                 }
 
+                if (start_x * bytes_per_pixel_requested >= info.width * bytes_per_pixel_in_store) {
+                    LOG_ERROR("Trying to present a segment right of the cached color surface!");
+                    return 0;
+                }
+                // the part of the region past the right edge of the surface is not copied
+                const GLsizei copy_width = std::min<GLsizei>(width, static_cast<GLsizei>(info.width) - static_cast<GLsizei>(start_x));
+
                 if ((start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
                     std::uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
                         std::chrono::steady_clock::now().time_since_epoch())
@@ -389,7 +404,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
                                 if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
                                     glCopyImageSubData(source_texture, GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
-                                        0, 0, 0, 0, width, height, 1);
+                                        0, 0, 0, 0, copy_width, height, 1);
                                 } else {
                                     do_typeless_copy(casted_vec[i]->texture[0], source_texture, surface_internal_format, surface_upload_format,
                                         surface_data_type, static_cast<int>(bytes_per_pixel_requested), source_format, source_data_type, static_cast<int>(bytes_per_pixel_in_store),
@@ -429,7 +444,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
                         glCopyImageSubData(source_texture, GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_info.texture[0], GL_TEXTURE_2D,
-                            0, 0, 0, 0, width, height, 1);
+                            0, 0, 0, 0, copy_width, height, 1);
                     } else {
                         // We must do a typeless copy (RPCS3)
                         do_typeless_copy(casted_info.texture[0], source_texture, surface_internal_format, surface_upload_format,
@@ -806,6 +821,61 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     return info.gl_ping_pong_texture[0];
 }
 
+// The Vita keeps one depth sample per MSAA sample: twice as many rows, and twice as many columns with 4x MSAA,
+// so games sample the depth of a multisampled render target with these sizes. This renderer does not draw
+// multisampled render targets at a higher resolution, so stretch the depth to one texel per sample.
+GLuint GLSurfaceCache::retrieve_depth_samples(GLDepthStencilSurfaceCacheInfo &info, std::int32_t width, std::int32_t height) {
+    const std::int32_t scale_x = (info.multisample_mode == SCE_GXM_MULTISAMPLE_4X) ? 2 : 1;
+    const std::int32_t scale_y = 2;
+
+    if (!info.sample_texture[0] || info.sample_texture_width != width || info.sample_texture_height != height) {
+        info.sample_texture.cleanup();
+        if (!info.sample_texture.init(glGenTextures, glDeleteTextures)) {
+            LOG_ERROR("Failed to initialise depth sample texture!");
+            return 0;
+        }
+        glBindTexture(GL_TEXTURE_2D, info.sample_texture[0]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+        info.sample_texture_width = width;
+        info.sample_texture_height = height;
+    }
+
+    if (!depth_scale_framebuffers[0] && !depth_scale_framebuffers.init(glGenFramebuffers, glDeleteFramebuffers)) {
+        LOG_ERROR("Failed to initialise depth scale framebuffers!");
+        return 0;
+    }
+
+    GLint last_read_framebuffer = 0, last_draw_framebuffer = 0;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &last_read_framebuffer);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &last_draw_framebuffer);
+    const GLboolean scissor_enabled = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean depth_mask = GL_TRUE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &depth_mask);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, depth_scale_framebuffers[0]);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, info.gl_texture[0], 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, depth_scale_framebuffers[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, info.sample_texture[0], 0);
+    glDisable(GL_SCISSOR_TEST);
+    glDepthMask(GL_TRUE);
+
+    if (width > info.width * scale_x || height > info.height * scale_y) {
+        // the texels past the surface get the far depth instead of what was there before
+        const GLfloat far_depth = 1.0f;
+        glClearBufferfv(GL_DEPTH, 0, &far_depth);
+    }
+    // texels beyond the destination are clipped without changing the scale
+    glBlitFramebuffer(0, 0, info.width, info.height, 0, 0, info.width * scale_x, info.height * scale_y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+    glDepthMask(depth_mask);
+    if (scissor_enabled)
+        glEnable(GL_SCISSOR_TEST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, last_read_framebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, last_draw_framebuffer);
+
+    return info.sample_texture[0];
+}
+
 GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width, std::int32_t force_height, const bool is_reading) {
     if (!target) {
         LOG_ERROR("Unable to retrieve Depth Stencil texture with no active render target!");
@@ -842,6 +912,12 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
         }
 
         GLDepthStencilSurfaceCacheInfo &cached_info = depth_stencil_textures[found_index];
+        if (!is_reading)
+            cached_info.multisample_mode = target->multisample_mode;
+        else if (cached_info.multisample_mode != SCE_GXM_MULTISAMPLE_NONE)
+            // Growing the surface to the size of the texture would throw away what was drawn in it
+            return retrieve_depth_samples(cached_info, force_width, force_height);
+
         bool need_remake = false;
         if (cached_info.width < force_width) {
             cached_info.width = force_width;
@@ -913,6 +989,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
     depth_stencil_textures[found_index].surface = surface;
     depth_stencil_textures[found_index].width = force_width;
     depth_stencil_textures[found_index].height = force_height;
+    depth_stencil_textures[found_index].multisample_mode = target->multisample_mode;
 
     glBindTexture(GL_TEXTURE_2D, depth_stencil_textures[found_index].gl_texture[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, force_width, force_height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);

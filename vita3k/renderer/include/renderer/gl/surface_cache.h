@@ -91,6 +91,12 @@ struct GLDepthStencilSurfaceCacheInfo : public GLSurfaceCacheInfo {
     GLObjectArray<1> gl_texture;
     std::int32_t width;
     std::int32_t height;
+    // multisample mode of the render target that last wrote it
+    SceGxmMultisampleMode multisample_mode = SCE_GXM_MULTISAMPLE_NONE;
+    // copy with one texel per sample, given to textures reading a multisampled depth
+    GLObjectArray<1> sample_texture;
+    std::int32_t sample_texture_width = 0;
+    std::int32_t sample_texture_height = 0;
 };
 
 class GLSurfaceCache {
@@ -106,6 +112,9 @@ private:
 
     GLObjectArray<1> typeless_copy_buffer;
     std::size_t typeless_copy_buffer_size = 0;
+
+    // read and draw framebuffers used to scale multisampled depth surfaces
+    GLObjectArray<2> depth_scale_framebuffers;
 
     const GLRenderTarget *target = nullptr;
     std::uint64_t scene_color_address = 0;
@@ -130,6 +139,7 @@ private:
         const GLenum dest_upload_format, const GLenum dest_type, const int dest_bpp, const GLenum source_format, const GLenum source_type,
         const int source_bpp, const int dest_x, const int y, const int source_texture_width, const int dest_width, const int height);
     void save_scene_start(GLColorSurfaceCacheInfo &info);
+    GLuint retrieve_depth_samples(GLDepthStencilSurfaceCacheInfo &info, std::int32_t width, std::int32_t height);
     void release_srgb_copies(const GLColorSurfaceCacheInfo &info);
 
 public:
