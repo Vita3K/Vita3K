@@ -755,6 +755,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     kernelModuleInfo->info_segment_address = module_info_segment_address;
     kernelModuleInfo->info_offset = module_info_offset;
     kernelModuleInfo->flags = flags;
+    kernelModuleInfo->set_state(ModuleState::loaded);
     // The app info starts with the program authority ID
     if (is_self)
         memcpy(&kernelModuleInfo->auth_id, image_bytes + self_header.appinfo_offset, sizeof(kernelModuleInfo->auth_id));
@@ -805,8 +806,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         segment.memsz = segments[segment_index].p_memsz;
         segment.filesz = segments[segment_index].p_filesz;
     }
-
-    sceKernelModuleInfo->state = module_info->type;
 
     LOG_INFO("Linking {} {}...", is_self ? "SELF" : "ELF", self_path);
     if (self_path.contains("eboot.bin"))

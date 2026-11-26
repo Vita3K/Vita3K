@@ -44,9 +44,9 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
 
 // Run a module's module_start or module_stop and store what it returned in status. They return the
-// error when no thread can run it.
-SceInt32 start_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
-SceInt32 stop_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
+// error for a module in the wrong state, for a start or stop that can't run and for one that fails.
+SceInt32 start_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
+SceInt32 stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{}, uint32_t *status = nullptr);
 
 // Load, unload and check a sysmodule id like sysmodule does, for an id the caller has checked. The
 // loads and unloads return the error of the module that failed.

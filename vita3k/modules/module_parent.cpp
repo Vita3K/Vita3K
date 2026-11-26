@@ -188,7 +188,7 @@ struct SceKernelBootimageInfo {
 constexpr uint32_t nid_sceKernelBootimageInfo = 0x9C08E88A;
 
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t flags) {
-    // Check if module is already loaded
+    // A file loaded already gives the same module, the linker has one export table for all modules
     {
         const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
         const auto &loaded_modules = emuenv.kernel.loaded_modules;
@@ -217,6 +217,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t
             // module_name is stubbed.
             strncpy(sceKernelModuleInfo->module_name, module_name.c_str(), 28);
             kernelModuleInfo->flags = flags;
+            kernelModuleInfo->set_state(ModuleState::loaded);
 
             const SceUID uid = emuenv.kernel.get_next_uid();
             sceKernelModuleInfo->modid = uid;
@@ -311,6 +312,13 @@ int unload_module(EmuEnvState &emuenv, SceUID module_id) {
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
     }
+    {
+        // Only a module that isn't started can go
+        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+        if (module->state != ModuleState::loaded && module->state != ModuleState::stopped)
+            return SCE_KERNEL_ERROR_MODULEMGR_NOT_STOPPED;
+        module->set_state(ModuleState::none);
+    }
     LOG_INFO("Unloading module {} ({})", module_id, module->info.module_name);
     if (module->info.segments[0].memsz == 0) {
         LOG_WARN("Module {} has no segments, skipping unload", module->info.module_name);
@@ -361,35 +369,83 @@ static SceInt32 run_module_entry(EmuEnvState &emuenv, const KernelModule &module
     return error;
 }
 
-SceInt32 start_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args, Ptr<const void> argp, uint32_t *status) {
+// Sets a module's state under the kernel lock
+static void set_module_state(EmuEnvState &emuenv, KernelModule &module, ModuleState state) {
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+    module.set_state(state);
+}
+
+SceInt32 start_module(EmuEnvState &emuenv, KernelModule &module, SceSize args, Ptr<const void> argp, uint32_t *status) {
+    {
+        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+        switch (module.state) {
+        case ModuleState::loaded:
+            break;
+        case ModuleState::none:
+            return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+        case ModuleState::stopped:
+            return SCE_KERNEL_ERROR_MODULEMGR_STOPPED;
+        default:
+            return SCE_KERNEL_ERROR_MODULEMGR_STARTED;
+        }
+        module.set_state(ModuleState::starting);
+    }
     uint32_t ret = 0;
     if (module.info.start_entry) {
         LOG_DEBUG("Running module_start of library: {} at address {}", module.info.module_name, log_hex(module.info.start_entry.address()));
         if (const SceInt32 error = run_module_entry(emuenv, module, module.info.start_entry, module.start_thread_param, args, argp, ret); error < 0) {
             LOG_ERROR("Module {} can't run its module_start: {}", module.info.module_name, log_hex(error));
+            set_module_state(emuenv, module, ModuleState::loaded);
             return error;
         }
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module.info.module_name, module.info.path, log_hex(ret));
-        if (ret != SCE_KERNEL_START_SUCCESS)
-            LOG_ERROR("Module {} did not return successfully!", module.info.module_name);
     }
+    // A failed start leaves the module loaded, one with nothing to keep resident is unloaded
+    if (ret == SCE_KERNEL_START_FAILED) {
+        LOG_ERROR("Module {} did not start successfully!", module.info.module_name);
+        set_module_state(emuenv, module, ModuleState::loaded);
+        return SCE_KERNEL_ERROR_MODULEMGR_START_FAILED;
+    }
+    if (ret == SCE_KERNEL_START_NO_RESIDENT) {
+        set_module_state(emuenv, module, ModuleState::stopped);
+        unload_module(emuenv, module.info.modid);
+    } else
+        set_module_state(emuenv, module, ModuleState::resident);
     if (status)
         *status = ret;
     return SCE_KERNEL_OK;
 }
 
-SceInt32 stop_module(EmuEnvState &emuenv, const KernelModule &module, SceSize args, Ptr<const void> argp, uint32_t *status) {
+SceInt32 stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args, Ptr<const void> argp, uint32_t *status) {
+    {
+        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+        switch (module.state) {
+        case ModuleState::resident:
+            break;
+        case ModuleState::stopped:
+            return SCE_KERNEL_ERROR_MODULEMGR_STOPPED;
+        default:
+            return SCE_KERNEL_ERROR_MODULEMGR_NOT_STARTED;
+        }
+        module.set_state(ModuleState::stopping);
+    }
     uint32_t ret = 0;
     if (module.info.stop_entry) {
         LOG_DEBUG("Running module_stop of library: {} at address {}", module.info.module_name, log_hex(module.info.stop_entry.address()));
         if (const SceInt32 error = run_module_entry(emuenv, module, module.info.stop_entry, module.stop_thread_param, args, argp, ret); error < 0) {
             LOG_ERROR("Module {} can't run its module_stop: {}", module.info.module_name, log_hex(error));
+            set_module_state(emuenv, module, ModuleState::resident);
             return error;
         }
         LOG_INFO("Module {} (at \"{}\") module_stop returned {}", module.info.module_name, module.info.path, log_hex(ret));
-        if (ret != SCE_KERNEL_STOP_SUCCESS)
-            LOG_ERROR("Module {} did not stop successfully!", module.info.module_name);
     }
+    // A failed stop keeps the module started
+    if (ret == SCE_KERNEL_STOP_FAIL) {
+        LOG_ERROR("Module {} did not stop successfully!", module.info.module_name);
+        set_module_state(emuenv, module, ModuleState::resident);
+        return SCE_KERNEL_ERROR_MODULEMGR_STOP_FAIL;
+    }
+    set_module_state(emuenv, module, ModuleState::stopped);
     if (status)
         *status = ret;
     return SCE_KERNEL_OK;

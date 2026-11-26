@@ -492,6 +492,7 @@ enum SceKernelErrorCode : uint32_t {
     SCE_KERNEL_ERROR_MODULEMGR_BUSY = 0x8002D01D,
     SCE_KERNEL_ERROR_MODULEMGR_NOEXEC = 0x8002D01E,
     SCE_KERNEL_ERROR_MODULEMGR_NAMETOOLONG = 0x8002D01F,
+    SCE_KERNEL_ERROR_MODULEMGR_STOPPED = 0x8002D022,
     SCE_KERNEL_ERROR_LIBRARYDB_NOENT = 0x8002D080,
     SCE_KERNEL_ERROR_LIBRARYDB_NO_LIB = 0x8002D081,
     SCE_KERNEL_ERROR_LIBRARYDB_NO_MOD = 0x8002D082,
@@ -769,6 +770,10 @@ struct SceKernelModuleInfo {
     SceUInt state; //!< see:SceKernelModuleState
 };
 static_assert(sizeof(SceKernelModuleInfo) == 0x1B8);
+
+#define SCE_KERNEL_MODULE_STATE_READY 2
+#define SCE_KERNEL_MODULE_STATE_STARTED 6
+#define SCE_KERNEL_MODULE_STATE_ENDED 9
 
 // The thread parameters a module exports for the thread its start or stop function runs on
 struct SceKernelModuleThreadParam {

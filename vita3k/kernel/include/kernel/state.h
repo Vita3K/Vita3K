@@ -47,8 +47,19 @@ struct MemState;
 
 struct CodecEngineBlock;
 
+// Where a module is in its load, start, stop and unload
+enum class ModuleState : uint8_t {
+    none,
+    loaded,
+    starting,
+    resident,
+    stopping,
+    stopped,
+};
+
 struct KernelModule {
     SceKernelModuleInfo info;
+    ModuleState state;
     Ptr<const uint8_t> info_segment_address;
     uint32_t info_offset;
     // SCE_KERNEL_MODULE_FLAG_* bits
@@ -58,6 +69,9 @@ struct KernelModule {
     // The SceKernelModuleThreadParam blocks its start and stop threads take, 0 for none
     Address start_thread_param;
     Address stop_thread_param;
+
+    // Sets the state and the state the module info calls report
+    void set_state(ModuleState new_state);
 };
 using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 
@@ -234,7 +248,8 @@ struct KernelState {
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);
-    SceKernelModuleInfo *find_module_by_addr(Address address);
+    // A copy of the info of the module that holds the address, made under the kernel lock
+    std::optional<SceKernelModuleInfo> find_module_by_addr(Address address);
 
 private:
     // Deletes every thread, with mutex not held: a delete of a waiting thread may wait for the lock

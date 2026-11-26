@@ -36,32 +36,32 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
     return load_module(emuenv, path);
 }
 
-static SceUID kernel_start_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, Ptr<const void> argp, int *pRes) {
-    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
-    if (!module) {
-        const char *export_name = __FUNCTION__;
-        return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
-    }
+static int kernel_start_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, Ptr<const void> argp, int *pRes) {
     // The status is 0 unless module_start ran
     if (pRes)
         *pRes = 0;
+    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module) {
+        const char *export_name = __FUNCTION__;
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
+    }
     uint32_t status = 0;
     if (const SceInt32 error = start_module(emuenv, *module, args, argp, &status); error < 0)
         return error;
     if (pRes)
         *pRes = status;
-    return module->info.modid;
+    return SCE_KERNEL_OK;
 }
 
 static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, Ptr<const void> argp, int *pRes) {
+    // The status is 0 unless module_stop ran
+    if (pRes)
+        *pRes = 0;
     const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
     if (!module) {
         const char *export_name = __FUNCTION__;
-        return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
     }
-    // A stop that can't run leaves the module loaded
-    if (pRes)
-        *pRes = 0;
     uint32_t status = 0;
     if (const SceInt32 error = stop_module(emuenv, *module, args, argp, &status); error < 0)
         return error;
@@ -81,7 +81,13 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
     SceUID module_id = load_module(emuenv, moduleFileName);
     if (module_id < 0)
         return module_id;
-    return kernel_start_module(emuenv, module_id, args, argp, pRes);
+    // A start that fails unloads the module again
+    if (const int error = kernel_start_module(emuenv, module_id, args, argp, pRes); error < 0) {
+        if (const int unload_error = unload_module(emuenv, module_id); unload_error < 0)
+            return unload_error;
+        return error;
+    }
+    return module_id;
 }
 
 EXPORT(int, _sceKernelOpenModule) {
@@ -111,6 +117,8 @@ EXPORT(int, _sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void
 
 EXPORT(int, _sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt) {
     TRACY_FUNC(_sceKernelUnloadModule);
+    if (!lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
     return unload_module(emuenv, uid);
 }
 
@@ -147,7 +155,7 @@ EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
 
     auto module = emuenv.kernel.loaded_modules.find(modid);
     if (module == emuenv.kernel.loaded_modules.end()) {
-        return RET_ERROR(SCE_KERNEL_ERROR_LIBRARYDB_NO_MOD);
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
     }
 
     memcpy(info, &module->second->info, module->second->info.size);

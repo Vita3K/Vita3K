@@ -336,16 +336,32 @@ void KernelState::deinit(MemState &mem) {
     process_exiting = false;
 }
 
-SceKernelModuleInfo *KernelState::find_module_by_addr(Address address) {
+void KernelModule::set_state(ModuleState new_state) {
+    state = new_state;
+    switch (new_state) {
+    case ModuleState::loaded:
+    case ModuleState::starting:
+        info.state = SCE_KERNEL_MODULE_STATE_READY;
+        break;
+    case ModuleState::resident:
+        info.state = SCE_KERNEL_MODULE_STATE_STARTED;
+        break;
+    default:
+        info.state = SCE_KERNEL_MODULE_STATE_ENDED;
+        break;
+    }
+}
+
+std::optional<SceKernelModuleInfo> KernelState::find_module_by_addr(Address address) {
     const auto lock = std::lock_guard(mutex);
     for (auto &[_, mod] : loaded_modules) {
         for (auto &seg : mod->info.segments) {
             if (!seg.size)
                 continue;
             if (seg.vaddr.address() <= address && address <= seg.vaddr.address() + seg.memsz) {
-                return &mod->info;
+                return mod->info;
             }
         }
     }
-    return nullptr;
+    return std::nullopt;
 }

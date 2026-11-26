@@ -447,7 +447,7 @@ module_start_no_thread          fail     # there is no thread limit per process,
 module_start_thread             pass
 module_start_threads            fail     # libfiber and libjson don't load without firmware
 module_start_vfp                pass
-module_states                   fail     # a module has no state, so the module calls never refuse a start, stop or unload and two loads of a file give the same module
+module_states                   fail     # two loads of one file give the same module, the linker has one export table
 module_text_padding             fail     # the app's code isn't a memory block
 module_thread_param_affinity    pass
 module_thread_params            pass
@@ -711,7 +711,7 @@ sync_object_memory_cost         fail     # kernel objects take no main memory
 syscall_callee_saved            pass
 syscall_io_calls                fail     # the underscore sceIo calls that the libkernel exports reach aren't implemented
 syscall_lw_mutex_lock           fail     # the lightweight mutex lock call ignores its callback argument, so a waiter's callback doesn't run during the wait
-syscall_module_blocks           fail     # the module calls don't read the flags, option and status block, and a stopped module starts again
+syscall_module_blocks           fail     # the module calls don't read the flags, option and status block
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
 syscall_vfp_clobber             pass

@@ -540,6 +540,8 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
+        // The main module runs from the main thread, so it is started from the load on
+        module->set_state(ModuleState::resident);
         emuenv.kernel.auth_id = module->auth_id;
         uint32_t module_nid = 0;
         {
@@ -756,11 +758,15 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
     // Before any guest code runs
     gxm::init_compat_mask(emuenv, main_thread->id);
 
-    // Run `module_start` export (entry point) of loaded libraries
-    for (auto &[_, module] : emuenv.kernel.loaded_modules) {
+    // Run `module_start` export (entry point) of loaded libraries. A start can unload its module, so
+    // the modules are listed first.
+    std::vector<SceKernelModulePtr> libraries;
+    for (const auto &[_, module] : emuenv.kernel.loaded_modules) {
         if (module->info.modid != main_module_id)
-            start_module(emuenv, *module);
+            libraries.push_back(module);
     }
+    for (const SceKernelModulePtr &module : libraries)
+        start_module(emuenv, *module);
 
     SceKernelThreadOptParam param{ 0, 0 };
     std::vector<std::string> cfg_args;
