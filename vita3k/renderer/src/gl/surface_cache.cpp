@@ -75,10 +75,14 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
         return;
 
     const int row_length = source_width * source_bpp / dest_bpp;
-    const int copy_width = std::min(dest_width, row_length - skip_pixels);
+    // the skipped pixels are read from the buffer offset, so that the end of a row is the start of the next one
+    const int copy_width = (dest_width <= row_length) ? dest_width : row_length - skip_pixels;
     if (copy_width <= 0)
         return;
     const std::size_t copy_size = static_cast<std::size_t>(source_width) * source_bpp * height;
+    const std::size_t skip_size = static_cast<std::size_t>(skip_pixels) * dest_bpp;
+    // the skipped bytes are less than a source pixel
+    const std::size_t tail_size = skip_size != 0 ? static_cast<std::size_t>(source_bpp) : 0;
 
     if (!typeless_copy_buffer[0]) {
         if (!typeless_copy_buffer.init(glGenBuffers, glDeleteBuffers)) {
@@ -87,11 +91,11 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
         }
     }
 
-    if (copy_size > typeless_copy_buffer_size) {
+    if (copy_size + tail_size > typeless_copy_buffer_size) {
         glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, copy_size, nullptr, GL_STATIC_COPY);
+        glBufferData(GL_PIXEL_PACK_BUFFER, copy_size + tail_size, nullptr, GL_STATIC_COPY);
 
-        typeless_copy_buffer_size = copy_size;
+        typeless_copy_buffer_size = copy_size + tail_size;
     }
 
     GLint pack_alignment, unpack_alignment;
@@ -102,13 +106,23 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, typeless_copy_buffer[0]);
     glGetTextureSubImage(source_texture, 0, source_x, y, 0, source_width, height, 1, source_format, source_type, static_cast<GLsizei>(copy_size), nullptr);
+    if (skip_size != 0) {
+        // the last column of the last row holds the start of the next stored row
+        GLint source_height = 0;
+        glGetTextureLevelParameteriv(source_texture, 0, GL_TEXTURE_HEIGHT, &source_height);
+        if (y + height < source_height) {
+            glGetTextureSubImage(source_texture, 0, source_x, y + height, 0, 1, 1, 1, source_format, source_type, static_cast<GLsizei>(tail_size), reinterpret_cast<void *>(copy_size));
+        } else {
+            // past the last row of the surface
+            const GLubyte zero = 0;
+            glClearBufferSubData(GL_PIXEL_PACK_BUFFER, GL_R8, static_cast<GLintptr>(copy_size), static_cast<GLsizeiptr>(skip_size), GL_RED, GL_UNSIGNED_BYTE, &zero);
+        }
+    }
     glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_NONE);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, typeless_copy_buffer[0]);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, skip_pixels);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, copy_width, height, dest_upload_format, dest_type, nullptr);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, copy_width, height, dest_upload_format, dest_type, reinterpret_cast<const void *>(skip_size));
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
 
@@ -182,7 +196,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // The last row of the region ends at its width, not a whole stride later: a region in the bottom right
         // corner of the surface (an atlas tile, for example) ends exactly where the surface ends
         const std::size_t region_end = original_height ? bytes_per_stride * (original_height - 1) + original_width * color::bytes_per_pixel(base_format) : 0;
-        bool addr_in_range_of_cache = ((key + region_end) <= (ite->first + info.total_bytes));
+        // A texture reading the second half of the stored pixels (Uncharted's normals in its G-buffer)
+        // goes past the surface by less than a stored pixel on its last row
+        const std::size_t stored_bpp = color::bytes_per_pixel(info.format);
+        const std::size_t read_overrun = (purpose == SurfaceTextureRetrievePurpose::READING && stored_bpp > color::bytes_per_pixel(base_format)) ? stored_bpp - 1 : 0;
+        bool addr_in_range_of_cache = ((key + region_end) <= (ite->first + info.total_bytes + read_overrun));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
