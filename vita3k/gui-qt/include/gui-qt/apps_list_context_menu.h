@@ -57,6 +57,7 @@ private:
         fs::path shader_log_alt;
         fs::path export_textures;
         fs::path import_textures;
+        fs::path screenshots;
     };
 
     AppPaths make_app_paths(const app::AppEntry &app) const;
