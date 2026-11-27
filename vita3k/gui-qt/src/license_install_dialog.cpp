@@ -21,6 +21,7 @@
 #include <emuenv/state.h>
 #include <packages/license.h>
 #include <util/fs.h>
+#include <util/log.h>
 
 #include <QCheckBox>
 #include <QDialogButtonBox>
@@ -85,10 +86,8 @@ void LicenseInstallDialog::install_from_file() {
         // fs::remove throws and crashes the app when the file is locked so use the non throwing overload
         std::error_code error;
         fs::remove(license_path, error);
-        if (error) {
-            QMessageBox::warning(this, tr("Could Not Delete Files"),
-                tr("The following files could not be deleted. They may still be open in another program:\n\n%1").arg(QString::fromStdString(license_path.filename().string())));
-        }
+        if (error)
+            LOG_WARN("Failed to remove {}: {}", license_path, error.message());
     }
     accept();
 }
