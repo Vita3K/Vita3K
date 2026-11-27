@@ -166,6 +166,9 @@ bool is_valid_addr_len(const MemState &state, Address addr, uint32_t len) {
     // An empty range reads nothing
     if (len == 0)
         return true;
+    // The null pages are reserved, not guest memory
+    if (addr < state.host_page_size)
+        return false;
     const uint64_t end = static_cast<uint64_t>(addr) + len;
     if (end > (UINT64_C(1) << 32))
         return false;
