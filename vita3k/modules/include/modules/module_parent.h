@@ -54,6 +54,13 @@ using ModuleStatus = std::expected<uint32_t, SceInt32>;
 ModuleStatus start_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
 ModuleStatus stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
 
+// The module calls without the checks of the user syscalls. A load and start that fails to load
+// leaves the status as it was, else the status is 0 unless the entry ran.
+SceUID kernel_load_start_module(EmuEnvState &emuenv, const char *export_name, const char *path, SceSize args, Ptr<const void> argp, SceInt32 *status);
+int kernel_start_module(EmuEnvState &emuenv, const char *export_name, SceUID module_id, SceSize args, Ptr<const void> argp, SceInt32 *status);
+int kernel_stop_module(EmuEnvState &emuenv, const char *export_name, SceUID module_id, SceSize args, Ptr<const void> argp, SceInt32 *status);
+int kernel_stop_unload_module(EmuEnvState &emuenv, const char *export_name, SceUID module_id, SceSize args, Ptr<const void> argp, SceInt32 *status);
+
 // Load, unload and check a sysmodule id like sysmodule does, for an id the caller has checked. The
 // loads and unloads return the error of the module that failed.
 SceInt32 load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);

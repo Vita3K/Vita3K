@@ -1536,9 +1536,12 @@ EXPORT(SceUID, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *op
     return CALL_EXPORT(_sceKernelLoadModule, path, flags, option);
 }
 
-EXPORT(SceUID, sceKernelLoadStartModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+EXPORT(SceUID, sceKernelLoadStartModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, Ptr<const void> pOpt, Ptr<SceInt32> pRes) {
     TRACY_FUNC(sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
-    return CALL_EXPORT(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
+    // libkernel passes the arguments after argp in a block on the caller's stack
+    const GuestStackAlloc block(*emuenv.kernel.get_thread(thread_id)->cpu, sizeof(SceKernelModuleCall_opt));
+    *Ptr<SceKernelModuleCall_opt>(block.address()).get(emuenv.mem) = { flags, pOpt, pRes, 0 };
+    return CALL_EXPORT(_sceKernelLoadStartModule, moduleFileName, args, argp, Ptr<const SceKernelModuleCall_opt>(block.address()));
 }
 
 EXPORT(int, sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
@@ -1800,9 +1803,12 @@ EXPORT(int, sceKernelStackChkFail) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelStartModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStartModuleOpt *pOpt, int *pRes) {
+EXPORT(int, sceKernelStartModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, Ptr<const void> pOpt, Ptr<SceInt32> pRes) {
     TRACY_FUNC(sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
-    return CALL_EXPORT(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
+    // libkernel passes the arguments after argp in a block on the caller's stack
+    const GuestStackAlloc block(*emuenv.kernel.get_thread(thread_id)->cpu, sizeof(SceKernelModuleCall_opt));
+    *Ptr<SceKernelModuleCall_opt>(block.address()).get(emuenv.mem) = { flags, pOpt, pRes, 0 };
+    return CALL_EXPORT(_sceKernelStartModule, uid, args, argp, Ptr<const SceKernelModuleCall_opt>(block.address()));
 }
 
 EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, const Ptr<void> argp) {
@@ -1810,14 +1816,20 @@ EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, const Ptr<void> a
     return CALL_EXPORT(_sceKernelStartThread, thid, arglen, argp);
 }
 
-EXPORT(int, sceKernelStopModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStopModuleOpt *pOpt, int *pRes) {
+EXPORT(int, sceKernelStopModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, Ptr<const void> pOpt, Ptr<SceInt32> pRes) {
     TRACY_FUNC(sceKernelStopModule, uid, args, argp, flags, pOpt, pRes);
-    return CALL_EXPORT(_sceKernelStopModule, uid, args, argp, flags, pOpt, pRes);
+    // libkernel passes the arguments after argp in a block on the caller's stack
+    const GuestStackAlloc block(*emuenv.kernel.get_thread(thread_id)->cpu, sizeof(SceKernelModuleCall_opt));
+    *Ptr<SceKernelModuleCall_opt>(block.address()).get(emuenv.mem) = { flags, pOpt, pRes, 0 };
+    return CALL_EXPORT(_sceKernelStopModule, uid, args, argp, Ptr<const SceKernelModuleCall_opt>(block.address()));
 }
 
-EXPORT(int, sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const void *pOpt, int *pRes) {
+EXPORT(int, sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, Ptr<const void> pOpt, Ptr<SceInt32> pRes) {
     TRACY_FUNC(sceKernelStopUnloadModule, uid, args, argp, flags, pOpt, pRes);
-    return CALL_EXPORT(_sceKernelStopUnloadModule, uid, args, argp, flags, pOpt, pRes);
+    // libkernel passes the arguments after argp in a block on the caller's stack
+    const GuestStackAlloc block(*emuenv.kernel.get_thread(thread_id)->cpu, sizeof(SceKernelModuleCall_opt));
+    *Ptr<SceKernelModuleCall_opt>(block.address()).get(emuenv.mem) = { flags, pOpt, pRes, 0 };
+    return CALL_EXPORT(_sceKernelStopUnloadModule, uid, args, argp, Ptr<const SceKernelModuleCall_opt>(block.address()));
 }
 
 EXPORT(int, sceKernelTryLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count) {
