@@ -33,6 +33,7 @@
 #include <packages/license.h>
 #include <packages/sce_types.h>
 #include <util/find.h>
+#include <util/fs.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -262,7 +263,15 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         }
     }
 
-    if (emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
+    // A rePatch replacement is looked at first, so a module only found there loads too
+    fs::path repatch_module;
+    if (device_for_icase == VitaIoDevice::app0) {
+        repatch_module = find_repatch_path(emuenv.io, emuenv.vita_fs_path, translated_module_path.string());
+        if (!fs::is_regular_file(repatch_module))
+            repatch_module.clear();
+    }
+
+    if (repatch_module.empty() && emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
         // Attempt a case-insensitive file search.
         const auto original_translated_module_path = translated_module_path;
         const auto cached_path = find_in_cache(emuenv.io, string_utils::tolower(translated_module_path.string()));
@@ -285,7 +294,9 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
 
     vfs::FileBuffer module_buffer;
     bool res;
-    if (device == VitaIoDevice::app0)
+    if (!repatch_module.empty())
+        res = fs_utils::read_data(repatch_module, module_buffer);
+    else if (device == VitaIoDevice::app0)
         res = vfs::read_app_file(module_buffer, emuenv.vita_fs_path, emuenv.io.app_path, translated_module_path);
     else
         res = vfs::read_file(device, module_buffer, emuenv.vita_fs_path, translated_module_path);

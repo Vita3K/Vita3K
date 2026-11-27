@@ -23,7 +23,9 @@
 
 #include <map>
 #include <mutex>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 // Class for all needed information to access files on Vita3K.
 class FileStats : public VitaStats {
@@ -80,6 +82,10 @@ public:
 class DirStats : public VitaStats {
     // Shared directory pointer
     DirPtr dir_ptr;
+    // Listed after dir_ptr when two directories are merged, skipping the names dir_ptr already gave
+    DirPtr base_ptr;
+    bool listing_repatch = false;
+    std::unordered_set<std::string> listed;
 
 public:
     std::mutex mutex;
@@ -97,6 +103,36 @@ public:
 
     auto get_dir_ptr() const {
         return get_system_dir_ptr(dir_ptr);
+    }
+
+    // The directory being listed is the rePatch one, base (which may be null) is listed after it
+    void merge_base(DirPtr base) {
+        base_ptr = std::move(base);
+        listing_repatch = true;
+    }
+
+    // Moves on to the merged base directory once the first one is exhausted
+    bool next_dir() {
+        if (!base_ptr)
+            return false;
+        dir_ptr = std::move(base_ptr);
+        base_ptr = nullptr;
+        listing_repatch = false;
+        return true;
+    }
+
+    // True while the entries come from the rePatch directory
+    bool is_listing_repatch() const {
+        return listing_repatch;
+    }
+
+    // name is lower case. True if the entry must be skipped as the first directory already listed it.
+    bool is_shadowed(const std::string &name) {
+        if (base_ptr)
+            listed.insert(name);
+        else
+            return listed.contains(name);
+        return false;
     }
 
     bool is_directory() const {

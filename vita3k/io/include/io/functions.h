@@ -41,6 +41,14 @@ void io_deinit(IOState &io);
 bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &translated_path, const fs::path &system_path);
 fs::path find_in_cache(IOState &io, const std::string &system_path);
 
+/**
+ * @brief Find the rePatch replacement of an app0: path (ux0:rePatch/<title_id>/<relative path>)
+ *
+ * @param translated_path The path as translated by translate_path for app0:
+ * @return The existing file or directory inside the rePatch folder, or an empty path if there is none
+ */
+fs::path find_repatch_path(const IOState &io, const fs::path &vita_fs_path, const std::string &translated_path);
+
 fs::path expand_path(IOState &io, const char *path, const fs::path &vita_fs_path);
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
 

@@ -586,7 +586,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
         if ((process_preload_disabled & code) == 0) {
             if (is_lle_module(name, emuenv)) {
                 const auto module_name_file = fmt::format("{}.suprx", name);
-                if (load_from_app && fs::exists(module_app_path / module_name_file))
+                if (load_from_app && (fs::exists(module_app_path / module_name_file) || fs::is_regular_file(find_repatch_path(emuenv.io, emuenv.vita_fs_path, emuenv.io.device_paths.app0 + "/sce_module/" + module_name_file))))
                     lib_load_list.emplace_back(fmt::format("app0:sce_module/{}", module_name_file));
                 else if (fs::exists(emuenv.vita_fs_path / "vs0/sys/external" / module_name_file))
                     lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
