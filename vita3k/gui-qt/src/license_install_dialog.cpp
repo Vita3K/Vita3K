@@ -87,7 +87,7 @@ void LicenseInstallDialog::install_from_file() {
         std::error_code error;
         fs::remove(license_path, error);
         if (error)
-            LOG_WARN("Failed to remove {}: {}", license_path, error.message());
+            LOG_ERROR("Failed to remove {}: {}", license_path, error.message());
     }
     accept();
 }
