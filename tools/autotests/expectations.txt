@@ -149,7 +149,7 @@ cond_info_after_mutex_delete    pass
 cond_mutex_cancel_during_wait   pass
 cond_mutex_delete               pass
 cond_mutex_delete_order         skip     # threads ignore their core and priority, so the order in which the condition waiter and the mutex waiter run after the mutex delete ends both waits is host thread order
-cond_mutex_delete_wake_dispatch fail     # threads ignore their priority, so a mutex or lightweight condition waiter a mutex delete wakes runs only later
+cond_mutex_delete_wake_dispatch skip     # threads ignore their core and priority, so whether a waiter the mutex delete wakes already ran when the delete returns is a race
 cond_mutex_delete_wakes         pass
 cond_owner_end_relock           pass
 cond_relock_callback_notify     pass
@@ -439,10 +439,18 @@ memblock_uid_no_reuse           fail     # an opened block gets its original's U
 memblock_unaligned_access       pass
 memblock_vaddr_paddr            pass
 misc_edges                      fail     # two openable objects with the same name
-module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
-module_start_threads            fail     # thread event handlers don't run for module start and stop threads
+module_library_copies           fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
+module_library_nolink           fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
+module_library_partial_start    fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
+module_library_partial_stop     fail     # a stub that no library is linked to calls the HLE function of its NID, so it has another form
+module_start_no_thread          fail     # there is no thread limit per process, so the threads for module start and stop are always made
+module_start_thread             pass
+module_start_threads            fail     # libfiber and libjson don't load without firmware
 module_start_vfp                pass
+module_states                   pass
 module_text_padding             fail     # the app's code isn't a memory block
+module_thread_param_affinity    pass
+module_thread_params            pass
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_async_partial_receive   fail     # message pipe calls with DONT_WAIT finish at once like a try instead of in the background
@@ -701,11 +709,18 @@ suspended_nonobject_waits       pass
 sync_chstat_pread_dread         crash    # sceIoPread into a NULL buffer is written through as a host pointer and segfaults
 sync_object_memory_cost         fail     # kernel objects take no main memory
 syscall_callee_saved            pass
+syscall_io_calls                fail     # the underscore sceIo calls that the libkernel exports reach aren't implemented
+syscall_lw_mutex_lock           fail     # the lightweight mutex lock call ignores its callback argument, so a waiter's callback doesn't run during the wait
+syscall_module_blocks           fail     # the module calls don't read the flags, option and status block
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
 syscall_vfp_clobber             pass
 syscall_vfp_helpers             fail     # kernel calls change FPSCR and keep d0, d1 and d16, the Vita keeps FPSCR and clobbers those in some calls
+syscall_wait_blocks             timeout  # the event flag and simple event calls don't read the result and timeout block, so a wait with a timeout never ends
 sysmodule                       fail     # system modules don't load without firmware
+sysmodule_ids                   pass
+sysmodule_lock_during_start     fail     # libfiber doesn't load without firmware
+sysmodule_partial               fail     # the location modules don't load without firmware, and there is no thread limit per process
 system_font_blocks              crash    # opening the system font blocks by name
 system_info                     fail     # the active CPU mask, size checks and per-core counters
 system_info_counters            fail     # core 0 never goes idle, so its idle and wake counters stay flat
@@ -810,7 +825,7 @@ thread_stack_zero               pass
 thread_start_arg_limit          pass
 thread_start_arg_registers      pass
 thread_start_cpsr               pass
-thread_start_handler_preempt    fail     # threads ignore their core and priority, so T doesn't preempt its starter when it starts
+thread_start_handler_preempt    skip     # threads ignore their core and priority, so whether T runs before its starter goes on is a race
 thread_start_races              pass
 thread_start_registers          pass
 thread_state                    pass

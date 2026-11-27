@@ -158,7 +158,7 @@ ThreadState::~ThreadState() {
     assert(held_flags.empty() && held_mutexes.empty() && held_rwlocks.empty());
 }
 
-int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
+int ThreadState::start(SceSize arglen, const Ptr<void> argp) {
     const std::lock_guard<std::mutex> thread_lock(thread_mutex);
     if (running_event_handlers)
         return SCE_KERNEL_ERROR_ILLEGAL_CONTEXT;
@@ -177,7 +177,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     } else {
         arglen = 0;
     }
-    begin_run(ctx, { arglen, data_addr }, run_entry_callback);
+    begin_run(ctx, { arglen, data_addr }, true);
     return SCE_KERNEL_OK;
 }
 
@@ -492,10 +492,10 @@ void ThreadState::dispatch_abort(Address fault_addr) {
     cpu.set_context(interrupted);
 }
 
-uint32_t ThreadState::start_and_wait(SceSize args, const Ptr<void> argp) {
-    // A refused start leaves the thread dormant, so its error is the result
+std::expected<uint32_t, int> ThreadState::start_and_wait(SceSize args, const Ptr<void> argp) {
+    // A refused start leaves the thread dormant
     if (const int error = start(args, argp))
-        return error;
+        return std::unexpected(error);
     std::unique_lock<std::mutex> lock(thread_mutex);
     cv.wait(lock, [&] { return status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
     return returned_value;

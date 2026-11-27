@@ -50,12 +50,13 @@
 #define SCE_KERNEL_STACK_SIZE_USER_MAIN KiB(256)
 #define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KiB(4)
 #define SCE_KERNEL_THREAD_STACK_SIZE_MAX MiB(32)
+#define SCE_KERNEL_MODULE_ENTRY_STACK_SIZE KiB(16)
+#define SCE_KERNEL_MODULE_ENTRY_STACK_SIZE_GAME KiB(256)
 
 // The thread attributes that can be set when creating a thread. SCE_KERNEL_THREAD_ATTR_USER is always set, and the others are optional.
 #define SCE_KERNEL_THREAD_ATTR_USER 0x80000000U
 #define SCE_KERNEL_THREAD_ATTR_NOUSE_VFP 0x01000000U
 #define SCE_KERNEL_THREAD_ATTR_VM 0x04000000U
-#define SCE_KERNEL_THREAD_ATTR_UNKNOWN_2000 0x00002000U
 
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
 #define SCE_KERNEL_THREAD_INITIAL_FPSCR (arm::FPSCR_DN | arm::FPSCR_FZ)
@@ -73,6 +74,8 @@
 // The bits that order the threads waiting on a sync object, separately for each object type
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
 #define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
+// Lets a suspend request end a kernel mode wait on the object, only a kernel caller sets it
+#define SCE_KERNEL_ATTR_SUSPEND_ENDS_WAITS 0x00008000U
 
 // Lets sceKernelOpen* find the object by name
 #define SCE_KERNEL_ATTR_OPENABLE 0x00000080U
@@ -171,6 +174,15 @@
 #define SCE_ERROR_ERRNO_ENOSYS 0x80010058
 
 constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
+
+#define SCE_KERNEL_MODULE_FLAG_PRELOAD 0x1000
+// The process's main module, which is linked at its start and runs no module_start
+#define SCE_KERNEL_MODULE_FLAG_MAIN 0x4000
+
+#define SCE_KERNEL_EXPORT_ATTR_AUTO_EXPORT 0x0001
+#define SCE_KERNEL_EXPORT_ATTR_NOLINK_EXPORT 0x0004
+#define SCE_KERNEL_EXPORT_ATTR_SYSLIB 0x8000
+#define SCE_KERNEL_IMPORT_ATTR_WEAK_IMPORT 0x0008
 
 enum SceKernelModel {
     SCE_KERNEL_MODEL_VITA = 0x10000,
@@ -487,6 +499,7 @@ enum SceKernelErrorCode : uint32_t {
     SCE_KERNEL_ERROR_MODULEMGR_BUSY = 0x8002D01D,
     SCE_KERNEL_ERROR_MODULEMGR_NOEXEC = 0x8002D01E,
     SCE_KERNEL_ERROR_MODULEMGR_NAMETOOLONG = 0x8002D01F,
+    SCE_KERNEL_ERROR_MODULEMGR_STOPPED = 0x8002D022,
     SCE_KERNEL_ERROR_LIBRARYDB_NOENT = 0x8002D080,
     SCE_KERNEL_ERROR_LIBRARYDB_NO_LIB = 0x8002D081,
     SCE_KERNEL_ERROR_LIBRARYDB_NO_MOD = 0x8002D082,
@@ -723,6 +736,11 @@ enum SceSysmoduleErrorCode : uint32_t {
     SCE_SYSMODULE_ERROR_FATAL = 0x805A10FF
 };
 
+// The sizes of the module table and the public and internal id tables of sysmodule
+#define SYSMODULE_MODULE_COUNT 125
+#define SYSMODULE_COUNT 0x56
+#define SYSMODULE_INTERNAL_COUNT 0x2A
+
 typedef SceUInt64 SceKernelSysClock;
 typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
 
@@ -759,6 +777,20 @@ struct SceKernelModuleInfo {
     SceUInt state; //!< see:SceKernelModuleState
 };
 static_assert(sizeof(SceKernelModuleInfo) == 0x1B8);
+
+#define SCE_KERNEL_MODULE_STATE_READY 2
+#define SCE_KERNEL_MODULE_STATE_STARTED 6
+#define SCE_KERNEL_MODULE_STATE_ENDED 9
+
+// The thread parameters a module exports for the thread its start or stop function runs on
+struct SceKernelModuleThreadParam {
+    SceUInt32 size; // only a block of size 4 is taken
+    SceInt32 priority;
+    SceSize stack_size;
+    SceUInt32 unused;
+    SceInt32 cpu_affinity_mask;
+};
+static_assert(sizeof(SceKernelModuleThreadParam) == 0x14);
 
 struct SceKernelStartModuleOpt {
     SceSize size;

@@ -21,8 +21,11 @@
 #include <module/bridge.h>
 #include <util/types.h>
 
+#include <expected>
+
 struct CPUState;
 struct EmuEnvState;
+struct KernelModule;
 struct KernelState;
 
 void init_libraries(EmuEnvState &emuenv);
@@ -39,21 +42,26 @@ bool has_hle_implementation(uint32_t nid);
  * \param module_path Full path of module file (with device)
  * \return UID of the loaded module object or SCE_ERROR on failure
  */
-SceUID load_module(EmuEnvState &emuenv, const std::string &module_path);
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, uint16_t flags = 0);
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
 
-uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
-uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
+// What a module's start or stop function returned, or the error that kept it from running or that
+// its result gives
+using ModuleStatus = std::expected<uint32_t, SceInt32>;
 
-/**
- * \brief Loads and run a system module
- * \param emuenv PlayStation Vita emulated environment
- * \param module_id System Module ID of the module to load
- * \return False on failure, true on success
- */
-bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
-int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
-bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
+// Run a module's module_start or module_stop. They fail for a module in the wrong state, for a start
+// or stop that can't run and for one that fails.
+ModuleStatus start_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
+ModuleStatus stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
+
+// Load, unload and check a sysmodule id like sysmodule does, for an id the caller has checked. The
+// loads and unloads return the error of the module that failed.
+SceInt32 load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
+SceInt32 unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
+bool is_sys_module_loaded(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
+SceInt32 load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
+SceInt32 unload_sys_module_internal(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id);
+bool is_sys_module_internal_loaded(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id);
 
 void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid);
 

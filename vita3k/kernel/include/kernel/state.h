@@ -33,6 +33,7 @@
 
 #include <emuenv/app_launch_request.h>
 
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <functional>
@@ -46,10 +47,43 @@ struct MemState;
 
 struct CodecEngineBlock;
 
+// Where a module is in its load, start, stop and unload
+enum class ModuleState : uint8_t {
+    none,
+    loaded,
+    starting,
+    resident,
+    stopping,
+    stopped,
+};
+
+// An export library of a module, in the process list while the module is started
+struct ExportLibrary {
+    // The export entry in the module's memory
+    Address entry;
+    // The next library in the process list
+    ExportLibrary *next;
+    // The library of the same NID and name this one hides from the list
+    ExportLibrary *older;
+    bool registered;
+};
+
 struct KernelModule {
     SceKernelModuleInfo info;
+    ModuleState state;
     Ptr<const uint8_t> info_segment_address;
     uint32_t info_offset;
+    // SCE_KERNEL_MODULE_FLAG_* bits
+    uint16_t flags;
+    // The program authority ID from the SELF's app info, 0 for a plain ELF
+    uint64_t auth_id;
+    // The SceKernelModuleThreadParam blocks its start and stop threads take, 0 for none
+    Address start_thread_param;
+    Address stop_thread_param;
+    std::vector<ExportLibrary> libraries;
+
+    // Sets the state and the state the module info calls report
+    void set_state(ModuleState new_state);
 };
 using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 
@@ -75,8 +109,25 @@ struct CodecEngineBlock {
     int32_t vaddr;
 };
 
-using LoadedSysmodules = std::map<SceSysmoduleModuleId, std::vector<SceUID>>;
-using LoadedInternalSysmodules = std::vector<SceSysmoduleInternalModuleId>;
+// A module of the sysmodule table: how many loaded ids use it and its UID, -1 for one it skipped
+struct SysmoduleRecord {
+    uint32_t count = 0;
+    SceUID uid = 0;
+};
+
+// A sysmodule id: how many loads it has and how many of its modules are loaded so far
+struct SysmoduleSlot {
+    uint16_t count = 0;
+    uint16_t progress = 0;
+};
+
+// What sysmodule keeps for the process, a load or unload holds the mutex all along
+struct Sysmodules {
+    std::mutex mutex;
+    std::array<SysmoduleRecord, SYSMODULE_MODULE_COUNT> records;
+    std::array<SysmoduleSlot, SYSMODULE_COUNT> ids;
+    std::array<SysmoduleSlot, SYSMODULE_INTERNAL_COUNT> internal_ids;
+};
 
 struct CorenumAllocator {
     BitmapAllocator alloc;
@@ -91,12 +142,19 @@ struct CorenumAllocator {
 struct VarBindingInfo {
     void *entries;
     uint32_t size;
-    uint32_t module_nid;
+    const KernelModule *module;
 };
 
+// An imported function's stub and the fields of its import entry
 struct FuncBindingInfo {
     Address entry_address;
     uint32_t library_nid;
+    Address library_name;
+    uint16_t version;
+    // SCE_KERNEL_IMPORT_ATTR_* bits
+    uint16_t attr;
+    // The library the stub is linked to, null when it calls the HLE function or an export no library owns
+    const ExportLibrary *library;
 };
 
 using VarBindingInfos = std::multimap<uint32_t, VarBindingInfo>;
@@ -124,14 +182,19 @@ struct KernelState {
     void *jni_activity;
 
     SceKernelModuleInfoPtrs loaded_modules;
-    LoadedSysmodules loaded_sysmodules;
-    LoadedInternalSysmodules loaded_internal_sysmodules;
+    // The app's program authority ID, the one of its main module
+    uint64_t auth_id = 0;
+    Sysmodules sysmodules;
 
     // the variables in this block must be accessed by first locking export_nids_mutex
     std::mutex export_nids_mutex;
     ExportNids export_nids;
     LibExportNids export_nids_by_lib;
     ExportNidOwners export_nid_owners;
+    // The stub word of each imported variable that no library exports
+    ExportNids var_stubs;
+    // The export libraries an import can link to, the newest first
+    ExportLibrary *libraries = nullptr;
     FuncBindingInfos func_binding_infos;
     VarBindingInfos var_binding_infos;
     ModuleUidByNid module_uid_by_nid;
@@ -208,7 +271,8 @@ struct KernelState {
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);
-    SceKernelModuleInfo *find_module_by_addr(Address address);
+    // A copy of the info of the module that holds the address, made under the kernel lock
+    std::optional<SceKernelModuleInfo> find_module_by_addr(Address address);
 
 private:
     // Deletes every thread, with mutex not held: a delete of a waiting thread may wait for the lock

@@ -20,10 +20,12 @@
 #include <cpu/arm.h>
 #include <io/device.h>
 #include <io/vfs.h>
+#include <kernel/load_self.h>
 #include <kernel/state.h>
 #include <mem/functions.h>
 #include <modules/module_parent.h>
 #include <nids/functions.h>
+#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/tracy.h>
 
@@ -562,8 +564,8 @@ EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
     // Find the import stub for this NID in the specified module
     Address stub_addr;
     {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         stub_addr = find_import_stub_in_module(emuenv, module_name, func_nid);
     }
 
@@ -663,18 +665,9 @@ EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
         const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const auto &loaded_modules = emuenv.kernel.loaded_modules;
         for (const auto &[uid, mod] : loaded_modules) {
-            if (std::string(mod->info.module_name) == module) {
-                // Find module_nid via reverse lookup in module_uid_by_nid
-                uint32_t mod_nid = 0;
-                {
-                    const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
-                    for (const auto &[nid, mapped_uid] : emuenv.kernel.module_uid_by_nid) {
-                        if (mapped_uid == uid) {
-                            mod_nid = nid;
-                            break;
-                        }
-                    }
-                }
+            // A module being unloaded may have freed its segments already
+            if (mod->state != ModuleState::none && std::string(mod->info.module_name) == module) {
+                const uint32_t mod_nid = mod->info_segment_address ? module_nid(emuenv.mem, *mod) : 0;
                 fill_info(uid, mod->info.module_name, mod_nid,
                     mod->info.segments[0].vaddr.address(),
                     mod->info.segments[0].memsz);
@@ -923,12 +916,15 @@ EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args
     if (uid < 0)
         return uid;
 
-    {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-        if (mod_it != emuenv.kernel.loaded_modules.end()) {
-            start_module(emuenv, mod_it->second->info);
-        }
+    // The start thread takes the kernel lock, so it runs after the lookup lets it go
+    const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module)
+        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+    // A start that fails unloads the module again
+    if (const ModuleStatus status = start_module(emuenv, *module); !status) {
+        if (const int unload_error = unload_module(emuenv, uid); unload_error < 0)
+            return unload_error;
+        return status.error();
     }
     return uid;
 }
@@ -943,12 +939,15 @@ EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args
     if (uid < 0)
         return uid;
 
-    {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
-        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-        if (mod_it != emuenv.kernel.loaded_modules.end()) {
-            start_module(emuenv, mod_it->second->info);
-        }
+    // The start thread takes the kernel lock, so it runs after the lookup lets it go
+    const SceKernelModulePtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module)
+        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+    // A start that fails unloads the module again
+    if (const ModuleStatus status = start_module(emuenv, *module); !status) {
+        if (const int unload_error = unload_module(emuenv, uid); unload_error < 0)
+            return unload_error;
+        return status.error();
     }
     return uid;
 }
@@ -1053,8 +1052,8 @@ EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 
     Address stub_addr;
     {
-        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         stub_addr = find_import_stub_in_module(emuenv, module, import_func_nid);
     }
 
@@ -1289,87 +1288,36 @@ void load_taihen_config(EmuEnvState &emuenv) {
     }
 }
 
-// Register an HLE override for a kubridge export NID.
-// Creates an SVC stub in ARM memory, overwrites export_nids, and re-patches
-// any existing func_binding_infos so that callers dispatch to HLE C++ instead
-// of kubridge's ARM code (which uses firmware-specific offsets and MMU ops).
-static void register_hle_override(EmuEnvState &emuenv, uint32_t nid) {
-    auto &kernel = emuenv.kernel;
-    auto &mem = emuenv.mem;
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-
-    // Allocate 12 bytes for an SVC stub: svc #0; mov pc, lr; NID
-    Address stub_addr = alloc(mem, 12, "kubridge_hle_override");
-    if (!stub_addr) {
-        LOG_ERROR("register_hle_override: failed to allocate stub for NID {}", log_hex(nid));
-        return;
-    }
-
-    uint32_t *stub = Ptr<uint32_t>(stub_addr).get(mem);
-    stub[0] = arm::ARM_SVC;
-    stub[1] = arm::ARM_MOV_PC_LR;
-    stub[2] = nid;
-
-    // Imports resolve through export_nids_by_lib first, so move every alias to the stub too.
-    const Address lle_addr = kernel.export_nids[nid];
-    kernel.export_nids[nid] = stub_addr;
-    redirect_export(kernel, nid, lle_addr, stub_addr);
-    // The stub outlives the plugin module, so the plain entry stops belonging to its library.
-    kernel.export_nid_owners.erase(nid);
-
-    // Re-patch any existing import stubs that already point to kubridge's ARM code
-    auto range = kernel.func_binding_infos.equal_range(nid);
-    for (auto it = range.first; it != range.second; ++it) {
-        const Address address = it->second.entry_address;
-        uint32_t *caller_stub = Ptr<uint32_t>(address).get(mem);
-        caller_stub[0] = arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(stub_addr), arm::REG_IP);
-        caller_stub[1] = arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(stub_addr >> 16), arm::REG_IP);
-        caller_stub[2] = arm::encode_arm_inst(arm::Instruction::BRANCH, 0, arm::REG_IP);
-        kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
-    }
-
-    const char *name = import_name(nid);
-    LOG_INFO("taiHEN: registered HLE override for NID {} ({}) at {}", log_hex(nid), name, log_hex(stub_addr));
-}
-
-// Apply HLE overrides for plugin exports that have HLE implementations.
-// When a plugin (e.g. kubridge) exports functions that can't run as LLE
-// (firmware-specific offsets, ARM MMU manipulation), we register them in
-// nids.inc and this function dynamically overrides the LLE exports with
-// SVC stubs that dispatch to our C++ implementations.
-static void apply_plugin_hle_overrides(EmuEnvState &emuenv, const std::set<uint32_t> &pre_plugin_nids) {
-    auto &kernel = emuenv.kernel;
+// Points the functions of a kernel plugin that have an HLE implementation at SVC stubs, so that its
+// start registers the stubs. kubridge's functions use firmware offsets and MMU operations, which
+// don't run as LLE.
+static void apply_plugin_hle_overrides(EmuEnvState &emuenv, KernelModule &module) {
     int count = 0;
-
-    // Snapshot current export_nids to iterate (we'll modify it)
-    std::vector<std::pair<uint32_t, Address>> exports_snapshot;
-    {
-        const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-        exports_snapshot.assign(kernel.export_nids.begin(), kernel.export_nids.end());
-    }
-
-    for (const auto &[nid, addr] : exports_snapshot) {
-        if (addr == 0)
-            continue;
-        // Only override NIDs that were added by plugins (not pre-existing system exports)
-        if (pre_plugin_nids.count(nid))
-            continue;
-        // Check if the exported NID's current address is an LLE (ARM) function
-        // AND we have an HLE implementation for it
-        uint32_t *stub = Ptr<uint32_t>(addr).get(emuenv.mem);
-        if (is_svc_stub(stub)) {
-            // Already an SVC stub (HLE), no need to override
-            continue;
-        }
-        if (has_hle_implementation(nid)) {
-            register_hle_override(emuenv, nid);
+    for (const ExportLibrary &library : module.libraries) {
+        const ExportFunctions functions = export_functions(emuenv.mem, library);
+        for (size_t i = 0; i < functions.count; ++i) {
+            const uint32_t nid = functions.nids[i];
+            // An SVC stub is ARM code, so a Thumb or null entry is never one
+            const Address entry = functions.entries[i].address();
+            if (!has_hle_implementation(nid) || (entry && !(entry & 1) && is_svc_stub(Ptr<uint32_t>(entry).get(emuenv.mem))))
+                continue;
+            // svc #0, mov pc, lr and the NID
+            const Address stub_addr = alloc(emuenv.mem, 12, "kubridge_hle_override");
+            if (!stub_addr) {
+                LOG_ERROR("taiHEN: failed to allocate the HLE override of NID {}", log_hex(nid));
+                continue;
+            }
+            uint32_t *const stub = Ptr<uint32_t>(stub_addr).get(emuenv.mem);
+            stub[0] = arm::ARM_SVC;
+            stub[1] = arm::ARM_MOV_PC_LR;
+            stub[2] = nid;
+            functions.entries[i] = Ptr<uint32_t>(stub_addr);
+            LOG_INFO("taiHEN: registered HLE override for NID {} ({}) at {}", log_hex(nid), import_name(nid), log_hex(stub_addr));
             count++;
         }
     }
-
-    if (count > 0) {
+    if (count > 0)
         LOG_INFO("taiHEN: applied {} HLE overrides for plugin exports", count);
-    }
 }
 
 void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid) {
@@ -1383,14 +1331,6 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
     // Note: we only load_module here. start_module is called by run_app()
     // which iterates all loaded_modules and starts them.
     if (!state->kernel_plugins_loaded) {
-        // Snapshot NIDs before loading plugins so we only override plugin exports
-        std::set<uint32_t> pre_plugin_nids;
-        {
-            const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
-            for (const auto &[nid, addr] : emuenv.kernel.export_nids)
-                pre_plugin_nids.insert(nid);
-        }
-
         auto kernel_it = state->config.find("KERNEL");
         if (kernel_it != state->config.end()) {
             for (const auto &plugin_path : kernel_it->second) {
@@ -1398,13 +1338,12 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
                 SceUID uid = load_module(emuenv, plugin_path);
                 if (uid < 0) {
                     LOG_ERROR("taiHEN: failed to load kernel plugin: {} (error {})", plugin_path, uid);
+                } else if (const auto module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex)) {
+                    apply_plugin_hle_overrides(emuenv, *module);
                 }
             }
         }
         state->kernel_plugins_loaded = true;
-
-        // Apply HLE overrides for plugin exports that have C++ implementations
-        apply_plugin_hle_overrides(emuenv, pre_plugin_nids);
     }
 
     // Load title-specific plugins

@@ -46,6 +46,8 @@ static constexpr uint32_t NID_MODULE_START = 0x935CD196;
 static constexpr uint32_t NID_MODULE_INFO = 0x6C2224BA;
 static constexpr uint32_t NID_SYSLYB = 0x936c8a78;
 static constexpr uint32_t NID_PROCESS_PARAM = 0x70FBA1E7;
+static constexpr uint32_t NID_MODULE_START_THREAD_PARAM = 0x1A9822A4;
+static constexpr uint32_t NID_MODULE_STOP_THREAD_PARAM = 0xD20886EB;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 
@@ -56,452 +58,523 @@ struct VarImportsHeader {
 };
 static_assert(sizeof(VarImportsHeader) == sizeof(uint32_t));
 
-static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, uint32_t module_id) {
+// The fields of an import entry of either size
+struct ImportEntry {
+    uint32_t library_nid;
+    Address library_name;
+    uint16_t version;
+    uint16_t attr;
+    size_t func_count;
+    const uint32_t *func_nids;
+    const Ptr<uint32_t> *func_entries;
+    size_t var_count;
+    const uint32_t *var_nids;
+    const Ptr<uint32_t> *var_entries;
+};
+
+static ImportEntry read_import(const MemState &mem, const sce_module_imports_raw &imports) {
+    assert(imports.num_syms_tls_vars == 0);
+    ImportEntry entry{ 0, 0, imports.version, imports.flags, imports.num_syms_funcs, nullptr, nullptr, imports.num_syms_vars, nullptr, nullptr };
+    if (imports.size == 0x24) {
+        const auto &short_imports = reinterpret_cast<const sce_module_imports_short_raw &>(imports);
+        entry.library_nid = short_imports.library_nid;
+        entry.library_name = short_imports.library_name;
+        entry.func_nids = Ptr<const uint32_t>(short_imports.func_nid_table).get(mem);
+        entry.func_entries = Ptr<Ptr<uint32_t>>(short_imports.func_entry_table).get(mem);
+        entry.var_nids = Ptr<const uint32_t>(short_imports.var_nid_table).get(mem);
+        entry.var_entries = Ptr<Ptr<uint32_t>>(short_imports.var_entry_table).get(mem);
+    } else if (imports.size == 0x34) {
+        entry.library_nid = imports.library_nid;
+        entry.library_name = imports.library_name;
+        entry.func_nids = Ptr<const uint32_t>(imports.func_nid_table).get(mem);
+        entry.func_entries = Ptr<Ptr<uint32_t>>(imports.func_entry_table).get(mem);
+        entry.var_nids = Ptr<const uint32_t>(imports.var_nid_table).get(mem);
+        entry.var_entries = Ptr<Ptr<uint32_t>>(imports.var_entry_table).get(mem);
+    } else
+        entry.func_count = entry.var_count = 0;
+    return entry;
+}
+
+static const sce_module_imports_raw *next_import(const sce_module_imports_raw *imports) {
+    return reinterpret_cast<const sce_module_imports_raw *>(reinterpret_cast<const uint8_t *>(imports) + imports->size);
+}
+
+static const sce_module_info_raw &module_info_of(const MemState &mem, const KernelModule &module) {
+    return *reinterpret_cast<const sce_module_info_raw *>(module.info_segment_address.get(mem) + module.info_offset);
+}
+
+// The reference table of a variable import, after its header
+static void var_references(const MemState &mem, Ptr<uint32_t> entry, void *&references, uint32_t &size) {
+    VarImportsHeader *const var_reloc_header = entry.cast<VarImportsHeader>().get(mem);
+    references = static_cast<void *>(var_reloc_header + 1);
+    size = (var_reloc_header->reloc_data_size > sizeof(VarImportsHeader)) ? (var_reloc_header->reloc_data_size - sizeof(VarImportsHeader)) : 0;
+}
+
+// The stub word every import of a variable that no library exports points at
+static Address var_stub(KernelState &kernel, MemState &mem, uint32_t nid) {
+    if (const auto it = kernel.var_stubs.find(nid); it != kernel.var_stubs.end())
+        return it->second;
+    constexpr uint32_t STUB_SYMVAL = 0xDEADBEEF;
+    LOG_DEBUG("\tNID NOT FOUND {} ({}), setting to stub value {}", log_hex(nid), import_name(nid), log_hex(STUB_SYMVAL));
+    const std::string alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), import_name(nid));
+    const Ptr<uint32_t> stub(alloc(mem, 4, alloc_name.c_str()));
+    *stub.get(mem) = STUB_SYMVAL;
+    kernel.var_stubs.emplace(nid, stub.address());
+    return stub.address();
+}
+
+static bool load_var_imports(const ImportEntry &import, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const KernelModule &module) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
+    for (size_t i = 0; i < import.var_count; ++i) {
+        const uint32_t nid = import.var_nids[i];
+        const Ptr<uint32_t> entry = import.var_entries[i];
 
         if (kernel.debugger.log_imports) {
             const char *const name = import_name(nid);
             LOG_DEBUG("\tNID {} ({}). entry: {}, *entry: {}", log_hex(nid), name, entry, log_hex(*entry.get(mem)));
         }
 
-        VarImportsHeader *const var_reloc_header = entry.cast<VarImportsHeader>().get(mem);
-        const auto var_reloc_entries = static_cast<void *>(var_reloc_header + 1);
-        const uint32_t reloc_size = (var_reloc_header->reloc_data_size > sizeof(VarImportsHeader)) ? (var_reloc_header->reloc_data_size - sizeof(VarImportsHeader)) : 0;
+        void *references;
+        uint32_t reloc_size;
+        var_references(mem, entry, references, reloc_size);
 
-        const char *const name = import_name(nid);
-        Address export_address;
-        kernel.var_binding_infos.emplace(nid, VarBindingInfo{ var_reloc_entries, reloc_size, module_id });
+        kernel.var_binding_infos.emplace(nid, VarBindingInfo{ references, reloc_size, &module });
         const ExportNids::iterator export_address_it = kernel.export_nids.find(nid);
-        if (export_address_it != kernel.export_nids.end()) {
-            export_address = export_address_it->second;
-        } else {
-            constexpr auto STUB_SYMVAL = 0xDEADBEEF;
-            LOG_DEBUG("\tNID NOT FOUND {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), log_hex(STUB_SYMVAL));
-
-            auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), name);
-            auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
-            *stub_symval_ptr.get(mem) = STUB_SYMVAL;
-
-            export_address = stub_symval_ptr.address();
-
-            // Use same stub for other var imports
-            kernel.export_nids.emplace(nid, export_address);
-        }
+        const Address export_address = export_address_it != kernel.export_nids.end() ? export_address_it->second : var_stub(kernel, mem, nid);
 
         if (reloc_size)
-            if (!relocate(var_reloc_entries, reloc_size, segments, mem, true, export_address))
+            if (!relocate(references, reloc_size, segments, mem, true, export_address))
                 return false;
     }
 
     return true;
 }
 
-static bool unload_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem, uint32_t module_id) {
+static void unload_var_imports(const ImportEntry &import, KernelState &kernel, const MemState &mem, const KernelModule &module) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
-
-        VarImportsHeader *const var_reloc_header = reinterpret_cast<VarImportsHeader *>(entry.get(mem));
-        const auto var_reloc_entries = static_cast<void *>(var_reloc_header + 1);
-        const uint32_t reloc_size = (var_reloc_header->reloc_data_size > sizeof(VarImportsHeader)) ? (var_reloc_header->reloc_data_size - sizeof(VarImportsHeader)) : 0;
-
-        // remove the binding info from the map
-        VarBindingInfo binding_info{ var_reloc_entries, reloc_size, module_id };
-        auto range = kernel.var_binding_infos.equal_range(nid);
+    for (size_t i = 0; i < import.var_count; ++i) {
+        void *references;
+        uint32_t reloc_size;
+        var_references(mem, import.var_entries[i], references, reloc_size);
+        auto range = kernel.var_binding_infos.equal_range(import.var_nids[i]);
         for (auto it = range.first; it != range.second; ++it) {
-            if (memcmp(&it->second, &binding_info, sizeof(VarBindingInfo)) == 0) {
+            if (it->second.entries == references && it->second.module == &module) {
                 kernel.var_binding_infos.erase(it);
                 break;
             }
         }
     }
-
-    return true;
 }
 
-static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, uint32_t library_nid, const SegmentInfosForReloc &segments, KernelState &kernel, const MemState &mem) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
+// A stub that no library is linked to calls the HLE function of its NID
+static bool is_unlinked(const uint32_t *stub) {
+    return stub[0] == arm::ARM_SVC && stub[1] == arm::ARM_MOV_PC_LR;
+}
+
+// Points an import stub at a function, or at the HLE function of its NID for address 0
+static void write_stub(uint32_t *stub, uint32_t nid, Address address) {
+    if (!address) {
+        stub[0] = arm::ARM_SVC; // Call our interrupt hook.
+        stub[1] = arm::ARM_MOV_PC_LR; // Return to the caller.
+        stub[2] = nid; // Our interrupt hook will read this.
+    } else {
+        stub[0] = arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(address), arm::REG_IP);
+        stub[1] = arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(address >> 16), arm::REG_IP);
+        stub[2] = arm::encode_arm_inst(arm::Instruction::BRANCH, 0, arm::REG_IP);
+    }
+}
+
+static bool same_name(const MemState &mem, Address name, Address other) {
+    if (!name || !other)
+        return name == other;
+    return strncmp(Ptr<const char>(name).get(mem), Ptr<const char>(other).get(mem), 256) == 0;
+}
+
+static const sce_module_exports_raw &entry_of(const MemState &mem, const ExportLibrary &library) {
+    return *Ptr<const sce_module_exports_raw>(library.entry).get(mem);
+}
+
+// The library an import links to: the first library of the list with its NID and name that isn't
+// NOLINK_EXPORT, if its version isn't below the import's
+static const ExportLibrary *find_library(const KernelState &kernel, const MemState &mem, uint32_t library_nid, Address library_name, uint16_t version) {
+    for (const ExportLibrary *library = kernel.libraries; library; library = library->next) {
+        const sce_module_exports_raw &entry = entry_of(mem, *library);
+        if ((entry.flags & SCE_KERNEL_EXPORT_ATTR_NOLINK_EXPORT) || entry.library_nid != library_nid || !same_name(mem, entry.library_name, library_name))
+            continue;
+        return entry.version >= version ? library : nullptr;
+    }
+    return nullptr;
+}
+
+// Links a stub to the library the lookup finds for its import, or to the HLE function. An import
+// of no library in the list falls back to an export that no library owns.
+static void link_stub(KernelState &kernel, MemState &mem, uint32_t nid, FuncBindingInfo &import) {
+    import.library = find_library(kernel, mem, import.library_nid, import.library_name, import.version);
+    Address address = 0;
+    if (import.library) {
+        const auto it = kernel.export_nids_by_lib.find(lib_export_key(import.library_nid, nid));
+        address = it != kernel.export_nids_by_lib.end() ? it->second : 0;
+    } else if (const auto it = kernel.export_nids.find(nid); it != kernel.export_nids.end() && !kernel.export_nid_owners.contains(nid))
+        address = it->second;
+    write_stub(Ptr<uint32_t>(import.entry_address).get(mem), nid, address);
+    kernel.invalidate_jit_cache(import.entry_address, 3 * sizeof(uint32_t));
+}
+
+// Gives each function stub the HLE form until the start links it, and relocates the uses of the
+// stubs' addresses
+static bool load_func_imports(const ImportEntry &import, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem) {
+    for (size_t i = 0; i < import.func_count; ++i) {
+        const uint32_t nid = import.func_nids[i];
+        const Ptr<uint32_t> entry = import.func_entries[i];
 
         if (kernel.debugger.log_imports) {
             const char *const name = import_name(nid);
             LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
         }
 
-        // Fall back to the plain NID for exports registered without library information.
-        Address func_address = 0;
-        if (const auto it = kernel.export_nids_by_lib.find(lib_export_key(library_nid, nid)); it != kernel.export_nids_by_lib.end()) {
-            func_address = it->second;
-        } else if (const auto nid_it = kernel.export_nids.find(nid); nid_it != kernel.export_nids.end()) {
-            func_address = nid_it->second;
-        }
         uint32_t *const stub = entry.get(mem);
-
-        kernel.func_binding_infos.emplace(nid, FuncBindingInfo{ entry.address(), library_nid });
-        if (!func_address) {
-            stub[0] = arm::ARM_SVC; // Call our interrupt hook.
-            stub[1] = arm::ARM_MOV_PC_LR; // Return to the caller.
-            stub[2] = nid; // Our interrupt hook will read this.
-        } else {
-            stub[0] = arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(func_address), arm::REG_IP);
-            stub[1] = arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(func_address >> 16), arm::REG_IP);
-            stub[2] = arm::encode_arm_inst(arm::Instruction::BRANCH, 0, arm::REG_IP);
-        }
+        write_stub(stub, nid, 0);
         if (stub[3]) { // if function's associated reftable exists
-            VarImportsHeader *const var_reloc_header = Ptr<VarImportsHeader>(stub[3]).get(mem);
-            const auto var_reloc_entries = static_cast<void *>(var_reloc_header + 1);
-            const uint32_t reloc_size = (var_reloc_header->reloc_data_size > sizeof(VarImportsHeader)) ? (var_reloc_header->reloc_data_size - sizeof(VarImportsHeader)) : 0;
-            if (reloc_size) {
-                if (!relocate(var_reloc_entries, reloc_size, segments, mem, true, entry.address())) {
-                    return false;
-                }
-            }
+            void *references;
+            uint32_t reloc_size;
+            var_references(mem, Ptr<uint32_t>(stub[3]), references, reloc_size);
+            if (reloc_size && !relocate(references, reloc_size, segments, mem, true, entry.address()))
+                return false;
         }
     }
     return true;
 }
 
-static bool unload_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
-
-        // remove the stub from the table
-        auto range = kernel.func_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; ++it) {
-            if (it->second.entry_address == entry.address()) {
-                kernel.func_binding_infos.erase(it);
-                break;
-            }
-        }
-    }
-    return true;
-}
-
-static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, bool is_unload = false) {
+static bool load_imports(const KernelModule &kernel_module, const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, bool is_unload = false) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
-    const sce_module_imports_raw *const imports_begin = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top);
-    const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
-
-    for (const sce_module_imports_raw *imports = imports_begin; imports < imports_end; imports = reinterpret_cast<const sce_module_imports_raw *>(reinterpret_cast<const uint8_t *>(imports) + imports->size)) {
-        assert(imports->num_syms_tls_vars == 0);
-
-        Address library_name{};
-        uint32_t library_nid{};
-        Address func_nid_table{};
-        Address func_entry_table{};
-        Address var_nid_table{};
-        Address var_entry_table{};
-
-        if (imports->size == 0x24) {
-            auto short_imports = reinterpret_cast<const sce_module_imports_short_raw *>(imports);
-            library_nid = short_imports->library_nid;
-            library_name = short_imports->library_name;
-            func_nid_table = short_imports->func_nid_table;
-            func_entry_table = short_imports->func_entry_table;
-            var_nid_table = short_imports->var_nid_table;
-            var_entry_table = short_imports->var_entry_table;
-        } else if (imports->size == 0x34) {
-            auto long_imports = imports;
-            library_nid = long_imports->library_nid;
-            library_name = long_imports->library_name;
-            func_nid_table = long_imports->func_nid_table;
-            func_entry_table = long_imports->func_entry_table;
-            var_nid_table = long_imports->var_nid_table;
-            var_entry_table = long_imports->var_entry_table;
+    const auto *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
+    for (const auto *imports = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top); imports < imports_end; imports = next_import(imports)) {
+        const ImportEntry import = read_import(mem, *imports);
+        if (kernel.debugger.log_imports)
+            LOG_INFO("Loading imports from {}", Ptr<const char>(import.library_name).get(mem));
+        if (is_unload) {
+            unload_var_imports(import, kernel, mem, kernel_module);
+            continue;
         }
-
-        std::string lib_name;
-        if (kernel.debugger.log_imports) {
-            lib_name = Ptr<const char>(library_name).get(mem);
-            LOG_INFO("Loading func imports from {}", lib_name);
-        }
-
-        const uint32_t *const nids = Ptr<const uint32_t>(func_nid_table).get(mem);
-        const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(func_entry_table).get(mem);
-
-        const size_t num_syms_funcs = imports->num_syms_funcs;
-        if (!is_unload && !load_func_imports(nids, entries, num_syms_funcs, library_nid, segments, kernel, mem))
-            return false;
-        if (is_unload && !unload_func_imports(nids, entries, num_syms_funcs, kernel))
-            return false;
-
-        const uint32_t *const var_nids = Ptr<const uint32_t>(var_nid_table).get(mem);
-        const Ptr<uint32_t> *const var_entries = Ptr<Ptr<uint32_t>>(var_entry_table).get(mem);
-
-        const auto var_count = imports->num_syms_vars;
-
-        if (kernel.debugger.log_imports && var_count > 0)
-            LOG_INFO("Loading var imports from {}", lib_name);
-
-        if (!is_unload && !load_var_imports(var_nids, var_entries, var_count, segments, kernel, mem, module.module_nid))
-            return false;
-        if (is_unload && !unload_var_imports(var_nids, var_entries, var_count, kernel, mem, module.module_nid))
+        if (!load_func_imports(import, segments, kernel, mem) || !load_var_imports(import, segments, kernel, mem, kernel_module))
             return false;
     }
-
     return true;
 }
 
-static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, uint32_t library_nid, KernelState &kernel, MemState &mem) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
-
-        if (nid == NID_MODULE_START) {
-            kernel_module_info->start_entry = entry;
-            continue;
-        }
-
-        if (nid == NID_MODULE_STOP) {
-            kernel_module_info->stop_entry = entry;
-            continue;
-        }
-        if (nid == NID_MODULE_EXIT) {
-            kernel_module_info->exit_entry = entry;
-            continue;
-        }
-
-        // Only the library that actually took the plain NID entry may drop it again.
-        if (kernel.export_nids.emplace(nid, entry.address()).second)
-            kernel.export_nid_owners.insert_or_assign(nid, library_nid);
-        kernel.export_nids_by_lib.insert_or_assign(lib_export_key(library_nid, nid), entry.address());
-        // substitute supervisor calls to direct function calls in loaded modules
-        auto range = kernel.func_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; ++it) {
-            // A same-named export from an unrelated library must not hijack these importers.
-            if (it->second.library_nid != library_nid)
+// Links each function stub of the module to the library the lookup finds for it, or unlinks it.
+// The importers of the list are those of linked modules. The main module's imports are all weak.
+static void link_imports(KernelState &kernel, MemState &mem, const KernelModule &module, bool link) {
+    if (!module.info_segment_address)
+        return;
+    const sce_module_info_raw &info = module_info_of(mem, module);
+    const uint8_t *const base = module.info_segment_address.get(mem);
+    const auto *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + info.import_end);
+    for (const auto *imports = reinterpret_cast<const sce_module_imports_raw *>(base + info.import_top); imports < imports_end; imports = next_import(imports)) {
+        ImportEntry import = read_import(mem, *imports);
+        if (module.flags & SCE_KERNEL_MODULE_FLAG_MAIN)
+            import.attr |= SCE_KERNEL_IMPORT_ATTR_WEAK_IMPORT;
+        for (size_t i = 0; i < import.func_count; ++i) {
+            const uint32_t nid = import.func_nids[i];
+            const Address stub_address = import.func_entries[i].address();
+            if (link) {
+                const auto it = kernel.func_binding_infos.emplace(nid, FuncBindingInfo{ stub_address, import.library_nid, import.library_name, import.version, import.attr, nullptr });
+                link_stub(kernel, mem, nid, it->second);
                 continue;
-            auto address = it->second.entry_address;
-            uint32_t *const stub = Ptr<uint32_t>(address).get(mem);
-            stub[0] = arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(entry.address()), arm::REG_IP);
-            stub[1] = arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(entry.address() >> 16), arm::REG_IP);
-            stub[2] = arm::encode_arm_inst(arm::Instruction::BRANCH, 0, arm::REG_IP);
-            kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
-        }
-
-        if (kernel.debugger.log_exports) {
-            const char *const name = import_name(nid);
-
-            LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
-        }
-    }
-
-    return true;
-}
-
-// An import stub resolved to an export branches through MOVW/MOVT of its address.
-static bool stub_targets(const uint32_t *stub, Address address) {
-    return stub[0] == arm::encode_arm_inst(arm::Instruction::MOVW, static_cast<uint16_t>(address), arm::REG_IP)
-        && stub[1] == arm::encode_arm_inst(arm::Instruction::MOVT, static_cast<uint16_t>(address >> 16), arm::REG_IP);
-}
-
-static bool unload_func_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, uint32_t library_nid, KernelState &kernel, MemState &mem) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-
-        if (nid == NID_MODULE_START || nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
-            continue;
-
-        const Address unloaded_address = entries[i].address();
-        // Another module may have taken this library key since, and its export is still live.
-        if (const auto lib_it = kernel.export_nids_by_lib.find(lib_export_key(library_nid, nid)); lib_it != kernel.export_nids_by_lib.end() && lib_it->second == unloaded_address)
-            kernel.export_nids_by_lib.erase(lib_it);
-        // Redirects move the address but not the ownership, so only the owner may drop the plain entry.
-        if (const auto owner_it = kernel.export_nid_owners.find(nid); owner_it != kernel.export_nid_owners.end() && owner_it->second == library_nid) {
-            kernel.export_nids.erase(nid);
-            kernel.export_nid_owners.erase(owner_it);
-        }
-        // invalidate all lle nid calls
-        auto range = kernel.func_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; ++it) {
-            Address entry = it->second.entry_address;
-            uint32_t *stub = Ptr<uint32_t>(entry).get(mem);
-            // A stub bound through the plain NID fallback names another library but still branches here.
-            if (it->second.library_nid != library_nid && !stub_targets(stub, unloaded_address))
-                continue;
-
-            stub[0] = arm::ARM_SVC; // Call our interrupt hook.
-            stub[1] = arm::ARM_MOV_PC_LR; // Return to the caller.
-            stub[2] = nid; // Our interrupt hook will read this.
-            kernel.invalidate_jit_cache(entry, 3 * sizeof(uint32_t));
-        }
-    }
-
-    return true;
-}
-
-static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
-
-        if (nid == NID_PROCESS_PARAM) {
-            if (!kernel.process_param)
-                kernel.load_process_param(mem, entry);
-            LOG_DEBUG("\tNID {} (SCE_PROC_PARAMS) at {}", log_hex(nid), log_hex(entry.address()));
-            continue;
-        }
-
-        if (nid == NID_MODULE_INFO) {
-            LOG_DEBUG("\tNID {} (NID_MODULE_INFO) at {}", log_hex(nid), log_hex(entry.address()));
-            continue;
-        }
-
-        if (nid == NID_SYSLYB) {
-            LOG_DEBUG("\tNID {} (SYSLYB) at {}", log_hex(nid), log_hex(entry.address()));
-            continue;
-        }
-
-        if (kernel.debugger.log_exports) {
-            const char *const name = import_name(nid);
-
-            LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
-        }
-
-        Address old_entry_address = 0;
-        auto nid_it = kernel.export_nids.find(nid);
-        if (nid_it != kernel.export_nids.end()) {
-            LOG_DEBUG("Found previously not found variable. nid:{}, new_entry_point:{}", log_hex(nid), log_hex(entry.address()));
-            old_entry_address = kernel.export_nids[nid];
-        }
-        kernel.export_nids[nid] = entry.address();
-
-        auto range = kernel.var_binding_infos.equal_range(nid);
-        for (auto j = range.first; j != range.second; ++j) {
-            auto &var_binding_info = j->second;
-            if (var_binding_info.size == 0)
-                continue;
-
-            SegmentInfosForReloc seg;
-            const auto &module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
-            if (!module_info) {
-                LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);
-            } else {
-                for (int k = 0; k < MODULE_INFO_NUM_SEGMENTS; k++) {
-                    const auto &segment = module_info->info.segments[k];
-                    if (segment.size > 0) {
-                        seg[k] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
-                    }
+            }
+            const auto range = kernel.func_binding_infos.equal_range(nid);
+            for (auto it = range.first; it != range.second; ++it) {
+                if (it->second.entry_address == stub_address) {
+                    kernel.func_binding_infos.erase(it);
+                    break;
                 }
             }
-
-            // Note: We make the assumption that variables are not imported into executable code (wouldn't make a lot of sense)
-            // If this is not the case, uncomment the following
-            /* if (!seg.empty()) {
-                for (const auto &[key, value] : seg) {
-                    kernel.invalidate_jit_cache(value.addr, value.size);
-                }
-            }*/
-
-            if (!seg.empty()) {
-                if (!relocate(var_binding_info.entries, var_binding_info.size, seg, mem, true, entry.address())) {
-                    LOG_ERROR("Failed to relocate late binding info");
-                }
-            }
+            write_stub(Ptr<uint32_t>(stub_address).get(mem), nid, 0);
+            kernel.invalidate_jit_cache(stub_address, 3 * sizeof(uint32_t));
         }
-        if (old_entry_address)
-            free(mem, old_entry_address);
     }
-    return true;
 }
 
-static bool unload_var_exports(const uint32_t *nids, size_t count, KernelState &kernel, MemState &mem) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    for (size_t i = 0; i < count; ++i) {
-        const uint32_t nid = nids[i];
+static bool is_entry_nid(uint32_t nid) {
+    return nid == NID_MODULE_START || nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT;
+}
 
-        if (nid == NID_PROCESS_PARAM || nid == NID_MODULE_INFO || nid == NID_SYSLYB)
+static bool is_parameter_nid(uint32_t nid) {
+    return nid == NID_PROCESS_PARAM || nid == NID_MODULE_INFO || nid == NID_SYSLYB || nid == NID_MODULE_START_THREAD_PARAM || nid == NID_MODULE_STOP_THREAD_PARAM;
+}
+
+// Relocates the references of every module that imports a variable to a new address
+static void relocate_var_imports(KernelState &kernel, MemState &mem, uint32_t nid, Address address) {
+    auto range = kernel.var_binding_infos.equal_range(nid);
+    for (auto it = range.first; it != range.second; ++it) {
+        const VarBindingInfo &var_binding_info = it->second;
+        if (var_binding_info.size == 0)
             continue;
 
-        // replace again the nid by a stub
-        constexpr auto STUB_SYMVAL = 0xDEADBEEF;
-
-        auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), import_name(nid));
-        auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
-        *stub_symval_ptr.get(mem) = STUB_SYMVAL;
-
-        const Ptr<uint32_t> entry = stub_symval_ptr;
-
-        // Use same stub for other var imports
-        kernel.export_nids[nid] = entry.address();
-
-        auto range = kernel.var_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; ++it) {
-            auto &var_binding_info = it->second;
-            if (var_binding_info.size == 0)
-                continue;
-
-            SegmentInfosForReloc seg;
-            const auto &module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
-            if (!module_info) {
-                LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);
-            } else {
-                for (int k = 0; k < MODULE_INFO_NUM_SEGMENTS; k++) {
-                    const auto &segment = module_info->info.segments[k];
-                    if (segment.size > 0) {
-                        seg[k] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
-                    }
-                }
+        SegmentInfosForReloc seg;
+        for (int k = 0; k < MODULE_INFO_NUM_SEGMENTS; k++) {
+            const auto &segment = var_binding_info.module->info.segments[k];
+            if (segment.size > 0) {
+                seg[k] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
             }
+        }
 
-            if (!seg.empty()) {
-                if (!relocate(var_binding_info.entries, var_binding_info.size, seg, mem, true, entry.address())) {
-                    LOG_ERROR("Failed to relocate late binding info");
-                }
+        // Variables are taken as never imported into executable code, so no JIT cache is invalidated
+        if (!seg.empty()) {
+            if (!relocate(var_binding_info.entries, var_binding_info.size, seg, mem, true, address)) {
+                LOG_ERROR("Failed to relocate late binding info");
             }
         }
     }
-    return true;
 }
 
-static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem, bool is_unload = false) {
-    const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
-    const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
-    const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
-
-    for (const sce_module_exports_raw *exports = exports_begin; exports < exports_end; exports = reinterpret_cast<const sce_module_exports_raw *>(reinterpret_cast<const uint8_t *>(exports) + exports->size)) {
-        const char *const lib_name = Ptr<const char>(exports->library_name).get(mem);
-
+// Writes a library's functions and variables to the export tables
+static void publish_library(KernelState &kernel, MemState &mem, const sce_module_exports_raw &entry) {
+    const uint32_t *const nids = Ptr<const uint32_t>(entry.nid_table).get(mem);
+    const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(entry.entry_table).get(mem);
+    if (kernel.debugger.log_exports)
+        LOG_INFO("Loading exports from {}", entry.library_name ? Ptr<const char>(entry.library_name).get(mem) : "unknown");
+    for (size_t i = 0; i < entry.num_syms_funcs + entry.num_syms_vars; ++i) {
+        const uint32_t nid = nids[i];
+        const Address address = entries[i].address();
+        if (is_entry_nid(nid) || is_parameter_nid(nid))
+            continue;
         if (kernel.debugger.log_exports)
-            LOG_INFO("Loading func exports from {}", lib_name ? lib_name : "unknown");
+            LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), import_name(nid), log_hex(address));
 
-        const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
-        const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, exports->library_nid, kernel, mem))
-            return false;
-        if (is_unload && !unload_func_exports(nids, entries, exports->num_syms_funcs, exports->library_nid, kernel, mem))
-            return false;
-
-        const auto var_count = exports->num_syms_vars;
-
-        if (kernel.debugger.log_exports && var_count > 0) {
-            LOG_INFO("Loading var exports from {}", lib_name ? lib_name : "unknown");
+        if (i < entry.num_syms_funcs) {
+            // Only the library that actually took the plain NID entry may drop it again.
+            if (kernel.export_nids.emplace(nid, address).second)
+                kernel.export_nid_owners.insert_or_assign(nid, entry.library_nid);
+            kernel.export_nids_by_lib.insert_or_assign(lib_export_key(entry.library_nid, nid), address);
+            continue;
         }
 
-        if (!is_unload && !load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem))
-            return false;
-        if (is_unload && !unload_var_exports(&nids[exports->num_syms_funcs], var_count, kernel, mem))
-            return false;
+        // The library that took a variable first keeps it, and the export replaces the stub word
+        if (!kernel.export_nid_owners.emplace(nid, entry.library_nid).second)
+            continue;
+        kernel.export_nids[nid] = address;
+        relocate_var_imports(kernel, mem, nid, address);
+        if (const auto it = kernel.var_stubs.find(nid); it != kernel.var_stubs.end()) {
+            free(mem, it->second);
+            kernel.var_stubs.erase(it);
+        }
+    }
+}
+
+// Takes a library's functions and variables out of the export tables, its variables become stub words
+static void withdraw_library(KernelState &kernel, MemState &mem, const sce_module_exports_raw &entry) {
+    const uint32_t *const nids = Ptr<const uint32_t>(entry.nid_table).get(mem);
+    const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(entry.entry_table).get(mem);
+    for (size_t i = 0; i < entry.num_syms_funcs + entry.num_syms_vars; ++i) {
+        const uint32_t nid = nids[i];
+        if (is_entry_nid(nid) || is_parameter_nid(nid))
+            continue;
+
+        if (i < entry.num_syms_funcs) {
+            // taiHEN may have moved the library key to a hook since, which stays
+            if (const auto it = kernel.export_nids_by_lib.find(lib_export_key(entry.library_nid, nid)); it != kernel.export_nids_by_lib.end() && it->second == entries[i].address())
+                kernel.export_nids_by_lib.erase(it);
+            // Redirects move the address but not the ownership, so only the owner may drop the plain entry.
+            if (const auto it = kernel.export_nid_owners.find(nid); it != kernel.export_nid_owners.end() && it->second == entry.library_nid) {
+                kernel.export_nids.erase(nid);
+                kernel.export_nid_owners.erase(it);
+            }
+            continue;
+        }
+
+        const auto owner = kernel.export_nid_owners.find(nid);
+        if (owner == kernel.export_nid_owners.end() || owner->second != entry.library_nid)
+            continue;
+        kernel.export_nid_owners.erase(owner);
+        kernel.export_nids.erase(nid);
+        relocate_var_imports(kernel, mem, nid, var_stub(kernel, mem, nid));
+    }
+}
+
+// Links the unlinked stubs of a library's importers to it, those of a version up to the library's
+static void link_unlinked_imports(KernelState &kernel, MemState &mem, const ExportLibrary &library) {
+    const sce_module_exports_raw &entry = entry_of(mem, library);
+    const uint32_t *const nids = Ptr<const uint32_t>(entry.nid_table).get(mem);
+    const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(entry.entry_table).get(mem);
+    for (size_t i = 0; i < entry.num_syms_funcs; ++i) {
+        const auto range = kernel.func_binding_infos.equal_range(nids[i]);
+        for (auto it = range.first; it != range.second; ++it) {
+            FuncBindingInfo &import = it->second;
+            uint32_t *const stub = Ptr<uint32_t>(import.entry_address).get(mem);
+            if (import.library_nid != entry.library_nid || import.version > entry.version || !is_unlinked(stub) || !same_name(mem, import.library_name, entry.library_name))
+                continue;
+            import.library = &library;
+            write_stub(stub, nids[i], entries[i].address());
+            kernel.invalidate_jit_cache(import.entry_address, 3 * sizeof(uint32_t));
+        }
+    }
+}
+
+// Adds a library to the list. A library of the same NID and name gets hidden by a NOLINK_EXPORT
+// library if it is one too, or else by a library of a higher version.
+static int register_library(KernelState &kernel, MemState &mem, ExportLibrary &library) {
+    if (library.registered)
+        return SCE_KERNEL_ERROR_MODULEMGR_OLD_LIB;
+    const sce_module_exports_raw &entry = entry_of(mem, library);
+    if ((entry.flags & SCE_KERNEL_EXPORT_ATTR_SYSLIB) || !(entry.flags & SCE_KERNEL_EXPORT_ATTR_AUTO_EXPORT))
+        return 0;
+
+    ExportLibrary **link = &kernel.libraries;
+    while (*link && !(entry_of(mem, **link).library_nid == entry.library_nid && same_name(mem, entry_of(mem, **link).library_name, entry.library_name)))
+        link = &(*link)->next;
+    if (*link) {
+        const sce_module_exports_raw &old = entry_of(mem, **link);
+        const bool nolink = entry.flags & SCE_KERNEL_EXPORT_ATTR_NOLINK_EXPORT;
+        if (nolink != bool(old.flags & SCE_KERNEL_EXPORT_ATTR_NOLINK_EXPORT) || (!nolink && entry.version <= old.version))
+            return SCE_KERNEL_ERROR_MODULEMGR_OLD_LIB;
+        // The importers linked to the older library stay linked to it
+        withdraw_library(kernel, mem, old);
+        library.older = *link;
+        *link = (*link)->next;
+    }
+    library.next = kernel.libraries;
+    kernel.libraries = &library;
+    library.registered = true;
+    publish_library(kernel, mem, entry);
+    link_unlinked_imports(kernel, mem, library);
+    return 0;
+}
+
+// Takes a library out of the list, or out of the older libraries one of the list hides. Returns
+// whether it was in the list itself.
+static bool remove_library(KernelState &kernel, ExportLibrary &library) {
+    for (ExportLibrary **link = &kernel.libraries; *link; link = &(*link)->next) {
+        if (*link == &library) {
+            if (library.older) {
+                library.older->next = library.next;
+                *link = library.older;
+            } else
+                *link = library.next;
+            return true;
+        }
+        for (ExportLibrary **hidden = &(*link)->older; *hidden; hidden = &(*hidden)->older) {
+            if (*hidden == &library) {
+                *hidden = library.older;
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+// Removes a library from the list, an older one it hid comes back. Each stub linked to it calls the
+// HLE function until the lookup finds another library for it. A forced removal skips the check for
+// strong imports.
+static int unregister_library(KernelState &kernel, MemState &mem, ExportLibrary &library, bool forced) {
+    const sce_module_exports_raw &entry = entry_of(mem, library);
+    if (!library.registered)
+        return (entry.flags & SCE_KERNEL_EXPORT_ATTR_SYSLIB) ? 0 : SCE_KERNEL_ERROR_LIBRARYDB_NO_LIB;
+    // An import linked to the library counts even for a function the library doesn't export
+    for (const auto &[nid, import] : kernel.func_binding_infos) {
+        if (!forced && import.library == &library && !(import.attr & SCE_KERNEL_IMPORT_ATTR_WEAK_IMPORT))
+            return SCE_KERNEL_ERROR_MODULEMGR_IN_USE;
     }
 
-    return true;
+    ExportLibrary *const older = library.older;
+    if (remove_library(kernel, library)) {
+        withdraw_library(kernel, mem, entry);
+        if (older)
+            publish_library(kernel, mem, entry_of(mem, *older));
+    }
+    library.next = nullptr;
+    library.older = nullptr;
+    library.registered = false;
+
+    for (auto &[nid, import] : kernel.func_binding_infos) {
+        if (import.library == &library)
+            link_stub(kernel, mem, nid, import);
+    }
+    return 0;
+}
+
+int link_module(KernelState &kernel, MemState &mem, KernelModule &module) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+    link_imports(kernel, mem, module, true);
+    for (ExportLibrary &library : module.libraries) {
+        if (const int error = register_library(kernel, mem, library); error < 0) {
+            link_imports(kernel, mem, module, false);
+            return error;
+        }
+    }
+    return 0;
+}
+
+int unlink_module(KernelState &kernel, MemState &mem, KernelModule &module, bool forced) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+    link_imports(kernel, mem, module, false);
+    for (ExportLibrary &library : module.libraries) {
+        if (const int error = unregister_library(kernel, mem, library, forced); error < 0) {
+            if (!forced)
+                link_imports(kernel, mem, module, true);
+            return error;
+        }
+    }
+    return 0;
+}
+
+ExportFunctions export_functions(const MemState &mem, const ExportLibrary &library) {
+    const sce_module_exports_raw &entry = entry_of(mem, library);
+    return { Ptr<const uint32_t>(entry.nid_table).get(mem), Ptr<Ptr<uint32_t>>(entry.entry_table).get(mem), entry.num_syms_funcs };
+}
+
+uint32_t module_nid(const MemState &mem, const KernelModule &module) {
+    return module_info_of(mem, module).module_nid;
+}
+
+Address find_module_export(const MemState &mem, const KernelModule &module, uint32_t nid) {
+    for (const ExportLibrary &library : module.libraries) {
+        const sce_module_exports_raw &entry = entry_of(mem, library);
+        const uint32_t *const nids = Ptr<const uint32_t>(entry.nid_table).get(mem);
+        const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(entry.entry_table).get(mem);
+        for (size_t i = 0; i < entry.num_syms_funcs + entry.num_syms_vars; ++i) {
+            if (nids[i] == nid)
+                return entries[i].address();
+        }
+    }
+    return 0;
+}
+
+// Keeps a record of each export library, which the start registers, and reads the entry points and
+// parameters from them
+static void load_exports(KernelModule &kernel_module, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem) {
+    for (Address address = segment_address.address() + module.export_top; address < segment_address.address() + module.export_end; address += entry_of(mem, kernel_module.libraries.back()).size) {
+        kernel_module.libraries.push_back({ address, nullptr, nullptr, false });
+        const sce_module_exports_raw &entry = entry_of(mem, kernel_module.libraries.back());
+        const uint32_t *const nids = Ptr<const uint32_t>(entry.nid_table).get(mem);
+        const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(entry.entry_table).get(mem);
+        for (size_t i = 0; i < entry.num_syms_funcs + entry.num_syms_vars; ++i) {
+            const uint32_t nid = nids[i];
+            const Ptr<uint32_t> export_entry = entries[i];
+            if (nid == NID_MODULE_START)
+                kernel_module.info.start_entry = export_entry;
+            else if (nid == NID_MODULE_STOP)
+                kernel_module.info.stop_entry = export_entry;
+            else if (nid == NID_MODULE_EXIT)
+                kernel_module.info.exit_entry = export_entry;
+            else if (nid == NID_MODULE_START_THREAD_PARAM)
+                kernel_module.start_thread_param = export_entry.address();
+            else if (nid == NID_MODULE_STOP_THREAD_PARAM)
+                kernel_module.stop_thread_param = export_entry.address();
+            else if (nid == NID_PROCESS_PARAM) {
+                // The process parameters also add the libc parameter export
+                const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+                if (!kernel.process_param)
+                    kernel.load_process_param(mem, export_entry);
+            }
+        }
+    }
 }
 
 /**
  * \return Negative on failure
  */
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path) {
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &dump_path, uint16_t flags) {
     const uint8_t *const image_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
@@ -738,10 +811,14 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     }
 
     const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
-    memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
 
     kernelModuleInfo->info_segment_address = module_info_segment_address;
     kernelModuleInfo->info_offset = module_info_offset;
+    kernelModuleInfo->flags = flags;
+    kernelModuleInfo->set_state(ModuleState::loaded);
+    // The app info starts with the program authority ID
+    if (is_self)
+        memcpy(&kernelModuleInfo->auth_id, image_bytes + self_header.appinfo_offset, sizeof(kernelModuleInfo->auth_id));
 
     auto *sceKernelModuleInfo = &kernelModuleInfo->info;
     sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
@@ -790,17 +867,14 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         segment.filesz = segments[segment_index].p_filesz;
     }
 
-    sceKernelModuleInfo->state = module_info->type;
-
     LOG_INFO("Linking {} {}...", is_self ? "SELF" : "ELF", self_path);
     if (self_path.contains("eboot.bin"))
         LOG_INFO("eboot.bin module NID: {}", log_hex(module_info->module_nid));
 
-    if (!load_exports(sceKernelModuleInfo, *module_info, module_info_segment_address, kernel, mem)) {
-        return -1;
-    }
+    load_exports(*kernelModuleInfo, *module_info, module_info_segment_address, kernel, mem);
 
-    if (!load_imports(*module_info, module_info_segment_address, segment_reloc_info, kernel, mem)) {
+    if (!load_imports(*kernelModuleInfo, *module_info, module_info_segment_address, segment_reloc_info, kernel, mem)) {
+        load_imports(*kernelModuleInfo, *module_info, module_info_segment_address, segment_reloc_info, kernel, mem, true);
         return -1;
     }
     const SceUID uid = kernel.get_next_uid();
@@ -820,8 +894,15 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 int unload_self(KernelState &kernel, MemState &mem, KernelModule &module) {
     LOG_INFO("Unlinking self...");
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module.info_segment_address.get(mem) + module.info_offset);
-    if (!load_exports(&module.info, *module_info, module.info_segment_address, kernel, mem, true)) {
-        return -1;
+    // A start or stop that failed in the middle of the libraries leaves the module partly linked,
+    // which goes with it so that nothing points into freed memory
+    {
+        const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+        link_imports(kernel, mem, module, false);
+        for (ExportLibrary &library : module.libraries) {
+            if (library.registered)
+                unregister_library(kernel, mem, library, true);
+        }
     }
 
     SegmentInfosForReloc segment_reloc_info;
@@ -833,7 +914,7 @@ int unload_self(KernelState &kernel, MemState &mem, KernelModule &module) {
         segment_reloc_info[i] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
     }
 
-    if (!load_imports(*module_info, module.info_segment_address, segment_reloc_info, kernel, mem, true)) {
+    if (!load_imports(module, *module_info, module.info_segment_address, segment_reloc_info, kernel, mem, true)) {
         return -1;
     }
 
@@ -855,7 +936,9 @@ int unload_self(KernelState &kernel, MemState &mem, KernelModule &module) {
     }
     {
         const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-        kernel.module_uid_by_nid.erase(mod_nid);
+        // Another copy of the file may have the NID now
+        if (const auto it = kernel.module_uid_by_nid.find(mod_nid); it != kernel.module_uid_by_nid.end() && it->second == static_cast<uint32_t>(module.info.modid))
+            kernel.module_uid_by_nid.erase(it);
     }
 
     return 0;

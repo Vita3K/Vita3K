@@ -171,90 +171,152 @@ static bool is_module_enabled(EmuEnvState &emuenv, SceSysmoduleModuleId module_i
         return is_lle_module(module_id, emuenv);
 }
 
+// Whether a game can use an id, the id checks of sysmodule. An internal call can also use the ids for
+// non game, PSM and internal programs.
+static bool can_use(uint16_t flags, bool internal) {
+    if (flags & (SYSMODULE_ID_DEVELOPMENT | SYSMODULE_ID_SYSTEM))
+        return false;
+    if (flags & (SYSMODULE_ID_NON_GAME | SYSMODULE_ID_PSM | SYSMODULE_ID_INTERNAL))
+        return internal;
+    return flags & SYSMODULE_ID_GAME;
+}
+
+static bool is_public_id_usable(SceSysmoduleModuleId module_id, bool internal) {
+    return module_id < SYSMODULE_COUNT && can_use(sysmodule_ids[module_id].flags, internal);
+}
+
+static bool is_internal_id_usable(SceSysmoduleInternalModuleId module_id) {
+    const uint16_t index = module_id & 0xFFFF;
+    return index < SYSMODULE_INTERNAL_COUNT && can_use(sysmodule_internal_ids[index].flags, true);
+}
+
+static bool is_internal_table(SceSysmoduleInternalModuleId module_id) {
+    return module_id & 0x80000000;
+}
+
+// Loads an id whose modules all stay HLE, it counts as loaded with nothing to load
+static SceInt32 load_hle_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
+    Sysmodules &sysmodules = emuenv.kernel.sysmodules;
+    const std::lock_guard<std::mutex> lock(sysmodules.mutex);
+    SysmoduleSlot &slot = sysmodules.ids[module_id];
+    slot.count++;
+    slot.progress = sysmodule_ids[module_id].modules.size();
+    return SCE_KERNEL_OK;
+}
+
+static SceInt32 unload_hle_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
+    Sysmodules &sysmodules = emuenv.kernel.sysmodules;
+    const std::lock_guard<std::mutex> lock(sysmodules.mutex);
+    SysmoduleSlot &slot = sysmodules.ids[module_id];
+    if (!slot.count)
+        return SCE_SYSMODULE_ERROR_UNLOADED;
+    if (--slot.count == 0)
+        slot.progress = 0;
+    return SCE_KERNEL_OK;
+}
+
+static SceInt32 load_public_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
+    LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
+    if (is_module_enabled(emuenv, module_id))
+        return load_sys_module(emuenv, module_id);
+    return load_hle_sys_module(emuenv, module_id);
+}
+
+static SceInt32 unload_public_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
+    if (is_module_enabled(emuenv, module_id))
+        return unload_sys_module(emuenv, module_id);
+    return unload_hle_sys_module(emuenv, module_id);
+}
+
 EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleIsLoaded, module_id);
-    if (module_id > SYSMODULE_COUNT)
+    if (!is_public_id_usable(module_id, false))
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
-
-    if (is_module_loaded(emuenv.kernel, module_id))
-        return SCE_SYSMODULE_LOADED;
-    else
+    if (!is_sys_module_loaded(emuenv, module_id))
         return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
+    return SCE_SYSMODULE_LOADED;
 }
 
 EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id) {
     TRACY_FUNC(sceSysmoduleIsLoadedInternal, module_id);
-    if (static_cast<int>(module_id) >= 0)
-        return CALL_EXPORT(sceSysmoduleIsLoaded, static_cast<SceSysmoduleModuleId>(module_id));
-
-    if (((module_id & 0xFFFF) == 0) || ((module_id & 0xFFFF) > 0x29))
-        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
-
-    std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-    if (std::ranges::contains(emuenv.kernel.loaded_internal_sysmodules, module_id))
+    if (!is_internal_table(module_id)) {
+        const auto public_id = static_cast<SceSysmoduleModuleId>(module_id & 0xFFFF);
+        if (!is_public_id_usable(public_id, true))
+            return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+        if (!is_sys_module_loaded(emuenv, public_id))
+            return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
         return SCE_SYSMODULE_LOADED;
-    else
+    }
+    if (!is_internal_id_usable(module_id))
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+    if (!is_sys_module_internal_loaded(emuenv, module_id))
         return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
+    return SCE_SYSMODULE_LOADED;
 }
 
 EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleLoadModule, module_id);
-    if (module_id > SYSMODULE_COUNT)
+    if (!is_public_id_usable(module_id, false))
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
-
-    LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
-    if (is_module_loaded(emuenv.kernel, module_id))
-        return SCE_SYSMODULE_LOADED;
-    if (is_module_enabled(emuenv, module_id)) {
-        if (load_sys_module(emuenv, module_id))
-            return SCE_SYSMODULE_LOADED;
-        else
-            return RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
-    } else {
-        std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-        emuenv.kernel.loaded_sysmodules[module_id] = {};
-        return SCE_SYSMODULE_LOADED;
-    }
+    if (const SceInt32 error = load_public_sys_module(emuenv, module_id); error < 0)
+        return RET_ERROR(error);
+    return SCE_SYSMODULE_LOADED;
 }
 
 EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_id) {
     TRACY_FUNC(sceSysmoduleLoadModuleInternal, module_id);
     LOG_TRACE("sceSysmoduleLoadModuleInternal(module_id:{})", to_debug_str(emuenv.mem, module_id));
-
-    if (static_cast<int>(module_id) >= 0) {
-        // apparently you can load non-internal modules with this function
-        return CALL_EXPORT(sceSysmoduleLoadModule, static_cast<SceSysmoduleModuleId>(module_id));
+    // An id without the internal bit is a public one, with the checks of an internal call
+    if (!is_internal_table(module_id)) {
+        const auto public_id = static_cast<SceSysmoduleModuleId>(module_id & 0xFFFF);
+        if (!is_public_id_usable(public_id, true))
+            return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+        if (const SceInt32 error = load_public_sys_module(emuenv, public_id); error < 0)
+            return RET_ERROR(error);
+        return SCE_SYSMODULE_LOADED;
     }
-
-    const bool loaded = load_sys_module_internal_with_arg(emuenv, module_id, 0, Ptr<void>(), nullptr);
-    return loaded ? SCE_SYSMODULE_LOADED : RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
+    if (!is_internal_id_usable(module_id))
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+    if (const SceInt32 error = load_sys_module_internal_with_arg(emuenv, module_id, 0, Ptr<void>(), nullptr); error < 0)
+        return RET_ERROR(error);
+    return SCE_SYSMODULE_LOADED;
 }
 
 EXPORT(int, sceSysmoduleLoadModuleInternalWithArg, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, const SceSysmoduleOpt *option) {
     TRACY_FUNC(sceSysmoduleLoadModuleInternalWithArg, module_id, args, argp, option);
     LOG_TRACE("sceSysmoduleLoadModuleInternalWithArg(module_id:{}, args:{}, argp:{},option:{})", to_debug_str(emuenv.mem, module_id),
         to_debug_str(emuenv.mem, args), to_debug_str(emuenv.mem, argp), to_debug_str(emuenv.mem, option));
-
-    const bool loaded = load_sys_module_internal_with_arg(emuenv, module_id, args, argp, option ? option->result.get(emuenv.mem) : nullptr);
-    return loaded ? SCE_SYSMODULE_LOADED : RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
+    if (!is_internal_table(module_id) || !is_internal_id_usable(module_id))
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+    if (const SceInt32 error = load_sys_module_internal_with_arg(emuenv, module_id, args, argp, option ? option->result.get(emuenv.mem) : nullptr); error < 0)
+        return RET_ERROR(error);
+    return SCE_SYSMODULE_LOADED;
 }
 
 EXPORT(int, sceSysmoduleUnloadModule, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleUnloadModule, module_id);
-
-    if (is_module_enabled(emuenv, module_id)) {
-        return unload_sys_module(emuenv, module_id);
-    } else {
-        std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-        emuenv.kernel.loaded_sysmodules.erase(module_id);
-
-        return 0;
-    }
+    if (!is_public_id_usable(module_id, false))
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+    if (const SceInt32 error = unload_public_sys_module(emuenv, module_id); error < 0)
+        return RET_ERROR(error);
+    return SCE_SYSMODULE_LOADED;
 }
 
 EXPORT(int, sceSysmoduleUnloadModuleInternal, SceSysmoduleInternalModuleId module_id) {
     TRACY_FUNC(sceSysmoduleUnloadModuleInternal, module_id);
-    return UNIMPLEMENTED();
+    if (!is_internal_table(module_id)) {
+        const auto public_id = static_cast<SceSysmoduleModuleId>(module_id & 0xFFFF);
+        if (!is_public_id_usable(public_id, true))
+            return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+        if (const SceInt32 error = unload_public_sys_module(emuenv, public_id); error < 0)
+            return RET_ERROR(error);
+        return SCE_SYSMODULE_LOADED;
+    }
+    if (!is_internal_id_usable(module_id))
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+    if (const SceInt32 error = unload_sys_module_internal(emuenv, module_id); error < 0)
+        return RET_ERROR(error);
+    return SCE_SYSMODULE_LOADED;
 }
 
 EXPORT(int, sceSysmoduleUnloadModuleInternalWithArg, SceSysmoduleInternalModuleId module_id, SceSize args, void *argp, const SceSysmoduleOpt *option) {
