@@ -537,7 +537,7 @@ mutex_cancel_counts             pass
 mutex_ceiling                   skip     # threads ignore their priority, so whether the rwlock case's middle priority thread runs first depends on the host
 mutex_ceiling_options           pass
 mutex_count_check_order         pass
-mutex_create_unmapped_options   fail     # the first page reads as mapped, so an option struct at 0x4 isn't refused
+mutex_create_unmapped_options   pass
 mutex_errors                    pass
 mutex_owner_end_order           skip     # threads ignore their core and priority, so the waiters an ending owner hands its locks to run in host order
 mutex_owner_relock_waiters      pass
