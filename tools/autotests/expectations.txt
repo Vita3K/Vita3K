@@ -13,6 +13,7 @@ app_free_sizes                  fail     # the app's code, data, stack and TLS a
 app_memory_blocks               fail     # the app's code, data, stacks and TLS aren't memory blocks with their types
 app_memory_ranges               fail     # the app's own memory isn't in memory blocks, the find ignores its size
 app_start_free                  fail     # the app's code, data, stack and TLS aren't memory blocks, and the reported free size isn't the Vita's
+append_descriptors              fail     # host files open in append mode, so an APPEND descriptor starts at the end and moves with each write
 appmgr_app_data_mount           crash    # sceAppMgrAppDataMount is a stub, a NULL out pointer is written by the host and kills Vita3K
 appmgr_app_param_int            fail     # sceAppMgrAppParamGetInt returns 0 for every param and never writes out, no unknown or shell only errors
 appmgr_app_param_string         fail     # sceAppMgrAppParamGetString sizes, the NUL and the errors
@@ -210,6 +211,7 @@ delay_wait_id                   pass
 delete_race_end_waiters         pass
 delete_with_waiters             pass
 delete_with_waiters_more        fail     # sceKernelWaitMultipleEvents
+descriptor_access               fail     # a read without read access and a write without write access go through, and a plain write stays in the host buffer, so an APPEND write on another descriptor goes over it
 devctl_ioctl                    fail     # sceIoDevctl and sceIoIoctl commands and sizes, Vita3K answers the 0x3001 free space query the test expects refused, and accepts any ioctl
 directories                     fail     # directory mode and wrong type errors
 display                         crash    # display size, framebuffer pitch checks, a NULL pointer
@@ -337,6 +339,7 @@ info                            pass
 info_fields                     pass
 info_sizes                      pass
 io_priority                     fail     # sceIoGetPriority, sceIoSetPriority and the default priority calls are stubs, no range check and no stored value
+ioctl_bad_pointers              fail     # sceIoIoctl doesn't check its input and output
 local_ready_requeue             fail     # threads are never READY or STANDBY
 local_standby_raise_preempt     fail     # T reads DORMANT where the Vita has STANDBY, and the steps run in another order
 lock_calls_callback_runs        pass
@@ -553,6 +556,7 @@ object_limit_source             fail     # no object limit, Vita3K makes 4096 se
 object_limits                   fail     # no limit on the number of objects
 open                            pass
 open_close_kinds                fail     # an open returns the creating UID, close does nothing
+open_flag_checks                fail     # TRUNC is ignored and the open takes every flag combination
 open_name_rules                 fail     # openable names, NAME_TOO_LONG at 32 characters
 open_uid_limits                 fail     # no limit on opened UIDs
 openable_name_limit_each_kind   pass
@@ -574,6 +578,7 @@ outside_mask_rerun              fail     # threads ignore their core
 owner_end                       pass
 owner_end_more                  pass
 poll_calls                      pass
+positioned_bad_buffers          fail     # pread and pwrite take an unmapped buffer, and refuse a NULL one of size 0
 preempt_keeps_context           fail     # the FPSCR a preempted thread set is lost when the preempting thread runs
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_migrate                 fail     # threads ignore their core
@@ -592,6 +597,7 @@ queue_order_matrix              pass
 queue_order_matrix_more         skip     # threads ignore their core and priority, so readers and thread end waiters woken together run in host order
 queue_order_timer               pass
 queued_mask_change_busy_core    fail     # a queued affinity change runs T on the held core 0 and reports DORMANT, not STANDBY
+read_only_create_write          fail     # a descriptor opened to read with CREAT writes
 readonly_in                     fail     # setting a timer's time from read only memory isn't refused, and a multiple event wait listed in it gets nothing
 readonly_out_info               fail     # no write check on output parameters
 readonly_out_values             fail     # no write check on output parameters
@@ -708,15 +714,22 @@ suspend_wake_status_kinds       skip     # whether a woken waiter suspended for 
 suspended_nonobject_waits       pass
 sync_chstat_pread_dread         crash    # sceIoPread into a NULL buffer is written through as a host pointer and segfaults
 sync_object_memory_cost         fail     # kernel objects take no main memory
+syscall_block_page_end          fail     # the page after a memory block reads as mapped, so a block in its last 8 bytes isn't refused
 syscall_callee_saved            pass
+syscall_io_blocks               fail     # the underscore pread, pwrite, ioctl and devctl calls don't refuse a NULL or unmapped argument block, and devctl doesn't check its input
 syscall_io_calls                fail     # the underscore sceIo calls that the libkernel exports reach aren't implemented
 syscall_lw_mutex_lock           fail     # the lightweight mutex lock call ignores its callback argument, so a waiter's callback doesn't run during the wait
 syscall_module_blocks           fail     # the module calls don't read the flags, option and status block
+syscall_module_checks           fail     # the module syscalls don't read the flags and status block
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 syscall_result_modes            fail     # a kernel call leaves r1 to r3 and r12 as they were, the Vita sets them by the kind of result
 syscall_vfp_clobber             pass
 syscall_vfp_helpers             fail     # kernel calls change FPSCR and keep d0, d1 and d16, the Vita keeps FPSCR and clobbers those in some calls
+syscall_wait_aliased_outputs    fail     # the wait calls don't copy their block before the wait, so an output written over the block moves the next output
+syscall_wait_bad_blocks         fail     # the event flag and simple event wait calls don't refuse a NULL or unmapped block or timeout
+syscall_wait_bad_outputs        timeout  # the wait calls don't read their block, so a poll of the event with a timeout of 0 never ends
 syscall_wait_blocks             timeout  # the event flag and simple event calls don't read the result and timeout block, so a wait with a timeout never ends
+syscall_wait_copy_back          fail     # the lightweight mutex lock call doesn't copy its timeout in first, so an unmapped one isn't refused
 sysmodule                       fail     # system modules don't load without firmware
 sysmodule_ids                   pass
 sysmodule_lock_during_start     fail     # libfiber doesn't load without firmware
