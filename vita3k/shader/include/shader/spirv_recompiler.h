@@ -33,7 +33,7 @@ static constexpr int MASK_TEXTURE_SLOT_IMAGE = 1;
 static constexpr int COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE = 3;
 // texture unit of the mask in OpenGL SPIR-V shaders, after the fragment and vertex textures
 static constexpr int MASK_TEXTURE_SLOT_SAMPLER = 32;
-static constexpr uint32_t CURRENT_VERSION = 17;
+static constexpr uint32_t CURRENT_VERSION = 18;
 // fragment shader using the rendering surface as a storage image (because of shader interlock) have a line
 // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATIO_ID) const bool is_srgb = false;
 // Setting this constant to true performs gamma correction in the shader
