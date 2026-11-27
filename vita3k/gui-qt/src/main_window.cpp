@@ -1754,6 +1754,7 @@ void MainWindow::repaint_toolbar_icons() {
 
     m_ui->toolbar_open->setIcon(icon(QStringLiteral(":/icons/open.png")));
     m_ui->toolbar_refresh->setIcon(icon(QStringLiteral(":/icons/refresh.png")));
+    m_ui->restart_action->setIcon(icon(QStringLiteral(":/icons/refresh.png")));
     m_ui->toolbar_fullscreen->setIcon(m_fullscreen ? m_icon_fullscreen_off : m_icon_fullscreen_on);
     m_ui->toolbar_stop->setIcon(m_icon_stop);
     m_ui->toolbar_config->setIcon(icon(QStringLiteral(":/icons/configure.png")));
