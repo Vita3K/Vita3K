@@ -1533,7 +1533,7 @@ void MainWindow::setup_toolbar() {
             gui::utils::open_dir(textures_path);
         });
 
-        menu.addAction(tr("Open Log Path"), this, [this] {
+        menu.addAction(tr("Open Log(s) Path"), this, [this] {
             gui::utils::open_dir(emuenv.log_path);
         });
 
