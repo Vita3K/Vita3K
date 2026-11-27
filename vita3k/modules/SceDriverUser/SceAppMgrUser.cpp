@@ -36,8 +36,9 @@ struct SceAppMgrSaveDataDataDelete {
     uint8_t reserved[32];
     Ptr<SceAppUtilSaveDataDataSaveItem> files;
     int fileNum;
-    SceAppUtilMountPoint *mountPoint;
+    SceAppUtilMountPoint mountPoint;
 };
+static_assert(sizeof(SceAppMgrSaveDataDataDelete) == 0x44);
 
 struct SceAppMgrSaveDataData {
     int size;
@@ -46,9 +47,11 @@ struct SceAppMgrSaveDataData {
     uint8_t reserved[32];
     Ptr<SceAppUtilSaveDataDataSaveItem> files;
     int fileNum;
-    SceAppUtilMountPoint *mountPoint;
-    unsigned int *requiredSizeKiB;
+    SceAppUtilMountPoint mountPoint;
+    Ptr<unsigned int> requiredSizeKiB;
+    int unk_0x48;
 };
+static_assert(sizeof(SceAppMgrSaveDataData) == 0x4C);
 
 EXPORT(SceInt32, _sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
     TRACY_FUNC(_sceAppMgrGetAppState, appState, sizeofSceAppMgrAppState, buildVersion);
@@ -560,7 +563,7 @@ EXPORT(int, sceAppMgrSaveDataDataRemove, Ptr<SceAppMgrSaveDataDataDelete> data) 
         if (fs::is_regular_file(file)) {
             remove_file(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
         } else
-            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
+            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name, true);
     }
 
     return 0;

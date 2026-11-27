@@ -105,6 +105,7 @@ struct TranslationState {
     spv::Id color_attachment_id = spv::NoResult;
     spv::Id color_attachment_raw_id = spv::NoResult;
     spv::Id mask_id = spv::NoResult;
+    bool mask_is_sampled = false;
     spv::Id frag_coord_id = spv::NoResult;
     spv::Id render_info_id = spv::NoResult;
     std::vector<VarToReg> var_to_regs;
@@ -130,6 +131,16 @@ using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, Ve
 
 static void discard_masked_fragments(spv::Builder &b, const TranslationState &translate_state);
 
+// the shader reads and writes gamma corrected surfaces through images, which do no sRGB conversion
+static spv::Id get_is_srgb(spv::Builder &b, const SpirvShaderParameters &parameters, const TranslationState &translate_state) {
+    if (translate_state.is_vulkan)
+        return parameters.is_srgb_constant;
+
+    // OpenGL has no specialization constant, the flag is in the render info block
+    const spv::Id is_srgb = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_is_srgb) });
+    return b.createBinOp(spv::OpFOrdGreaterThan, b.makeBoolType(), b.createLoad(is_srgb, spv::NoPrecision), b.makeFloatConstant(0.5f));
+}
+
 static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, const Input &input, const uint32_t explicit_array_size = 0) {
     // disabled
     return param_id;
@@ -145,6 +156,7 @@ static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, c
 static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
         // clang-format off
+    case DataType::C10:
     case DataType::F16:
     case DataType::F32:
          return b.makeFloatType(32);
@@ -433,7 +445,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 pa_dtype = DataType::F16;
             } else if (input_type == 0x10000000) {
                 pa_type = "fixed";
-                // TODO: Supply data type
+                pa_dtype = DataType::C10;
             } else if (input_type == 0x100000) {
                 if (input_id == 0xA000 || input_id == 0xB000) {
                     pa_type = "float";
@@ -685,14 +697,22 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     }
 
     if (features.use_mask_bit) {
-        const spv::Id mask = create_builtin_sampler(b, features, translation_state, "f_mask");
-        translation_state.mask_id = mask;
-
-        if (translation_state.is_vulkan) {
-            b.addDecoration(mask, spv::DecorationBinding, 1);
-            b.addDecoration(mask, spv::DecorationDescriptorSet, 1);
+        if (!translation_state.is_vulkan && !translation_state.is_target_glsl) {
+            // AMD reads zeros from storage images in OpenGL SPIR-V shaders, which discarded every fragment
+            const spv::Id mask = create_param_sampler(b, "f_mask", spv::Dim2D);
+            b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_SAMPLER);
+            translation_state.mask_id = mask;
+            translation_state.mask_is_sampled = true;
         } else {
-            b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+            const spv::Id mask = create_builtin_sampler(b, features, translation_state, "f_mask");
+            translation_state.mask_id = mask;
+
+            if (translation_state.is_vulkan) {
+                b.addDecoration(mask, spv::DecorationBinding, 1);
+                b.addDecoration(mask, spv::DecorationDescriptorSet, 1);
+            } else {
+                b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+            }
         }
     }
 
@@ -807,10 +827,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
                 b.setPrecision(source, precision);
 
-                if (translation_state.is_vulkan) {
+                {
                     const spv::Id old_source = source;
                     // if (is_srgb)
-                    spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
+                    spv::Builder::If cond_builder(get_is_srgb(b, parameters, translation_state), spv::SelectionControlMaskNone, b);
 
                     // perform gamma correction:
                     // source.xyz = pow(source.xyz, vec3(2.2));
@@ -1063,7 +1083,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32 };
+        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32, f32, f32, b.makeUintType(32) };
         if (uniform_buffer_count > 0)
             uniform_composition.push_back(buffer_addresses_type);
         if (uniform_texture_count > 0) {
@@ -1087,6 +1107,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_FRAG_UNIFORM_MEMBER(writing_mask);
         ADD_FRAG_UNIFORM_MEMBER(use_raw_image);
         ADD_FRAG_UNIFORM_MEMBER(res_multiplier);
+        ADD_FRAG_UNIFORM_MEMBER(is_srgb);
+        ADD_FRAG_UNIFORM_MEMBER(surface_lod);
+        ADD_FRAG_UNIFORM_MEMBER(surface_mask);
 
 #undef ADD_FRAG_UNIFORM_MEMBER
         // the resolution multiplier does not require a high precision
@@ -1440,8 +1463,15 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    if (translation_state.is_fragment)
+    if (translation_state.is_fragment) {
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
+        spv_params.frag_coord_id = translation_state.frag_coord_id;
+#ifdef __ANDROID__
+        spv_params.use_surface_lod = translation_state.is_vulkan;
+#else
+        spv_params.use_surface_lod = true;
+#endif
+    }
 
     return spv_params;
 }
@@ -1462,7 +1492,14 @@ static void discard_masked_fragments(spv::Builder &b, const TranslationState &tr
 
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(sampled_type, 4);
-    spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
+    spv::Id texel;
+    if (translate_state.mask_is_sampled) {
+        const spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
+        const spv::Id image = b.createUnaryOp(spv::OpImage, image_type, b.createLoad(translate_state.mask_id, spv::NoPrecision));
+        texel = b.createOp(spv::OpImageFetch, v4, { { true, image }, { true, current_coord }, { false, spv::ImageOperandsLodMask }, { true, b.makeIntConstant(0) } });
+    } else {
+        texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
+    }
     spv::Id rezero = b.makeFloatConstant(0.5f);
     spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
     spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeVectorType(b.makeBoolType(), 4), { texel, zero });
@@ -1634,10 +1671,10 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
         translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { { true, translated_id }, { true, translated_id }, { false, 0 }, { false, 1 } });
 
-        if (translate_state.is_vulkan) {
+        {
             spv::Id old_color = color;
             // if (is_srgb)
-            spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
+            spv::Builder::If cond_builder(get_is_srgb(b, parameters, translate_state), spv::SelectionControlMaskNone, b);
 
             // perform inverse gamma correction:
             // color.xyz = pow(color.xyz, vec3(1/2.2));
@@ -1655,8 +1692,6 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             cond_builder.makeBeginElse();
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, old_color });
             cond_builder.makeEndIf();
-        } else {
-            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
         }
 
         if (features.preserve_f16_nan_as_u16) {
@@ -2176,6 +2211,7 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
         return spv::ImageFormat::ImageFormatRgba8Snorm;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
         return spv::ImageFormat::ImageFormatRgba16f;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:

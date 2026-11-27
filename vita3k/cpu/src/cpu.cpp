@@ -16,196 +16,86 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <cpu/disasm/functions.h>
-#include <cpu/functions.h>
 #include <cpu/impl/dynarmic_cpu.h>
-#include <cpu/impl/interface.h>
 #include <cpu/state.h>
 #include <mem/ptr.h>
 #include <util/types.h>
 
+#include <algorithm>
+#include <bit>
 #include <memory>
 #include <string>
 
-static void delete_cpu_state(CPUState *state) {
-    delete state;
-}
-
-void set_thread_id(CPUState &state, SceUID thread_id) {
-    state.thread_id = thread_id;
-}
-
-SceUID get_thread_id(CPUState &state) {
-    return state.thread_id;
-}
+CPUState::CPUState(MemState &mem, SceUID thread_id, std::size_t processor_id)
+    : thread_id(thread_id)
+    , mem(mem)
+    , processor_id(processor_id) {}
 
 CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem) {
-    CPUStatePtr state(new CPUState(), delete_cpu_state);
-    state->mem = &mem;
-    state->thread_id = thread_id;
+    CPUStatePtr cpu = std::make_unique<DynarmicCPU>(mem, thread_id, processor_id, cpu_opt);
+    if (!init(cpu->disasm))
+        return nullptr;
+    return cpu;
+}
 
-    if (!init(state->disasm)) {
-        return CPUStatePtr();
+void CPUState::set_pc(uint32_t val) {
+    if (val & arm::THUMB_BIT) {
+        set_cpsr(get_cpsr() | arm::CPSR_T);
+        val &= ~arm::THUMB_BIT;
+    } else {
+        set_cpsr(get_cpsr() & ~arm::CPSR_T);
+        val &= ~(arm::ARM_INSTRUCTION_SIZE - 1);
     }
-
-    state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, cpu_opt);
-
-    return state;
+    set_reg(arm::REG_PC, val);
 }
 
-int run(CPUState &state) {
-    return state.cpu->run();
+std::optional<Address> CPUState::take_abort() {
+    if (!abort_pending.exchange(false))
+        return std::nullopt;
+    return abort_fault_addr.load();
 }
 
-int step(CPUState &state) {
-    return state.cpu->step();
+void CPUContext::place_call(MemState &mem, Address fn, Address return_pc, std::initializer_list<uint32_t> args) {
+    set_pc(fn);
+    set_lr(return_pc);
+    for (size_t i = 0; i < std::min<size_t>(args.size(), arm::AAPCS_ARG_REG_COUNT); i++)
+        cpu_registers[i] = args.begin()[i];
+    if (args.size() > arm::AAPCS_ARG_REG_COUNT) {
+        constexpr size_t stack_alignment = 16;
+        const size_t stack_args_size = sizeof(uint32_t) * (args.size() - arm::AAPCS_ARG_REG_COUNT);
+        const size_t stack_size = (stack_args_size + stack_alignment - 1) & ~(stack_alignment - 1);
+        set_sp(get_sp() - static_cast<uint32_t>(stack_size));
+        std::ranges::copy(args.begin() + arm::AAPCS_ARG_REG_COUNT, args.end(), Ptr<uint32_t>(get_sp()).get(mem));
+    }
 }
 
-void stop(CPUState &state) {
-    state.cpu->stop();
+void CPUState::write_call_result(const CallResult &result) {
+    if (result.in_s0) {
+        set_float_reg(0, std::bit_cast<float>(result.regs[0]));
+        return;
+    }
+    for (uint8_t i = 0; i < result.count; i++)
+        set_reg(i, result.regs[i]);
 }
 
-uint32_t read_reg(CPUState &state, size_t index) {
-    return state.cpu->get_reg(index);
+uint32_t CPUState::stack_alloc(size_t size) {
+    const uint32_t new_sp = get_sp() - size;
+    set_sp(new_sp);
+    return new_sp;
 }
 
-float read_float_reg(CPUState &state, size_t index) {
-    return state.cpu->get_float_reg(index);
+void CPUState::stack_free(size_t size) {
+    set_sp(get_sp() + size);
 }
 
-void write_float_reg(CPUState &state, size_t index, float value) {
-    state.cpu->set_float_reg(index, value);
-}
-
-void write_fpscr(CPUState &state, uint32_t value) {
-    state.cpu->set_fpscr(value);
-}
-
-void write_cpsr(CPUState &state, uint32_t value) {
-    state.cpu->set_cpsr(value);
-}
-
-uint32_t read_sp(CPUState &state) {
-    return state.cpu->get_sp();
-}
-
-uint32_t read_pc(CPUState &state) {
-    return state.cpu->get_pc();
-}
-
-uint32_t read_lr(CPUState &state) {
-    return state.cpu->get_lr();
-}
-
-uint32_t read_fpscr(CPUState &state) {
-    return state.cpu->get_fpscr();
-}
-
-uint32_t read_cpsr(CPUState &state) {
-    return state.cpu->get_cpsr();
-}
-
-uint32_t read_tpidruro(CPUState &state) {
-    return state.cpu->get_tpidruro();
-}
-
-uint32_t read_tpidrurw(CPUState &state) {
-    return state.cpu->get_tpidrurw();
-}
-
-void write_reg(CPUState &state, size_t index, uint32_t value) {
-    state.cpu->set_reg(index, value);
-}
-
-void write_sp(CPUState &state, uint32_t value) {
-    state.cpu->set_sp(value);
-}
-
-void write_pc(CPUState &state, uint32_t value) {
-    state.cpu->set_pc(value);
-}
-
-void write_lr(CPUState &state, uint32_t value) {
-    state.cpu->set_lr(value);
-}
-
-void write_tpidruro(CPUState &state, uint32_t value) {
-    state.cpu->set_tpidruro(value);
-}
-
-void write_tpidrurw(CPUState &state, uint32_t value) {
-    state.cpu->set_tpidrurw(value);
-}
-
-bool is_thumb_mode(CPUState &state) {
-    return state.cpu->is_thumb_mode();
-}
-
-bool hit_breakpoint(CPUState &state) {
-    return state.cpu->hit_breakpoint();
-}
-
-void trigger_breakpoint(CPUState &state) {
-    state.cpu->trigger_breakpoint();
-}
-
-void set_log_code(CPUState &state, bool log) {
-    state.cpu->set_log_code(log);
-}
-
-void set_log_mem(CPUState &state, bool log) {
-    state.cpu->set_log_mem(log);
-}
-
-bool get_log_code(CPUState &state) {
-    return state.cpu->get_log_code();
-}
-
-bool get_log_mem(CPUState &state) {
-    return state.cpu->get_log_mem();
-}
-
-void clear_exclusive(CPUState &state) {
-    state.cpu->clear_exclusive();
-}
-
-std::size_t get_processor_id(CPUState &state) {
-    return state.cpu->processor_id();
-}
-
-void invalidate_jit_cache(CPUState &state, Address start, size_t length) {
-    state.cpu->invalidate_jit_cache(start, length);
-}
-
-std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size) {
-    MemState &mem = *state.mem;
+std::string CPUState::disassemble(uint64_t at, bool thumb, uint16_t *insn_size) {
     const uint8_t *const code = Ptr<const uint8_t>(static_cast<Address>(at)).get(mem);
     const size_t buffer_size = GiB(4) - at;
-    return disassemble(state.disasm, code, buffer_size, at, thumb, insn_size);
+    return ::disassemble(disasm, code, buffer_size, at, thumb, insn_size);
 }
 
-std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size) {
-    const bool thumb = state.cpu->is_thumb_mode();
-    return disassemble(state, at, thumb, insn_size);
-}
-
-CPUContext save_context(CPUState &state) {
-    return state.cpu->save_context();
-}
-
-void load_context(CPUState &state, const CPUContext &ctx) {
-    state.cpu->load_context(ctx);
-}
-
-uint32_t stack_alloc(CPUState &state, size_t size) {
-    const uint32_t new_sp = read_sp(state) - size;
-    write_sp(state, new_sp);
-    return new_sp;
-}
-
-uint32_t stack_free(CPUState &state, size_t size) {
-    const uint32_t new_sp = read_sp(state) + size;
-    write_sp(state, new_sp);
-    return new_sp;
+std::string CPUState::disassemble(uint64_t at, uint16_t *insn_size) {
+    return disassemble(at, is_thumb_mode(), insn_size);
 }
 
 static thread_local CPUState *current_cpu_state = nullptr;

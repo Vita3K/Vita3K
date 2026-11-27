@@ -82,7 +82,8 @@ enum struct Filter : int {
     BILINEAR = 1 << 1,
     BICUBIC = 1 << 2,
     FXAA = 1 << 3,
-    FSR = 1 << 4
+    SMAA = 1 << 4,
+    FSR = 1 << 5,
 };
 
 struct State {
@@ -215,6 +216,14 @@ struct State {
     }
     virtual void set_turbo_mode(bool set) {}
 #endif
+
+    // Surface readbacks may complete after later commands; anything observing guest memory must complete them first
+    virtual bool has_pending_readbacks() const {
+        return false;
+    }
+    virtual void complete_readbacks(MemState &mem, bool wait) {}
+    virtual void complete_readbacks_overlapping(MemState &mem, Address begin, Address end) {}
+
     virtual uint32_t get_gpu_version() {
         return 0;
     }

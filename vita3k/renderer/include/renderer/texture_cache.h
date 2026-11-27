@@ -48,6 +48,8 @@ static constexpr size_t TextureCacheSize = 1024;
 typedef std::array<uint32_t, 4> TextureGxmDataRepr;
 struct TextureCacheInfo {
     uint64_t hash = 0;
+    // hash_generation of the texture cache when hash was computed
+    uint64_t hashed_generation = 0;
     SceGxmTexture texture;
     int index = 0;
     uint32_t texture_size = 0;
@@ -105,6 +107,12 @@ protected:
 public:
     Backend backend;
     bool use_protect = false;
+    // A texture is hashed at most once per generation. The generation changes whenever guest memory may have
+    // been written since: by the guest between command lists or after it was signaled, or by the renderer.
+    uint64_t hash_generation = 1;
+    void invalidate_hashes() {
+        hash_generation++;
+    }
     YUVConversionCache yuv_conversion_cache;
     // use a separate sampler cache
     bool use_sampler_cache = false;
@@ -150,13 +158,14 @@ public:
     virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;
     virtual void upload_done() {}
 
-    virtual void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {}
+    virtual void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear, bool has_mipmaps) {}
 
     void upload_texture(const SceGxmTexture &gxm_texture, MemState &mem);
     void cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem);
 
     // is called by cache_and_bind_texture if use_sampler_cache is set to true
-    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth = false);
+    // has_mipmaps tells whether the bound image has more than one level (anisotropy is only applied then)
+    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth, bool has_mipmaps);
 
     // look at the texture folder and update the available imported / exported hashes
     void refresh_available_textures();

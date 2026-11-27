@@ -17,13 +17,15 @@
 
 #pragma once
 
+#include <cpu/arm.h>
 #include <fmt/format.h>
 #include <mem/util.h> // Address.
 
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <memory>
 #include <sstream>
@@ -31,74 +33,110 @@
 
 struct CPUState;
 struct CPUContext;
-struct CPUInterface;
+struct MemState;
 
-typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
-typedef std::unique_ptr<CPUInterface> CPUInterfacePtr;
+using CPUStatePtr = std::unique_ptr<CPUState>;
 
 inline constexpr std::size_t MAX_CORE_COUNT = 150;
 
-struct CPUContext {
-    CPUContext() = default;
+// Why guest code stopped
+struct GuestExit {
+    enum class Kind : uint8_t {
+        // The function returned to the return address, value is r0
+        returned,
+        // Guest code called an import, value is its NID
+        import,
+        // A request_stop(), a breakpoint or a finished step
+        stopped,
+        // Guest code fetched from memory it may not run
+        fault,
+    };
+    Kind kind;
+    uint32_t value = 0;
+    // A breakpoint or a step that ran its instruction, so the debugger holds the thread. A stepped
+    // import has it too.
+    bool debugger_stop = false;
+};
 
-    std::array<uint32_t, 16> cpu_registers{};
-    std::array<float, 64> fpu_registers{};
+// An import's result, which the kernel writes to the registers when the call returns to guest code
+struct CallResult {
+    // r0 to r3, of which count are written
+    std::array<uint32_t, arm::AAPCS_ARG_REG_COUNT> regs{};
+    uint8_t count = 0;
+    // A float result, in s0 with its bits in regs[0]
+    bool in_s0 = false;
+};
+
+struct CPUContext {
+    std::array<uint32_t, arm::CORE_REG_COUNT> cpu_registers{};
+    std::array<float, arm::EXT_REG_WORDS> fpu_registers{};
     uint32_t cpsr = 0;
     uint32_t fpscr = 0;
+    uint32_t tpidrurw = 0;
+
+    // The registers as 32-bit words: r0 to r15, cpsr, s0 to s63, then fpscr. A d register is two
+    // words and a q register four.
+    static constexpr uint32_t WORD_CPSR = arm::CORE_REG_COUNT;
+    static constexpr uint32_t WORD_S0 = WORD_CPSR + 1;
+    static constexpr uint32_t WORD_FPSCR = WORD_S0 + arm::EXT_REG_WORDS;
+
+    uint32_t word(uint32_t i) const {
+        if (i < WORD_CPSR)
+            return cpu_registers[i];
+        if (i == WORD_CPSR)
+            return cpsr;
+        if (i < WORD_FPSCR)
+            return std::bit_cast<uint32_t>(fpu_registers[i - WORD_S0]);
+        return fpscr;
+    }
 
     bool thumb() const {
-        return cpsr & 0x20;
+        return cpsr & arm::CPSR_T;
     }
 
     uint32_t get_sp() const {
-        return cpu_registers[13];
+        return cpu_registers[arm::REG_SP];
     }
 
     uint32_t get_lr() const {
-        return cpu_registers[14];
+        return cpu_registers[arm::REG_LR];
     }
 
     uint32_t get_pc() const {
-        return cpu_registers[15];
+        return cpu_registers[arm::REG_PC];
     }
 
     void set_sp(uint32_t val) {
-        cpu_registers[13] = val;
+        cpu_registers[arm::REG_SP] = val;
     }
 
     void set_lr(uint32_t val) {
-        cpu_registers[14] = val;
+        cpu_registers[arm::REG_LR] = val;
     }
+
+    // Sets up a call of fn with args: the first four in r0 to r3, the rest on the stack in mem, and
+    // return_pc in LR
+    void place_call(MemState &mem, Address fn, Address return_pc, std::initializer_list<uint32_t> args);
 
     void set_pc(uint32_t val) {
-        if (val & 1) {
-            cpsr |= 0x20;
-            val = val & 0xFFFFFFFE;
+        if (val & arm::THUMB_BIT) {
+            cpsr |= arm::CPSR_T;
+            val &= ~arm::THUMB_BIT;
         } else {
-            cpsr &= 0xFFFFFFDF;
-            val = val & 0xFFFFFFFC;
+            cpsr &= ~arm::CPSR_T;
+            val &= ~(arm::ARM_INSTRUCTION_SIZE - 1);
         }
-        cpu_registers[15] = val;
+        cpu_registers[arm::REG_PC] = val;
     }
 
-    std::string description() {
-        uint32_t pc = get_pc();
-        uint32_t sp = get_sp();
-        uint32_t lr = get_lr();
-
-        std::string str;
+    std::string description() const {
+        std::string str = fmt::format("PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}\n", get_pc(), get_sp(), get_lr());
         auto back_it = std::back_inserter(str);
-        fmt::format_to(back_it, "PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}\n", pc, sp, lr);
         for (int a = 0; a < 6; a++) {
             fmt::format_to(back_it, "r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}\n", a, cpu_registers[a], a + 6, cpu_registers[a + 6]);
         }
-        fmt::format_to(back_it, "r12: 0x{:0>8x}\n", cpu_registers[12]);
+        fmt::format_to(back_it, "r12: 0x{:0>8x}\n", cpu_registers[arm::REG_IP]);
         fmt::format_to(back_it, "Thumb: {}\n", thumb());
         return str;
     }
-};
-
-union DoubleReg {
-    double d;
-    float f[2];
 };

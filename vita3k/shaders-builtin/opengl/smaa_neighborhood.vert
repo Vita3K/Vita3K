@@ -15,24 +15,18 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+// SMAA pass 3: neighborhood blending, drawn straight to the screen.
+// The SMAA.hlsl library and the rt_metrics uniform are injected as a prelude by
+// ScreenRenderer::init_smaa.
 
-#include <mem/ptr.h>
+in vec3 position_vertex;
+in vec2 uv_vertex;
 
-#include <cstdlib>
+out vec2 uv_frag;
+out vec4 offset_frag;
 
-struct CPUState;
-
-void write_return_value(CPUState &cpu, int32_t ret);
-void write_return_value(CPUState &cpu, int64_t ret);
-void write_return_value(CPUState &cpu, uint32_t ret);
-void write_return_value(CPUState &cpu, uint64_t ret);
-void write_return_value(CPUState &cpu, std::div_t ret);
-void write_return_value(CPUState &cpu, std::lldiv_t ret);
-void write_return_value(CPUState &cpu, bool ret);
-void write_return_value(CPUState &cpu, float ret);
-
-template <typename Pointee>
-void write_return_value(CPUState &cpu, const Ptr<Pointee> &ret) {
-    write_return_value(cpu, ret.address());
+void main() {
+    gl_Position = vec4(position_vertex, 1.0);
+    uv_frag = uv_vertex;
+    SMAANeighborhoodBlendingVS(uv_vertex, offset_frag);
 }

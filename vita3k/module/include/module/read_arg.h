@@ -19,7 +19,7 @@
 
 #include "args_layout.h"
 
-#include <cpu/functions.h>
+#include <cpu/state.h>
 
 // Reads an arg from CPU registers or stack
 template <typename T>
@@ -27,18 +27,18 @@ T read(CPUState &cpu, const ArgLayout &arg, const MemState &mem) {
     switch (arg.location) {
     case ArgLocation::gpr:
         if constexpr (sizeof(T) <= 4) {
-            return static_cast<T>(read_reg(cpu, arg.offset));
+            return static_cast<T>(cpu.get_reg(arg.offset));
         } else {
             static_assert(sizeof(T) == 8);
-            const uint64_t lo = read_reg(cpu, arg.offset);
-            const uint64_t hi = read_reg(cpu, arg.offset + 1);
+            const uint64_t lo = cpu.get_reg(arg.offset);
+            const uint64_t hi = cpu.get_reg(arg.offset + 1);
             return static_cast<T>(lo | (hi << 32));
         }
     case ArgLocation::stack:
-        return *Ptr<T>(static_cast<Address>(read_sp(cpu) + arg.offset)).get(mem);
+        return *Ptr<T>(static_cast<Address>(cpu.get_sp() + arg.offset)).get(mem);
     case ArgLocation::fp:
         if constexpr (std::is_same_v<T, float>) {
-            return read_float_reg(cpu, arg.offset);
+            return cpu.get_float_reg(arg.offset);
         }
     }
     return T();

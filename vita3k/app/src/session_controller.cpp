@@ -255,13 +255,7 @@ void AppSessionController::set_pause_state_changed_callback(std::function<void()
 
 void AppSessionController::apply_runtime_state_locked() {
     const bool paused = active_pause_reasons.load(std::memory_order_relaxed) != 0;
-    const bool currently_paused = emuenv.kernel.is_threads_paused();
-    if (currently_paused != paused) {
-        if (paused)
-            emuenv.kernel.pause_threads();
-        else
-            emuenv.kernel.resume_threads();
-    }
+    emuenv.kernel.set_threads_paused(paused);
 
     if (emuenv.audio.adapter)
         emuenv.audio.switch_state(paused);

@@ -112,7 +112,7 @@ constexpr uint32_t SCE_AUDIODEC_AT9_MAX_ES_SIZE = 1024;
 constexpr uint32_t SCE_AUDIODEC_MP3_MAX_ES_SIZE = 1441;
 // max size is 1792 for AAC ES if adts is enabled
 constexpr uint32_t SCE_AUDIODEC_AAC_MAX_ES_SIZE = 1536;
-constexpr uint32_t SCE_AUDIODEC_CELP_MAX_ES_SIZE = 27;
+constexpr uint32_t SCE_AUDIODEC_CELP_MAX_ES_SIZE = 24;
 
 // this value is multiplied by 2 if sbr is enabled
 constexpr uint32_t SCE_AUDIODEC_AAC_MAX_PCM_SIZE = KiB(2);
@@ -169,6 +169,11 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
     case SCE_AUDIODEC_TYPE_AT9: {
         SceAudiodecInfoAt9 &info = ctrl->info.get(emuenv.mem)->at9;
         DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
+        // libatrac9 leaves the codec info empty for a config it can't parse, which would divide by zero below
+        if (decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME) == 0) {
+            state->codecs[codec].erase(handle);
+            return SCE_AUDIODEC_AT9_ERROR_INVALID_CONFIG;
+        }
         state->decoders[handle] = decoder;
 
         info.channels = decoder->get(DecoderQuery::CHANNELS);
@@ -434,7 +439,8 @@ EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_of
         decoder->receive(temp_storage.data() + old_size, &size);
     }
 
-    memcpy(pcm_data + samples_offset * bytes_per_sample, temp_storage.data() + samples_offset * bytes_per_sample, samples_to_decode * bytes_per_sample);
+    // the offset only applies to the decoded data, pcm_data already points to the requested window
+    memcpy(pcm_data, temp_storage.data() + samples_offset * bytes_per_sample, samples_to_decode * bytes_per_sample);
 
     return 0;
 }

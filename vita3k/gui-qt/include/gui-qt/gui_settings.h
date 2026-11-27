@@ -20,6 +20,7 @@
 #include <gui-qt/gui_save.h>
 #include <gui-qt/gui_settings_base.h>
 
+#include <QSize>
 #include <QString>
 
 namespace gui {
@@ -38,6 +39,7 @@ const QString controls = QStringLiteral("Controls");
 const QString settings = QStringLiteral("Settings");
 const QString user_mgmt = QStringLiteral("UserManagement");
 const QString vita_themes = QStringLiteral("VitaThemes");
+const QString cheats = QStringLiteral("Cheats");
 const QString meta = QStringLiteral("Meta");
 
 const GuiSave m_currentStylesheet = GuiSave(meta, QStringLiteral("currentStylesheet"), DarkStylesheet);
@@ -63,7 +65,8 @@ const GuiSave l_visible = GuiSave(logger, QStringLiteral("visible"), true);
 const GuiSave l_bufferSize = GuiSave(logger, QStringLiteral("bufferSize"), 1000);
 const GuiSave l_fontFamily = GuiSave(logger, QStringLiteral("fontFamily"), QString());
 
-const GuiSave gw_geometry = GuiSave(game_window, QStringLiteral("geometry"), QByteArray());
+const GuiSave gw_size = GuiSave(game_window, QStringLiteral("size"), QSize());
+const GuiSave gw_rememberSize = GuiSave(game_window, QStringLiteral("rememberSize"), false);
 const GuiSave gw_roundedCorners = GuiSave(game_window, QStringLiteral("roundedCorners"), false);
 
 const GuiSave tr_geometry = GuiSave(trophy, QStringLiteral("geometry"), QByteArray());
@@ -89,6 +92,8 @@ const GuiSave um_geometry = GuiSave(user_mgmt, QStringLiteral("geometry"), QByte
 const GuiSave vt_geometry = GuiSave(vita_themes, QStringLiteral("geometry"), QByteArray());
 const GuiSave vt_appliedSelection = GuiSave(vita_themes, QStringLiteral("appliedSelection"), QString());
 const GuiSave vt_bgmEnabled = GuiSave(vita_themes, QStringLiteral("bgmEnabled"), false);
+
+const GuiSave ch_installedOnly = GuiSave(cheats, QStringLiteral("installedOnly"), false);
 const GuiSave vt_bgmVolume = GuiSave(vita_themes, QStringLiteral("bgmVolume"), 50);
 
 } // namespace gui

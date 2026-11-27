@@ -476,11 +476,7 @@ private fun GpuSettingsSection(
             )
             val screenFilterTitle = stringResource(R.string.settings_gpu_screen_filter)
             val screenFilterHelp = helpEntry(screenFilterTitle, stringResource(R.string.settings_gpu_screen_filter_desc))
-            val filterOptions = if (isVulkan) {
-                listOf("Nearest", "Bilinear", "Bicubic", "FXAA", "FSR")
-            } else {
-                listOf("Bilinear", "FXAA")
-            }
+            val filterOptions = listOf("Nearest", "Bilinear", "Bicubic", "FXAA", "SMAA", "FSR")
             val selectedFilter = cfg.screenFilter.takeIf { it in filterOptions } ?: filterOptions.first()
             SettingsChoiceField(
                 title = screenFilterTitle,
@@ -765,18 +761,8 @@ private fun GpuSettingsSection(
                     onShowHelp = onShowHelp
                 )
             }
-            SettingsSubsectionTitle(title = stringResource(R.string.settings_gpu_hacks))
-            SettingsToggleRow(
-                title = stringResource(R.string.settings_gpu_fps_hack),
-                checked = cfg.fpsHack,
-                onCheckedChange = { onUpdate { fpsHack = it } },
-                help = SettingsHelpEntry(
-                    title = stringResource(R.string.settings_gpu_fps_hack),
-                    body = stringResource(R.string.settings_gpu_fps_hack_desc)
-                ),
-                onShowHelp = onShowHelp
-            )
             if (!isPerApp && isVulkan && showTurboModeOption) {
+                SettingsSubsectionTitle(title = stringResource(R.string.settings_gpu_hacks))
                 SettingsToggleRow(
                     title = stringResource(R.string.settings_gpu_turbo_mode),
                     checked = cfg.turboMode,

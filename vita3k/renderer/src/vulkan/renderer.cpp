@@ -1055,6 +1055,8 @@ void VKState::cleanup() {
     device.waitIdle();
 
     request_queue.abort();
+    if (gpu_request_wait_thread.joinable())
+        gpu_request_wait_thread.join();
 
     context = nullptr;
 
@@ -1138,7 +1140,9 @@ void VKState::cleanup() {
     gxp_ptr_map.clear();
     shaders_cache_hashs.clear();
     request_queue.reset();
+    frame_timestamp = 1;
     current_frame_idx = 1;
+    last_frame_waited = 0;
     last_scene_id = 0;
     shaders_count_compiled = 0;
     programs_count_pre_compiled = 0;
@@ -1172,13 +1176,15 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
 
     // store viewport for touch
     {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        display.viewport_frame_size = frame.image_size;
         const float fb_w = static_cast<float>(screen_renderer.extent.width);
         const float fb_h = static_cast<float>(screen_renderer.extent.height);
         display.viewport_drawable_w = static_cast<int>(fb_w);
         display.viewport_drawable_h = static_cast<int>(fb_h);
         if (fb_h > 0.0f) {
             const float window_aspect = fb_w / fb_h;
-            constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+            const float vita_aspect = display_aspect_ratio(frame.image_size.x, frame.image_size.y);
             const bool pixel_perfect = fullscreen_hd_res_pixel_perfect && fullscreen
                 && !(screen_renderer.extent.width % DEFAULT_RES_WIDTH)
                 && !(screen_renderer.extent.height % (DEFAULT_RES_HEIGHT - 4));
@@ -1258,6 +1264,7 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
             layout = vk::ImageLayout::eShaderReadOnlyOptimal;
         }
 
+        screen_renderer.frame_aspect = display_aspect_ratio(frame.image_size.x, frame.image_size.y);
         screen_renderer.render(surface_handle, layout, viewport);
     } else if (has_overlays) {
         screen_renderer.begin_default_render_pass();
@@ -1320,7 +1327,7 @@ uint32_t VKState::get_features_mask() {
 }
 
 int VKState::get_supported_filters() {
-    int filters = static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA);
+    int filters = static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA) | static_cast<int>(Filter::SMAA);
     if (support_fsr)
         filters |= static_cast<int>(Filter::FSR);
     return filters;
@@ -1827,7 +1834,6 @@ void VKState::precompile_shader(const ShadersHash &hash) {
 
 void VKState::preclose_action() {
     // Stop the GPU request wait thread before destruction begins.
-    // VKState (owns the queue) is destroyed before VKContext (owns the thread).
     request_queue.abort();
 
     // make sure we are in a game

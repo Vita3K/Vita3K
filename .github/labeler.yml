@@ -47,15 +47,15 @@ app:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/app/**'
-audio:
+"audio 🔊":
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/audio/**'
-camera:
+"camera 📷":
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/camera/**'
-codec:
+"codec 🎞️":
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/codec/**'
@@ -71,7 +71,7 @@ cpu:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/cpu/**'
-ctrl:
+"ctrl 🎮":
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/ctrl/**'
@@ -113,7 +113,7 @@ http:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/http/**'
-ime:
+"ime ⌨️":
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/ime/**'
@@ -145,7 +145,7 @@ motion:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/motion/**'
-net:
+"net 🌐":
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/net/**'
@@ -218,20 +218,20 @@ vulkan:
       - 'vita3k/vkutil/**'
 
 # OS Labels
-windows:
+"OS: windows 🪟":
   - changed-files:
     - any-glob-to-any-file:
       - '**/*windows*'
-mac:
+"OS: mac 🍎":
   - changed-files:
     - any-glob-to-any-file:
       - '**/*macos*'
-linux:
+"OS: linux 🐧":
   - changed-files:
     - any-glob-to-any-file:
       - 'appimage/*'
       - '**/*linux*'
-android:
+"OS: android 🤖":
   - changed-files:
     - any-glob-to-any-file:
       - '**/*android*'

@@ -15,17 +15,28 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#version 450
+#extension GL_GOOGLE_include_directive : require
 
-#include <cstdint>
+layout(location = 0) in vec3 position_vertex;
+layout(location = 1) in vec2 uv_vertex;
 
-#define INSTRUCTION_UNKNOWN 0 ///< Unknown/unsupported instruction
-#define INSTRUCTION_MOVW 1 ///< MOVW Rd, \#imm instruction
-#define INSTRUCTION_MOVT 2 ///< MOVT Rd, \#imm instruction
-#define INSTRUCTION_SYSCALL 3 ///< SVC \#imm instruction
-#define INSTRUCTION_BRANCH 4 ///< BX Rn instruction
-#define INSTRUCTION_BLX 5 ///< BLX imm instruction
+layout(push_constant) uniform constants {
+    vec4 rt_metrics; // 1/w, 1/h, w, h
+} pc;
 
-uint32_t encode_arm_inst(uint8_t type, uint32_t immed, uint16_t reg);
-// SVC not implemented for thumb
-uint32_t encode_thumb_inst(uint8_t type, uint32_t immed, uint16_t reg);
+#define SMAA_RT_METRICS pc.rt_metrics
+#define SMAA_GLSL_4 1
+#define SMAA_PRESET_HIGH 1
+#define SMAA_INCLUDE_PS 0
+#include "../SMAA.hlsl"
+
+layout(location = 0) out vec2 uv_frag;
+layout(location = 1) out vec2 pixcoord_frag;
+layout(location = 2) out vec4 offset_frag[3];
+
+void main() {
+    gl_Position = vec4(position_vertex, 1.0);
+    uv_frag = uv_vertex;
+    SMAABlendingWeightCalculationVS(uv_vertex, pixcoord_frag, offset_frag);
+}

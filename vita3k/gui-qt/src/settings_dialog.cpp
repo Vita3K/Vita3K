@@ -369,6 +369,14 @@ void SettingsDialog::load_config() {
         static_cast<int>(log2f(static_cast<float>(m_config.anisotropic_filtering))));
     update_aniso_label();
 
+    m_ui->vblank_rate_slider->setMinimum(60);
+    m_ui->vblank_rate_slider->setMaximum(240);
+    m_ui->vblank_rate_slider->setSingleStep(1);
+    m_ui->vblank_rate_slider->setTickInterval(30);
+    m_ui->vblank_rate_slider->setValue(m_config.vblank_rate > 0 ? std::clamp(m_config.vblank_rate, 60, 240) : 60);
+    m_ui->vblank_rate_follow_screen->setChecked(m_config.vblank_rate <= 0);
+    update_vblank_label();
+
     m_ui->export_textures->setChecked(m_config.export_textures);
     m_ui->import_textures->setChecked(m_config.import_textures);
 
@@ -378,7 +386,6 @@ void SettingsDialog::load_config() {
 
     m_ui->shader_cache->setChecked(m_config.shader_cache);
     m_ui->spirv_shader->setChecked(m_config.spirv_shader);
-    m_ui->fps_hack->setChecked(m_config.fps_hack);
 
     m_ui->audio_backend_box->clear();
     m_ui->audio_backend_box->addItems({ QStringLiteral("SDL"), QStringLiteral("Cubeb") });
@@ -545,6 +552,9 @@ void SettingsDialog::load_config() {
     m_ui->windows_rounded_corners->setChecked(m_gui_settings
             ? m_gui_settings->get_value(gui::gw_roundedCorners).toBool()
             : false);
+    m_ui->remember_game_window_size->setChecked(m_gui_settings
+            ? m_gui_settings->get_value(gui::gw_rememberSize).toBool()
+            : false);
     m_ui->ui_language_box->clear();
     m_ui->ui_language_box->addItem(tr("System Default"), QStringLiteral(""));
 
@@ -621,7 +631,7 @@ void SettingsDialog::build_desired_config(Config &desired) const {
     current.export_textures = m_ui->export_textures->isChecked();
     current.import_textures = m_ui->import_textures->isChecked();
     current.export_as_png = m_ui->texture_export_format->currentIndex() == 0;
-    current.fps_hack = m_ui->fps_hack->isChecked();
+    current.vblank_rate = m_ui->vblank_rate_follow_screen->isChecked() ? 0 : m_ui->vblank_rate_slider->value();
     current.shader_cache = m_ui->shader_cache->isChecked();
     current.spirv_shader = m_ui->spirv_shader->isChecked();
     current.gpu_idx = m_ui->gpu_device_box->currentIndex();
@@ -770,6 +780,9 @@ bool SettingsDialog::commit_changes(bool close_after) {
     const bool previous_windows_rounded_corners = update_gui_settings
         ? m_gui_settings->get_value(gui::gw_roundedCorners).toBool()
         : false;
+    const bool previous_remember_game_window_size = update_gui_settings
+        ? m_gui_settings->get_value(gui::gw_rememberSize).toBool()
+        : false;
     const bool previous_theme_music_enabled = update_gui_settings
         ? m_gui_settings->get_value(gui::vt_bgmEnabled).toBool()
         : gui::vt_bgmEnabled.def.toBool();
@@ -806,6 +819,8 @@ bool SettingsDialog::commit_changes(bool close_after) {
         m_gui_settings->set_value(gui::mw_warnAdminPrivileges, m_ui->warn_admin_privileges->isChecked());
     if (update_gui_settings && previous_windows_rounded_corners != m_ui->windows_rounded_corners->isChecked())
         m_gui_settings->set_value(gui::gw_roundedCorners, m_ui->windows_rounded_corners->isChecked());
+    if (update_gui_settings && previous_remember_game_window_size != m_ui->remember_game_window_size->isChecked())
+        m_gui_settings->set_value(gui::gw_rememberSize, m_ui->remember_game_window_size->isChecked());
     bool theme_music_settings_changed = false;
     if (update_gui_settings && previous_theme_music_enabled != m_ui->theme_music_enable->isChecked()) {
         m_gui_settings->set_value(gui::vt_bgmEnabled, m_ui->theme_music_enable->isChecked(), false);
@@ -1028,6 +1043,15 @@ void SettingsDialog::setup_connections() {
         m_ui->anisotropic_filter->setValue(0); // 1x
     });
 
+    connect(m_ui->vblank_rate_slider, &QSlider::valueChanged,
+        this, &SettingsDialog::update_vblank_label);
+    connect(m_ui->vblank_rate_follow_screen, &QCheckBox::toggled,
+        this, &SettingsDialog::update_vblank_label);
+    connect(m_ui->vblank_rate_reset, &QPushButton::clicked, this, [this] {
+        m_ui->vblank_rate_follow_screen->setChecked(false);
+        m_ui->vblank_rate_slider->setValue(60);
+    });
+
     connect(m_ui->audio_volume, &QSlider::valueChanged, this, [this](int val) {
         m_ui->audio_volume_label->setText(tr("Current volume: %1%").arg(val));
     });
@@ -1207,6 +1231,9 @@ void SettingsDialog::setup_connections() {
         { m_ui->gpu_device_box, tr("Graphics Device"), m_tooltips->gpu_device },
         { m_ui->resolution_upscale, tr("Internal Resolution Upscaling"), m_tooltips->resolution_upscaling },
         { m_ui->anisotropic_filter, tr("Anisotropic Filtering"), m_tooltips->anisotropic_filtering },
+        { m_ui->gb_vblank_rate, tr("VBlank Frequency"), m_tooltips->vblank_rate },
+        { m_ui->vblank_rate_slider, tr("VBlank Frequency"), m_tooltips->vblank_rate },
+        { m_ui->vblank_rate_follow_screen, tr("VBlank Frequency"), m_tooltips->vblank_rate },
         { m_ui->export_textures, tr("Export Textures"), m_tooltips->export_textures },
         { m_ui->import_textures, tr("Import Textures"), m_tooltips->import_textures },
         { m_ui->gb_export_format, tr("Texture Exporting Format"), m_tooltips->texture_export_format },
@@ -1214,7 +1241,6 @@ void SettingsDialog::setup_connections() {
         { m_ui->shader_cache, tr("Enable Shader Cache"), m_tooltips->shader_cache },
         { m_ui->spirv_shader, tr("Use SPIR-V Shader"), m_tooltips->spirv_shader },
         { m_ui->disable_mask_bit, tr("Disable Mask Bit Emulation"), m_tooltips->disable_mask_bit },
-        { m_ui->fps_hack, tr("FPS Hack"), m_tooltips->fps_hack },
         // Audio
         { m_ui->audio_backend_box, tr("Audio Backend"), m_tooltips->audio_backend },
         { m_ui->audio_volume, tr("Volume"), m_tooltips->audio_volume },
@@ -1267,6 +1293,7 @@ void SettingsDialog::setup_connections() {
         { m_ui->confirm_exit_app, tr("Show exit app confirmation"), m_tooltips->confirm_exit_app },
         { m_ui->warn_admin_privileges, tr("Warn when running with administrator privileges"), m_tooltips->warn_admin_privileges },
         { m_ui->windows_rounded_corners, tr("Rounded corners"), m_tooltips->windows_rounded_corners },
+        { m_ui->remember_game_window_size, tr("Remember game window size"), m_tooltips->remember_game_window_size },
         { m_ui->ui_language_box, tr("Interface Language"), m_tooltips->ui_language },
         { m_ui->log_buffer_size, tr("Log Buffer Size"), m_tooltips->log_buffer_size },
         { m_ui->log_font_family, tr("Log Font"), m_tooltips->log_font },
@@ -1362,6 +1389,12 @@ void SettingsDialog::update_resolution_label() {
 void SettingsDialog::update_aniso_label() {
     const int val = 1 << m_ui->anisotropic_filter->value();
     m_ui->anisotropic_filter_val->setText(QStringLiteral("%1x").arg(val));
+}
+
+void SettingsDialog::update_vblank_label() {
+    const bool follow = m_ui->vblank_rate_follow_screen->isChecked();
+    m_ui->vblank_rate_slider->setEnabled(!follow);
+    m_ui->vblank_rate_val->setText(follow ? tr("Screen refresh rate") : QStringLiteral("%1 Hz").arg(m_ui->vblank_rate_slider->value()));
 }
 
 void SettingsDialog::on_save_clicked() {
@@ -1465,15 +1498,14 @@ void SettingsDialog::update_gpu_visibility() {
 
     // Vulkan-only widgets
     m_ui->gb_gpu_device->setVisible(is_vulkan);
-    m_ui->gb_renderer_accuracy->setVisible(is_vulkan);
     m_ui->gb_vulkan_options->setVisible(is_vulkan);
-    m_ui->spirv_shader->setVisible(is_vulkan);
 
     m_ui->label_memory_mapping->setVisible(has_mapping);
     m_ui->memory_mapping_box->setVisible(has_mapping);
 
     // OpenGL-only widgets
     m_ui->gb_opengl_options->setVisible(!is_vulkan);
+    m_ui->spirv_shader->setVisible(!is_vulkan);
 
     {
         const QString previous = m_ui->screen_filter_box->currentText().isEmpty()
@@ -1481,13 +1513,8 @@ void SettingsDialog::update_gpu_visibility() {
             : m_ui->screen_filter_box->currentText();
 
         m_ui->screen_filter_box->clear();
-        if (is_vulkan) {
-            m_ui->screen_filter_box->addItems({ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-                QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") });
-        } else {
-            m_ui->screen_filter_box->addItems({ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-                QStringLiteral("Bicubic"), QStringLiteral("FXAA") });
-        }
+        m_ui->screen_filter_box->addItems({ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
+            QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("SMAA"), QStringLiteral("FSR") });
 
         const int idx = m_ui->screen_filter_box->findText(previous);
         m_ui->screen_filter_box->setCurrentIndex(idx >= 0 ? idx : 0);

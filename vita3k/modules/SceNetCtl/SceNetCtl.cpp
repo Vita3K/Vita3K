@@ -144,9 +144,9 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
     const auto handle_error_and_disconnect = [&](int recv_id, int send_id = 0) {
         // Close the sockets if they are valid
         if (recv_id > 0)
-            CALL_EXPORT(sceNetSocketClose, recv_id);
+            close_net_socket(emuenv, recv_id);
         if (send_id > 0)
-            CALL_EXPORT(sceNetSocketClose, send_id);
+            close_net_socket(emuenv, send_id);
 
         {
             // Set the adhoc state and event to disconnected and notify the condition variable
@@ -350,8 +350,8 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         }
 
         // Close the sockets when the loop ends
-        CALL_EXPORT(sceNetSocketClose, recv_id);
-        CALL_EXPORT(sceNetSocketClose, send_id);
+        close_net_socket(emuenv, recv_id);
+        close_net_socket(emuenv, send_id);
 
         {
             // Notify the event and update the adhoc state
@@ -489,13 +489,13 @@ EXPORT(int, sceNetCtlCheckCallback) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
 
     // TODO: Check if the network is connected
     if (emuenv.net.state != 1) {
         for (auto &callback : emuenv.netctl.callbacks) {
             if (callback.pc != 0) {
-                thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_DISCONNECTED, callback.arg });
+                thread->call_guest(callback.pc, { SCE_NET_CTL_EVENT_TYPE_DISCONNECTED, callback.arg });
             }
         }
         emuenv.net.state = 1;
@@ -505,7 +505,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
     if ((emuenv.netctl.adhocEvent != SCE_NET_CTL_EVENT_TYPE_NONE) && (emuenv.netctl.adhocEvent != emuenv.netctl.lastNotifiedAdhocEvent)) {
         for (auto &callback : emuenv.netctl.adhocCallbacks) {
             if (callback.pc != 0)
-                thread->run_callback(callback.pc, { emuenv.netctl.adhocEvent, callback.arg });
+                thread->call_guest(callback.pc, { emuenv.netctl.adhocEvent, callback.arg });
         }
 
         // Update the last notified adhoc event

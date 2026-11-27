@@ -95,6 +95,22 @@ COMMAND(handle_set_context) {
     }
 }
 
+void signal_notifications(State &state, MemState &mem, const SceGxmNotification &vertex_notification, const SceGxmNotification &fragment_notification) {
+    if (!vertex_notification.address && !fragment_notification.address)
+        return;
+
+    std::unique_lock<std::mutex> lock(state.notification_mutex);
+
+    if (vertex_notification.address)
+        *vertex_notification.address.get(mem) = vertex_notification.value;
+    if (fragment_notification.address)
+        *fragment_notification.address.get(mem) = fragment_notification.value;
+
+    // unlocking before a notify should be faster
+    lock.unlock();
+    state.notification_ready.notify_all();
+}
+
 COMMAND(handle_sync_surface_data) {
     TRACY_FUNC_COMMANDS(handle_sync_surface_data);
 
@@ -110,17 +126,9 @@ COMMAND(handle_sync_surface_data) {
             return;
 
         were_notifications_signaled = true;
-        // signal the notification now
-        std::unique_lock<std::mutex> lock(renderer.notification_mutex);
-
-        if (vertex_notification.address)
-            *vertex_notification.address.get(mem) = vertex_notification.value;
-        if (fragment_notification.address)
-            *fragment_notification.address.get(mem) = fragment_notification.value;
-
-        // unlocking before a notify should be faster
-        lock.unlock();
-        renderer.notification_ready.notify_all();
+        // earlier notifications must not be overtaken
+        renderer.complete_readbacks(mem, true);
+        renderer::signal_notifications(renderer, mem, vertex_notification, fragment_notification);
     };
 
     if (renderer.disable_surface_sync)
@@ -131,6 +139,9 @@ COMMAND(handle_sync_surface_data) {
         vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(render_context);
         if (context->is_recording)
             context->stop_recording(vertex_notification, fragment_notification);
+    } else if (renderer.current_backend == Backend::OpenGL) {
+        // the render target is no longer read as it was at the scene start
+        static_cast<gl::GLState &>(renderer).surface_cache.end_scene();
     }
 
     SceGxmColorSurface *surface = &render_context->record.color_surface;
@@ -163,16 +174,17 @@ COMMAND(handle_sync_surface_data) {
     const Address data = surface->data.address();
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
 
-    // We protect the data to track syncing. If this is called then the data is definitely protected somehow.
-    // We just unprotect and reprotect again :D
-    const std::size_t total_size = height * gxm::get_stride_in_bytes(surface->colorFormat, stride_in_pixels);
-
     switch (renderer.current_backend) {
     case Backend::OpenGL:
         if (helper.cmd->status) {
+            renderer.complete_readbacks(mem, true);
             gl::lookup_and_get_surface_data(static_cast<gl::GLState &>(renderer), mem, *surface);
         } else {
-            gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), pixels, *surface);
+            // the notifications are signaled once the readback lands in guest memory
+            const SceGxmNotification none{};
+            gl::queue_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, *surface,
+                were_notifications_signaled ? none : vertex_notification, were_notifications_signaled ? none : fragment_notification);
+            were_notifications_signaled = true;
         }
         break;
 
@@ -227,6 +239,30 @@ COMMAND(handle_draw) {
     Ptr<const void> indices = helper.pop<Ptr<const void>>();
     const std::uint32_t count = helper.pop<const std::uint32_t>();
     const std::uint32_t instance_count = helper.pop<const std::uint32_t>();
+
+    // Without a color surface the fragment color is never written to memory. It can only matter if
+    // a later draw of the scene reads it back and uses it to discard, to replace the depth or to
+    // store to guest memory. Until a render target shows such a draw, skip the color output of its
+    // color-less scenes: this lets the host GPU drop the fragment shader of depth only passes altogether.
+    // The commands of a scene can be submitted in several parts, so the first reader is only seen
+    // when it is drawn: the draws before it in that one scene keep their color skipped.
+    GxmRecordState &record = render_context->record;
+    RenderTarget *target = render_context->current_render_target;
+    const bool has_color_surface = static_cast<bool>(record.color_surface.data);
+    if (!has_color_surface && target && !target->color_observed_without_surface) {
+        const SceGxmProgram &fragment_program = *record.fragment_program.get(mem)->program.get(mem);
+        const bool stores_to_memory = (fragment_program.program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE) != 0;
+        if (fragment_program.is_frag_color_used() && (fragment_program.is_discard_used() || fragment_program.is_depth_replace_used() || stores_to_memory)) {
+            LOG_INFO_ONCE("A scene without color surface reads back the fragment color, keeping its color output");
+            target->color_observed_without_surface = true;
+        }
+    }
+    const bool skip_color_output = !has_color_surface && !record.is_maskupdate && !(target && target->color_observed_without_surface);
+    if (record.skip_color_output != skip_color_output) {
+        record.skip_color_output = skip_color_output;
+        if (renderer.current_backend == Backend::Vulkan)
+            vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+    }
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:

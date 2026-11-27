@@ -51,6 +51,14 @@ using UniformTypes = std::map<GLuint, GLenum>;
 class GLTextureCache : public TextureCache {
 public:
     GLObjectArray<TextureCacheSize> textures;
+    std::array<GLenum, TextureCacheSize> targets{};
+    // the compressed uploads must use the internal format of the texture
+    std::array<GLenum, TextureCacheSize> internal_formats{};
+    size_t current_index = 0;
+    bool support_srgb_r8 = false;
+    bool support_srgb_rg8 = false;
+
+    GLenum linear_to_srgb(GLenum format) const;
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id);
     void cleanup();
@@ -91,6 +99,10 @@ struct GLContext : public renderer::Context {
     shader::RenderFragUniformBlock current_frag_render_info{};
 
     std::vector<size_t> self_sampling_indices;
+    // fragment texture units that filter the self-sampled color attachment through its mips
+    std::uint32_t self_sampling_mipmap_units = 0;
+    // indexed by the gamma mode of the texture
+    GLObjectArray<2> point_surface_samplers;
 
     explicit GLContext();
     ~GLContext() override = default;

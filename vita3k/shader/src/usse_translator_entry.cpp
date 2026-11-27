@@ -1107,6 +1107,8 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
         }
     }
 
+    recomp.visitor.finalize_surface_filters();
+
     // We reach the end
     // Call end hook. If it's discard, this is not even called, so no worry
     b.createFunctionCall(end_hook_func, {});

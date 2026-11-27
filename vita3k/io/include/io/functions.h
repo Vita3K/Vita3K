@@ -73,7 +73,7 @@ SceUID open_dir(IOState &io, const char *path, const fs::path &vita_fs_path, con
 SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const fs::path &vita_fs_path, const char *export_name);
 int create_dir(IOState &io, const char *dir, int mode, const fs::path &vita_fs_path, const char *export_name, const bool recursive = false);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
-int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const char *export_name);
+int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const char *export_name, const bool recursive = false);
 
 // SceFios functions
 SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay);

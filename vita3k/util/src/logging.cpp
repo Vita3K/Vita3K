@@ -132,11 +132,6 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
     SetConsoleTitle("Vita3K PSVita Emulator");
 #endif
 
-#ifdef __ANDROID__
-    // needed, otherwise the log file contains nothing
-    spdlog::flush_on(spdlog::level::trace);
-#endif
-
     std::call_once(s_terminate_handler_once, []() {
         register_log_exception_handler();
         // Publish the predecessor before making our handler callable.
@@ -182,6 +177,7 @@ void rebuild_default_logger() {
         spdlog::async_overflow_policy::overrun_oldest);
     spdlog::set_default_logger(std::move(logger));
     spdlog::set_pattern(LOG_PATTERN);
+    spdlog::flush_on(spdlog::level::trace);
 }
 
 // log exceptions and flush log file on exceptions

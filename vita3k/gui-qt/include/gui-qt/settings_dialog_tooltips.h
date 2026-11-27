@@ -51,12 +51,12 @@ public:
     QString gpu_device;
     QString resolution_upscaling;
     QString anisotropic_filtering;
+    QString vblank_rate;
     QString export_textures;
     QString import_textures;
     QString texture_export_format;
     QString shader_cache;
     QString spirv_shader;
-    QString fps_hack;
     QString memory_mapping;
     QString audio_backend;
     QString audio_volume;
@@ -114,6 +114,7 @@ public:
     QString confirm_exit_app;
     QString warn_admin_privileges;
     QString windows_rounded_corners;
+    QString remember_game_window_size;
     QString log_buffer_size;
     QString log_font;
     QString gui_stylesheet;

@@ -22,14 +22,14 @@
 #endif
 
 #include "bridge_types.h"
+#include "call_result.h"
 #include "lay_out_args.h"
 #include "vargs.h"
-#include "write_return_value.h"
 
 #include <config/state.h>
 #include <emuenv/state.h>
 
-using ImportFn = void (*)(EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id);
+using ImportFn = CallResult (*)(EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id);
 using ImportVarFactory = std::function<Address(EmuEnvState &emuenv)>;
 using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
 
@@ -57,11 +57,12 @@ ImportFn make_bridge(const char *name, Ret (*)(EmuEnvState &, SceUID, const char
 #endif
         constexpr auto arr = std::get<0>(layout);
         constexpr auto vargs_state = std::get<1>(layout);
-        [&]<size_t... Is>(std::index_sequence<Is...>) {
+        return [&]<size_t... Is>(std::index_sequence<Is...>) -> CallResult {
             if constexpr (std::is_void_v<Ret>) {
                 ExportFn(emuenv, thread_id, export_name, read_bridged_arg<arr[Is], vargs_state, Args>(cpu, emuenv.mem)...);
+                return {};
             } else {
-                write_return_value(cpu, ExportFn(emuenv, thread_id, export_name, read_bridged_arg<arr[Is], vargs_state, Args>(cpu, emuenv.mem)...));
+                return call_result(ExportFn(emuenv, thread_id, export_name, read_bridged_arg<arr[Is], vargs_state, Args>(cpu, emuenv.mem)...));
             }
         }(std::index_sequence_for<Args...>{});
     };

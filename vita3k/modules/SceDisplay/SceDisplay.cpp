@@ -28,27 +28,14 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceDisplay);
 
-static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
-    const auto &thread = emuenv.kernel.get_thread(thread_id);
-    if (is_cb)
-        thread->process_callbacks();
+static SceInt32 display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
 
-    if (emuenv.display.fps_hack)
-        // a game can use a vcount of 2 to render as 30fps
-        // thus doing this can allow some games to run at 60fps
-        vcount = 1;
-
-    uint64_t target_vcount;
-    if (is_since_setbuf) {
-        target_vcount = emuenv.display.last_setframe_vblank_count + vcount;
-    } else {
-        // the wait is considered starting from the last time the thread resumed
-        // from a vblank wait (sceDisplayWait...) and not from the time this function was called
-        // but we still need to wait at least for one vblank
-        target_vcount = thread->next_display_wait(emuenv.display.vblank_count + 1, vcount);
-    }
-
-    wait_vblank(emuenv.display, thread, target_vcount, is_cb);
+    const SceInt32 result = is_since_setbuf
+        ? wait_until_vblank(emuenv, *thread, emuenv.display.last_setframe_vblank_count + vcount, is_cb)
+        : wait_vblank_start(emuenv, *thread, vcount, is_cb);
+    if (result < 0)
+        return result;
 
     if (emuenv.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
@@ -58,7 +45,7 @@ static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const
 
 EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size) {
     TRACY_FUNC(_sceDisplayGetFrameBuf, pFrameBuf, sync, pFrameBuf_size);
-    if (pFrameBuf->size != sizeof(SceDisplayFrameBuf) && pFrameBuf->size != sizeof(SceDisplayFrameBuf2))
+    if (pFrameBuf->size != sizeof(SceDisplayFrameBuf) && pFrameBuf->size != sizeof(SceDisplayFrameBufExt))
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
     else if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
@@ -120,7 +107,7 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
     TRACY_FUNC(_sceDisplaySetFrameBuf, pFrameBuf, sync, pFrameBuf_size);
     if (!pFrameBuf)
         return SCE_DISPLAY_ERROR_OK;
-    if (pFrameBuf->size != sizeof(SceDisplayFrameBuf) && pFrameBuf->size != sizeof(SceDisplayFrameBuf2)) {
+    if (pFrameBuf->size != sizeof(SceDisplayFrameBuf) && pFrameBuf->size != sizeof(SceDisplayFrameBufExt)) {
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
     }
     if (!pFrameBuf->base) {
@@ -186,7 +173,7 @@ EXPORT(SceInt32, sceDisplayGetRefreshRate, float *pFps) {
 
 EXPORT(SceInt32, sceDisplayGetVcount) {
     TRACY_FUNC(sceDisplayGetVcount);
-    return static_cast<SceInt32>(emuenv.display.vblank_count.load()) & 0xFFFF;
+    return static_cast<SceInt32>(emuenv.display.vcount_60hz.load()) & 0xFFFF;
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
@@ -197,25 +184,28 @@ EXPORT(int, sceDisplayGetVcountInternal) {
 EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
     TRACY_FUNC(sceDisplayRegisterVblankStartCallback, uid);
 
-    const auto cb = emuenv.kernel.objects.find<Callback>(uid);
-    if (!cb)
+    CallbackRef callback = emuenv.kernel.objects.find<Callback>(uid);
+    if (!callback)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+
+    const SimpleEventRef event = emuenv.kernel.kernel_objects.find<SimpleEvent>(emuenv.display.vblank_event);
+    if (!event)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
-
-    std::lock_guard<std::mutex> guard(emuenv.display.mutex);
-    emuenv.display.vblank_callbacks[uid] = cb;
-
-    return 0;
+    return event->register_callback(emuenv.kernel, std::move(callback), SCE_UID_INVALID_UID);
 }
 
 EXPORT(SceInt32, sceDisplayUnregisterVblankStartCallback, SceUID uid) {
     TRACY_FUNC(sceDisplayUnregisterVblankStartCallback, uid);
-    if (!emuenv.display.vblank_callbacks.contains(uid))
+    // A UID of any class passes, one that names no object does not
+    if (!emuenv.kernel.objects.find(uid))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+
+    const SimpleEventRef event = emuenv.kernel.kernel_objects.find<SimpleEvent>(emuenv.display.vblank_event);
+    if (!event)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
-
-    std::lock_guard<std::mutex> guard(emuenv.display.mutex);
-    emuenv.display.vblank_callbacks.erase(uid);
-
-    return 0;
+    if (const SceInt32 error = event->unregister_callback(uid))
+        return RET_ERROR(error);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBuf) {

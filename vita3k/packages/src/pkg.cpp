@@ -205,14 +205,32 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     EVP_EncryptFinal_ex(cipher_ctx, main_key + dec_len, &dec_len);
 
     std::vector<uint8_t> sfo_buffer(sfo_size);
-    SfoFile sfo_file;
-    fseek(infile, sfo_offset, SEEK_SET);
-    fread(sfo_buffer.data(), sfo_buffer.size(), 1, infile);
-    sfo::load(sfo_file, sfo_buffer);
-    sfo::get_param_info(emuenv.app_info, sfo_buffer, emuenv.cfg.sys_lang);
+    if (fseek(infile, sfo_offset, SEEK_SET) != 0 || fread(sfo_buffer.data(), sfo_buffer.size(), 1, infile) != 1) {
+        LOG_ERROR("Failed to read param.sfo from {}", fs_utils::path_to_utf8(pkg_path));
+        fclose(infile);
+        evp_cleanup();
+        return false;
+    }
 
-    if (type == PkgType::PKG_TYPE_VITA_DLC)
-        emuenv.app_info.app_content_id = emuenv.app_info.app_content_id.substr(20);
+    if (!sfo::get_param_info(emuenv.app_info, sfo_buffer, emuenv.cfg.sys_lang)) {
+        LOG_ERROR("The param.sfo in {} is invalid, not installing it", fs_utils::path_to_utf8(pkg_path));
+        evp_cleanup();
+        fclose(infile);
+        return false;
+    }
+
+    const bool is_theme = type == PkgType::PKG_TYPE_VITA_THEME;
+    const std::string &dest_id = is_theme ? emuenv.app_info.app_content_id : emuenv.app_info.app_title_id;
+    if (dest_id.empty() || (type == PkgType::PKG_TYPE_VITA_DLC && emuenv.app_info.app_content_id.size() <= 20)) {
+        LOG_ERROR("The param.sfo in {} has no usable title or content ID, not installing it", fs_utils::path_to_utf8(pkg_path));
+        evp_cleanup();
+        fclose(infile);
+        return false;
+    }
+
+    if (type == PkgType::PKG_TYPE_VITA_DLC) {
+        emuenv.app_info.app_content_id.erase(0, 20);
+    }
 
     if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(emuenv.app_info.app_category.c_str(), "gp") == 0) {
         type = PkgType::PKG_TYPE_VITA_PATCH;

@@ -27,16 +27,16 @@
 
 #include <memory>
 
-using FilePtr = std::shared_ptr<FILE>;
+using FilePtr = std::unique_ptr<FILE, decltype(&std::fclose)>;
 
 // For opening Boost.Filesystem files, Boost returns wide strings for Windows, normal strings for other OS
 // Dirent and FILE only accept and return wide char strings for Windows, and normal for other OS
 #ifdef _WIN32
 const wchar_t *translate_open_mode(const int flags);
 
-inline FilePtr create_shared_file(const fs::path &path, const int open_mode) {
+inline FilePtr create_file(const fs::path &path, const int open_mode) {
     const auto file = _wfopen(path.generic_wstring().c_str(), translate_open_mode(open_mode));
-    return file ? FilePtr(file, std::fclose) : FilePtr();
+    return FilePtr(file, std::fclose);
 }
 
 using DirPtr = std::shared_ptr<_WDIR>;
@@ -55,9 +55,9 @@ inline _wdirent *get_system_dir_ptr(const DirPtr &dir) {
 #else
 const char *translate_open_mode(const int flags);
 
-inline FilePtr create_shared_file(const fs::path &path, const int open_mode) {
+inline FilePtr create_file(const fs::path &path, const int open_mode) {
     const auto file = fopen(path.generic_string().c_str(), translate_open_mode(open_mode));
-    return file ? FilePtr(file, std::fclose) : FilePtr();
+    return FilePtr(file, std::fclose);
 }
 
 using DirPtr = std::shared_ptr<DIR>;

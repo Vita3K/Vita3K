@@ -33,6 +33,9 @@
 
 #include <spdlog/fmt/bin_to_hex.h>
 
+#include <bit>
+#include <cmath>
+
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     R_PROFILE(__func__);
@@ -58,6 +61,16 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
     MemState &mem, const Config &config) {
     R_PROFILE(__func__);
+
+    // a draw whose color nothing observes and which leaves depth, stencil and guest memory untouched has no effect
+    if (context.record.skip_color_output && !may_write_depth_stencil(context.record) && !may_store_to_memory(context.record, mem)) {
+        for (auto &stream : context.record.vertex_streams) {
+            stream.data = nullptr;
+            stream.size = 0;
+        }
+        clear_previous_uniform_storage(context);
+        return;
+    }
 
     GLuint program_id = context.last_draw_program;
 
@@ -107,8 +120,22 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(context.record.color_surface.colorFormat);
     const GLenum surface_format = color::translate_internal_format(base_format);
 
+    const bool both_side_fragment_program_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED)
+        && ((context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) || (context.record.two_sided == SCE_GXM_TWO_SIDED_DISABLED));
+
+    const bool binds_color_image = fragment_program_gxp.is_frag_color_used() && features.is_programmable_blending_need_to_bind_color_attachment()
+        && !both_side_fragment_program_disabled && !use_raw_image;
+    if (context.record.color_surface.gamma && renderer.surface_cache.support_srgb_decode && surface_format == GL_RGBA8)
+        // sRGB textures cannot be used as images (reads return 0), the shader does the conversion then
+        renderer.surface_cache.set_color_surface_srgb(context.record.color_surface.data, !binds_color_image);
+    renderer.surface_cache.refresh_gamma_samplings();
+
     if (fragment_program_gxp.is_frag_color_used() && features.is_programmable_blending_need_to_bind_color_attachment()) {
-        if (use_raw_image) {
+        if (both_side_fragment_program_disabled) {
+            // The color mask does not stop image stores, but stores to an unbound image have no effect
+            glBindImageTexture(shader::COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16UI);
+            glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, 0, 0, GL_FALSE, 0, GL_READ_WRITE, surface_format);
+        } else if (use_raw_image) {
             glBindImageTexture(shader::COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16UI);
             glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, 0, 0, GL_FALSE, 0, GL_READ_WRITE, surface_format);
         } else {
@@ -117,8 +144,19 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         }
     }
 
-    if (renderer.features.use_mask_bit)
-        glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+    if (renderer.features.use_mask_bit) {
+        // The shader only reads it, but on AMD integrated GPUs a read-only binding does not see the
+        // fast clear done by glClearTexImage in sync_mask: every load returns 0 and all fragments are discarded
+        glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        // SPIR-V shaders read the mask from this sampler. The setting can change while programs
+        // built with it are cached, so bind it for every draw; GLSL programs do not declare it.
+        // Without that unit glActiveTexture would fail and the mask would replace texture 0.
+        if (renderer.support_mask_sampler) {
+            glActiveTexture(GL_TEXTURE0 + shader::MASK_TEXTURE_SLOT_SAMPLER);
+            glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
+            glActiveTexture(GL_TEXTURE0);
+        }
+    }
 
     shader::RenderVertUniformBlock &vert_ublock = context.current_vert_render_info;
     vert_ublock.viewport_flip = context.record.viewport_flip;
@@ -138,8 +176,6 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
 
     shader::RenderFragUniformBlock &frag_ublock = context.current_frag_render_info;
-    const bool both_side_fragment_program_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED)
-        && ((context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) || (context.record.two_sided == SCE_GXM_TWO_SIDED_DISABLED));
     if (both_side_fragment_program_disabled) {
         frag_ublock.front_disabled = 0.0f;
         frag_ublock.back_disabled = 0.0f;
@@ -152,6 +188,10 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             frag_ublock.back_disabled = (context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
     }
 
+    // nothing can observe the color of this scene, see cmd_handle_draw
+    if (context.record.skip_color_output)
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
     if (context.record.is_maskupdate) {
         // Tests bypassed in maskupdate
         glDisable(GL_DEPTH_TEST);
@@ -161,7 +201,10 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.use_raw_image = static_cast<float>(use_raw_image);
+    // must match the format used by the surface cache
+    frag_ublock.is_srgb = (context.record.color_surface.gamma && renderer.surface_cache.support_srgb_decode && surface_format == GL_RGBA8) ? 1.0f : 0.0f;
     frag_ublock.res_multiplier = renderer.res_multiplier;
+    frag_ublock.surface_lod = std::log2(renderer.res_multiplier);
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)
@@ -181,32 +224,95 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     // Upload vertex stream
     sync_vertex_streams_and_attributes(context, context.record, mem);
 
+    GLenum mode = translate_primitive(type);
+    const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+
+    // A texture barrier only makes the writes of the previous draws visible: when primitives of the same draw overlap,
+    // a fragment can read the color before an earlier primitive of the draw wrote it. With high accuracy, draw each
+    // primitive on its own with a barrier in between, as the Vulkan renderer does without rasterization order access.
+    // This is slow when the GPU is the bottleneck, so standard accuracy keeps a single draw.
+    // gl_InstanceID would not count instances drawn one by one, so instanced draws are left as they are.
+    const bool order_primitives = config.current_config.high_accuracy && fragment_program_gxp.is_frag_color_used()
+        && features.should_use_texture_barrier() && instance_count == 1;
+    const bool expand_to_triangles = order_primitives && (mode == GL_TRIANGLE_STRIP || mode == GL_TRIANGLE_FAN);
+
     // Upload index data.
     const GLsizeiptr index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
-    const std::size_t index_buffer_size = index_size * count;
+    const std::size_t upload_count = expand_to_triangles ? (count > 2 ? (count - 2) * 3 : 0) : count;
+    const std::size_t index_buffer_size = index_size * upload_count;
+
+    // Restore context for normal draws
+    const auto restore_state = [&]() {
+        if (context.record.is_maskupdate) {
+            sync_depth_data(context.record);
+            sync_stencil_data(context.record, mem);
+            // sync_stencil_data writes every stencil bit, restore the write masks
+            sync_stencil_func(context.record, true);
+            sync_stencil_func(context.record, false);
+            glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
+        }
+
+        if (both_side_fragment_program_disabled || context.record.skip_color_output) {
+            sync_blending(context.record, features, mem);
+        }
+    };
 
     std::pair<std::uint8_t *, std::size_t> index_gpu_ptr = context.index_stream_ring_buffer.allocate(index_buffer_size);
     if (!index_gpu_ptr.first) {
         LOG_ERROR("Failed to allocate index stream ring buffer data from GPU!");
+        restore_state();
         return;
     }
 
-    std::memcpy(index_gpu_ptr.first, indices, index_buffer_size);
+    if (expand_to_triangles) {
+        // The same triangles, with their vertices in the same order, as GL makes of the strip or fan
+        const auto expand = [&](auto *dst, const auto *src) {
+            for (std::size_t i = 0; i + 2 < count; i++) {
+                const bool odd = mode == GL_TRIANGLE_STRIP && (i & 1);
+                dst[i * 3 + 0] = mode == GL_TRIANGLE_FAN ? src[0] : src[odd ? i + 1 : i];
+                dst[i * 3 + 1] = src[odd ? i : i + 1];
+                dst[i * 3 + 2] = src[i + 2];
+            }
+        };
+        if (format == SCE_GXM_INDEX_FORMAT_U16)
+            expand(reinterpret_cast<std::uint16_t *>(index_gpu_ptr.first), static_cast<const std::uint16_t *>(indices));
+        else
+            expand(reinterpret_cast<std::uint32_t *>(index_gpu_ptr.first), static_cast<const std::uint32_t *>(indices));
+        mode = GL_TRIANGLES;
+        count = upload_count;
+    } else {
+        std::memcpy(index_gpu_ptr.first, indices, index_buffer_size);
+    }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
 
-    if (fragment_program_gxp.is_native_color()) {
+    const std::uint32_t used_mipmap_units = static_cast<std::uint32_t>(gxm_fragment_program.renderer_data->textures_used.to_ulong()) & context.self_sampling_mipmap_units;
+    if (used_mipmap_units) {
+        if (features.should_use_shader_interlock())
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+        glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + std::countr_zero(used_mipmap_units)));
+        generate_surface_mipmaps(context.current_color_attachment, renderer.res_multiplier);
+    }
+
+    // The shader reads the color attachment whenever it uses the fragment color, so writes from the previous draws
+    // must be made visible to it, native color or not
+    bool color_synced = false;
+    if (fragment_program_gxp.is_frag_color_used() || fragment_program_gxp.is_native_color()) {
         if (features.should_use_shader_interlock() && !config.spirv_shader) {
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+            color_synced = true;
         } else if (features.should_use_texture_barrier()) {
             // Needs texture barrier
             glTextureBarrier();
+            color_synced = true;
         }
-    } else if (!context.self_sampling_indices.empty()) {
+    }
+    if (!color_synced && !context.self_sampling_indices.empty()) {
         if (features.support_texture_barrier) {
             glTextureBarrier();
         } else {
             glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[0]);
-            std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data);
+            const float mipmap_res_multiplier = used_mipmap_units ? renderer.res_multiplier : 1.0f;
+            std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data, mipmap_res_multiplier);
             if (ping_pong != 0) {
                 for (std::size_t i = 0; i < context.self_sampling_indices.size(); i++) {
                     glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[i]);
@@ -217,25 +323,21 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
 
     // Draw.
-    const GLenum mode = translate_primitive(type);
-    const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-
-    if (instance_count == 1) {
+    if (order_primitives) {
+        const std::size_t per_primitive = mode == GL_POINTS ? 1 : (mode == GL_LINES ? 2 : 3);
+        for (std::size_t first = 0; first + per_primitive <= count; first += per_primitive) {
+            // the barrier before the first primitive was issued above
+            if (first)
+                glTextureBarrier();
+            glDrawElements(mode, static_cast<GLsizei>(per_primitive), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second + first * index_size));
+        }
+    } else if (instance_count == 1) {
         glDrawElements(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second));
     } else {
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
     }
 
-    // Restore context for normal draws
-    if (context.record.is_maskupdate) {
-        sync_depth_data(context.record);
-        sync_stencil_data(context.record, mem);
-        glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
-    }
-
-    if (both_side_fragment_program_disabled) {
-        sync_blending(context.record, mem);
-    }
+    restore_state();
 
     context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;
     context.last_draw_fragment_program_hash = context.record.fragment_program.get(mem)->renderer_data->hash;

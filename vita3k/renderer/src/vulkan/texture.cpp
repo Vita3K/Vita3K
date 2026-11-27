@@ -112,9 +112,13 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     TextureViewport texture_viewport{};
 
+    // linear strided textures use the mag filter as the min filter too
+    const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+        && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
+
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
         // try to retrieve it from the color surface cache
-        lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport);
+        lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport, point_sampled);
     }
 
     bool is_depth_surface = false;
@@ -123,9 +127,18 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         lookup_result = context.state.surface_cache.retrieve_depth_stencil_as_texture(texture, &texture_viewport);
     }
 
+    if (!is_vertex) {
+        const uint32_t bit = 1U << index;
+        if (lookup_result.has_value() && lookup_result->has_mipmaps)
+            context.curr_frag_ublock.base_block.surface_mask |= bit;
+        else
+            context.curr_frag_ublock.base_block.surface_mask &= ~bit;
+    }
+
     if (lookup_result.has_value()) {
         // get the sampler now
-        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);
+        // surfaces have a single level
+        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface, false);
     } else {
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
         auto &image = context.state.texture_cache.current_texture->texture;
@@ -184,7 +197,7 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     // if we are not using the previous buffer, we wait if the buffer was used at least once,
     // less than MAX_FRAMES_RENDERING frames ago and we have not yet waited for its fence
     const bool need_wait = !use_previous_buffer
-        && is_frame_timestamp_in_flight(staging_buffer->frame_timestamp, context->frame_timestamp)
+        && is_frame_timestamp_in_flight(staging_buffer->frame_timestamp, state.frame_timestamp)
         && staging_buffer->scene_timestamp > last_waited_scene;
     const vk::Fence current_fence = context->next_fence;
 
@@ -239,7 +252,7 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     cmd_buffer = context->prerender_cmd;
     if (!use_previous_buffer) {
         staging_buffer->scene_timestamp = current_scene_timestamp;
-        staging_buffer->frame_timestamp = context->frame_timestamp;
+        staging_buffer->frame_timestamp = state.frame_timestamp;
         staging_buffer->waiting_fence = current_fence;
         staging_buffer->used_so_far = 0;
 
@@ -555,7 +568,7 @@ void VKTextureCache::upload_done() {
     is_texture_transfer_ready = false;
 }
 
-void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {
+void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear, bool has_mipmaps) {
     vk::Sampler &sampler = samplers[index];
     if (sampler) {
         // the previous one has not been used for a while, we can destroy it
@@ -592,8 +605,9 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
         .unnormalizedCoordinates = VK_FALSE,
     };
 
-    // when using nearest filter, disable anisotropy as the pixels can contain data other than color
-    sampler_info.anisotropyEnable = (anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest);
+    // textures that are point-sampled or have no mipmaps (lookup tables...) can contain data other than color
+    sampler_info.anisotropyEnable = (anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest)
+        && has_mipmaps;
 
     sampler = state.device.createSampler(sampler_info);
 }

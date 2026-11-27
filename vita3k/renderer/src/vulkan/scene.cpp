@@ -19,11 +19,16 @@
 
 #include <gxm/functions.h>
 #include <renderer/vulkan/gxm_to_vulkan.h>
+#ifdef __APPLE__
+#include <renderer/vulkan/triangle_fan.h>
+#endif
 
 #include <config/state.h>
 #include <spdlog/fmt/bin_to_hex.h>
 
 #include <util/log.h>
+
+#include <cmath>
 
 namespace renderer::vulkan {
 
@@ -427,6 +432,19 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         ordered_indices = prepare_ordered_mask_indices(context, type, format, indices, count, mem);
         type = SCE_GXM_PRIMITIVE_TRIANGLES;
     }
+#ifdef __APPLE__
+    // Metal has no native triangle-fan support. MoltenVK supports it through portability extensions but their
+    // implementation does it via a GPU index-expansion that ends the current render pass on every fan draw.
+    // On games that frequently use triangle fans (ex. Disgaea 3), this is very costly.
+    // Thus, we will expand the fan to triangles ourselves (on CPU) and give MVK a plain triangle list
+    // If other GPUs end up having this problem (unlikely but mali/adreno?) then it should be a FeatureState var instead of an ifdef
+    const size_t fan_index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
+    const bool is_fan = ((type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN) && (count >= 3));
+    // expanded list should fit into the 64mb index ring buffer and oversized fans fall back to MVK's method
+    const bool expand_fan_for_metal = is_fan && (count - 2) <= MiB(64) / (3 * fan_index_size);
+    if (expand_fan_for_metal)
+        type = SCE_GXM_PRIMITIVE_TRIANGLES;
+#endif
     if (masked_fetch)
         LOG_INFO_ONCE("Using late-tested framebuffer fetch for rejecting GXM masks; programmable blending is ordered per primitive when rasterization-order attachment access is unavailable");
 
@@ -435,6 +453,19 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     if (!context.in_renderpass)
         context.start_render_pass(true, maskupdate);
+
+    // a draw whose color nothing observes and which leaves depth, stencil and guest memory untouched has no effect,
+    // unless it counts samples for a visibility query (the render pass is started above so the scene still clears)
+    if (context.record.skip_color_output && !may_write_depth_stencil(context.record) && !may_store_to_memory(context.record, mem)
+        && !(context.current_visibility_buffer != nullptr && context.current_query_idx != -1)) {
+        for (auto &stream : context.record.vertex_streams) {
+            stream.data = nullptr;
+            stream.size = 0;
+        }
+        context.vertex_uniform_storage_allocated = false;
+        context.fragment_uniform_storage_allocated = false;
+        return;
+    }
 
     // when we do multiple render pass for one scene (shader interlock or slow macroblock),
     // we need to always load the depth-stencil after the first draw
@@ -462,7 +493,8 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         context.render_cmd.beginRenderPass(context.curr_renderpass_info, vk::SubpassContents::eInline);
         context.last_draw_was_framebuffer_fetch = uses_interlock;
     }
-    if ((context.state.features.direct_fragcolor || masked_fetch) && uses_framebuffer_fetch)
+    // nothing can observe the color when the previous draws did not write any
+    if (uses_framebuffer_fetch && (masked_fetch || (context.state.features.direct_fragcolor && !context.record.skip_color_output)))
         framebuffer_fetch_barrier(context);
 
     if (!maskupdate && context.current_visibility_buffer != nullptr && context.current_query_idx != -1 && !context.is_in_query) {
@@ -470,7 +502,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     }
 
     // do we need to check for a pipeline change?
-    if (context.refresh_pipeline || type != context.last_primitive) {
+    if (context.refresh_pipeline || type != context.last_primitive || context.current_pipeline == nullptr) {
         context.refresh_pipeline = false;
         context.last_primitive = type;
 
@@ -535,6 +567,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     auto &frag_ublock = context.curr_frag_ublock.base_block;
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.res_multiplier = context.state.res_multiplier;
+    frag_ublock.surface_lod = std::log2(context.state.res_multiplier);
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)
@@ -558,6 +591,12 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     uint32_t max_index = 0;
     if (use_memory_mapping) {
+#ifdef __APPLE__
+        // macOS does not yet have memory mapping but it will soon
+        // The memory mapping + expansion combo is not wired up because it relies on index_stream_ring_buffer
+        // which is explicitly unavailable under memory mapping, so it will need restructuring when that comes
+        assert(!expand_fan_for_metal);
+#endif
         auto [buffer, offset] = context.state.get_matching_mapping(indices);
         if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
             TrappedBuffer *trapped_buffer = context.state.buffer_trapping.access_buffer(indices.address(), count * index_size, mem);
@@ -575,9 +614,27 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         }
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else if (!ordered_indices) {
-        const size_t index_buffer_size = index_size * count;
-        context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
-        context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+#ifdef __APPLE__
+        // Expand a triangle fan into a triangle list and stream that instead
+        std::vector<uint16_t> fan_indices_u16;
+        std::vector<uint32_t> fan_indices_u32;
+        if (expand_fan_for_metal) {
+            if (format == SCE_GXM_INDEX_FORMAT_U16) {
+                fan_indices_u16 = triangle_fan_to_list(static_cast<const uint16_t *>(indices_ptr), count);
+                indices_ptr = fan_indices_u16.data();
+                count = fan_indices_u16.size();
+            } else {
+                fan_indices_u32 = triangle_fan_to_list(static_cast<const uint32_t *>(indices_ptr), count);
+                indices_ptr = fan_indices_u32.data();
+                count = fan_indices_u32.size();
+            }
+        }
+#endif
+        if (count) {
+            const size_t index_buffer_size = index_size * count;
+            context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
+            context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+        }
     }
 
     // bind the vertex streams

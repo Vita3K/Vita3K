@@ -72,9 +72,6 @@ void AppsList::refresh(bool from_disk) {
     m_apps = app::get_apps(m_emuenv);
     const auto user_times = app::get_user_app_times(m_emuenv);
     m_table->populate(m_apps, user_times, m_emuenv.compat, m_emuenv.vita_fs_path, m_emuenv.config_path);
-
-    if (!m_search_text.isEmpty())
-        set_search_text(m_search_text);
 }
 
 void AppsList::resize_icons(int slider_pos) {
@@ -87,19 +84,7 @@ const app::AppEntry *AppsList::selected_app() const {
 }
 
 void AppsList::set_search_text(const QString &text) {
-    m_search_text = text.toLower();
-    const int rows = m_table->rowCount();
-    for (int r = 0; r < rows; ++r) {
-        bool visible = true;
-        if (!m_search_text.isEmpty()) {
-            const auto *title_item = m_table->item(r, static_cast<int>(AppsListColumn::Title));
-            const auto *id_item = m_table->item(r, static_cast<int>(AppsListColumn::TitleId));
-            const QString title = title_item ? title_item->text().toLower() : QString();
-            const QString id = id_item ? id_item->text().toLower() : QString();
-            visible = title.contains(m_search_text) || id.contains(m_search_text);
-        }
-        m_table->setRowHidden(r, !visible);
-    }
+    m_table->set_search_text(text);
 }
 
 void AppsList::on_app_boot_requested(const app::AppEntry &app) {

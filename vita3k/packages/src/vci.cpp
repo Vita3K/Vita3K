@@ -219,8 +219,17 @@ bool install_vci(const fs::path &vci_path, EmuEnvState &emuenv, const std::funct
         return false;
     }
     vfs::FileBuffer param;
-    fs_utils::read_data(param_sfo, param);
-    sfo::get_param_info(emuenv.app_info, param, emuenv.cfg.sys_lang);
+    if (!fs_utils::read_data(param_sfo, param)) {
+        LOG_ERROR("VCI: failed to read param.sfo at {}", fs_utils::path_to_utf8(param_sfo));
+        fs::remove_all(staging);
+        return false;
+    }
+
+    if (!sfo::get_param_info(emuenv.app_info, param, emuenv.cfg.sys_lang) || emuenv.app_info.app_title_id.empty()) {
+        LOG_ERROR("VCI: param.sfo at {} is invalid or has no title ID", fs_utils::path_to_utf8(param_sfo));
+        fs::remove_all(staging);
+        return false;
+    }
     LOG_INFO("Found {} [{}], category: {}, content id: {}", emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_info.app_category, emuenv.app_info.app_content_id);
 
     // 8) Choose the ux0 destination (a cart image is always a full app)

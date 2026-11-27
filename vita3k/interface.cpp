@@ -20,6 +20,7 @@
 
 #include "module/load_module.h"
 
+#include <cheat/functions.h>
 #include <config/state.h>
 #include <ctime>
 #include <ctrl/state.h>
@@ -27,6 +28,7 @@
 #include <display/functions.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <gxm/functions.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
@@ -181,7 +183,10 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
 
     auto output_path{ emuenv.vita_fs_path / "ux0" };
     if (mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + sfo_path).c_str(), &write_to_buffer, &buffer, 0)) {
-        sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
+        if (!sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang)) {
+            LOG_ERROR("{}{} is not a readable param.sfo, not installing it", content_path, sfo_path);
+            return false;
+        }
         if (!set_content_path(emuenv, is_theme, output_path))
             return false;
     } else if (is_theme) {
@@ -238,7 +243,14 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
             } else {
                 fs::create_directories(file_output.parent_path());
                 LOG_INFO("Extracting {}", file_output);
-                mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0);
+                if (!mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0)) {
+                    LOG_ERROR("Failed to extract {}: {}", file_output, miniz_get_error(zip));
+                    std::error_code ec;
+                    fs::remove_all(output_path, ec);
+                    if (ec)
+                        LOG_WARN("Failed to remove {}: {}", output_path, ec.message());
+                    return false;
+                }
             }
         }
     }
@@ -370,7 +382,10 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     const auto is_theme = fs::exists(theme_path);
     auto dst_path{ emuenv.vita_fs_path / "ux0" };
     if (fs_utils::read_data(sfo_path, buffer)) {
-        sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
+        if (!sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang)) {
+            LOG_ERROR("{} is not a readable param.sfo, not installing it", fs_utils::path_to_utf8(sfo_path));
+            return false;
+        }
         if (!set_content_path(emuenv, is_theme, dst_path))
             return false;
 
@@ -436,9 +451,33 @@ static void do_patches(MemState &mem, const Patches &patches, const SceKernelMod
     }
 }
 
+// Registers the modules a `$B2` code can pick from along with the cheat file of the title.
+static void load_cheats(EmuEnvState &emuenv, const SceKernelModuleInfo &module_info) {
+    cheat::unload(emuenv.cheat);
+
+    const cheat::JitInvalidate invalidate_jit = [&emuenv](uint32_t address, size_t size) {
+        emuenv.kernel.invalidate_jit_cache(address, size);
+    };
+    cheat::set_enabled(emuenv.cheat, emuenv.cfg.enable_cheats, emuenv.mem, invalidate_jit);
+
+    // A `$B2` code with module index 0 refers to the main executable.
+    CheatModule main_module;
+    main_module.name = std::string(module_info.module_name, strnlen(module_info.module_name, sizeof(module_info.module_name)));
+    static_assert(main_module.segments.size() == MODULE_INFO_NUM_SEGMENTS);
+    for (size_t i = 0; i < main_module.segments.size(); i++) {
+        main_module.segments[i].address = module_info.segments[i].vaddr.address();
+        main_module.segments[i].size = module_info.segments[i].memsz;
+    }
+    cheat::add_module(emuenv.cheat, main_module);
+
+    if (cheat::load(emuenv.cheat, emuenv.cheat_path, emuenv.io.title_id)) {
+        LOG_INFO("{} cheats are turned on for {}", cheat::enabled_cheat_count(emuenv.cheat), emuenv.io.title_id);
+    }
+}
+
 static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const AppLaunchRequest &launch_request) {
     const auto call_import = [&emuenv](CPUState &cpu, uint32_t nid, SceUID thread_id) {
-        ::call_import(emuenv, cpu, nid, thread_id);
+        return ::call_import(emuenv, cpu, nid, thread_id);
     };
     emuenv.kernel.process_exit_callback = [&emuenv](int res, std::optional<AppLaunchRequest> relaunch) {
         emuenv.post_app_launch_request(relaunch.value_or(AppLaunchRequest{ .reason = AppLaunchReason::ProcessExit, .exit_code = res }));
@@ -503,11 +542,17 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
         emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
     }
 
-    main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
+    main_module_id = load_module(emuenv, "app0:" + emuenv.self_path, SCE_KERNEL_MODULE_FLAG_MAIN);
 
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
+        // The main module runs from the main thread, its start only links it
+        if (const ModuleStatus status = start_module(emuenv, *module); !status) {
+            LOG_ERROR("Failed to link main executable {}: {}", module->info.module_name, log_hex(status.error()));
+            return ModuleLoadFailed;
+        }
+        emuenv.kernel.auth_id = module->auth_id;
         uint32_t module_nid = 0;
         {
             const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
@@ -524,6 +569,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
         patches.insert(patches.end(), xml_patches.begin(), xml_patches.end());
         if (!patches.empty())
             do_patches(emuenv.mem, patches, module->info);
+        load_cheats(emuenv, module->info);
     } else
         return FileNotFound;
     // Set self name from self path, can contain folder, get file name only
@@ -542,7 +588,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
 
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
-    auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
+    auto add_preload_module = [&](uint32_t code, const std::string &name, bool load_from_app) {
         if ((process_preload_disabled & code) == 0) {
             if (is_lle_module(name, emuenv)) {
                 const auto module_name_file = fmt::format("{}.suprx", name);
@@ -551,25 +597,24 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
                 else if (fs::exists(emuenv.vita_fs_path / "vs0/sys/external" / module_name_file))
                     lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
             }
-
-            if (module_id != SCE_SYSMODULE_INVALID)
-                emuenv.kernel.loaded_sysmodules[module_id] = {};
         }
     };
     lib_load_list.emplace_back("os0:kd/bootimage.skprx");
     lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
-    add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
-    add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
-    add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);
-    add_preload_module(0x00100000, SCE_SYSMODULE_INVALID, "libcdlg", false);
-    add_preload_module(0x00200000, SCE_SYSMODULE_FIOS2, "libfios2", true);
-    add_preload_module(0x00400000, SCE_SYSMODULE_APPUTIL, "apputil", false);
-    add_preload_module(0x00800000, SCE_SYSMODULE_INVALID, "libSceFt2", false);
-    add_preload_module(0x01000000, SCE_SYSMODULE_INVALID, "libpvf", false);
-    add_preload_module(0x02000000, SCE_SYSMODULE_PERF, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
+    add_preload_module(0x00010000, "libc", true);
+    add_preload_module(0x00020000, "libdbg", false);
+    add_preload_module(0x00080000, "libshellsvc", false);
+    add_preload_module(0x00100000, "libcdlg", false);
+    add_preload_module(0x00200000, "libfios2", true);
+    add_preload_module(0x00400000, "apputil", false);
+    add_preload_module(0x00800000, "libSceFt2", false);
+    add_preload_module(0x01000000, "libpvf", false);
+    add_preload_module(0x02000000, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
 
     for (const auto &module_path : lib_load_list) {
-        auto res = load_module(emuenv, module_path);
+        // The kernel modules aren't preload modules of the process
+        const uint16_t flags = module_path.starts_with("os0:kd/") ? 0 : SCE_KERNEL_MODULE_FLAG_PRELOAD;
+        auto res = load_module(emuenv, module_path, flags);
         LOG_ERROR_IF(res < 0, "Failed to load preloaded module: {}. Ignoring this error.", module_path);
     }
 
@@ -657,7 +702,7 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchR
 
     if (emuenv.cfg.gdbstub) {
         // The threads wait for the debugger's first continue
-        emuenv.kernel.suspend_threads();
+        emuenv.kernel.set_threads_suspended(true);
         server_open(emuenv);
     }
 
@@ -709,7 +754,7 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
     // A main thread without its own affinity runs on every user core and reports them all
     if (affinity == SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT)
         affinity = SCE_KERNEL_CPU_MASK_USER_ALL;
-    const ThreadStatePtr main_thread = emuenv.kernel.create_thread(emuenv.mem, emuenv.io.title_id.c_str(), entry_point, priority, affinity, stack_size, 0, nullptr);
+    const ThreadStateRef main_thread = emuenv.kernel.create_thread(emuenv.mem, emuenv.io.title_id.c_str(), entry_point, priority, affinity, stack_size, 0);
     if (!main_thread) {
         LOG_ERROR("Failed to init main thread.");
         return InitThreadFailed;
@@ -719,10 +764,24 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
     // Before any guest code runs, module_start functions included, since they can read it too
     emuenv.set_launch_uri(emuenv.cfg.launch_uri);
 
-    // Run `module_start` export (entry point) of loaded libraries
-    for (auto &[_, module] : emuenv.kernel.loaded_modules) {
+    // Before any guest code runs, since it may wait for a vblank or register a vblank callback
+    start_sync_thread(emuenv);
+
+    // Before any guest code runs
+    gxm::init_compat_mask(emuenv, main_thread->id);
+
+    // Run `module_start` export (entry point) of loaded libraries. A start can unload its module, so
+    // the modules are listed first. A preload module whose start fails ends the launch.
+    std::vector<SceKernelModulePtr> libraries;
+    for (const auto &[_, module] : emuenv.kernel.loaded_modules) {
         if (module->info.modid != main_module_id)
-            start_module(emuenv, module->info);
+            libraries.push_back(module);
+    }
+    for (const SceKernelModulePtr &module : libraries) {
+        if (const ModuleStatus status = start_module(emuenv, *module); !status && (module->flags & SCE_KERNEL_MODULE_FLAG_PRELOAD)) {
+            LOG_ERROR("Failed to start preload module {}: {}", module->info.module_name, log_hex(status.error()));
+            return ModuleLoadFailed;
+        }
     }
 
     SceKernelThreadOptParam param{ 0, 0 };
@@ -742,12 +801,10 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
         param.size = static_cast<SceSize>(buf.size());
         param.attr = arr.address();
     }
-    if (main_thread->start(param.size, Ptr<void>(param.attr), true) < 0) {
+    if (main_thread->start(param.size, Ptr<void>(param.attr)) < 0) {
         LOG_ERROR("Failed to run main thread.");
         return RunThreadFailed;
     }
-
-    start_sync_thread(emuenv);
 
     return Success;
 }

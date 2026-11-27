@@ -24,6 +24,7 @@
 
 #include <QTableWidget>
 
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -62,6 +63,7 @@ public:
     AppsListIconCrop icon_crop() const { return m_icon_crop; }
     const app::AppEntry *selected_app() const;
     std::vector<const app::AppEntry *> selected_apps() const;
+    void set_search_text(const QString &text);
 
 Q_SIGNALS:
     void app_boot_requested(const app::AppEntry &app);
@@ -85,6 +87,7 @@ private:
     bool can_hide_column(int column) const;
     void set_column_hidden_with_guard(int column, bool hidden);
     void queue_sort_refresh();
+    void apply_filters();
     QPixmap render_icon_pixmap(const QPixmap &source) const;
     QString compat_text(const CompatibilityState state) const;
     QColor compat_color(const CompatibilityState state) const;
@@ -95,5 +98,8 @@ private:
     Qt::SortOrder m_sort_order{ Qt::AscendingOrder };
     int m_sort_column{ static_cast<int>(AppsListColumn::Title) };
     bool m_sort_refresh_queued{ false };
+    QString m_search_text;
+    std::optional<int> m_compat_filter;
+    std::optional<int> m_parental_filter;
     std::unordered_map<std::string, quint64> m_size_cache;
 };

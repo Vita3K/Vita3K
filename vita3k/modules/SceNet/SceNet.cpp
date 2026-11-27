@@ -516,7 +516,12 @@ EXPORT(int, sceNetResolverCreate, const char *name, void *param, int flags) {
 
 EXPORT(int, sceNetResolverDestroy, int rid) {
     TRACY_FUNC(sceNetResolverDestroy, rid);
-    return UNIMPLEMENTED();
+    if (!emuenv.net.inited)
+        RET_NET_ERRNO(SCE_NET_ERROR_ENOTINIT);
+    // sceNetResolverCreate gives every caller the same fake resolver
+    if (rid != emuenv.net.resolver_id)
+        RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
+    return 0;
 }
 
 EXPORT(int, sceNetResolverGetError) {
@@ -631,6 +636,8 @@ EXPORT(int, sceNetShutdown, int sid, int how) {
 
 EXPORT(int, sceNetSocket, const char *name, int domain, SceNetSocketType type, SceNetProtocol protocol) {
     TRACY_FUNC(sceNetSocket, name, domain, type, protocol);
+    if (domain != SCE_NET_AF_INET)
+        RET_NET_ERRNO(SCE_NET_ERROR_EPROTONOSUPPORT);
     bool isP2P = (type == SCE_NET_SOCK_DGRAM_P2P || type == SCE_NET_SOCK_STREAM_P2P);
 
     SocketPtr sock = isP2P ? std::make_shared<P2PSocket>(domain, type, protocol) : std::make_shared<PosixSocket>(domain, type, protocol);
@@ -649,21 +656,23 @@ EXPORT(int, sceNetSocketAbort, int sid, int flags) {
     RET_NET_ERRNO(sock ? sock->abort(flags) : SCE_NET_ERROR_EBADF);
 }
 
+int close_net_socket(EmuEnvState &emuenv, int sid) {
+    std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+    const auto sock = util::find(sid, emuenv.net.socks);
+    if (!sock)
+        return SCE_NET_ERROR_EBADF;
+    const int result = sock->close();
+    if (result >= 0)
+        emuenv.net.socks.erase(sid);
+    return result;
+}
+
 EXPORT(int, sceNetSocketClose, int sid) {
     TRACY_FUNC(sceNetSocketClose, sid);
-    int result = 0;
-    {
-        std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
-        const auto sock = util::find(sid, emuenv.net.socks);
-        if (sock) {
-            result = sock->close();
-            if (result >= 0)
-                emuenv.net.socks.erase(sid);
-        } else
-            result = SCE_NET_ERROR_EBADF;
-    }
-
-    RET_NET_ERRNO(result);
+    // libnet refuses the call before sceNetInit without writing its errno
+    if (!emuenv.net.inited)
+        return RET_ERROR(SCE_NET_ERROR_ENOTINIT);
+    RET_NET_ERRNO(close_net_socket(emuenv, sid));
 }
 
 EXPORT(int, sceNetTerm) {

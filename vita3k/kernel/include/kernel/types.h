@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
+#include <cpu/arm.h>
 #include <mem/ptr.h>
 #include <util/types.h>
 
@@ -34,11 +35,14 @@
 
 #define SCE_KERNEL_THREAD_EVENT_TYPE_START 0x04
 #define SCE_KERNEL_THREAD_EVENT_TYPE_END 0x08
+// The target of a thread event handler that runs for every thread of the process
+#define SCE_KERNEL_THREAD_ID_PROCESS_ALL_ID 0x10027
 
 #define SCE_KERNEL_GAME_DEFAULT_PRIORITY_ACTUAL 160
 
 #define SCE_KERNEL_HIGHEST_PRIORITY_USER 64
 #define SCE_KERNEL_LOWEST_PRIORITY_USER 191
+#define SCE_KERNEL_LOWEST_PRIORITY_KERNEL 0xFE
 
 #define SCE_KERNEL_CPU_MASK_USER_ALL 0x70000
 #define SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT 0
@@ -46,9 +50,32 @@
 #define SCE_KERNEL_STACK_SIZE_USER_MAIN KiB(256)
 #define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KiB(4)
 #define SCE_KERNEL_THREAD_STACK_SIZE_MAX MiB(32)
+#define SCE_KERNEL_MODULE_ENTRY_STACK_SIZE KiB(16)
+#define SCE_KERNEL_MODULE_ENTRY_STACK_SIZE_GAME KiB(256)
 
+// The thread attributes that can be set when creating a thread. SCE_KERNEL_THREAD_ATTR_USER is always set, and the others are optional.
+#define SCE_KERNEL_THREAD_ATTR_USER 0x80000000U
+#define SCE_KERNEL_THREAD_ATTR_NOUSE_VFP 0x01000000U
+#define SCE_KERNEL_THREAD_ATTR_VM 0x04000000U
+
+// The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
+#define SCE_KERNEL_THREAD_INITIAL_FPSCR (arm::FPSCR_DN | arm::FPSCR_FZ)
+
+// The CPSR a thread starts with: user mode and no flags
+#define SCE_KERNEL_THREAD_INITIAL_CPSR arm::CPSR_MODE_USR
+
+// The CPSR bits a ForVM context write keeps. It takes the other bits from the new value.
+#define SCE_KERNEL_VM_CONTEXT_CPSR_KEPT (arm::CPSR_M | arm::CPSR_F | arm::CPSR_I | arm::CPSR_A | arm::CPSR_RESERVED_23_20 | arm::CPSR_IT_1_0)
+
+// The words of the value the kernel puts in the d registers it doesn't keep for a thread
+#define SCE_KERNEL_VFP_REGISTER_FILL_LOW 0x7F80DEADU
+#define SCE_KERNEL_VFP_REGISTER_FILL_HIGH 0x7FF8DEADU
+
+// The bits that order the threads waiting on a sync object, separately for each object type
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
 #define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
+// Lets a suspend request end a kernel mode wait on the object, only a kernel caller sets it
+#define SCE_KERNEL_ATTR_SUSPEND_ENDS_WAITS 0x00008000U
 
 // Lets sceKernelOpen* find the object by name
 #define SCE_KERNEL_ATTR_OPENABLE 0x00000080U
@@ -134,8 +161,12 @@
 #define SCE_KERNEL_WAITTYPE_LW_MUTEX 0x00100000U
 #define SCE_KERNEL_WAITTYPE_LW_COND_SIGNAL 0x00200000U
 #define SCE_KERNEL_WAITTYPE_LW_COND_LW_MUTEX 0x00400000U
+#define SCE_KERNEL_WAITTYPE_CB_BIT 0x80000000U
 
-#define KERNELOBJECT_MAX_NAME_LENGTH 31
+// What a thread waiting for a thread signal reports as its wait UID
+#define SCE_KERNEL_SIGNAL_WAIT_ID 0x00010221
+
+#define SCE_UID_NAMELEN 31
 
 #define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
 
@@ -144,9 +175,18 @@
 
 constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
 
+#define SCE_KERNEL_MODULE_FLAG_PRELOAD 0x1000
+// The process's main module, which is linked at its start and runs no module_start
+#define SCE_KERNEL_MODULE_FLAG_MAIN 0x4000
+
+#define SCE_KERNEL_EXPORT_ATTR_AUTO_EXPORT 0x0001
+#define SCE_KERNEL_EXPORT_ATTR_NOLINK_EXPORT 0x0004
+#define SCE_KERNEL_EXPORT_ATTR_SYSLIB 0x8000
+#define SCE_KERNEL_IMPORT_ATTR_WEAK_IMPORT 0x0008
+
 enum SceKernelModel {
-    SCE_KERNEL_MODEL_VITA,
-    SCE_KERNEL_MODEL_VITATV
+    SCE_KERNEL_MODEL_VITA = 0x10000,
+    SCE_KERNEL_MODEL_VITATV = 0x20000
 };
 
 enum SceKernelErrorCode : uint32_t {
@@ -324,6 +364,7 @@ enum SceKernelErrorCode : uint32_t {
     SCE_KERNEL_ERROR_ALREADY_DEBUG_SUSPENDED = 0x8002802F,
     SCE_KERNEL_ERROR_NOT_DEBUG_SUSPENDED = 0x80028030,
     SCE_KERNEL_ERROR_CAN_NOT_USE_VFP = 0x80028031,
+    SCE_KERNEL_ERROR_VM_NOT_SUSPENDED = 0x80028033,
     SCE_KERNEL_ERROR_THREAD_EVENT_ERROR = 0x80028060,
     SCE_KERNEL_ERROR_UNKNOWN_THREAD_EVENT_ID = 0x80028061,
     SCE_KERNEL_ERROR_KERNEL_TLS_ERROR = 0x80028080,
@@ -458,6 +499,7 @@ enum SceKernelErrorCode : uint32_t {
     SCE_KERNEL_ERROR_MODULEMGR_BUSY = 0x8002D01D,
     SCE_KERNEL_ERROR_MODULEMGR_NOEXEC = 0x8002D01E,
     SCE_KERNEL_ERROR_MODULEMGR_NAMETOOLONG = 0x8002D01F,
+    SCE_KERNEL_ERROR_MODULEMGR_STOPPED = 0x8002D022,
     SCE_KERNEL_ERROR_LIBRARYDB_NOENT = 0x8002D080,
     SCE_KERNEL_ERROR_LIBRARYDB_NO_LIB = 0x8002D081,
     SCE_KERNEL_ERROR_LIBRARYDB_NO_MOD = 0x8002D082,
@@ -630,21 +672,55 @@ enum SceSysmoduleInternalModuleId : uint32_t {
     SCE_SYSMODULE_INTERNAL_LOCATION_FACTORY = 0x80000029 //!< Location Factory module
 };
 
-// Indexes in thread local storage (TLS) for system data. It is used mostly by libkernel.
+// The size of the kernel's part of a thread's TLS, below the part the guest sees
+#define SCE_KERNEL_TLS_SIZE 0x800
+
+// The number of TLS slots sceKernelGetTLSAddr gives an address for
+#define SCE_KERNEL_TLS_KEY_COUNT 0x100
+
+// Indexes of the words in a thread's TLS area, used by the system and its libraries
 enum TlsItems {
-    TLS_PROCESS_ID = 0, // unused, and 0 when a thread is created, as on a Vita
+    TLS_RESERVED_0 = 0,
     TLS_THREAD_ID = 1,
     TLS_SP_TOP = 2, // the high end of the stack
     TLS_SP_BOTTOM = 3, // its low end
-    TLS_VFP_EXCEPTION = 4,
-    TLS_RESERVED_5 = 5,
-    TLS_RESERVED_6 = 6, // libc reserved longjump addr
-    TLS_STACK_CHECK_GUARD = 7, // libc reserved some memory address mask
+    TLS_VFP_EXCEPTION = 4, // 0 in callbacks and thread event handlers
+    TLS_LWMUTEX_NO_WAIT = 5, // nonzero makes sceKernelLockLwMutex and sceKernelLockLwMutexCB return CAN_NOT_WAIT
+    TLS_JMPBUF_KEY = 6, // random word per thread that setjmp XORs into the saved SP and LR
+    TLS_STACK_CHECK_GUARD = 7, // random word per process, the stack canary and the libc heap check key
     TLS_CURRENT_PRIORITY = 8,
-    TLS_CPU_AFFINITY_MASK = 9,
-    TLS_NET_ERRNO = 0x40,
-    TLS_FIBER_CONTEXT = 0x41,
+    TLS_CPU_AFFINITY_MASK = 9, // shifted left by 16, as in currentCpuAffinityMask
+    TLS_CLIB_ERROR = 0x20, // error code of the sceClib string to number functions
+    TLS_NET_ERRNO = 0x40, // a positive BSD errno that libnet calls store on failure
+    TLS_FIBER_CONTEXT = 0x41, // the running sceFiberRun record, 0 outside a fiber run
+    TLS_PSP2COMPAT_DATA = 0x42,
+    TLS_ULT_DATA = 0x43,
+    TLS_GPU_SIGNAL_COUNT = 0x44, // last GPU signal count sceGpuSignalWait gave this thread
+    TLS_FIOS2_DATA = 0x4D,
+    TLS_LIBC_ASCTIME = 0x80, // keys 0x80 to 0x87
     TLS_LIBC_ERRNO = 0x88,
+    TLS_NEWLIB_REENT = 0x89, // homebrew newlib struct _reent pointer
+    // The array __tls_get_addr indexes by module index, one pointer to this thread's TLS block of
+    // each module, entry 0 being TPIDRURO itself
+    TLS_LIBC_TLS_ARRAY = 0x8C,
+    // The number of entries in that array, which grows when more modules have TLS
+    TLS_LIBC_TLS_COUNT = 0x8D,
+    // The libc module generation the array was built for. Registering or unregistering a module's
+    // TLS bumps libc's global generation, and __tls_get_addr rebuilds the array when the two differ
+    TLS_LIBC_TLS_GENERATION = 0x8E,
+    TLS_LIBC_MBRLEN_STATE = 0x98,
+    TLS_LIBC_MBRTOWC_STATE = 0xA0,
+    TLS_LIBC_MBSRTOWCS_STATE = 0xA8,
+    TLS_LIBC_MBTOWC_STATE = 0xB0,
+    TLS_LIBC_WCRTOMB_STATE = 0xB8,
+    TLS_LIBC_WCTOMB_S_STATE = 0xBC,
+    TLS_LIBC_WCSRTOMBS_STATE = 0xC0,
+    TLS_LIBC_WCTOMB_STATE = 0xC3,
+    TLS_LIBC_STRERROR = 0xC5, // buffer for unknown codes, keys 0xC5 to 0xC9
+    TLS_LIBC_TM = 0xCA, // struct tm of localtime and gmtime, keys 0xCA to 0xD2
+    TLS_LIBC_STRTOK = 0xD3,
+    TLS_LIBC_CXA_GLOBALS = 0xD4, // C++ exception globals, keys 0xD4 to 0xDC
+    TLS_LIBC_CXA_BUFFER = 0xDD, // C++ runtime buffer of 0x88 bytes, keys 0xDD to 0xFE
 };
 
 struct SceSysmoduleOpt {
@@ -659,6 +735,11 @@ enum SceSysmoduleErrorCode : uint32_t {
     SCE_SYSMODULE_ERROR_UNLOADED = 0x805A1001,
     SCE_SYSMODULE_ERROR_FATAL = 0x805A10FF
 };
+
+// The sizes of the module table and the public and internal id tables of sysmodule
+#define SYSMODULE_MODULE_COUNT 125
+#define SYSMODULE_COUNT 0x56
+#define SYSMODULE_INTERNAL_COUNT 0x2A
 
 typedef SceUInt64 SceKernelSysClock;
 typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
@@ -696,6 +777,20 @@ struct SceKernelModuleInfo {
     SceUInt state; //!< see:SceKernelModuleState
 };
 static_assert(sizeof(SceKernelModuleInfo) == 0x1B8);
+
+#define SCE_KERNEL_MODULE_STATE_READY 2
+#define SCE_KERNEL_MODULE_STATE_STARTED 6
+#define SCE_KERNEL_MODULE_STATE_ENDED 9
+
+// The thread parameters a module exports for the thread its start or stop function runs on
+struct SceKernelModuleThreadParam {
+    SceUInt32 size; // only a block of size 4 is taken
+    SceInt32 priority;
+    SceSize stack_size;
+    SceUInt32 unused;
+    SceInt32 cpu_affinity_mask;
+};
+static_assert(sizeof(SceKernelModuleThreadParam) == 0x14);
 
 struct SceKernelStartModuleOpt {
     SceSize size;
@@ -762,7 +857,8 @@ struct SceKernelLMOption {
 
 struct SceKernelLwMutexWork {
     std::uint32_t owner;
-    std::uint32_t unknown0;
+    // Not 0 tells an unlock to go to the kernel
+    std::uint32_t waitCount;
     std::uint32_t lockCount;
     std::uint32_t attr;
     SceUID uid;
@@ -773,7 +869,7 @@ static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
 struct SceKernelLwMutexInfo {
     SceSize size; /**< Size of this structure (sizeof(SceKernelLwMutexInfo)) */
     SceUID uid; /**< Lightweight mutex identifier */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]; /**< Name of the mutex specified by sceKernelCreateLwMutex() */
+    char name[SCE_UID_NAMELEN + 1]; /**< Name of the mutex specified by sceKernelCreateLwMutex() */
     SceUInt32 attr; /**< Mutex attributes specified with sceKernelCreateLwMutex() */
     Ptr<SceKernelLwMutexWork> pWork; /**< Mutex work area specified by sceKernelCreateLwMutex() */
     SceInt32 initCount; /**< Initial number of lw mutex locks specified by sceKernelCreateLwMutex() */
@@ -792,7 +888,7 @@ static_assert(sizeof(SceKernelLwCondWork) == 16, "Incorrect size");
 struct SceKernelLwCondInfo {
     SceSize size; /**< Size of this structure (sizeof(SceKernelLwCondInfo)) */
     SceUID uid; /**< Lightweight condition variable identifier */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]; /**< Name given to sceKernelCreateLwCond() */
+    char name[SCE_UID_NAMELEN + 1]; /**< Name given to sceKernelCreateLwCond() */
     SceUInt32 attr; /**< Attributes given to sceKernelCreateLwCond() */
     Ptr<SceKernelLwCondWork> pWork; /**< Work area given to sceKernelCreateLwCond() */
     Ptr<SceKernelLwMutexWork> pLwMutex; /**< Work area of the lightweight mutex it uses */
@@ -840,7 +936,7 @@ struct SceKernelMsgPipeInfo {
     /** Size of the structure */
     SceSize size;
     SceUID id;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     /** == 0x00000100U if msgpipe uses openLimit */
     uint32_t attr;
     SceSize bufferSize;
@@ -853,7 +949,7 @@ struct SceKernelMsgPipeInfo {
 struct SceKernelCondInfo {
     SceSize size;
     SceUID condId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUID mutexId;
     SceUInt32 numWaitThreads;
@@ -862,7 +958,7 @@ struct SceKernelCondInfo {
 struct SceKernelMppInfo {
     SceSize size;
     SceUID mppId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceInt32 bufSize;
     SceInt32 freeSize;
@@ -873,7 +969,7 @@ struct SceKernelMppInfo {
 struct SceKernelEventFlagInfo {
     SceSize size;
     SceUID evfId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUInt32 initPattern;
     SceUInt32 currentPattern;
@@ -884,7 +980,7 @@ struct SceKernelEventFlagInfo {
 struct SceKernelEventInfo {
     SceSize size;
     SceUID eventId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUInt32 eventPattern;
     SceUInt64 userData;
@@ -920,7 +1016,7 @@ static_assert(sizeof(SceKernelResultEvent) == 0x18, "Incorrect size");
 struct SceKernelTimerInfo {
     SceSize size;
     SceUID timerId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceInt32 active;
     SceKernelSysClock baseTime;
@@ -937,7 +1033,7 @@ static_assert(sizeof(SceKernelTimerInfo) == 0x60, "Incorrect size");
 struct SceKernelMutexInfo {
     SceSize size;
     SceUID mutexId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUInt32 initCount;
     SceUInt32 currentCount;
@@ -955,7 +1051,7 @@ struct SceKernelRWLockInfo {
     /** The UID of the rwlock */
     SceUID rwLockId;
     /** NULL-terminated name of the rwlock */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     /** Attributes */
     SceUInt32 attr;
     /** The current lock count */
@@ -971,7 +1067,7 @@ struct SceKernelRWLockInfo {
 struct SceKernelSemaInfo {
     SceSize size;
     SceUID semaId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceInt32 initCount;
     SceInt32 currentCount;
@@ -985,7 +1081,7 @@ struct SceKernelThreadInfo {
     /** The UID of the process where the thread belongs */
     SceUID processId;
     /** Nul terminated name of the thread */
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     /** Thread attributes */
     SceUInt32 attr;
     /** Thread status */
@@ -1030,12 +1126,23 @@ struct SceKernelThreadInfo {
     SceInt32 reserved;
 };
 
+struct SceKernelThreadRunStatus {
+    SceSize size;
+    // The thread each core runs
+    struct {
+        SceUID processId;
+        SceUID threadId;
+        SceInt32 priority;
+    } cpuInfo[4];
+};
+
 struct SceKernelThreadCpuRegisterInfo {
     SceSize size;
     SceUInt32 cpsr;
-    SceUInt32 reg[16];
+    SceUInt32 reg[arm::CORE_REG_COUNT];
     SceUInt32 tpidrurw;
     SceUInt32 teehbr;
+    // TLS slots 2 and 3, the stack's top and bottom
     SceUInt32 sb;
     SceUInt32 st;
 };
@@ -1043,7 +1150,7 @@ struct SceKernelThreadCpuRegisterInfo {
 struct SceKernelThreadVfpRegisterInfo {
     SceSize size;
     SceUInt32 fpscr;
-    SceFloat reg[64];
+    SceFloat reg[arm::EXT_REG_WORDS];
 };
 
 struct SceProcessParam {
@@ -1065,9 +1172,23 @@ struct SceProcessParam {
 struct SceKernelThreadOptParam {
     /** Size of the ::SceKernelThreadOptParam structure. */
     SceSize size;
-    /** Attributes */
+    /** Attributes, the SCE_KERNEL_THREAD_OPT_* bits of the fields they ask for */
     SceUInt32 attr;
+    SceUInt32 kStackMemType;
+    SceUInt32 uStackMemType;
+    SceUInt32 uTLSMemType;
+    SceUInt32 uStackMemid;
+    SceUInt32 data_0x18;
 };
+static_assert(sizeof(SceKernelThreadOptParam) == 0x1C);
+
+#define SCE_KERNEL_THREAD_OPT_KSTACK_MEMTYPE 0x1U
+#define SCE_KERNEL_THREAD_OPT_USTACK_MEMTYPE 0x2U
+#define SCE_KERNEL_THREAD_OPT_UTLS_MEMTYPE 0x4U
+#define SCE_KERNEL_THREAD_OPT_USTACK_MEMID 0x8U
+#define SCE_KERNEL_THREAD_OPT_DATA_0X18 0x10U
+// The last field's default, also every bit a game may set in it
+#define SCE_KERNEL_THREAD_OPT_DATA_0X18_DEFAULT 0x301U
 
 struct SceKernelCreateThread_opt {
     SceSize size;
@@ -1082,7 +1203,7 @@ typedef SceInt32(SceKernelCallbackFunction)(SceUID notifyId, SceInt32 notifyCoun
 struct SceKernelCallbackInfo {
     SceSize size;
     SceUID callbackId;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[SCE_UID_NAMELEN + 1];
     SceUInt32 attr;
     SceUID threadId;
     Ptr<SceKernelCallbackFunction> callbackFunc;

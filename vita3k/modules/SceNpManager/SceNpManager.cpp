@@ -69,10 +69,35 @@ EXPORT(int, sceNpAuthGetAuthorizationCode) {
 EXPORT(int, sceNpCheckCallback) {
     TRACY_FUNC(sceNpCheckCallback);
 
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStateRef thread = emuenv.kernel.get_thread(thread_id);
     const SceNpServiceState state = emuenv.cfg.current_config.psn_signed_in ? SCE_NP_SERVICE_STATE_SIGNED_IN : SCE_NP_SERVICE_STATE_SIGNED_OUT;
     for (auto &[_, np_callback] : emuenv.np.cbs) {
-        thread->run_callback(np_callback.pc, { static_cast<uint32_t>(state), 0, np_callback.data });
+        thread->call_guest(np_callback.pc, { static_cast<uint32_t>(state), 0, np_callback.data });
+    }
+
+    auto &auth = emuenv.np.auth_state;
+    std::vector<SceInt32> auth_ready;
+    {
+        const std::lock_guard<std::mutex> lock(auth.access_mutex);
+        for (auto &[id, request] : auth.requests) {
+            if (request.pending) {
+                request.pending = false;
+                auth_ready.push_back(id);
+            }
+        }
+    }
+    for (const SceInt32 id : auth_ready) {
+        NpAuthRequest request;
+        {
+            // An earlier callback may have destroyed this request.
+            const std::lock_guard<std::mutex> lock(auth.access_mutex);
+            const auto it = auth.requests.find(id);
+            if (it == auth.requests.end())
+                continue;
+            request = it->second;
+        }
+        // No real ticket is issued; report a 1-byte ticket as success.
+        thread->call_guest(request.ticket_cb, { static_cast<uint32_t>(id), 1, request.cb_arg });
     }
 
     return STUBBED("Stub");

@@ -41,6 +41,7 @@
 #endif
 
 #include <array>
+#include <cstring>
 #include <mutex>
 #include <string_view>
 
@@ -208,7 +209,8 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
         { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image },
-        { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format }
+        { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format },
+        { "GL_EXT_texture_sRGB_decode", &gl_state.surface_cache.support_srgb_decode }
     };
 
     for (int i = 0; i < total_extensions; i++) {
@@ -228,6 +230,8 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
     } else if (gl_state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
         LOG_WARN("Consider upgrading to a GPU that has shader interlock.");
+        if (config.current_config.high_accuracy)
+            LOG_INFO("High accuracy: programmable blending is drawn one primitive at a time");
     } else {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
@@ -244,11 +248,23 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         LOG_WARN("Mask bit emulation is disabled by the settings");
 #endif
 
+    // The mask sampler of SPIR-V shaders needs its own unit, and a place among the samplers of the
+    // fragment stage next to the ones of the guest
+    GLint max_combined_units = 0;
+    GLint max_fragment_units = 0;
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_combined_units);
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_fragment_units);
+    gl_state.support_mask_sampler = max_combined_units > shader::MASK_TEXTURE_SLOT_SAMPLER && max_fragment_units > SCE_GXM_MAX_TEXTURE_UNITS;
+    if (gl_state.features.use_mask_bit && gl_state.features.spirv_shader && !gl_state.support_mask_sampler) {
+        LOG_WARN("SPIR-V shaders are not used: the context has no texture unit left for the mask");
+        gl_state.features.spirv_shader = false;
+    }
+
     return gl_state.init();
 }
 
 bool GLState::init() {
-    if (!screen_renderer.init(static_assets)) {
+    if (!screen_renderer.init(static_assets, surface_cache.support_srgb_decode)) {
         LOG_ERROR("Failed to initialize screen renderer");
         return false;
     }
@@ -385,9 +401,20 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         state, mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height);
     context.current_color_attachment = current_color_attachment_handle;
     context.current_framebuffer_height = current_framebuffer_height;
+    // with macroblock sync, each macroblock is written to memory before the next one is rendered
+    const bool macroblock_sync = context.render_target && context.render_target->has_macroblock_sync;
+    state.surface_cache.begin_scene(macroblock_sync ? Ptr<void>() : context.record.color_surface.data);
     context.self_sampling_indices.clear();
+    context.self_sampling_mipmap_units = 0;
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
+
+    if (state.surface_cache.support_srgb_decode) {
+        if (color_surface_fin && color_surface_fin->gamma)
+            glEnable(GL_FRAMEBUFFER_SRGB);
+        else
+            glDisable(GL_FRAMEBUFFER_SRGB);
+    }
 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glDisable(GL_SCISSOR_TEST);
@@ -398,15 +425,14 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
 
     // TODO: Take request to force load from given memory
     // Sync depth/stencil based on depth stencil surface.
-    sync_depth_data(context.record);
+    sync_depth_stencil_data(context.record);
     sync_depth_func(context.record.front_depth_func, true);
     sync_depth_func(context.record.back_depth_func, false);
     sync_depth_write_enable(context.record.front_depth_write_mode, true);
     sync_depth_write_enable(context.record.back_depth_write_mode, false);
 
-    sync_stencil_data(context.record, mem);
-    sync_stencil_func(context.record.back_stencil_state_op, context.record.back_stencil_state_values, mem, true);
-    sync_stencil_func(context.record.front_stencil_state_op, context.record.front_stencil_state_values, mem, false);
+    sync_stencil_func(context.record, true);
+    sync_stencil_func(context.record, false);
 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glEnable(GL_SCISSOR_TEST);
@@ -417,7 +443,10 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR, { GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB, { GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA, { GL_RGBA, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR, { GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_REV } },
     { SCE_GXM_COLOR_FORMAT_U4U4U4U4_ARGB, { GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4_REV } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA, { GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4 } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_BGRA, { GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4 } },
     { SCE_GXM_COLOR_FORMAT_U8U8U8_BGR, { GL_RGB, GL_UNSIGNED_BYTE } },
     { SCE_GXM_COLOR_FORMAT_U5U6U5_RGB, { GL_RGB, GL_UNSIGNED_SHORT_5_6_5 } },
     { SCE_GXM_COLOR_FORMAT_U8U8_AR, { GL_RG, GL_UNSIGNED_BYTE } },
@@ -429,8 +458,8 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_U10U10U10U2_BGRA, { GL_RGBA, GL_UNSIGNED_INT_10_10_10_2 } },
     { SCE_GXM_COLOR_FORMAT_F16_R, { GL_RED, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F16F16_GR, { GL_RG, GL_HALF_FLOAT } },
-    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR, { GL_RGBA, GL_UNSIGNED_SHORT } },
-    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB, { GL_BGRA, GL_UNSIGNED_SHORT } },
+    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR, { GL_RGBA, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB, { GL_BGRA, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F32_R, { GL_RED, GL_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F32F32_GR, { GL_RG, GL_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F11F11F10_RGB, { GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV } },
@@ -438,9 +467,9 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB, { GL_BGR, GL_HALF_FLOAT } }
 };
 
-static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &surface, std::vector<std::uint8_t> &storage, const std::uint32_t width, const std::uint32_t height) {
+static bool format_need_temp_storage(const int multiplier, SceGxmColorSurface &surface, std::vector<std::uint8_t> &storage, const std::uint32_t width, const std::uint32_t height) {
     size_t needed_pixels;
-    if (state.res_multiplier == 1.0f) {
+    if (multiplier == 1) {
         needed_pixels = surface.strideInPixels * height;
     } else {
         // width and height is already upscaled
@@ -452,7 +481,7 @@ static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &s
         return true;
     }
 
-    if (state.res_multiplier > 1.0f) {
+    if (multiplier > 1) {
         storage.resize(needed_pixels * gxm::bits_per_pixel(gxm::get_base_format(surface.colorFormat)) >> 3);
         return true;
     }
@@ -460,7 +489,7 @@ static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &s
     return false;
 }
 
-static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, std::uint8_t *source, std::uint32_t width, std::uint32_t height, const std::uint32_t stride,
+static void post_process_pixels_data(const int multiplier, std::uint32_t *pixels, std::uint8_t *source, std::uint32_t width, std::uint32_t height, const std::uint32_t stride,
     SceGxmColorSurface &surface) {
     uint8_t *curr_input = source;
     uint8_t *curr_output = reinterpret_cast<uint8_t *>(pixels);
@@ -468,21 +497,26 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
     const bool is_U8U8U8_RGBA = surface.colorFormat == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA;
     const bool is_SE5M9M9M9 = (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB) || (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR);
 
-    const int multiplier = static_cast<int>(renderer.res_multiplier);
     if (multiplier > 1 || is_U8U8U8_RGBA || is_SE5M9M9M9) {
-        // TODO: do this on the GPU instead (using texture blitting?)
         const int bytes_per_output_pixel = (gxm::bits_per_pixel(gxm::get_base_format(surface.colorFormat)) + 7) >> 3;
         const int bytes_per_input_pixel = is_SE5M9M9M9 ? 6 : bytes_per_output_pixel;
 
-        const uint32_t end_stride_bytes = bytes_per_output_pixel * (surface.strideInPixels - surface.width);
+        // A readback at the guest size packs its rows like the guest surface (GL_PACK_ROW_LENGTH is its stride),
+        // an upscaled one packs them tightly and only one pixel of each multiplier x multiplier block is kept
+        const size_t input_row_bytes = static_cast<size_t>(multiplier == 1 ? surface.strideInPixels : width) * bytes_per_input_pixel;
+        const size_t output_row_bytes = static_cast<size_t>(surface.strideInPixels) * bytes_per_output_pixel;
         for (uint32_t row = 0; row < surface.height; row++) {
+            curr_input = source + row * multiplier * input_row_bytes;
+            curr_output = reinterpret_cast<uint8_t *>(pixels) + row * output_row_bytes;
             for (uint32_t col = 0; col < surface.width; col++) {
                 if (!is_SE5M9M9M9) {
-                    memcpy(curr_output, curr_input, bytes_per_input_pixel);
+                    // without temporary storage the conversion is done in place
+                    if (curr_output != curr_input)
+                        memcpy(curr_output, curr_input, bytes_per_input_pixel);
 
                     if (is_U8U8U8_RGBA) {
-                        std::swap(curr_input[0], curr_input[3]);
-                        std::swap(curr_input[1], curr_input[2]);
+                        std::swap(curr_output[0], curr_output[3]);
+                        std::swap(curr_output[1], curr_output[2]);
                     }
                 } else {
                     const uint16_t *temp_bytes = reinterpret_cast<uint16_t *>(curr_input);
@@ -496,9 +530,6 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
                 curr_output += bytes_per_output_pixel;
                 curr_input += bytes_per_input_pixel * multiplier;
             }
-            // take the pixel stride into account
-            curr_output += end_stride_bytes;
-            curr_input += (multiplier - 1) * width * bytes_per_input_pixel;
         }
 
         width /= multiplier;
@@ -530,7 +561,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
     std::uint32_t swizzle = 0;
 
     GLint tex_handle = static_cast<GLint>(renderer.surface_cache.retrieve_color_surface_texture_handle(renderer, static_cast<std::uint16_t>(surface.width),
-        static_cast<std::uint16_t>(surface.height), static_cast<std::uint16_t>(surface.strideInPixels),
+        static_cast<std::uint16_t>(surface.height), surface.strideInPixels,
         gxm::get_base_format(surface.colorFormat), surface.data, SurfaceTextureRetrievePurpose::READING, swizzle));
 
     if (tex_handle == 0) {
@@ -565,7 +596,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
     }
 
     std::vector<std::uint8_t> storage_v;
-    if (format_need_temp_storage(renderer, surface, storage_v, width, height)) {
+    if (format_need_temp_storage(static_cast<int>(renderer.res_multiplier), surface, storage_v, width, height)) {
         temp_store = storage_v.data();
         buffer_size = storage_v.size();
     }
@@ -590,62 +621,229 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
         glBindTexture(GL_TEXTURE_2D, last_texture);
     }
 
-    post_process_pixels_data(renderer, pixels, temp_store, width, height, surface.strideInPixels, surface);
+    post_process_pixels_data(static_cast<int>(renderer.res_multiplier), pixels, temp_store, width, height, surface.strideInPixels, surface);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 }
 
-void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, SceGxmColorSurface &surface) {
+void queue_surface_data(GLState &renderer, GLContext &context, MemState &mem, SceGxmColorSurface &surface, const SceGxmNotification &vertex_notification, const SceGxmNotification &fragment_notification) {
     R_PROFILE(__func__);
-
-    if (pixels == nullptr) {
-        return;
-    }
 
     SceGxmColorFormat format = surface.colorFormat;
     uint32_t width = surface.width;
     uint32_t height = surface.height;
 
-    const int res_multiplier = static_cast<int>(renderer.res_multiplier);
-    if (res_multiplier == 1) {
-        glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(surface.strideInPixels));
-    } else {
-        width *= res_multiplier;
-        height *= res_multiplier;
-        glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(width));
-    }
-
     auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
-    if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
-        LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
+    if (!surface.data || format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
+        if (surface.data)
+            LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
+        renderer.complete_readbacks(mem, true);
+        signal_notifications(renderer, mem, vertex_notification, fragment_notification);
         return;
     }
 
-    std::uint8_t *temp_store = reinterpret_cast<std::uint8_t *>(pixels);
-    std::vector<std::uint8_t> storage_v;
+    const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
+    const bool read_raw = renderer.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(base_format);
 
-    if (format_need_temp_storage(renderer, surface, storage_v, width, height)) {
-        temp_store = storage_v.data();
+    // read what is stored, without converting from sRGB in the downscale blit
+    const GLboolean srgb_enabled = renderer.surface_cache.support_srgb_decode && glIsEnabled(GL_FRAMEBUFFER_SRGB);
+    if (srgb_enabled)
+        glDisable(GL_FRAMEBUFFER_SRGB);
+
+    int multiplier = static_cast<int>(renderer.res_multiplier);
+    GLint previous_read_framebuffer = 0;
+    if (multiplier > 1 && !read_raw) {
+        // shrink on the GPU so that only the guest-sized image is read back
+        const GLuint downscaled = renderer.get_downscale_framebuffer(width, height, color::translate_internal_format(base_format));
+        GLint previous_draw_framebuffer = 0;
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &previous_read_framebuffer);
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previous_draw_framebuffer);
+        const GLboolean scissor = glIsEnabled(GL_SCISSOR_TEST);
+        glDisable(GL_SCISSOR_TEST);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, downscaled);
+        glBlitFramebuffer(0, 0, width * multiplier, height * multiplier, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        if (scissor)
+            glEnable(GL_SCISSOR_TEST);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, previous_draw_framebuffer);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, downscaled);
+        multiplier = 1;
     }
 
-    const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
-    if (renderer.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(base_format)) {
+    if (multiplier == 1) {
+        glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(surface.strideInPixels));
+    } else {
+        width *= multiplier;
+        height *= multiplier;
+        glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(width));
+    }
+
+    std::vector<std::uint8_t> &storage_v = renderer.readback_scratch;
+    const bool use_temp = format_need_temp_storage(multiplier, surface, storage_v, width, height);
+    const size_t guest_size = gxm::get_stride_in_bytes(format, surface.strideInPixels) * surface.height;
+    const size_t size = use_temp ? storage_v.size() : guest_size;
+
+    ReadbackBuffer buffer{};
+    // take the smallest buffer that fits
+    auto reusable = renderer.free_readback_buffers.end();
+    for (auto it = renderer.free_readback_buffers.begin(); it != renderer.free_readback_buffers.end(); ++it) {
+        if (it->capacity >= size && (reusable == renderer.free_readback_buffers.end() || it->capacity < reusable->capacity))
+            reusable = it;
+    }
+    if (reusable != renderer.free_readback_buffers.end()) {
+        buffer = *reusable;
+        renderer.free_readback_buffers.erase(reusable);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, buffer.pbo);
+    } else {
+        glGenBuffers(1, &buffer.pbo);
+        buffer.capacity = size;
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, buffer.pbo);
+        glBufferData(GL_PIXEL_PACK_BUFFER, static_cast<GLsizeiptr>(size), nullptr, GL_STREAM_READ);
+    }
+
+    if (read_raw) {
         // we can't get the content of raw textures with glReadPixels
         GLint last_texture = 0;
 
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
         glBindTexture(GL_TEXTURE_2D, context.current_color_attachment);
-        glGetTexImage(GL_TEXTURE_2D, 0, color::get_raw_store_upload_format_type(base_format), color::get_raw_store_upload_data_type(base_format), temp_store);
+        glGetTexImage(GL_TEXTURE_2D, 0, color::get_raw_store_upload_format_type(base_format), color::get_raw_store_upload_data_type(base_format), nullptr);
         glBindTexture(GL_TEXTURE_2D, last_texture);
     } else {
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, temp_store);
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, nullptr);
     }
-    post_process_pixels_data(renderer, pixels, temp_store, width, height, surface.strideInPixels, surface);
+    if (srgb_enabled)
+        glEnable(GL_FRAMEBUFFER_SRGB);
 
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+    if (previous_read_framebuffer)
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, previous_read_framebuffer);
+
+    renderer.pending_readbacks.push_back({ buffer.pbo, buffer.capacity, size, glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0), surface, width, height, multiplier, use_temp,
+        surface.data.address(), static_cast<Address>(surface.data.address() + guest_size), vertex_notification, fragment_notification });
+}
+
+// enough for a few full-screen surfaces at a high resolution multiplier
+static constexpr size_t MAX_FREE_READBACK_BYTES = 128 * 1024 * 1024;
+
+GLuint GLState::get_downscale_framebuffer(uint32_t width, uint32_t height, GLenum internal_format) {
+    for (const DownscaleTarget &target : downscale_targets) {
+        if (target.width == width && target.height == height && target.internal_format == internal_format)
+            return target.framebuffer;
+    }
+
+    DownscaleTarget target{ width, height, internal_format };
+    glGenTextures(1, &target.texture);
+    glBindTexture(GL_TEXTURE_2D, target.texture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    GLint previous_draw_framebuffer = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previous_draw_framebuffer);
+    glGenFramebuffers(1, &target.framebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.framebuffer);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, target.texture, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, previous_draw_framebuffer);
+
+    downscale_targets.push_back(target);
+    return target.framebuffer;
+}
+
+void GLState::complete_readbacks(MemState &mem, bool wait) {
+    while (!pending_readbacks.empty()) {
+        PendingReadback &readback = pending_readbacks.front();
+
+        GLenum result = glClientWaitSync(readback.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+        if (result == GL_TIMEOUT_EXPIRED) {
+            if (!wait)
+                return;
+            do {
+                result = glClientWaitSync(readback.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1'000'000'000);
+            } while (result == GL_TIMEOUT_EXPIRED);
+        }
+        glDeleteSync(readback.fence);
+
+        SceGxmColorSurface &surface = readback.surface;
+        uint32_t *pixels = surface.data.cast<uint32_t>().get(mem);
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, readback.pbo);
+        const auto *mapped = static_cast<const uint8_t *>(glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, static_cast<GLsizeiptr>(readback.size), GL_MAP_READ_BIT));
+        // the mapping can fail (out of memory), read the buffer back with a copy instead of leaving the guest surface stale
+        std::vector<uint8_t> fallback;
+        const uint8_t *source = mapped;
+        if (!mapped) {
+            LOG_ERROR_ONCE("Mapping a surface readback buffer failed, copying it instead");
+            // drop the error of the mapping so that only the copy is checked
+            while (glGetError() != GL_NO_ERROR) {
+            }
+            // OpenGL ES does not have it
+            if (glGetBufferSubData) {
+                fallback.resize(readback.size);
+                glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, static_cast<GLsizeiptr>(readback.size), fallback.data());
+                if (glGetError() == GL_NO_ERROR)
+                    source = fallback.data();
+            }
+            if (!source)
+                LOG_ERROR("Could not read back a surface, the guest surface at {} is left unchanged", fmt::ptr(pixels));
+        }
+        if (source && pixels) {
+            texture_cache.invalidate_hashes();
+            if (readback.use_temp) {
+                readback_scratch.resize(readback.size);
+                std::memcpy(readback_scratch.data(), source, readback.size);
+                post_process_pixels_data(readback.multiplier, pixels, readback_scratch.data(), readback.width, readback.height, surface.strideInPixels, surface);
+            } else {
+                // only the visible part of each line is written, like glReadPixels would
+                const size_t stride = gxm::get_stride_in_bytes(surface.colorFormat, surface.strideInPixels);
+                const size_t line = gxm::get_stride_in_bytes(surface.colorFormat, surface.width);
+                auto *dst = reinterpret_cast<uint8_t *>(pixels);
+                if (line == stride) {
+                    std::memcpy(dst, source, stride * surface.height);
+                } else {
+                    for (uint32_t y = 0; y < surface.height; y++)
+                        std::memcpy(dst + y * stride, source + y * stride, line);
+                }
+                post_process_pixels_data(readback.multiplier, pixels, reinterpret_cast<uint8_t *>(pixels), readback.width, readback.height, surface.strideInPixels, surface);
+            }
+        }
+        if (mapped)
+            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        size_t free_bytes = 0;
+        for (const ReadbackBuffer &buffer : free_readback_buffers)
+            free_bytes += buffer.capacity;
+        if (free_bytes + readback.capacity <= MAX_FREE_READBACK_BYTES)
+            free_readback_buffers.push_back({ readback.pbo, readback.capacity });
+        else
+            glDeleteBuffers(1, &readback.pbo);
+        const SceGxmNotification vertex_notification = readback.vertex_notification;
+        const SceGxmNotification fragment_notification = readback.fragment_notification;
+        pending_readbacks.pop_front();
+
+        signal_notifications(*this, mem, vertex_notification, fragment_notification);
+    }
+}
+
+void GLState::complete_readbacks_overlapping(MemState &mem, Address begin, Address end) {
+    for (const PendingReadback &readback : pending_readbacks) {
+        if (readback.begin < end && begin < readback.end) {
+            complete_readbacks(mem, true);
+            return;
+        }
+    }
 }
 
 void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) {
     should_display = false;
+
+    // the screen is presented as stored, without encoding to sRGB
+    struct SrgbWriteGuard {
+        const GLboolean enabled = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+        SrgbWriteGuard() { glDisable(GL_FRAMEBUFFER_SRGB); }
+        ~SrgbWriteGuard() {
+            if (enabled)
+                glEnable(GL_FRAMEBUFFER_SRGB);
+        }
+    } srgb_write_guard;
 
     DisplayFrameInfo display_frame;
     {
@@ -667,7 +865,7 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
 
     if (fb_h > 0.0f) {
         const float window_aspect = fb_w / fb_h;
-        constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        const float vita_aspect = display_aspect_ratio(display_frame.image_size.x, display_frame.image_size.y);
         const bool pixel_perfect = fullscreen_hd_res_pixel_perfect && fullscreen
             && !(static_cast<int>(fb_w) % DEFAULT_RES_WIDTH)
             && !(static_cast<int>(fb_h) % (DEFAULT_RES_HEIGHT - 4));
@@ -689,12 +887,16 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
     }
 
     // store viewport for touch
-    display.viewport_drawable_w = static_cast<int>(fb_w);
-    display.viewport_drawable_h = static_cast<int>(fb_h);
-    display.viewport_x = vp_pos.x;
-    display.viewport_y = vp_pos.y;
-    display.viewport_w = vp_size.x;
-    display.viewport_h = vp_size.y;
+    {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        display.viewport_drawable_w = static_cast<int>(fb_w);
+        display.viewport_drawable_h = static_cast<int>(fb_h);
+        display.viewport_x = vp_pos.x;
+        display.viewport_y = vp_pos.y;
+        display.viewport_w = vp_size.x;
+        display.viewport_h = vp_size.y;
+        display.viewport_frame_size = display_frame.image_size;
+    }
 
     if (display_frame.base) {
         // Check if the surface exists
@@ -799,18 +1001,22 @@ std::vector<uint32_t> GLState::dump_frame(DisplayState &display, uint32_t &width
 
 int GLState::get_supported_filters() {
     return static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR)
-        | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA);
+        | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA) | static_cast<int>(Filter::SMAA) | static_cast<int>(Filter::FSR);
 }
 
 void GLState::set_screen_filter(const std::string_view &filter) {
     if (filter == "Nearest")
-        screen_renderer.filter = ScreenRenderer::Filter::Nearest;
+        screen_renderer.set_filter(ScreenFilter::NEAREST);
     else if (filter == "FXAA")
-        screen_renderer.filter = ScreenRenderer::Filter::FXAA;
+        screen_renderer.set_filter(ScreenFilter::FXAA);
+    else if (filter == "SMAA")
+        screen_renderer.set_filter(ScreenFilter::SMAA);
+    else if (filter == "FSR")
+        screen_renderer.set_filter(ScreenFilter::FSR);
     else if (filter == "Bicubic")
-        screen_renderer.filter = ScreenRenderer::Filter::Bicubic;
+        screen_renderer.set_filter(ScreenFilter::BICUBIC);
     else
-        screen_renderer.filter = ScreenRenderer::Filter::Bilinear;
+        screen_renderer.set_filter(ScreenFilter::BILINEAR);
 }
 
 int GLState::get_max_anisotropic_filtering() {
@@ -853,6 +1059,20 @@ void GLState::cleanup() {
     texture_cache.cleanup();
 
     surface_cache.cleanup();
+
+    for (const PendingReadback &readback : pending_readbacks) {
+        glDeleteSync(readback.fence);
+        glDeleteBuffers(1, &readback.pbo);
+    }
+    pending_readbacks.clear();
+    for (const ReadbackBuffer &buffer : free_readback_buffers)
+        glDeleteBuffers(1, &buffer.pbo);
+    free_readback_buffers.clear();
+    for (const DownscaleTarget &target : downscale_targets) {
+        glDeleteFramebuffers(1, &target.framebuffer);
+        glDeleteTextures(1, &target.texture);
+    }
+    downscale_targets.clear();
 
     screen_renderer.destroy();
 

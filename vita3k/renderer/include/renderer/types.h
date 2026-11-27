@@ -32,6 +32,11 @@
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
+// aspect ratio of the picture the app sends to the display, apps may use a size other than 960x544
+inline float display_aspect_ratio(int width, int height) {
+    return (width > 0 && height > 0) ? static_cast<float>(width) / static_cast<float>(height) : static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+}
+
 struct SceGxmProgram;
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
@@ -122,8 +127,10 @@ struct GxmRecordState {
 
     bool is_maskupdate = false;
     bool is_gamma_corrected = false;
+    // the scene has no color surface and nothing can observe the fragment color, see cmd_handle_draw
+    bool skip_color_output = false;
 
-    uint8_t _padding[6] = {};
+    uint8_t _padding[5] = {};
 
     // Do not put any state not used for the Vulkan pipeline creation before vertex_streams
     std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
@@ -153,6 +160,31 @@ struct GxmRecordState {
 
     float writing_mask = 0.0f;
 };
+
+// whether a draw recorded with this state may modify the depth or the stencil buffer
+inline bool may_write_depth_stencil(const GxmRecordState &record) {
+    const auto stencil_writes = [](const GxmStencilStateOp &op, const GxmStencilStateValues &values) {
+        return values.write_mask != 0
+            && (op.stencil_fail != SCE_GXM_STENCIL_OP_KEEP || op.depth_fail != SCE_GXM_STENCIL_OP_KEEP || op.depth_pass != SCE_GXM_STENCIL_OP_KEEP);
+    };
+
+    if (record.front_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED || stencil_writes(record.front_stencil_state_op, record.front_stencil_state_values))
+        return true;
+
+    if (record.two_sided == SCE_GXM_TWO_SIDED_ENABLED)
+        return record.back_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED || stencil_writes(record.back_stencil_state_op, record.back_stencil_state_values);
+
+    return false;
+}
+
+// whether the vertex or the fragment program of a draw recorded with this state may store to guest memory
+inline bool may_store_to_memory(const GxmRecordState &record, const MemState &mem) {
+    const auto stores = [&](const Ptr<const SceGxmProgram> &program) {
+        return (program.get(mem)->program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE) != 0;
+    };
+
+    return stores(record.vertex_program.get(mem)->program) || stores(record.fragment_program.get(mem)->program);
+}
 
 struct Context {
     RenderTarget *current_render_target{};
@@ -204,6 +236,8 @@ struct RenderTarget {
     int holder;
     SceGxmMultisampleMode multisample_mode;
     bool has_macroblock_sync;
+    // a scene of this render target without color surface read the fragment color back in a way that can affect depth or stencil
+    bool color_observed_without_surface = false;
     uint16_t macroblock_width;
     uint16_t macroblock_height;
     virtual ~RenderTarget() = default;

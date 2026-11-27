@@ -283,6 +283,77 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
     uint16_t max_mip_text = std::bit_width(std::min(width, height));
     return std::min(true_mip, max_mip_text);
 }
+
+bool has_uploaded_mipmaps(const SceGxmTexture &texture) {
+    return get_upload_mip(texture.true_mip_count(), gxm::get_width(texture), gxm::get_height(texture)) > 1;
+}
+
+// must walk the same layout as upload_texture
+uint32_t texture_source_size(const SceGxmTexture &texture) {
+    const auto texture_type = texture.texture_type();
+    const bool is_cube = (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
+    const uint32_t width = gxm::get_width(texture);
+    const uint32_t height = gxm::get_height(texture);
+    const uint32_t total_mip = get_upload_mip(texture.true_mip_count(), width, height);
+    if (total_mip <= 1 && !is_cube)
+        return gxm::texture_size_first_mip(texture);
+
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(gxm::get_format(texture));
+    const uint32_t bpp = gxm::bits_per_pixel(base_format);
+
+    uint32_t face_total_count = 1;
+    uint32_t face_align_bytes = 4;
+    if (is_cube) {
+        face_total_count = 6;
+
+        if (texture.mip_count != 0xF) {
+            const bool twok_align_cond1 = width >= 32 && height >= 32 && (bpp <= 8 || gxm::is_block_compressed_format(base_format));
+            const bool twok_align_cond2 = width >= 16 && height >= 16 && (bpp == 16 || bpp == 32);
+            const bool twok_align_cond3 = width >= 8 && height >= 8 && bpp == 64;
+
+            if (twok_align_cond1 || twok_align_cond2 || twok_align_cond3)
+                face_align_bytes = 2048;
+        }
+    }
+
+    uint32_t layout_width = width;
+    uint32_t layout_height = height;
+    if (texture.mip_count != 0xF || texture_type != SCE_GXM_TEXTURE_LINEAR) {
+        layout_width = next_power_of_two(width);
+        layout_height = next_power_of_two(height);
+    }
+
+    auto [block_width, block_height] = gxm::get_block_size(base_format);
+    const uint32_t block_size = (block_width * block_height * bpp) / 8;
+    const uint32_t block_shift = std::bit_width(block_width * block_height) - 1;
+
+    uint32_t align_width = block_width;
+    uint32_t align_height = block_height;
+    if (texture_type == SCE_GXM_TEXTURE_LINEAR) {
+        align_width = std::max(align_width, 8U);
+    } else if (texture_type == SCE_GXM_TEXTURE_TILED) {
+        align_width = std::max(align_width, 32U);
+        align_height = std::max(align_height, 32U);
+    }
+
+    // cubes with mips are laid out as if all possible mips were there
+    const bool all_mips = is_cube && texture.mip_count != 0xF;
+
+    uint32_t size = 0;
+    for (uint32_t face = 0; face < face_total_count; face++) {
+        uint32_t mip_width = layout_width;
+        uint32_t mip_height = layout_height;
+        for (uint32_t mip = 0; mip_width > 0 && mip_height > 0 && (mip < total_mip || all_mips); mip++) {
+            const uint32_t nb_pixels = align(mip_width, align_width) * align(mip_height, align_height);
+            size += (nb_pixels >> block_shift) * block_size;
+            mip_width /= 2;
+            mip_height /= 2;
+        }
+        size = align(size, face_align_bytes);
+    }
+
+    return size;
+}
 } // namespace texture
 
 using namespace texture;
@@ -325,8 +396,8 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     const SceGxmTextureFormat fmt = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
-    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422) {
-        LOG_ERROR_ONCE("Unimplemented YUV format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422 && gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR && gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        LOG_ERROR_ONCE("Unimplemented non-linear YUV422 texture (type 0x{:0X}), please report it to the developers.", fmt::underlying(gxm_texture.texture_type()));
         return;
     }
 
@@ -491,8 +562,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-            // don't change what openGL is doing (which is completely wrong)
-            if (!is_vulkan || support_a2rgb10) {
+            if (is_vulkan && support_a2rgb10) {
                 LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
                 break;
             }
@@ -532,6 +602,14 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
                 static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
                 base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();
+            bpp = 32;
+            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+            break;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            yuv422_texture_to_rgba(texture_data_decompressed.data(), static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, fmt);
+            pixels = texture_data_decompressed.data();
+            bytes_per_pixel = 4;
             bpp = 32;
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
             break;
@@ -705,13 +783,18 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
             else
                 // the xor 1 is to make sure it won't be the same as hash_texture_nostride
                 info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
+            info->hashed_generation = hash_generation;
         }
     } else {
         // Texture is cached.
         index = cached_gxm_texture_index;
         info = gxm_it->second;
         configure = false;
-        if (info->use_hash) {
+        if (info->use_hash && info->hashed_generation == hash_generation) {
+            // already hashed and uploaded since guest memory last changed
+            upload = false;
+        } else if (info->use_hash) {
+            info->hashed_generation = hash_generation;
             const uint64_t previous_hash = info->hash;
             if (import_textures || export_textures)
                 info->hash = hash_texture_nostride(gxm_texture, mem);
@@ -799,10 +882,10 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
     // retrieve the appropriate sampler if needed
     if (use_sampler_cache)
-        cache_and_bind_sampler(gxm_texture);
+        cache_and_bind_sampler(gxm_texture, false, info->is_imported ? info->mip_count > 1 : has_uploaded_mipmaps(gxm_texture));
 }
 
-int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth) {
+int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth, bool has_mipmaps) {
     uint32_t compact_repr = 0;
     if (gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         compact_repr = 0b01
@@ -825,6 +908,8 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool 
     // the depth part only matters if we can't apply linear filtering to it
     is_depth &= !support_depth_linear_filtering;
     compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
+    // anisotropic filtering is only applied to mipmapped textures
+    compact_repr |= (static_cast<uint32_t>(has_mipmaps) << 24);
 
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {
@@ -844,7 +929,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool 
     sampler_lookup[compact_repr] = info;
 
     info->value = compact_repr;
-    configure_sampler(info->index, gxm_texture, is_depth);
+    configure_sampler(info->index, gxm_texture, is_depth, has_mipmaps);
     last_bound_sampler_index = info->index;
     return last_bound_sampler_index;
 }

@@ -18,12 +18,16 @@
 #pragma once
 
 #include <kernel/types.h>
+#include <util/ref.h>
 
+#include <algorithm>
 #include <cassert>
 #include <concepts>
+#include <cstring>
 #include <map>
-#include <memory>
 #include <mutex>
+#include <string_view>
+#include <type_traits>
 
 // Thread manager object classes, with the values sceKernelGetThreadmgrUIDClass reports
 enum class UidClass : SceUInt32 {
@@ -42,64 +46,84 @@ enum class UidClass : SceUInt32 {
     simple_event = 13,
 };
 
-// A kernel object that guest code refers to by UID.
-class KernelObject {
-public:
-    virtual ~KernelObject() = default;
-    // Returns the class reported by sceKernelGetThreadmgrUIDClass.
-    virtual UidClass get_uid_class() const = 0;
-
-    SceUID uid{};
-
-protected:
-    // Locks the object, which guards its fields. The lock is empty if the object was deleted. Only
-    // the object's own methods take it.
-    [[nodiscard]] std::unique_lock<std::mutex> lock() const {
-        std::unique_lock<std::mutex> guard(mutex);
-        if (deleted)
-            guard.unlock();
-        return guard;
-    }
-
-    // Ends what the object is doing when the thread deleter deletes it. Runs once, with the lock held.
-    virtual void on_delete(SceUID deleter) {}
-
-    // Whether the object was deleted. With the lock held.
-    bool was_deleted() const { return deleted; }
-
-private:
-    friend class KernelObjects;
-
-    // Marks the object deleted by the thread deleter and runs on_delete().
-    void mark_deleted(SceUID deleter) {
-        const std::lock_guard<std::mutex> guard(mutex);
-        assert(!deleted);
-        deleted = true;
-        on_delete(deleter);
-    }
-
-    mutable std::mutex mutex;
-    bool deleted = false;
+// A class of kernel objects, and the class it is a subclass of
+struct KernelClass {
+    const KernelClass *parent;
 };
 
-// Base of a kernel object type with a single class, which uid_class names.
-template <std::derived_from<KernelObject> Base, UidClass C>
-class WithUidClass : public Base {
+class KernelObject;
+
+// A class of the tree, which names itself
+template <typename T>
+concept KernelObjectClass = std::derived_from<T, KernelObject> && std::same_as<typename T::Self, T>;
+
+// A kernel object that guest code refers to by UID.
+class KernelObject : public RefCounted {
+public:
+    static constexpr KernelClass kernel_class{ nullptr };
+
+    // Whether the object is a T
+    template <KernelObjectClass T>
+    bool is() const {
+        if constexpr (std::is_final_v<T>)
+            return &get_class() == &T::kernel_class;
+        for (const KernelClass *c = &get_class(); c; c = c->parent) {
+            if (c == &T::kernel_class)
+                return true;
+        }
+        return false;
+    }
+
+    // Returns the class of the object.
+    virtual const KernelClass &get_class() const = 0;
+    // Returns the class reported by sceKernelGetThreadmgrUIDClass.
+    virtual UidClass get_uid_class() const = 0;
+    // Whether open calls find the object by its name.
+    virtual bool is_openable() const { return false; }
+    // Ends what the object is doing when the thread deleter deletes it, which happens once
+    virtual void on_delete(SceUID deleter) {}
+
+    SceUID uid{};
+    char name[SCE_UID_NAMELEN + 1] = {};
+
+protected:
+    explicit KernelObject(const char *name) {
+        std::ranges::copy(std::string_view(name, strnlen(name, SCE_UID_NAMELEN)), this->name);
+    }
+};
+
+// A reference to object as a T, or nothing if it is of another class or there is no object
+template <KernelObjectClass T>
+[[nodiscard]] Ref<T> ref_cast(const Ref<KernelObject> &object) {
+    if (!object || !object->template is<T>())
+        return nullptr;
+    return Ref<T>::from(static_cast<T &>(*object));
+}
+
+// The class S, a subclass of Base's class
+template <typename S, std::derived_from<KernelObject> Base>
+class WithClass : public Base {
 public:
     using Base::Base;
+    using Self = S;
+    static constexpr KernelClass kernel_class{ &Base::kernel_class };
+    const KernelClass &get_class() const override { return kernel_class; }
+};
+
+// A leaf class, with the number sceKernelGetThreadmgrUIDClass reports
+template <typename S, std::derived_from<KernelObject> Base, UidClass C>
+class WithUidClass : public WithClass<S, Base> {
+public:
+    using WithClass<S, Base>::WithClass;
     static constexpr UidClass uid_class = C;
     UidClass get_uid_class() const final { return C; }
 };
-
-// A kernel object type with a single class, given by its static uid_class.
-template <typename T>
-concept KernelObjectClass = std::derived_from<T, KernelObject> && std::same_as<decltype(T::uid_class), const UidClass>;
 
 // The kernel objects by UID. UIDs are shared by objects of all classes.
 class KernelObjects {
 public:
     // Adds obj under uid. Returns uid.
-    SceUID add(std::shared_ptr<KernelObject> obj, SceUID uid) {
+    SceUID add(Ref<KernelObject> obj, SceUID uid) {
         assert(uid > 0);
         obj->uid = uid;
         const std::lock_guard<std::mutex> lock(mutex);
@@ -108,61 +132,56 @@ public:
     }
 
     // Returns the object with this UID, of any class, or null.
-    [[nodiscard]] std::shared_ptr<KernelObject> find(SceUID uid) const {
+    [[nodiscard]] Ref<KernelObject> find(SceUID uid) const {
         const std::lock_guard<std::mutex> lock(mutex);
         const auto it = objects.find(uid);
         return it == objects.end() ? nullptr : it->second;
     }
 
-    // Returns the T with this UID, or null.
-    template <KernelObjectClass T>
-    [[nodiscard]] std::shared_ptr<T> find(SceUID uid) const {
-        const std::lock_guard<std::mutex> lock(mutex);
-        const auto it = lookup<T>(uid);
-        if (it == objects.end())
-            return nullptr;
-        return std::static_pointer_cast<T>(it->second);
-    }
-
-    // Removes the T with this UID, so no later lookup finds it, then marks it deleted by the thread
-    // deleter. Returns false if there is none.
-    template <KernelObjectClass T>
-    bool remove(SceUID uid, SceUID deleter) {
-        std::shared_ptr<KernelObject> obj;
-        {
-            const std::lock_guard<std::mutex> lock(mutex);
-            const auto it = lookup<T>(uid);
-            if (it == objects.end())
-                return false;
-            obj = std::move(objects.extract(it).mapped());
-        }
-        // Without the table lock, so lookups never wait for on_delete()
-        obj->mark_deleted(deleter);
-        return true;
-    }
-
-    // Returns the first T, in UID order, that pick accepts, or null. pick runs with the table and the object locked.
-    template <KernelObjectClass T>
-    [[nodiscard]] std::shared_ptr<T> find_if(std::predicate<const T &> auto pick) const {
+    // Returns the openable object with this name, of any class, or null.
+    [[nodiscard]] Ref<KernelObject> find_openable(const char *name) const {
         const std::lock_guard<std::mutex> lock(mutex);
         for (const auto &[_, obj] : objects) {
-            if (obj->get_uid_class() != T::uid_class)
-                continue;
-            const std::lock_guard<std::mutex> obj_lock(obj->mutex);
-            if (pick(static_cast<const T &>(*obj)))
-                return std::static_pointer_cast<T>(obj);
+            if (obj->is_openable() && strncmp(obj->name, name, sizeof(obj->name)) == 0)
+                return obj;
         }
         return nullptr;
     }
 
-    // Calls fn on every T, in UID order, with the table locked. No T is deleted meanwhile, and fn
-    // locks the ones it reads.
+    // Returns the T with this UID, or null.
+    template <KernelObjectClass T>
+    [[nodiscard]] Ref<T> find(SceUID uid) const {
+        const std::lock_guard<std::mutex> lock(mutex);
+        // The reference is taken with the table locked, so the object can't go away before it
+        const auto it = objects.find(uid);
+        return it == objects.end() ? nullptr : ref_cast<T>(it->second);
+    }
+
+    // Removes the T with this UID, so no later lookup finds it, then runs its on_delete() for the
+    // thread deleter. Returns false if there is none.
+    template <KernelObjectClass T>
+    bool remove(SceUID uid, SceUID deleter) {
+        Ref<KernelObject> obj;
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            const auto it = objects.find(uid);
+            if (it == objects.end() || !it->second->template is<T>())
+                return false;
+            obj = std::move(objects.extract(it).mapped());
+        }
+        // Without the table lock, so lookups never wait for on_delete()
+        obj->on_delete(deleter);
+        return true;
+    }
+
+    // Calls fn on every T, in UID order. The table isn't locked while fn runs, so fn can meet a T
+    // deleted meanwhile, and fn locks the ones it reads.
     template <KernelObjectClass T>
     void for_each(std::invocable<T &> auto fn) const {
-        const std::lock_guard<std::mutex> lock(mutex);
-        for (const auto &[_, obj] : objects) {
-            if (obj->get_uid_class() == T::uid_class)
-                fn(static_cast<T &>(*obj));
+        SceUID last = 0;
+        while (const Ref<KernelObject> obj = next<T>(last)) {
+            last = obj->uid;
+            fn(*ref_cast<T>(obj));
         }
     }
 
@@ -173,17 +192,20 @@ public:
     }
 
 private:
-    using Map = std::map<SceUID, std::shared_ptr<KernelObject>>;
+    using Map = std::map<SceUID, Ref<KernelObject>>;
 
-    // Returns the entry of the T with this UID, or end(). mutex must be held.
+    // Returns the first T with a UID above last, or null.
     template <KernelObjectClass T>
-    Map::const_iterator lookup(SceUID uid) const {
-        const auto it = objects.find(uid);
-        if (it == objects.end() || it->second->get_uid_class() != T::uid_class)
-            return objects.end();
-        return it;
+    Ref<KernelObject> next(SceUID last) const {
+        const std::lock_guard<std::mutex> lock(mutex);
+        for (auto it = objects.upper_bound(last); it != objects.end(); ++it) {
+            if (it->second->template is<T>())
+                return it->second;
+        }
+        return nullptr;
     }
 
+    // Held for one step on the table only, so it can be taken under any other kernel lock
     mutable std::mutex mutex;
     Map objects;
 };

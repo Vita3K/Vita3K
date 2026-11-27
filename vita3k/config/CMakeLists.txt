@@ -8,10 +8,9 @@ add_library(
 	include/config/version.h
 	src/config.cpp
 	src/settings.cpp
-	version.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/version.cpp
 )
-
-configure_file(src/version.cpp.in version.cpp)
+add_dependencies(config vita3k_version)
 
 target_include_directories(config PUBLIC include)
 target_link_libraries(config PUBLIC input util)

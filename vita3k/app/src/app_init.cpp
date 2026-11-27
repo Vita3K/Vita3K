@@ -19,6 +19,7 @@
 
 #include <audio/state.h>
 #include <camera/state.h>
+#include <cheat/functions.h>
 #include <compat/state.h>
 #include <config/settings.h>
 #include <config/state.h>
@@ -260,6 +261,7 @@ bool init_paths(Root &root_paths) {
     root_paths.set_shared_path(internal_storage_path);
     root_paths.set_cache_path(internal_storage_path / "cache");
     root_paths.set_patch_path(internal_storage_path / "patch");
+    root_paths.set_cheat_path(internal_storage_path / "cheats");
 #else
     auto sdl_exe_path = SDL_GetBasePath();
     auto exe_path = fs_utils::utf8_to_path(sdl_exe_path);
@@ -293,6 +295,7 @@ bool init_paths(Root &root_paths) {
         root_paths.set_shared_path(portable_path);
         root_paths.set_cache_path(portable_path / "cache");
         root_paths.set_patch_path(portable_path / "patch");
+        root_paths.set_cheat_path(portable_path / "cheats");
     } else {
         // SDL_GetPrefPath is deferred as it creates the directory.
         // When using a portable directory, it is not needed.
@@ -325,6 +328,7 @@ bool init_paths(Root &root_paths) {
         root_paths.set_shared_path(exe_path);
         root_paths.set_cache_path(exe_path / "cache");
         root_paths.set_patch_path(exe_path / "patch");
+        root_paths.set_cheat_path(exe_path / "cheats");
 
 #if defined(__linux__)
         // XDG Data Dirs.
@@ -362,6 +366,9 @@ bool init_paths(Root &root_paths) {
         }
 
         const constexpr char *static_asset_paths[] = {
+#ifdef VITA3K_INSTALL_DATADIR
+            VITA3K_INSTALL_DATADIR,
+#endif
             "/usr/local/share/Vita3K",
             "/usr/share/Vita3K",
             "/app/share/Vita3K",
@@ -398,6 +405,7 @@ bool init_paths(Root &root_paths) {
         // These default to being in shared path
         root_paths.set_vita_fs_path(root_paths.get_shared_path() / app_name);
         root_paths.set_patch_path(root_paths.get_shared_path() / "patch");
+        root_paths.set_cheat_path(root_paths.get_shared_path() / "cheats");
 #endif
     }
 #endif
@@ -408,6 +416,7 @@ bool init_paths(Root &root_paths) {
     fs::create_directories(root_paths.get_log_path() / "shaderlog");
     fs::create_directories(root_paths.get_log_path() / "texturelog");
     fs::create_directories(root_paths.get_patch_path());
+    fs::create_directories(root_paths.get_cheat_path());
 
     return portable;
 }
@@ -422,6 +431,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.shared_path = root_paths.get_shared_path();
     state.static_assets_path = root_paths.get_static_assets_path();
     state.patch_path = root_paths.get_patch_path();
+    state.cheat_path = root_paths.get_cheat_path();
 
     // If configuration does not provide a VitaFS path, use SDL's default
     if (state.cfg.vita_fs_path == root_paths.get_vita_fs_path() || state.cfg.vita_fs_path.empty()) {
@@ -487,7 +497,7 @@ void shutdown_app_runtime(EmuEnvState &state) {
     state.gxm.deinit();
     state.overlay_manager.reset();
 
-    state.display.deinit();
+    state.display.deinit(state.kernel);
 
     state.netctl.deinit();
 
@@ -545,6 +555,7 @@ void reset_app_state(EmuEnvState &state) {
     state.clear_app_launch_request();
 
     state.ctrl.reset_runtime();
+    cheat::unload(state.cheat);
     set_current_config(state, "");
 
 #if USE_DISCORD
@@ -600,7 +611,7 @@ void apply_renderer_config(EmuEnvState &emuenv) {
     if (r.support_custom_drivers())
         r.set_turbo_mode(emuenv.cfg.turbo_mode);
 #endif
-    emuenv.display.fps_hack = cc.fps_hack;
+    emuenv.display.vblank_rate = cc.vblank_rate;
 
     if (!emuenv.overlay_manager)
         emuenv.overlay_manager = std::make_unique<overlay::display_manager>();
@@ -693,7 +704,7 @@ void apply_runtime_settings(EmuEnvState &emuenv) {
     if (r.support_custom_drivers())
         r.set_turbo_mode(emuenv.cfg.turbo_mode);
 #endif
-    emuenv.display.fps_hack = cc.fps_hack;
+    emuenv.display.vblank_rate = cc.vblank_rate;
     r.sys_date_format = cc.sys_date_format;
     r.sys_lang = cc.sys_lang;
     r.sys_button = cc.sys_button;

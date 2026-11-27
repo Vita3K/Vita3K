@@ -68,7 +68,7 @@ void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
+size_t process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
 void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config);
 void stop_render_thread(State &state);
 bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
@@ -99,6 +99,7 @@ void transfer_copy(State &state, uint32_t colorKeyValue, uint32_t colorKeyMask, 
 void transfer_downscale(State &state, const SceGxmTransferImage *src, const SceGxmTransferImage *dest);
 void transfer_fill(State &state, uint32_t fillColor, const SceGxmTransferImage *dest);
 void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vertex_notification, const SceGxmNotification fragment_notification);
+void signal_notifications(State &state, MemState &mem, const SceGxmNotification &vertex_notification, const SceGxmNotification &fragment_notification);
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 void destroy_context(State &state, std::unique_ptr<Context> &context);
@@ -176,6 +177,7 @@ namespace texture {
 void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
 void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
 void yuv420_texture_to_rgb(YUVConversionCache &cache, uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3);
+void yuv422_texture_to_rgba(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, SceGxmTextureFormat fmt);
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
 
 // Assume fmt is a bcn format
@@ -267,6 +269,10 @@ void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint1
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 
 uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height);
+// whether more than one mip level gets uploaded for this texture
+bool has_uploaded_mipmaps(const SceGxmTexture &texture);
+// get the size of the guest memory read when uploading every mip of every face
+uint32_t texture_source_size(const SceGxmTexture &texture);
 
 uint32_t decode_morton2_x(uint32_t code);
 uint32_t decode_morton2_y(uint32_t code);

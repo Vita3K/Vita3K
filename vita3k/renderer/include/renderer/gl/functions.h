@@ -44,7 +44,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend);
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program);
 void set_context(GLState &state, GLContext &ctx, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
-void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, SceGxmColorSurface &surface);
+void queue_surface_data(GLState &renderer, GLContext &context, MemState &mem, SceGxmColorSurface &surface, const SceGxmNotification &vertex_notification, const SceGxmNotification &fragment_notification);
 void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSurface &surface);
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     void *indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
@@ -60,12 +60,13 @@ void sync_depth_func(const SceGxmDepthFunc func, const bool is_front);
 void sync_depth_write_enable(const SceGxmDepthWriteMode mode, const bool is_front);
 void sync_depth_data(const renderer::GxmRecordState &state);
 void sync_stencil_data(const renderer::GxmRecordState &state, const MemState &mem);
-void sync_stencil_func(const GxmStencilStateOp &state_op, const GxmStencilStateValues &state_vals, const MemState &mem, const bool is_back_stencil);
+void sync_depth_stencil_data(const renderer::GxmRecordState &state);
+void sync_stencil_func(const GxmRecordState &state, const bool is_back_stencil);
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem);
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front);
 void sync_point_line_width(const GLState &state, const std::uint32_t size, const bool front);
 void sync_depth_bias(const int factor, const int unit, const bool front);
-void sync_blending(const GxmRecordState &state, const MemState &mem);
+void sync_blending(const GxmRecordState &state, const FeatureState &features, const MemState &mem);
 void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config);
 void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &state, const MemState &mem);
 void bind_fundamental(GLContext &context);

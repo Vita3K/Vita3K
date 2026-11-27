@@ -115,7 +115,7 @@ uint32_t get_num_components(SceGxmTextureBaseFormat fmt) {
 
 uint32_t get_stride_in_bytes(const SceGxmTexture &texture) {
     assert(texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED);
-    return ((texture.mip_filter | (texture.min_filter << 1) | (texture.mip_count << 3) | (texture.lod_bias << 7)) + 1) * 4;
+    return ((texture.mip_filter | (texture.min_filter << 1) | (texture.mip_count << 3) | (texture.lod_bias << 7) | (texture.stride_hi << 13)) + 1) * 4;
 }
 
 bool is_bcn_format(SceGxmTextureBaseFormat base_format) {

@@ -50,6 +50,12 @@ public:
     spv::Id out;
     spv::Id frag_depth_id = 0;
 
+    // A texture sampled more than once by a shader is filtered, so it must keep the Vita filtering footprint
+    std::array<uint8_t, SCE_GXM_MAX_TEXTURE_UNITS> surface_sample_count{};
+    std::array<spv::Id, SCE_GXM_MAX_TEXTURE_UNITS> surface_filter_vars{};
+    spv::Block *surface_filter_init_block = nullptr;
+    void finalize_surface_filters();
+
     // Contains repeat increasement offset
     int repeat_increase[4][17];
     int repeat_multiplier[4];
@@ -101,6 +107,14 @@ public:
             }
 
             const_f32_v0[i] = m_b.makeCompositeConstant(type_f32_v[i], consts);
+        }
+
+        if (m_spirv_params.use_surface_lod) {
+            // filled once all the samples are known, called first so that it precedes them
+            spv::Block *const caller_block = m_b.getBuildPoint();
+            spv::Function *const init_func = m_b.makeFunctionEntry(spv::NoPrecision, m_b.makeVoidType(), "init_surface_filters", spv::LinkageTypeMax, {}, {}, &surface_filter_init_block);
+            m_b.setBuildPoint(caller_block);
+            m_b.createFunctionCall(init_func, {});
         }
 
         do_texture_queries(queries);

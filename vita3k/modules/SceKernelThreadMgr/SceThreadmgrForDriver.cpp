@@ -80,10 +80,11 @@ EXPORT(int, ksceKernelCreateMsgPipe) {
 EXPORT(int, ksceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     TRACY_FUNC(ksceKernelCreateMutex, name, attr, init_count, opt_param);
     // Kernel modules use attributes games can't, like 0x8000 for SceSysmodule's mutex
-    if (const SceInt32 error = Mutex::check_create(name, attr, init_count, true))
+    if (const SceInt32 error = Mutex::check_create(name, attr, init_count, opt_param, true))
         return RET_ERROR(error);
 
-    const auto mutex = std::make_shared<HeavyMutex>(attr, name, init_count, emuenv.kernel.get_thread(thread_id));
+    // The ceilings of kernel mutexes aren't applied
+    const auto mutex = Ref<HeavyMutex>::make(attr, name, init_count, emuenv.kernel.get_thread(thread_id), SCE_KERNEL_LOWEST_PRIORITY_KERNEL);
     return emuenv.kernel.objects.add(mutex, emuenv.kernel.get_next_uid());
 }
 
@@ -96,7 +97,7 @@ EXPORT(int, ksceKernelCreateSimpleEvent) {
 }
 
 EXPORT(SceUID, ksceKernelCreateThread, const char *name, SceKernelThreadEntry entry, int initPriority, SceSize stackSize, SceUInt attr, int cpuAffinityMask, void *pOptParam) {
-    const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), initPriority, cpuAffinityMask, stackSize, 0, nullptr);
+    const ThreadStateRef thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), initPriority, cpuAffinityMask, stackSize, 0);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
     return thread->id;
@@ -168,7 +169,7 @@ EXPORT(int, ksceKernelGetThreadCpuRegisters) {
 
 EXPORT(int, ksceKernelGetThreadCurrentPriority) {
     TRACY_FUNC(ksceKernelGetThreadCurrentPriority);
-    return CALL_EXPORT(sceKernelGetThreadCurrentPriority);
+    return emuenv.kernel.get_thread(thread_id)->get_priority();
 }
 
 EXPORT(int, ksceKernelGetThreadId) {

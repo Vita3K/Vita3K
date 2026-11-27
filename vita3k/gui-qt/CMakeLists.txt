@@ -2,6 +2,7 @@ add_library(gui-qt STATIC
     src/main_window.cpp
     src/about_dialog.cpp
     src/archive_install_dialog.cpp
+    src/cheats_dialog.cpp
     src/controls_dialog.cpp
     src/ctrl_keyboard_filter.cpp
     src/debug_widget.cpp
@@ -29,6 +30,7 @@ add_library(gui-qt STATIC
     src/theme_surface.cpp
     src/vita_theme.cpp
     src/vita_themes_dialog.cpp
+    src/save_data_manager_dialog.cpp
     src/trophy_collection_dialog.cpp
     src/update_manager.cpp
     src/gui_language.cpp
@@ -44,6 +46,7 @@ add_library(gui-qt STATIC
     include/gui-qt/main_window.h
     include/gui-qt/about_dialog.h
     include/gui-qt/archive_install_dialog.h
+    include/gui-qt/cheats_dialog.h
     include/gui-qt/controls_dialog.h
     include/gui-qt/ctrl_keyboard_filter.h
     include/gui-qt/custom_dock_widget.h
@@ -75,6 +78,7 @@ add_library(gui-qt STATIC
     include/gui-qt/theme_surface.h
     include/gui-qt/vita_theme.h
     include/gui-qt/vita_themes_dialog.h
+    include/gui-qt/save_data_manager_dialog.h
     include/gui-qt/trophy_collection_dialog.h
     include/gui-qt/update_manager.h
     include/gui-qt/gui_language.h
@@ -99,6 +103,7 @@ target_include_directories(gui-qt
 target_link_libraries(gui-qt PUBLIC
     vita3k::qt6
 
+    cheat
     config
     ctrl
     dialog

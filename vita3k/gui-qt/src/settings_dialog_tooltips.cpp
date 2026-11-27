@@ -93,7 +93,7 @@ QString SettingsDialogTooltips::category_summary(SettingsTab tab) const {
     case SettingsTab::Network:
         return tr("Configure network related settings here.");
     case SettingsTab::Advanced:
-        return tr("Settings most users do not need to change: module loading, shader and OpenGL options.");
+        return tr("Settings most users do not need to change, such as module loading.");
     case SettingsTab::Debug:
         return tr("Internal diagnostics, GPU debugging, and watch controls live here. These settings are mainly for developers.");
     default:
@@ -109,7 +109,7 @@ SettingsDialogTooltips::SettingsDialogTooltips(QObject *parent)
     , modules_manual(tr("Only load the modules selected from the list. Advanced users only."))
     , cpu_opt(tr("Enable Dynarmic JIT optimizations. Improves performance."))
     , backend_renderer(tr("Select the preferred backend renderer. Vulkan is recommended for most systems."))
-    , renderer_accuracy(tr("Set the renderer accuracy level for Vulkan. High accuracy may improve visuals but reduce performance."))
+    , renderer_accuracy(tr("Set the renderer accuracy level. High accuracy may improve visuals but reduce performance."))
     , vsync(tr("Enable V-Sync for OpenGL. Reduces screen tearing."))
     , disable_surface_sync(tr("Speed hack, disabling turns off surface syncing between CPU and GPU. Surface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on)."))
     , async_pipeline(tr("Allow pipelines to be compiled concurrently on multiple concurrent threads.\nThis decreases pipeline compilation stutter at the cost of temporary graphical glitches."))
@@ -117,12 +117,12 @@ SettingsDialogTooltips::SettingsDialogTooltips(QObject *parent)
     , gpu_device(tr("Select which GPU Vita3k should use."))
     , resolution_upscaling(tr("Scale the games resolution by a multiplier.\nExperimental: apps are not guaranteed to render properly at more than 1x."))
     , anisotropic_filtering(tr("Technique to increase the sharpness of textures which are sloped relative to the viewer.\nIt has no drawbacks but can impact performance on older GPUs."))
+    , vblank_rate(tr("Frequency of the emulated vertical blank, which most apps use to pace themselves.\nOnly raise it for apps that run at 60 FPS (for example with a 60FPS patch) and do not tie their speed to the frame rate, otherwise they run too fast.\nThe 60 Hz default is the speed of the real console."))
     , export_textures(tr("Export textures used by the app to the textures folder."))
     , import_textures(tr("Import replacement textures from the textures folder."))
     , texture_export_format(tr("Format to export textures in."))
     , shader_cache(tr("Enable shader caching. Reduces stuttering on subsequent runs."))
-    , spirv_shader(tr("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, and not all GPUs are compatible with this."))
-    , fps_hack(tr("Game hack. May double the framerate from 30 FPS to 60 FPS in some games, but can cause some games to run twice as fast."))
+    , spirv_shader(tr("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, and not all GPUs are compatible with this.\nThis setting only affects the Vulkan renderer."))
     , memory_mapping(tr("Memory mapping improved performance, reduces memory usage and fixes many graphical issues. However, it may be unstable on some GPUs."))
     , audio_backend(tr("Select the audio backend. Cubeb is recommended for most systems."))
     , audio_volume(tr("Set the in-game audio volume."))
@@ -180,6 +180,7 @@ SettingsDialogTooltips::SettingsDialogTooltips(QObject *parent)
     , confirm_exit_app(tr("Show a confirmation dialog before closing a running app."))
     , warn_admin_privileges(tr("Show a warning at startup when Vita3K is launched with administrator or root privileges."))
     , windows_rounded_corners(tr("Enable rounded corners for the game window on Windows.\nUnsupported Windows versions may ignore this setting."))
+    , remember_game_window_size(tr("Open the game window at the size it had when a game was last closed in a window.\nWhen disabled, the game window always opens at its default size."))
     , log_buffer_size(tr("Set the maximum number of log lines to keep in memory.\nSet to 0 to remove the user cap and use the built-in safety limit."))
     , log_font(tr("Choose the font family used by the log view."))
     , gui_stylesheet(tr("Select the visual theme for the application.\nPlace custom themes in gui-configs/custom-themes; non-Windows OS may keep theme assets in separate folders."))

@@ -21,6 +21,7 @@
 #include <gui-qt/apps_list.h>
 #include <gui-qt/apps_list_context_menu.h>
 #include <gui-qt/archive_install_dialog.h>
+#include <gui-qt/cheats_dialog.h>
 #include <gui-qt/controls_dialog.h>
 #include <gui-qt/ctrl_keyboard_filter.h>
 #include <gui-qt/debug_widget.h>
@@ -39,6 +40,7 @@
 #include <gui-qt/physical_key_qt.h>
 #include <gui-qt/pkg_install_dialog.h>
 #include <gui-qt/qt_utils.h>
+#include <gui-qt/save_data_manager_dialog.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
 #include <gui-qt/theme_manager.h>
@@ -443,6 +445,11 @@ void MainWindow::initialize() {
     connect(m_ui->trophy_collection_action, &QAction::triggered,
         this, &MainWindow::open_trophy_collection);
 
+    connect(m_ui->cheats_action, &QAction::triggered, this, [this] { open_cheats_for({}, {}); });
+
+    connect(m_ui->save_data_manager_action, &QAction::triggered,
+        this, &MainWindow::open_save_data_manager);
+
     connect(m_ui->vita_themes_action, &QAction::triggered,
         this, &MainWindow::open_vita_themes);
 
@@ -490,6 +497,8 @@ void MainWindow::initialize() {
         this, &MainWindow::on_toolbar_start);
     connect(m_ui->stop_action, &QAction::triggered,
         this, &MainWindow::on_stop_triggered);
+    connect(m_ui->restart_action, &QAction::triggered,
+        this, &MainWindow::restart_running_app);
 
     connect(m_ui->show_apps_list_action, &QAction::triggered, this, [this](bool checked) {
         m_apps_list_widget->setVisible(checked);
@@ -811,6 +820,8 @@ void MainWindow::open_settings(int tab_index) {
         connect(m_settings_dialog, &SettingsDialog::storage_path_changed, this, [this] {
             if (m_apps_list_widget)
                 m_apps_list_widget->refresh(true);
+            if (m_save_data_dialog)
+                m_save_data_dialog->reload();
             apply_stylesheet();
         });
         connect(m_settings_dialog, &SettingsDialog::ui_language_request, this, &MainWindow::apply_ui_language);
@@ -948,7 +959,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     if (m_theme_manager)
         m_theme_manager->set_vita_theme_bgm_blocked(true);
 
-    bool launch_fullscreen = emuenv.cfg.boot_apps_full_screen;
+    bool launch_fullscreen = emuenv.cfg.boot_apps_full_screen || emuenv.cfg.fullscreen;
     if (m_game_container) {
         launch_fullscreen = m_game_container->visibility() == QWindow::FullScreen;
     }
@@ -960,6 +971,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     m_game_window->setIcon(windowIcon());
     if (m_live_area_widget)
         m_game_window->setGeometry(m_live_area_widget->geometry());
+    if (const QSize size = m_gui_settings->get_value(gui::gw_size).toSize(); size.isValid() && m_gui_settings->get_value(gui::gw_rememberSize).toBool())
+        m_game_window->resize(size);
 
     if (m_live_area_widget) {
         m_live_area_widget->removeEventFilter(this);
@@ -985,6 +998,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     const auto abort_boot = [&](const QString &msg) {
         QMessageBox::critical(this, tr("Error"), msg);
         m_app_session.stop(app::AppSessionStopReason::LaunchFailure);
+        refresh_cheats_dialog();
         if (m_theme_manager)
             m_theme_manager->set_vita_theme_bgm_blocked(false);
 
@@ -1010,6 +1024,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         abort_boot(tr("Failed to initialise the renderer."));
         return {};
     }
+    emuenv.renderer->set_fullscreen(m_game_window->visibility() == QWindow::FullScreen);
 
     m_game_window->setTitle(tr("%1 (%2) | Initializing...")
             .arg(QString::fromStdString(emuenv.current_app_title),
@@ -1028,6 +1043,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         abort_boot(tr("Failed to start game threads."));
         return {};
     }
+    refresh_cheats_dialog();
 
     auto *kb_filter = new CtrlKeyboardFilter(emuenv, m_game_window);
     m_game_window->installEventFilter(kb_filter);
@@ -1076,11 +1092,14 @@ void MainWindow::on_game_closed() {
         return;
 
     LOG_INFO("Game closed: {}", emuenv.current_app_title);
+    if (m_gui_settings->get_value(gui::gw_rememberSize).toBool() && m_game_window->visibility() == QWindow::Windowed)
+        m_gui_settings->set_value(gui::gw_size, m_game_window->size());
 
     m_game_window->stop_ui_updates();
     m_app_session.stop(m_is_app_closing
             ? app::AppSessionStopReason::FrontendShutdown
             : app::AppSessionStopReason::UserRequest);
+    refresh_cheats_dialog();
     refresh_controllers(emuenv.ctrl, emuenv);
     if (m_controls_dialog)
         m_controls_dialog->sync_controller_state();
@@ -1393,6 +1412,7 @@ void MainWindow::refresh_emulation_actions() {
 
     m_ui->stop_action->setEnabled(running);
     m_ui->stop_action->setIcon(m_icon_stop);
+    m_ui->restart_action->setEnabled(running);
     m_ui->toolbar_stop->setEnabled(running);
 
     if (running) {
@@ -1429,6 +1449,30 @@ void MainWindow::open_trophy_collection() {
     present_tool_window(m_trophy_dialog);
 }
 
+void MainWindow::open_cheats_for(const std::string &title_id, const QString &app_title) {
+    if (!m_cheats_dialog) {
+        m_cheats_dialog = new CheatsDialog(emuenv, m_gui_settings, this);
+        register_auxiliary_window(m_cheats_dialog);
+    }
+
+    m_cheats_dialog->set_app(title_id, app_title);
+    present_tool_window(m_cheats_dialog);
+}
+
+// Rows address cheats by index, so the dialog must never outlive the table the session loaded.
+void MainWindow::refresh_cheats_dialog() {
+    if (m_cheats_dialog)
+        m_cheats_dialog->reload();
+}
+
+void MainWindow::open_save_data_manager() {
+    if (!m_save_data_dialog) {
+        m_save_data_dialog = new SaveDataManagerDialog(emuenv, m_gui_settings, [this] { return m_game_window != nullptr; });
+        register_auxiliary_window(m_save_data_dialog);
+    }
+    present_tool_window(m_save_data_dialog);
+}
+
 void MainWindow::open_vita_themes() {
     if (!m_vita_themes_dialog) {
         m_vita_themes_dialog = new VitaThemesDialog(m_gui_settings, *m_theme_manager, this);
@@ -1451,6 +1495,8 @@ void MainWindow::open_user_management() {
             this, [this] {
                 if (m_trophy_dialog)
                     m_trophy_dialog->reload();
+                if (m_save_data_dialog)
+                    m_save_data_dialog->reload();
             });
     }
     present_tool_window(m_user_mgmt_dialog);
@@ -1488,6 +1534,10 @@ void MainWindow::setup_toolbar() {
             if (!fs::exists(textures_path))
                 fs::create_directories(textures_path);
             gui::utils::open_dir(textures_path);
+        });
+
+        menu.addAction(tr("Open Log(s) Path"), this, [this] {
+            gui::utils::open_dir(emuenv.log_path);
         });
 
         const auto elfdumps_path = emuenv.log_path / "elfdumps"; // TODO: change elfdumps path to not be log, its ugly
@@ -1708,6 +1758,7 @@ void MainWindow::repaint_toolbar_icons() {
 
     m_ui->toolbar_open->setIcon(icon(QStringLiteral(":/icons/open.png")));
     m_ui->toolbar_refresh->setIcon(icon(QStringLiteral(":/icons/refresh.png")));
+    m_ui->restart_action->setIcon(icon(QStringLiteral(":/icons/refresh.png")));
     m_ui->toolbar_fullscreen->setIcon(m_fullscreen ? m_icon_fullscreen_off : m_icon_fullscreen_on);
     m_ui->toolbar_stop->setIcon(m_icon_stop);
     m_ui->toolbar_config->setIcon(icon(QStringLiteral(":/icons/configure.png")));
@@ -1810,6 +1861,10 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
             });
             present_tool_window(dlg);
         });
+    connect(&menu, &AppsListContextMenu::manage_cheats_requested,
+        this, [this](const app::AppEntry &app) {
+            open_cheats_for(app.title_id, QString::fromStdString(app.title));
+        });
     connect(&menu, &AppsListContextMenu::refresh_requested,
         this, [this] { m_apps_list_widget->refresh(); });
 
@@ -1892,13 +1947,9 @@ void MainWindow::setup_status_bar() {
     });
     sb->addWidget(m_accuracy_button);
 
-    auto get_filter_names = [this]() -> QStringList {
-        if (emuenv.cfg.current_config.backend_renderer == "Vulkan")
-            return { QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-                QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") };
-        else
-            return { QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-                QStringLiteral("Bicubic"), QStringLiteral("FXAA") };
+    auto get_filter_names = []() -> QStringList {
+        return { QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
+            QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("SMAA"), QStringLiteral("FSR") };
     };
 
     auto apply_screen_filter = [this](const std::string &filter) {
@@ -2058,8 +2109,6 @@ void MainWindow::update_renderer_button() {
 
 void MainWindow::update_accuracy_button() {
     const bool high = emuenv.cfg.current_config.high_accuracy;
-    const bool is_vulkan = emuenv.cfg.current_config.backend_renderer == "Vulkan";
-    m_accuracy_button->setVisible(is_vulkan);
     if (high) {
         m_accuracy_button->setText(tr("HIGH"));
         update_status_button_accent(m_accuracy_button, QStringLiteral("high"));
@@ -2071,11 +2120,8 @@ void MainWindow::update_accuracy_button() {
 
 void MainWindow::update_screen_filter_button() {
     auto &cc = emuenv.cfg.current_config;
-    const QStringList valid = (cc.backend_renderer == "Vulkan")
-        ? QStringList{ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-              QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") }
-        : QStringList{ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-              QStringLiteral("Bicubic"), QStringLiteral("FXAA") };
+    const QStringList valid{ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
+        QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("SMAA"), QStringLiteral("FSR") };
 
     const QString current = QString::fromStdString(cc.screen_filter);
     if (!valid.contains(current)) {

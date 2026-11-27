@@ -217,14 +217,25 @@ void sync_depth_data(const renderer::GxmRecordState &state) {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 
-    if (!state.depth_stencil_surface.force_load && state.depth_stencil_surface.depth_data) {
+    if (!state.depth_stencil_surface.force_load) {
         glClearDepthf(state.depth_stencil_surface.background_depth);
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 }
 
-void sync_stencil_func(const GxmStencilStateOp &state_op, const GxmStencilStateValues &state_vals, const MemState &mem, const bool is_back_stencil) {
-    const GLenum face = is_back_stencil ? GL_BACK : GL_FRONT;
+void sync_stencil_func(const GxmRecordState &state, const bool is_back_stencil) {
+    GLenum face;
+    if (state.two_sided == SCE_GXM_TWO_SIDED_DISABLED) {
+        // the back state is not used when two sided is disabled
+        if (is_back_stencil)
+            return;
+        face = GL_FRONT_AND_BACK;
+    } else {
+        // the y flip makes the GXM front faces back faces for OpenGL, as for culling
+        face = is_back_stencil ? GL_FRONT : GL_BACK;
+    }
+    const GxmStencilStateOp &state_op = is_back_stencil ? state.back_stencil_state_op : state.front_stencil_state_op;
+    const GxmStencilStateValues &state_vals = is_back_stencil ? state.back_stencil_state_values : state.front_stencil_state_values;
 
     glStencilOpSeparate(face,
         translate_stencil_op(state_op.stencil_fail),
@@ -237,11 +248,27 @@ void sync_stencil_func(const GxmStencilStateOp &state_op, const GxmStencilStateV
 void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
     // Stencil test.
     glEnable(GL_STENCIL_TEST);
-    glStencilMask(GL_TRUE);
+    glStencilMask(0xFF);
     if (!state.depth_stencil_surface.force_load) {
         glClearStencil(state.depth_stencil_surface.stencil);
         glClear(GL_STENCIL_BUFFER_BIT);
     }
+}
+
+void sync_depth_stencil_data(const GxmRecordState &state) {
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glDepthMask(GL_TRUE);
+    glStencilMask(0xFF);
+
+    if (state.depth_stencil_surface.force_load)
+        return;
+
+    // clear both aspects with a single call, clearing them separately keeps the
+    // driver from fast clearing the packed depth stencil buffer
+    glClearDepthf(state.depth_stencil_surface.background_depth);
+    glClearStencil(state.depth_stencil_surface.stencil);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
@@ -277,6 +304,12 @@ void sync_point_line_width(const GLState &state, const std::uint32_t width, cons
 void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     // Depth Bias
     if (is_front) {
+        // The offset only applies to the polygon modes it is enabled for
+        glEnable(GL_POLYGON_OFFSET_FILL);
+#ifndef __ANDROID__
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glEnable(GL_POLYGON_OFFSET_POINT);
+#endif
         glPolygonOffset(static_cast<GLfloat>(factor), static_cast<GLfloat>(unit));
     }
 }
@@ -305,18 +338,45 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     }
 
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
+    state.surface_cache.set_gamma_sampling(index, 0);
+
+    // linear strided textures use the mag filter as the min filter too
+    const bool point_sampled = (texture.mag_filter == SCE_GXM_TEXTURE_FILTER_POINT)
+        && ((texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) || (texture.min_filter == SCE_GXM_TEXTURE_FILTER_POINT));
 
     std::uint64_t texture_as_surface = 0;
     const GLint *swizzle_surface = nullptr;
     bool only_nearest = false;
+    bool filterable_surface = false;
 
-    if (context.record.color_surface.data.address() == data_addr) {
+    // A texture covering only the top left part of the surface being rendered (the first tile of an atlas, for example)
+    // must be cropped out of it like the other parts: binding the whole attachment would squeeze the surface into it
+    const SceGxmColorSurface &target = context.record.color_surface;
+    const std::uint32_t texture_width = gxm::get_width(texture);
+    const std::uint32_t texture_height = gxm::get_height(texture);
+    const bool covers_part_of_target = texture_width <= target.width && texture_height <= target.height
+        && (texture_width < target.width || texture_height < target.height);
+
+    if (target.data.address() == data_addr && !covers_part_of_target) {
         texture_as_surface = context.current_color_attachment;
         swizzle_surface = color::translate_swizzle(context.record.color_surface.colorFormat);
+
+        const SceGxmColorBaseFormat surface_format = gxm::get_base_format(context.record.color_surface.colorFormat);
+        const bool stored_rawly = state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(surface_format);
+        filterable_surface = !stored_rawly && !color::is_write_surface_non_linearity_filtering(surface_format);
+        if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
+            const uint32_t bit = 1U << index;
+            if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))
+                context.self_sampling_mipmap_units |= bit;
+            else
+                context.self_sampling_mipmap_units &= ~bit;
+        }
 
         vector_utils::push_if_not_exists(context.self_sampling_indices, index);
     } else {
         vector_utils::erase_first(context.self_sampling_indices, index);
+        if (index < SCE_GXM_MAX_TEXTURE_UNITS)
+            context.self_sampling_mipmap_units &= ~(1U << index);
 
         SceGxmColorBaseFormat format_target_of_texture;
 
@@ -324,11 +384,11 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         std::uint16_t height = static_cast<std::uint16_t>(gxm::get_height(texture));
 
         if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
-            std::uint16_t stride_in_pixels = width;
+            std::uint32_t stride_in_pixels = width;
 
             switch (texture.texture_type()) {
             case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-                stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(texture)) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
+                stride_in_pixels = gxm::get_stride_in_bytes(texture) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
                 break;
             case SCE_GXM_TEXTURE_LINEAR:
                 // when the texture is linear, the stride should be aligned to 8 pixels
@@ -346,10 +406,21 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
             texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
                 state, width, height, stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
-                SurfaceTextureRetrievePurpose::READING, swizz_raw);
+                SurfaceTextureRetrievePurpose::SAMPLING, swizz_raw, nullptr, nullptr, texture.gamma_mode != 0);
 
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
             only_nearest = color::is_write_surface_non_linearity_filtering(format_target_of_texture);
+            filterable_surface = (texture_as_surface != 0) && !only_nearest;
+
+            if (texture_as_surface && texture.gamma_mode) {
+                const GLuint surface = static_cast<GLuint>(texture_as_surface);
+                texture_as_surface = state.surface_cache.retrieve_srgb_copy(surface);
+                if (texture_as_surface == surface)
+                    // stored as sRGB: if a later draw stores it as RGBA8, the unit must still decode
+                    state.surface_cache.set_gamma_sampling(index, surface);
+                else if (filterable_surface && (state.res_multiplier > 1.0f))
+                    generate_surface_mipmaps(static_cast<GLuint>(texture_as_surface), state.res_multiplier);
+            }
         }
 
         // Try to retrieve S24D8 texture
@@ -365,8 +436,35 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         }
     }
 
+    if (index < SCE_GXM_MAX_TEXTURE_UNITS) {
+        const uint32_t bit = 1U << index;
+        if (filterable_surface && !point_sampled && (state.res_multiplier > 1.0f))
+            context.current_frag_render_info.surface_mask |= bit;
+        else
+            context.current_frag_render_info.surface_mask &= ~bit;
+    }
+
+    // point-sampled reads of a mipmapped surface stay on the base level, as before mipmaps were added
+    GLuint sampler = 0;
+    if (filterable_surface && point_sampled && (state.res_multiplier > 1.0f)) {
+        if (!context.point_surface_samplers[0]) {
+            context.point_surface_samplers.init(glGenSamplers, glDeleteSamplers);
+            for (int decode = 0; decode < 2; decode++) {
+                const GLuint point_sampler = context.point_surface_samplers[decode];
+                glSamplerParameteri(point_sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glSamplerParameteri(point_sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                if (state.surface_cache.support_srgb_decode)
+                    glSamplerParameteri(point_sampler, GL_TEXTURE_SRGB_DECODE_EXT, decode ? GL_DECODE_EXT : GL_SKIP_DECODE_EXT);
+            }
+        }
+        sampler = context.point_surface_samplers[texture.gamma_mode ? 1 : 0];
+    }
+    glBindSampler(static_cast<GLuint>(index), sampler);
+
     if (texture_as_surface != 0) {
         glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));
+        if (state.surface_cache.support_srgb_decode)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SRGB_DECODE_EXT, texture.gamma_mode ? GL_DECODE_EXT : GL_SKIP_DECODE_EXT);
 
         if (only_nearest) {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -417,6 +515,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             }
         }
     } else {
+        state.complete_readbacks_overlapping(mem, data_addr, data_addr + renderer::texture::texture_source_size(texture));
         if (config.texture_cache) {
             state.texture_cache.cache_and_bind_texture(texture, mem);
         } else {
@@ -427,11 +526,17 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     glActiveTexture(GL_TEXTURE0);
 }
 
-void sync_blending(const GxmRecordState &state, const MemState &mem) {
+void sync_blending(const GxmRecordState &state, const FeatureState &features, const MemState &mem) {
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         gxm_fragment_program.renderer_data.get());
+
+    if (features.should_use_shader_interlock() && gxm_fragment_program.program.get(mem)->is_frag_color_used()) {
+        // The shader stores the color through an image and has no output, what the color attachment would receive is undefined.
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        return;
+    }
 
     glColorMask(fragment_program.color_mask_red, fragment_program.color_mask_green, fragment_program.color_mask_blue, fragment_program.color_mask_alpha);
     if (fragment_program.blend_enabled) {

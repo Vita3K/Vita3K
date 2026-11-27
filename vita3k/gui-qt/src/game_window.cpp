@@ -46,6 +46,7 @@
 
 #include <QtGui/qopenglcontext_platform.h>
 
+#include <cmath>
 #include <cstdint>
 
 #if defined(HAVE_X11) || defined(HAVE_WAYLAND)
@@ -161,6 +162,11 @@ GameWindow::GameWindow(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_set
     const auto &cc = emuenv.cfg.current_config;
     m_title_backend_renderer = cc.backend_renderer;
     sync_native_window_preferences();
+
+    connect(this, &QWindow::visibilityChanged, this, [this](QWindow::Visibility visibility) {
+        if (m_emuenv.renderer)
+            m_emuenv.renderer->set_fullscreen(visibility == QWindow::FullScreen);
+    });
 }
 
 GameWindow::~GameWindow() {
@@ -531,6 +537,9 @@ void GameWindow::toggle_fullscreen() {
 }
 
 void GameWindow::update_window_title() {
+    if (const auto *s = screen())
+        m_emuenv.display.host_refresh_rate = static_cast<int>(std::lround(s->refreshRate()));
+
     if (!app::update_runtime_metrics(m_emuenv, m_runtime_metrics))
         return;
 

@@ -116,6 +116,7 @@ bool copy_directory_contents(const fs::path &src_path, const fs::path &dst_path,
 class Root {
     fs::path vita_fs_path;
     fs::path patch_path;
+    fs::path cheat_path;
     fs::path log_path;
     fs::path config_path;
     fs::path shared_path;
@@ -135,6 +136,13 @@ public:
     }
     fs::path get_patch_path() const {
         return patch_path;
+    }
+
+    void set_cheat_path(const fs::path &p) {
+        cheat_path = p;
+    }
+    fs::path get_cheat_path() const {
+        return cheat_path;
     }
 
     void set_log_path(const fs::path &p) {

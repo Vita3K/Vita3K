@@ -26,6 +26,8 @@
 #include <touch/functions.h>
 #include <util/log.h>
 
+#include <algorithm>
+
 void update_keyboard_state(EmuEnvState &emuenv, const std::function<bool(input::PhysicalKeyCode)> &key_held) {
     const auto &cfg = emuenv.cfg;
     const auto is_pressed = [&](input::PhysicalKeyCode primary, input::PhysicalKeyCode alternate) {
@@ -358,6 +360,13 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     reset_axes();
 }
 
+SceUInt32 ctrl_peek_buttons(EmuEnvState &emuenv, int port) {
+    SceUInt32 buttons = 0;
+    SceUInt8 lx, ly, rx, ry;
+    retrieve_ctrl_data(emuenv, port, false, false, false, buttons, lx, ly, rx, ry);
+    return buttons;
+}
+
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext) {
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         const char *export_name = "sceCtrl*Buffer*";
@@ -377,10 +386,10 @@ int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2
             // sceCtrlRead is blocking, wait for the next vsync for the buffer to be updated
             auto thread = emuenv.kernel.get_thread(thread_id);
 
-            wait_vblank(emuenv.display, thread, state.last_vcount[port] + 1, false);
+            wait_until_vblank(emuenv, *thread, state.last_vcount[port] + 1, false);
         }
         uint64_t vblank_count = emuenv.display.vblank_count.load();
-        nb_returned_data = std::min<int32_t>(count, vblank_count - state.last_vcount[port]);
+        nb_returned_data = static_cast<int>(std::min<uint64_t>(count, vblank_count - state.last_vcount[port]));
         state.last_vcount[port] = vblank_count;
     }
 
@@ -389,11 +398,13 @@ int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2
     pData->timeStamp = timestamp;
     retrieve_ctrl_data(emuenv, port, is_v2, negative, from_ext, pData->buttons, pData->lx, pData->ly, pData->rx, pData->ry);
 
+    // the pad is read when the app asks for it and keeps no history, so a higher vblank rate only adds copies of the same state
+    // update the timestamp, 1 vsync earlier for each copy (16 667 us at the native vblank rate)
+    const uint64_t vblank_rate = std::max(1, emuenv.display.active_vblank_rate.load());
+    const uint64_t vblank_period_us = (1000000ULL + vblank_rate / 2) / vblank_rate;
     for (int i = 1; i < nb_returned_data; i++) {
         memcpy(&pData[i], &pData[0], sizeof(SceCtrlData2));
-
-        // update the timestamp, 1 vsync = 1/60 sec = 16 667 us earlier
-        pData[i].timeStamp -= i * 16667ULL;
+        pData[i].timeStamp -= i * vblank_period_us;
     }
 
     return nb_returned_data;

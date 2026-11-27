@@ -27,6 +27,7 @@
 #include <ctrl/state.h>
 #include <emuenv/state.h>
 #include <ime/functions.h>
+#include <interface.h>
 #include <motion/event_handler.h>
 #include <renderer/state.h>
 #include <touch/functions.h>
@@ -262,6 +263,8 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             hooks.on_launch(launch_request.app_path);
 
         SDL_WindowFlags window_flags = 0;
+        if (emuenv.cfg.fullscreen || emuenv.cfg.boot_apps_full_screen)
+            window_flags |= SDL_WINDOW_FULLSCREEN;
 #ifndef __ANDROID__
         window_flags |= SDL_WINDOW_RESIZABLE;
 #endif
@@ -285,7 +288,9 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             break;
         }
 
-        SDL_SetStringProperty(window_props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "Vita3K");
+        const auto title_str = fmt::format("{} ({})", emuenv.current_app_title, launch_request.app_path);
+
+        SDL_SetStringProperty(window_props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title_str.c_str());
         SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, 960);
         SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, 544);
         SDL_SetNumberProperty(window_props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, window_flags);
@@ -361,18 +366,51 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
                     running = false;
                     break;
 
-                case SDL_EVENT_KEY_DOWN:
+                case SDL_EVENT_KEY_DOWN: {
                     if (handle_ime_keydown(emuenv, hooks, event.key))
                         break;
-                    if (!event.key.repeat && SDL_GetKeyboardFocus() == window && !is_any_ime_active(emuenv)
-                        && event.key.scancode != SDL_SCANCODE_UNKNOWN && hooks.on_guide_button) {
-                        const auto &cfg = emuenv.cfg;
+
+                    if (SDL_GetKeyboardFocus() != window)
+                        break;
+
+                    if (event.key.repeat)
+                        break;
+
+                    if (is_any_ime_active(emuenv))
+                        break;
+
+                    if (event.key.scancode == SDL_SCANCODE_UNKNOWN)
+                        break;
+
+                    const auto &cfg = emuenv.cfg;
+                    // TODO: should this be generalized to do pause overlay and hook at the same time?
+                    if (hooks.on_guide_button) {
                         if (event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton)
                             || event.key.scancode == input::physical_key_to_sdl_scancode(cfg.keyboard_button_psbutton_alt))
                             hooks.on_guide_button();
                     }
-                    break;
 
+                    const auto key = event.key.scancode;
+
+                    if (key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_fullscreen)
+                        || key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_fullscreen_alt)) {
+                        const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+                        if (!SDL_SetWindowFullscreen(window, !fullscreen))
+                            LOG_WARN("Failed to toggle fullscreen: {}", SDL_GetError());
+                    }
+
+                    if (key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_toggle_touch)
+                        || key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_toggle_touch_alt))
+                        toggle_touchscreen(emuenv.touch);
+
+                    // TODO: Implement texture replacement screenshot hotkeys, they need to be thread-safe and not be blocking
+
+                    if (key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_exit)
+                        || key == input::physical_key_to_sdl_scancode(cfg.keyboard_gui_exit_alt))
+                        running = false;
+
+                    break;
+                }
                 case SDL_EVENT_TEXT_EDITING:
                     handle_ime_text_editing(emuenv, hooks, event.edit.text);
                     break;

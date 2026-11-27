@@ -2,7 +2,7 @@ add_library(
 	module
 	STATIC
 	src/load_module.cpp
-	src/write_return_value.cpp
+	src/call_result.cpp
 )
 
 target_include_directories(module PUBLIC include)

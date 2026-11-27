@@ -80,7 +80,9 @@ add_subdirectory(libfat16)
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
-add_subdirectory(sdl)
+if(NOT VITA3K_USE_SYSTEM_SDL)
+	add_subdirectory(sdl)
+endif()
 
 # Cubeb setup, from https://github.com/RPCS3/rpcs3/blob/master/3rdparty/cubeb/CMakeLists.txt
 set(BUILD_SHARED_LIBS FALSE CACHE BOOL "Don't build shared libs")
@@ -139,6 +141,7 @@ target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}
 
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" OFF)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" OFF)
+option(BUILD_TESTING "Build tests" OFF)
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 
 if(USE_DISCORD_RICH_PRESENCE)
@@ -225,19 +228,26 @@ target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
 add_library(vulkan INTERFACE)
 target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/VulkanMemoryAllocator-Hpp/Vulkan-Headers/include")
 if(APPLE)
-	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar")
-		message(STATUS "Downloading MoltenVK...")
-		file(DOWNLOAD https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.1/MoltenVK-macos.tar
-			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar"
-			SHOW_PROGRESS
-			EXPECTED_HASH SHA256=5ea0c259df7ded9a275444820f09cced54d6e5a7c7a31d262de62a5cdb7e15cf)
+	if(VITA3K_USE_SYSTEM_MOLTENVK)
+		find_path(MOLTENVK_INCLUDE_DIR MoltenVK/mvk_vulkan.h REQUIRED)
+		find_library(MOLTENVK_LIBRARY MoltenVK REQUIRED)
+		target_include_directories(vulkan INTERFACE "${MOLTENVK_INCLUDE_DIR}")
+		set(MOLTENVK_DYLIB "${MOLTENVK_LIBRARY}" PARENT_SCOPE)
+	else()
+		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar")
+			message(STATUS "Downloading MoltenVK...")
+			file(DOWNLOAD https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.1/MoltenVK-macos.tar
+				"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar"
+				SHOW_PROGRESS
+				EXPECTED_HASH SHA256=5ea0c259df7ded9a275444820f09cced54d6e5a7c7a31d262de62a5cdb7e15cf)
+		endif()
+		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
+			execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK 
+				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
+		endif()
+		target_include_directories(vulkan INTERFACE "${CMAKE_BINARY_DIR}/external/MoltenVK/include")
+		set(MOLTENVK_DYLIB "${CMAKE_BINARY_DIR}/external/MoltenVK/dylib/macOS/libMoltenVK.dylib" PARENT_SCOPE)
 	endif()
-	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
-		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK 
-			WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
-	endif()
-	target_include_directories(vulkan INTERFACE "${CMAKE_BINARY_DIR}/external/MoltenVK/include")
-	set(MOLTENVK_DYLIB "${CMAKE_BINARY_DIR}/external/MoltenVK/dylib/macOS/libMoltenVK.dylib" PARENT_SCOPE)
 elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 	# add validation layer
 	if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt/${ANDROID_ABI}/libVkLayer_khronos_validation.so")
@@ -421,7 +431,7 @@ if(NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 		"Enable and require Tracy to compile core components such as the renderer, shader recompiler and
 			HLE modules"
 		ON)
-	option(TRACY_NO_FRAME_IMAGE, ON)
+	option(TRACY_NO_FRAME_IMAGE OFF)
 
 	add_library(tracy STATIC tracy/public/TracyClient.cpp)
 	target_include_directories(tracy SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)

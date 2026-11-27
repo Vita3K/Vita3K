@@ -17,28 +17,135 @@
 
 #pragma once
 
+#include <cpu/arm.h>
 #include <cpu/common.h>
 #include <cpu/disasm/state.h>
 #include <mem/state.h>
 #include <util/types.h>
 
 #include <atomic>
+#include <initializer_list>
+#include <optional>
+#include <string>
 
+// The CPU of one guest thread, which a backend like DynarmicCPU implements. It runs the thread's
+// guest code when its ThreadState lets it. The executor is the host thread that runs it.
 struct CPUState {
-    CPUState() = default;
-
-    SceUID thread_id = 0;
-    MemState *mem = nullptr;
+    const SceUID thread_id;
+    MemState &mem;
+    // The core number the kernel gave the thread
+    const std::size_t processor_id;
     DisasmState disasm;
 
-    CPUInterfacePtr cpu;
-    bool svc_called;
-    uint32_t svc;
+    // The return address a guest call gets in LR. Execution stops there.
+    Address return_pc = 0;
 
-    // Exception handler support (kubridge abort handlers)
-    // These are set by the page fault callback (signal-safe atomics)
-    // and consumed by run_loop after HaltExecution returns.
+    // Set by the kubridge fault handler from a signal, read by the CPU after it halts
     std::atomic<bool> abort_pending{ false };
     std::atomic<uint32_t> abort_fault_addr{ 0 };
-    std::atomic<bool> abort_is_write{ false };
+
+    virtual ~CPUState() = default;
+
+    enum class RunMode : uint8_t {
+        run,
+        // One instruction, for the debugger
+        single_step,
+    };
+    // Called by the executor
+    // Runs guest code from the PC until it returns, calls an import or stops, or one instruction. A
+    // step that a stop request ends before its instruction stops without debugger_stop.
+    virtual GuestExit run(RunMode mode) = 0;
+
+    // Called by any thread, also from a signal handler. Takes no lock.
+    // Asks the CPU to stop guest code soon
+    virtual void request_stop() = 0;
+
+    // Called by any thread, the executor too, but not from a signal handler. It takes the JIT's
+    // own lock.
+    // Drops the JIT's code for a range of guest memory
+    virtual void invalidate_jit_cache(Address start, size_t length) = 0;
+
+    // Called by the executor
+    // Clears the exclusive monitor, as the kernel does on its way back to guest code
+    virtual void clear_exclusive() = 0;
+    // Takes the abort the fault handler noted, if any. The handler runs on any host access to
+    // protected guest memory, so the kernel code after an exit can note one too.
+    std::optional<Address> take_abort();
+
+    // Called by the executor, or under the ThreadState's mutex for a thread with no run, as its
+    // start() does
+    // Writes an import's result to the registers the calling convention returns it in
+    void write_call_result(const CallResult &result);
+    uint32_t stack_alloc(size_t size);
+    void stack_free(size_t size);
+
+    // Called by the executor, or by another thread under the ThreadState's mutex while the thread
+    // has no run or is parked, or is waiting for a read. A thread that stopped before may run
+    // again, so that alone isn't enough.
+    // TODO: the gdb stub doesn't take the mutex for them yet.
+    virtual uint32_t get_reg(uint8_t idx) = 0;
+    virtual void set_reg(uint8_t idx, uint32_t val) = 0;
+
+    virtual uint32_t get_cpsr() = 0;
+    virtual void set_cpsr(uint32_t val) = 0;
+
+    virtual uint32_t get_tpidruro() = 0;
+    virtual void set_tpidruro(uint32_t val) = 0;
+
+    virtual uint32_t get_tpidrurw() = 0;
+    virtual void set_tpidrurw(uint32_t val) = 0;
+
+    virtual float get_float_reg(uint8_t idx) = 0;
+    virtual void set_float_reg(uint8_t idx, float val) = 0;
+
+    virtual uint32_t get_fpscr() = 0;
+    virtual void set_fpscr(uint32_t val) = 0;
+
+    virtual CPUContext get_context() = 0;
+    virtual void set_context(const CPUContext &ctx) = 0;
+
+    uint32_t get_sp() { return get_reg(arm::REG_SP); }
+    void set_sp(uint32_t val) { set_reg(arm::REG_SP, val); }
+    uint32_t get_lr() { return get_reg(arm::REG_LR); }
+    void set_lr(uint32_t val) { set_reg(arm::REG_LR, val); }
+    uint32_t get_pc() { return get_reg(arm::REG_PC); }
+    // Sets the PC, and the Thumb state from bit 0
+    void set_pc(uint32_t val);
+    bool is_thumb_mode() { return get_cpsr() & arm::CPSR_T; }
+
+    // Debugging helpers
+    virtual void set_log_code(bool log) = 0;
+    virtual void set_log_mem(bool log) = 0;
+    virtual bool get_log_mem() = 0;
+    std::string disassemble(uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
+    std::string disassemble(uint64_t at, uint16_t *insn_size = nullptr);
+
+protected:
+    CPUState(MemState &mem, SceUID thread_id, std::size_t processor_id);
 };
+
+// Reserves bytes on a guest thread's stack for as long as it lives
+class GuestStackAlloc {
+public:
+    GuestStackAlloc(CPUState &cpu, size_t size)
+        : cpu(cpu)
+        , size(size)
+        , addr(cpu.stack_alloc(size)) {}
+    ~GuestStackAlloc() { cpu.stack_free(size); }
+    GuestStackAlloc(const GuestStackAlloc &) = delete;
+    GuestStackAlloc &operator=(const GuestStackAlloc &) = delete;
+
+    // The lowest address of the reserved bytes
+    Address address() const { return addr; }
+
+private:
+    CPUState &cpu;
+    const size_t size;
+    const Address addr;
+};
+
+CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem);
+
+// The CPU state running on this host thread, for signal handlers
+void set_current_cpu_state(CPUState *state);
+CPUState *get_current_cpu_state();

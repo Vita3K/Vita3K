@@ -16,17 +16,18 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
-#include <cpu/state.h>
+#include <cpu/arm.h>
 #include <mem/state.h>
 #include <mem/util.h>
 
 #include <map>
+#include <mutex>
 
 struct KernelState;
 
 struct Breakpoint {
     bool thumb_mode;
-    unsigned char data[4];
+    unsigned char data[sizeof(arm::ARM_BKPT)];
 };
 
 struct WatchMemory {
