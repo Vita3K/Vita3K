@@ -451,7 +451,8 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
                 write_file(fd, files[i].buf.get(emuenv.mem), files[i].bufSize, emuenv.io, export_name);
                 close_file(emuenv.io, fd, export_name);
             }
-            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, emuenv.vita_fs_path, export_name);
+            // The file keeps what was just written and ends after it
+            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY, emuenv.vita_fs_path, export_name);
             truncate_file(fd, files[i].bufSize + files[i].offset, emuenv.io, export_name);
             close_file(emuenv.io, fd, export_name);
             break;

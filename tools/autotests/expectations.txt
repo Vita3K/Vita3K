@@ -556,7 +556,7 @@ object_limit_source             fail     # no object limit, Vita3K makes 4096 se
 object_limits                   fail     # no limit on the number of objects
 open                            pass
 open_close_kinds                fail     # an open returns the creating UID, close does nothing
-open_flag_checks                fail     # TRUNC is ignored and the open takes every flag combination
+open_flag_checks                pass
 open_name_rules                 fail     # openable names, NAME_TOO_LONG at 32 characters
 open_uid_limits                 fail     # no limit on opened UIDs
 openable_name_limit_each_kind   pass
