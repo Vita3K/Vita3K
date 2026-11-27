@@ -227,6 +227,41 @@ TEST_F(RepatchTest, SymlinkOutOfRepatchIsIgnored) {
     EXPECT_TRUE(find_repatch_path(io, pref, "app/PCSE00000/link.txt").empty());
 }
 
+// Lists a directory to its end: the names, and the value the listing ended on (0 unless it failed)
+static int list_to_end(IOState &io, const fs::path &pref, const char *path, std::multiset<std::string> &names) {
+    const SceUID fd = open_dir(io, path, pref, "test");
+    if (fd < 0)
+        return fd;
+    SceIoDirent dent{};
+    int res;
+    while ((res = read_dir(io, fd, &dent, pref, "test")) > 0)
+        names.insert(dent.d_name);
+    close_dir(io, fd, "test");
+    return res;
+}
+
+TEST_F(RepatchTest, ListingSkipsLinksOutOfRepatch) {
+    write_bytes(pref / "outside" / "s.txt", "outside-s");
+    write_bytes(app("link.txt"), "app-link");
+    write_bytes(repatch("solo/x.txt"), "solo-x");
+    std::error_code ec;
+    fs::create_symlink(pref / "outside" / "s.txt", repatch("link.txt"), ec); // the game has link.txt
+    fs::create_symlink(pref / "outside" / "s.txt", repatch("stray.txt"), ec); // the game has no stray.txt
+    fs::create_directory_symlink(pref / "outside", repatch("straydir"), ec);
+    fs::create_symlink(pref / "outside" / "s.txt", repatch("solo") / "out.txt", ec);
+    ASSERT_FALSE(ec);
+
+    // a link out of rePatch is not an entry: the listing goes on past it and ends cleanly
+    std::multiset<std::string> names;
+    EXPECT_EQ(list_to_end(io, pref, "app0:/", names), 0);
+    EXPECT_EQ(names, (std::multiset<std::string>{ "a.txt", "b.txt", "link.txt", "solo" }));
+
+    // the same in a directory that only rePatch has
+    std::multiset<std::string> solo;
+    EXPECT_EQ(list_to_end(io, pref, "app0:/solo", solo), 0);
+    EXPECT_EQ(solo, (std::multiset<std::string>{ "x.txt" }));
+}
+
 TEST_F(RepatchTest, SymlinkInsideRepatchWorks) {
     write_bytes(repatch("real/t.txt"), "real-t");
     std::error_code ec;

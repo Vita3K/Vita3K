@@ -989,7 +989,18 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const fs::path 
                 return 0;
             }
             d_name_utf8 = get_file_in_dir(d);
-            if (d_name_utf8 != "." && d_name_utf8 != ".." && !dir->is_shadowed(string_utils::tolower(d_name_utf8)))
+            if (d_name_utf8 == "." || d_name_utf8 == "..")
+                continue;
+            if (dir->is_listing_repatch()) {
+                // An entry find_repatch_path rejects (a link out of the rePatch folder) is not part of the
+                // overlay: it is skipped, and left unrecorded so the game's own entry of that name still lists
+                const auto entry_path = std::string(dir->get_vita_loc()) + '/' + d_name_utf8;
+                auto entry_device = device::get_device(entry_path);
+                const auto entry_translated = translate_path(entry_path.c_str(), entry_device, io.device_paths);
+                if (find_repatch_path(io, vita_fs_path, entry_translated).empty())
+                    continue;
+            }
+            if (!dir->is_shadowed(string_utils::tolower(d_name_utf8)))
                 break;
         }
     }
