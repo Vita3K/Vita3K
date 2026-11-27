@@ -36,58 +36,38 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
     return load_module(emuenv, path);
 }
 
-static int kernel_start_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, Ptr<const void> argp, int *pRes) {
-    // The status is 0 unless module_start ran
-    if (pRes)
-        *pRes = 0;
-    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
-    if (!module) {
-        const char *export_name = __FUNCTION__;
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
-    }
-    const ModuleStatus status = start_module(emuenv, *module, args, argp);
-    if (!status)
-        return status.error();
-    if (pRes)
-        *pRes = *status;
-    return SCE_KERNEL_OK;
+// Writes the status back after a module syscall, which fails the call when it isn't mapped
+static int write_status(EmuEnvState &emuenv, const char *export_name, Ptr<SceInt32> out, SceInt32 status, int result) {
+    if (!out)
+        return result;
+    if (!is_valid_addr_len(emuenv.mem, out.address(), sizeof(SceInt32)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    *out.get(emuenv.mem) = status;
+    return result;
 }
 
-static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, Ptr<const void> argp, int *pRes) {
-    // The status is 0 unless module_stop ran
-    if (pRes)
-        *pRes = 0;
-    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
-    if (!module) {
-        const char *export_name = __FUNCTION__;
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
-    }
-    const ModuleStatus status = stop_module(emuenv, *module, args, argp);
-    if (!status)
-        return status.error();
-    if (pRes)
-        *pRes = *status;
-    return 0;
+// Tells if a module syscall's option is set but the bytes the syscall copies of it aren't mapped
+static bool is_unreadable(const MemState &mem, Ptr<const void> option, SceSize size) {
+    return option && !is_valid_addr_len(mem, option.address(), size);
 }
 
-EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
-    TRACY_FUNC(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
-    // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
-    if (std::string_view(moduleFileName).contains("rgpluginsgm_psvita")) {
-        LOG_WARN("Bypass load this module: {}", moduleFileName);
-        return SCE_KERNEL_ERROR_MODULEMGR_INVALID_TYPE;
-    }
-
-    SceUID module_id = load_module(emuenv, moduleFileName);
-    if (module_id < 0)
-        return module_id;
-    // A start that fails unloads the module again
-    if (const int error = kernel_start_module(emuenv, module_id, args, argp, pRes); error < 0) {
-        if (const int unload_error = unload_module(emuenv, module_id); unload_error < 0)
-            return unload_error;
-        return error;
-    }
-    return module_id;
+// The module syscalls copy their block in first, then the option. They take only load flag 0x10
+// and no start or stop flags, and a start or stop needs the status pointer. The module id is looked
+// up before those checks, and the status is written back after the call, 0 after an error.
+EXPORT(SceUID, _sceKernelLoadStartModule, const char *path, SceSize args, Ptr<const void> argp, Ptr<const SceKernelModuleCall_opt> opt) {
+    TRACY_FUNC(_sceKernelLoadStartModule, path, args, argp, opt);
+    if (!is_valid_addr_len(emuenv.mem, opt.address(), sizeof(SceKernelModuleCall_opt)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const SceKernelModuleCall_opt block = *opt.get(emuenv.mem);
+    if (is_unreadable(emuenv.mem, block.option, sizeof(SceSize)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    SceInt32 status = 0;
+    SceUID result;
+    if (block.flags & ~0x10)
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_FLAGS);
+    else
+        result = kernel_load_start_module(emuenv, export_name, path, args, argp, &status);
+    return write_status(emuenv, export_name, block.status, status, result);
 }
 
 EXPORT(int, _sceKernelOpenModule) {
@@ -95,24 +75,62 @@ EXPORT(int, _sceKernelOpenModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStartModuleOpt *pOpt, int *pRes) {
-    TRACY_FUNC(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
-
-    return kernel_start_module(emuenv, uid, args, argp, pRes);
+EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, Ptr<const void> argp, Ptr<const SceKernelModuleCall_opt> opt) {
+    TRACY_FUNC(_sceKernelStartModule, uid, args, argp, opt);
+    if (!is_valid_addr_len(emuenv.mem, opt.address(), sizeof(SceKernelModuleCall_opt)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const SceKernelModuleCall_opt block = *opt.get(emuenv.mem);
+    if (is_unreadable(emuenv.mem, block.option, sizeof(SceKernelStartModuleOpt)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    SceInt32 status = 0;
+    int result;
+    if (!lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
+    else if (block.flags)
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_FLAGS);
+    else if (!block.status)
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    else
+        result = kernel_start_module(emuenv, export_name, uid, args, argp, &status);
+    return write_status(emuenv, export_name, block.status, status, result);
 }
 
-EXPORT(int, _sceKernelStopModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStopModuleOpt *pOpt, int *pRes) {
-    TRACY_FUNC(_sceKernelStopModule, uid, args, argp, flags, pOpt, pRes);
-    return kernel_stop_module(emuenv, uid, args, argp, pRes);
+EXPORT(int, _sceKernelStopModule, SceUID uid, SceSize args, Ptr<const void> argp, Ptr<const SceKernelModuleCall_opt> opt) {
+    TRACY_FUNC(_sceKernelStopModule, uid, args, argp, opt);
+    if (!is_valid_addr_len(emuenv.mem, opt.address(), sizeof(SceKernelModuleCall_opt)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const SceKernelModuleCall_opt block = *opt.get(emuenv.mem);
+    if (is_unreadable(emuenv.mem, block.option, sizeof(SceKernelStopModuleOpt)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    SceInt32 status = 0;
+    int result;
+    if (!lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
+    else if (block.flags)
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_FLAGS);
+    else if (!block.status)
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    else
+        result = kernel_stop_module(emuenv, export_name, uid, args, argp, &status);
+    return write_status(emuenv, export_name, block.status, status, result);
 }
 
-EXPORT(int, _sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const void *pOpt, int *pRes) {
-    TRACY_FUNC(_sceKernelStopUnloadModule, uid, args, argp, flags, pOpt, pRes);
-    int ret = kernel_stop_module(emuenv, uid, args, argp, pRes);
-    if (ret < 0)
-        return ret;
-
-    return unload_module(emuenv, uid);
+EXPORT(int, _sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void> argp, Ptr<const SceKernelModuleCall_opt> opt) {
+    TRACY_FUNC(_sceKernelStopUnloadModule, uid, args, argp, opt);
+    if (!is_valid_addr_len(emuenv.mem, opt.address(), sizeof(SceKernelModuleCall_opt)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    const SceKernelModuleCall_opt block = *opt.get(emuenv.mem);
+    if (is_unreadable(emuenv.mem, block.option, sizeof(SceSize)))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    SceInt32 status = 0;
+    int result;
+    if (!lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex))
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
+    else if (block.flags)
+        result = RET_ERROR(SCE_KERNEL_ERROR_INVALID_FLAGS);
+    else
+        result = kernel_stop_unload_module(emuenv, export_name, uid, args, argp, &status);
+    return write_status(emuenv, export_name, block.status, status, result);
 }
 
 EXPORT(int, _sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt) {

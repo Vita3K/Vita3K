@@ -19,6 +19,7 @@
 #include "SceModulemgr.h"
 #include <kernel/state.h>
 #include <module/module.h>
+#include <modules/module_parent.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceModulemgrForDriver);
@@ -37,7 +38,7 @@ EXPORT(SceUID, ksceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
 
 EXPORT(SceUID, ksceKernelLoadStartModule, const char *path, SceSize args, Ptr<const void> argp, int flags, SceKernelLMOption *option, int *status) {
     TRACY_FUNC(ksceKernelLoadStartModule, path, args, argp, flags, option, status);
-    return CALL_EXPORT(_sceKernelLoadStartModule, path, args, argp, flags, option, status);
+    return kernel_load_start_module(emuenv, export_name, path, args, argp, status);
 }
 
 EXPORT(SceUID, ksceKernelLoadStartModuleForPid, SceUID pid, const char *path, SceSize args, Ptr<const void> argp, int flags, SceKernelLMOption *option, int *status) {
@@ -74,17 +75,17 @@ EXPORT(SceUID, ksceKernelSearchModuleByName, const char *module_name) {
 
 EXPORT(int, ksceKernelStartModule, SceUID modid, SceSize args, Ptr<const void> argp, int flags, SceKernelLMOption *option, int *status) {
     TRACY_FUNC(ksceKernelStartModule, modid, args, argp, flags, option, status);
-    return CALL_EXPORT(_sceKernelStartModule, modid, args, argp, flags, reinterpret_cast<const SceKernelStartModuleOpt *>(option), status);
+    return kernel_start_module(emuenv, export_name, modid, args, argp, status);
 }
 
 EXPORT(int, ksceKernelStopModule, SceUID modid, SceSize args, Ptr<const void> argp, int flags, SceKernelULMOption *option, int *status) {
     TRACY_FUNC(ksceKernelStopModule, modid, args, argp, flags, option, status);
-    return CALL_EXPORT(_sceKernelStopModule, modid, args, argp, flags, reinterpret_cast<const SceKernelStopModuleOpt *>(option), status);
+    return kernel_stop_module(emuenv, export_name, modid, args, argp, status);
 }
 
 EXPORT(int, ksceKernelStopUnloadModule, SceUID modid, SceSize args, Ptr<const void> argp, int flags, SceKernelULMOption *option, int *status) {
     TRACY_FUNC(ksceKernelStopUnloadModule, modid, args, argp, flags, option, status);
-    return CALL_EXPORT(_sceKernelStopUnloadModule, modid, args, argp, flags, option, status);
+    return kernel_stop_unload_module(emuenv, export_name, modid, args, argp, status);
 }
 
 EXPORT(int, ksceKernelStopUnloadModuleForPid, SceUID pid, SceUID modid, SceSize args, Ptr<const void> argp, int flags, SceKernelULMOption *option, int *status) {

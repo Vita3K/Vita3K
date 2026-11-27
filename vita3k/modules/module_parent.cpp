@@ -460,6 +460,61 @@ ModuleStatus stop_module(EmuEnvState &emuenv, KernelModule &module, SceSize args
     return status;
 }
 
+int kernel_start_module(EmuEnvState &emuenv, const char *export_name, SceUID module_id, SceSize args, Ptr<const void> argp, SceInt32 *status) {
+    // The status is 0 unless module_start ran
+    if (status)
+        *status = 0;
+    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
+    const ModuleStatus result = start_module(emuenv, *module, args, argp);
+    if (!result)
+        return result.error();
+    if (status)
+        *status = *result;
+    return SCE_KERNEL_OK;
+}
+
+int kernel_stop_module(EmuEnvState &emuenv, const char *export_name, SceUID module_id, SceSize args, Ptr<const void> argp, SceInt32 *status) {
+    // The status is 0 unless module_stop ran
+    if (status)
+        *status = 0;
+    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
+    const ModuleStatus result = stop_module(emuenv, *module, args, argp);
+    if (!result)
+        return result.error();
+    if (status)
+        *status = *result;
+    return 0;
+}
+
+SceUID kernel_load_start_module(EmuEnvState &emuenv, const char *export_name, const char *path, SceSize args, Ptr<const void> argp, SceInt32 *status) {
+    // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
+    if (std::string_view(path).contains("rgpluginsgm_psvita")) {
+        LOG_WARN("Bypass load this module: {}", path);
+        return SCE_KERNEL_ERROR_MODULEMGR_INVALID_TYPE;
+    }
+
+    const SceUID module_id = load_module(emuenv, path);
+    if (module_id < 0)
+        return module_id;
+    // A start that fails unloads the module again
+    if (const int error = kernel_start_module(emuenv, export_name, module_id, args, argp, status); error < 0) {
+        if (const int unload_error = unload_module(emuenv, module_id); unload_error < 0)
+            return unload_error;
+        return error;
+    }
+    return module_id;
+}
+
+int kernel_stop_unload_module(EmuEnvState &emuenv, const char *export_name, SceUID module_id, SceSize args, Ptr<const void> argp, SceInt32 *status) {
+    if (const int error = kernel_stop_module(emuenv, export_name, module_id, args, argp, status); error < 0)
+        return error;
+    return unload_module(emuenv, module_id);
+}
+
 // Modules sysmodule skips, those for development mode or dipsw settings. Vita3K is a retail Vita
 // with no dipsw set, and takes every game as built with 1.80 or later, which skips the
 // np_message_padding module.
