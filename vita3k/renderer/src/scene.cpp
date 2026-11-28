@@ -28,6 +28,7 @@
 #include <renderer/vulkan/functions.h>
 
 #include <config/state.h>
+#include <display/state.h>
 #include <util/log.h>
 #include <util/tracy.h>
 
@@ -39,6 +40,13 @@
 #endif
 
 namespace renderer {
+template <typename T>
+static T read_payload(const Command &cmd, const size_t offset) {
+    T value;
+    memcpy(&value, cmd.data + offset, sizeof(T));
+    return value;
+}
+
 void destroy_command_payload(Command &cmd) {
     switch (cmd.opcode) {
     case CommandOpcode::SetContext: {
@@ -48,6 +56,27 @@ void destroy_command_payload(Command &cmd) {
         delete *depth_stencil_surface;
         break;
     }
+
+    case CommandOpcode::NewFrame:
+        delete read_payload<DisplayFrameInfo *>(cmd, 0);
+        break;
+
+    case CommandOpcode::SetScreenFilter:
+        delete read_payload<std::string *>(cmd, 0);
+        break;
+
+    case CommandOpcode::TransferCopy:
+        delete[] read_payload<SceGxmTransferImage *>(cmd, 2 * sizeof(uint32_t) + sizeof(SceGxmTransferColorKeyMode));
+        break;
+
+    case CommandOpcode::TransferDownscale:
+        delete read_payload<SceGxmTransferImage *>(cmd, 0);
+        delete read_payload<SceGxmTransferImage *>(cmd, sizeof(SceGxmTransferImage *));
+        break;
+
+    case CommandOpcode::TransferFill:
+        delete read_payload<SceGxmTransferImage *>(cmd, sizeof(uint32_t));
+        break;
 
     default:
         break;

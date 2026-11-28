@@ -84,21 +84,26 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, co
 }
 
 bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
-    FILE *infile = FOPEN(pkg_path.c_str(), "rb");
+    std::ifstream infile(pkg_path, std::ios::binary | std::ios::ate);
     if (!infile) {
         LOG_CRITICAL("Failed to load pkg file in path: {}", fs_utils::path_to_utf8(pkg_path));
         return false;
     }
 
-    fseek(infile, 0, SEEK_END);
-    const uint64_t pkg_size = ftell(infile);
+    const uint64_t pkg_size = infile.tellg();
+
+    // a failed read must not stop the following seeks
+    const auto read_at = [&infile](uint64_t offset, void *dst, size_t size) {
+        infile.clear();
+        infile.seekg(offset);
+        infile.read(reinterpret_cast<char *>(dst), size);
+        return static_cast<bool>(infile);
+    };
 
     PkgHeader pkg_header;
     PkgExtHeader ext_header;
-    fseek(infile, 0, SEEK_SET);
-    fread(reinterpret_cast<void *>(&pkg_header), sizeof(PkgHeader), 1, infile);
-    fseek(infile, sizeof(PkgHeader), SEEK_SET);
-    fread(reinterpret_cast<char *>(&ext_header), sizeof(PkgExtHeader), 1, infile);
+    read_at(0, &pkg_header, sizeof(PkgHeader));
+    read_at(sizeof(PkgHeader), &ext_header, sizeof(PkgExtHeader));
 
     progress_callback(0);
 
@@ -125,8 +130,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
 
     for (uint32_t i = 0; i < byte_swap(pkg_header.info_count); i++) {
         uint32_t block[4];
-        fseek(infile, info_offset, SEEK_SET);
-        fread(block, sizeof(block), 1, infile);
+        read_at(info_offset, block, sizeof(block));
 
         auto type = byte_swap(block[0]);
         auto size = byte_swap(block[1]);
@@ -205,9 +209,8 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     EVP_EncryptFinal_ex(cipher_ctx, main_key + dec_len, &dec_len);
 
     std::vector<uint8_t> sfo_buffer(sfo_size);
-    if (fseek(infile, sfo_offset, SEEK_SET) != 0 || fread(sfo_buffer.data(), sfo_buffer.size(), 1, infile) != 1) {
+    if (!read_at(sfo_offset, sfo_buffer.data(), sfo_buffer.size())) {
         LOG_ERROR("Failed to read param.sfo from {}", fs_utils::path_to_utf8(pkg_path));
-        fclose(infile);
         evp_cleanup();
         return false;
     }
@@ -215,7 +218,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     if (!sfo::get_param_info(emuenv.app_info, sfo_buffer, emuenv.cfg.sys_lang)) {
         LOG_ERROR("The param.sfo in {} is invalid, not installing it", fs_utils::path_to_utf8(pkg_path));
         evp_cleanup();
-        fclose(infile);
         return false;
     }
 
@@ -224,7 +226,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     if (dest_id.empty() || (type == PkgType::PKG_TYPE_VITA_DLC && emuenv.app_info.app_content_id.size() <= 20)) {
         LOG_ERROR("The param.sfo in {} has no usable title or content ID, not installing it", fs_utils::path_to_utf8(pkg_path));
         evp_cleanup();
-        fclose(infile);
         return false;
     }
 
@@ -273,8 +274,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     for (uint32_t i = 0; i < byte_swap(pkg_header.file_count); i++) {
         PkgEntry entry;
         uint64_t file_offset = items_offset + i * 32;
-        fseek(infile, byte_swap(pkg_header.data_offset) + file_offset, SEEK_SET);
-        fread(&entry, sizeof(PkgEntry), 1, infile);
+        read_at(byte_swap(pkg_header.data_offset) + file_offset, &entry, sizeof(PkgEntry));
 
         decrypt_aes_ctr(file_offset / 16, reinterpret_cast<unsigned char *>(&entry), sizeof(PkgEntry));
 
@@ -286,8 +286,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         const auto file_count = static_cast<float>(byte_swap(pkg_header.file_count));
         progress_callback(i / file_count * 100.f * 0.6f);
         std::vector<unsigned char> name(byte_swap(entry.name_size));
-        fseek(infile, byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset), SEEK_SET);
-        fread(name.data(), byte_swap(entry.name_size), 1, infile);
+        read_at(byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset), name.data(), byte_swap(entry.name_size));
 
         decrypt_aes_ctr(byte_swap(entry.name_offset) / 16, name.data(), byte_swap(entry.name_size));
 
@@ -307,10 +306,11 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             EVP_DecryptInit_ex(cipher_ctx, cipher_CTR, nullptr, main_key, counter);
             EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
 
-            fseek(infile, byte_swap(pkg_header.data_offset) + offset, SEEK_SET);
+            infile.clear();
+            infile.seekg(byte_swap(pkg_header.data_offset) + offset);
             while (data_size != 0) {
                 size_t size = data_size < buffer.size() ? data_size : buffer.size();
-                fread(buffer.data(), size, 1, infile);
+                infile.read(reinterpret_cast<char *>(buffer.data()), size);
 
                 EVP_DecryptUpdate(cipher_ctx, buffer.data(), &dec_len, buffer.data(), size);
 
@@ -323,7 +323,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             outfile.close();
         }
     }
-    fclose(infile);
+    infile.close();
 
     evp_cleanup();
     fs::path title_id_src = path;
@@ -379,13 +379,13 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
 }
 
 std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &vita_fs_path) {
-    FILE *infile = FOPEN(pkg_path.c_str(), "rb");
+    std::ifstream infile(pkg_path, std::ios::binary);
     if (!infile)
         return {};
 
     PkgHeader pkg_header{};
-    fread(&pkg_header, sizeof(PkgHeader), 1, infile);
-    fclose(infile);
+    infile.read(reinterpret_cast<char *>(&pkg_header), sizeof(PkgHeader));
+    infile.close();
 
     const std::string content_id(pkg_header.content_id);
     if (content_id.size() < 16)

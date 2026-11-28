@@ -429,6 +429,7 @@ std::vector<AssignedAddr> get_all_assigned_addrs() {
     } else {
         LOG_CRITICAL("GetAdaptersInfo failed with error: {}", dwRetVal);
     }
+    free(pAdapterInfo);
 #else
     struct ifaddrs *ifAddrStruct = nullptr;
     struct ifaddrs *ifa = nullptr;
