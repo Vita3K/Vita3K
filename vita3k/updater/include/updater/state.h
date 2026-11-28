@@ -60,6 +60,8 @@ struct UpdateInfo {
     std::string notes;
     // Optional changelog entries returned by the release payload.
     std::vector<ChangelogEntry> changelog;
+    // Lowercase hex SHA-256 GitHub reports for this platform's asset, empty when it reports none.
+    std::string asset_sha256;
 };
 
 struct UpdateCheckResult {
