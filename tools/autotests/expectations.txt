@@ -719,6 +719,7 @@ syscall_callee_saved            pass
 syscall_io_blocks               pass
 syscall_io_calls                fail     # Vita3K answers the 0x3001 free space query the test expects refused
 syscall_lw_mutex_lock           pass
+syscall_module_bad_blocks       fail     # the module syscalls read their block from other registers and don't refuse an unmapped block, option or status
 syscall_module_blocks           fail     # the module calls don't read the flags, option and status block
 syscall_module_checks           fail     # the module syscalls don't read the flags and status block
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
