@@ -340,6 +340,12 @@ static int host_open_error(const int error) {
     }
 }
 
+// An open needs an access mode, and APPEND and TRUNC need write access
+static bool open_access_refused(const int flags) {
+    const int access = flags & SCE_O_RDWR;
+    return access == 0 || (access == SCE_O_RDONLY && (flags & (SCE_O_APPEND | SCE_O_TRUNC)));
+}
+
 SceUID open_file(IOState &io, const char *path, const int flags, const fs::path &vita_fs_path, const char *export_name) {
     auto device = device::get_device(path);
     auto device_for_icase = device;
@@ -380,6 +386,9 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
+    if ((flags & (SCE_O_APPEND | SCE_O_TRUNC)) == (SCE_O_APPEND | SCE_O_TRUNC))
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
+
     // Do not allow any new files if they do not have a write flag.
     if (!fs::exists(system_path)) {
         if (!(flags & SCE_O_CREAT)) {
@@ -405,13 +414,16 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
                 return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
             }
         } else {
+            if (open_access_refused(flags))
+                return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
             if (!fs::exists(system_path.parent_path())) {
                 fs::create_directories(system_path.parent_path());
             }
             std::ofstream file(system_path);
         }
     }
-
+    if (open_access_refused(flags))
+        return IO_ERROR(SCE_ERROR_ERRNO_EINVAL);
     const auto normalized_path = device::construct_normalized_path(device, translated_path);
 
     auto stream = create_file(system_path, flags);
@@ -422,6 +434,15 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
     }
 
     auto file = std::make_shared<FileStats>(path, normalized_path, system_path, flags, std::move(stream));
+    // TRUNC empties the file once it is open, so a failed open leaves it as it was
+    if (flags & SCE_O_TRUNC) {
+        const std::lock_guard write_lock(io.write_mutex);
+        if (file->truncate(0) != 0) {
+            const int error = errno;
+            LOG_ERROR("Failed to truncate file {} (target path: {}), host errno {}", system_path, path, error);
+            return IO_ERROR(host_open_error(error));
+        }
+    }
     SceUID fd;
     {
         std::lock_guard lock(io.fd_mutex);
