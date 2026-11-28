@@ -20,15 +20,26 @@
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <renderer/types.h>
+#include <shader/spirv_recompiler.h>
 #include <util/hash.h>
 
 #include <renderer/gl/ring_buffer.h>
 #include <renderer/texture_cache.h>
 #include <shader/uniform_block.h>
 
+#include <glad/glad.h>
+
+#include <atomic>
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
+
+// Our glad build does not expose GL_ARB_parallel_shader_compile / GL_KHR_parallel_shader_compile,
+// so the token is defined manually here. Both extensions use the same value.
+#ifndef GL_COMPLETION_STATUS_ARB
+#define GL_COMPLETION_STATUS_ARB 0x91B1
+#endif
 
 struct SceGxmProgramParameter;
 
@@ -44,7 +55,84 @@ inline bool operator==(const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
 
 using ShaderCache = std::map<Sha256Hash, SharedGLObject>;
 using ProgramHashes = std::tuple<Sha256Hash, Sha256Hash>;
-using ProgramCache = std::map<ProgramHashes, SharedGLObject>;
+
+enum class ProgramStatus {
+    // glLinkProgram has been issued but completion has not been observed yet.
+    // Only reachable when asynchronous compilation is enabled.
+    Compiling,
+    // The program is linked and can be used for drawing.
+    Ready,
+    // Linking failed. The entry is kept so that we do not endlessly retry it.
+    Failed
+};
+
+struct CachedProgram {
+    SharedGLObject program;
+    ProgramStatus status = ProgramStatus::Compiling;
+};
+
+using ProgramCache = std::map<ProgramHashes, CachedProgram>;
+
+// A program whose linking has been issued but not yet completed.
+// The shaders are kept alive here because glDetachShader is deferred until completion.
+struct PendingProgram {
+    ProgramHashes hashes;
+    SharedGLObject program;
+    SharedGLObject frag_shader;
+    SharedGLObject vert_shader;
+};
+
+struct ShaderTranslation;
+
+// A program linked by the compile worker, linked again on the render thread once it is done
+struct WorkerProgram {
+    ProgramHashes hashes;
+    std::shared_ptr<const ShaderTranslation> frag;
+    std::shared_ptr<const ShaderTranslation> vert;
+    bool spirv;
+};
+
+enum class ShaderStatus {
+    // A worker thread is turning the gxp program into GLSL or SPIR-V.
+    Translating,
+    // The generated source is available and the GL shader object can be created.
+    Ready,
+    // Translation failed.
+    Failed
+};
+
+// The result of translating one gxp program, shared between a worker thread and the
+// render thread. Only the worker writes to it, and only before publishing the status.
+struct ShaderTranslation {
+    std::atomic<ShaderStatus> status{ ShaderStatus::Translating };
+
+    std::string glsl;
+    std::vector<uint32_t> spirv;
+};
+
+// Everything a worker thread needs to translate a shader without touching anything
+// that the render thread may concurrently modify.
+struct ShaderTranslateRequest {
+    // Shared ownership: the entry may be dropped from the map while a worker still holds it,
+    // for instance when asynchronous compilation is turned off from the UI thread.
+    std::shared_ptr<ShaderTranslation> target;
+
+    // The gxp program is guest memory. It is kept alive for the duration of the request
+    // by the refcount below, which SceGxm waits on before destroying a program.
+    const SceGxmProgram *program;
+    std::atomic<uint32_t> *refcount;
+
+    bool is_vertex;
+    bool maskupdate;
+    bool spirv;
+    bool use_shader_cache;
+
+    shader::Hints hints;
+    // hints.attributes points here: the vertex program's own vector must not be
+    // read from a worker thread.
+    std::vector<SceGxmVertexAttribute> attributes;
+};
+
 typedef std::vector<ExcludedUniform> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 using UniformTypes = std::map<GLuint, GLenum>;
 

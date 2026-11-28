@@ -4,6 +4,7 @@ add_library(
 	src/gl/attribute_formats.cpp
 	src/gl/color_formats.cpp
 	src/gl/compile_program.cpp
+	src/gl/compile_worker.cpp
 	src/gl/draw.cpp
 	src/gl/fence.cpp
 	src/gl/renderer.cpp
@@ -53,6 +54,11 @@ target_link_libraries(renderer PRIVATE dialog ddspp SDL3::SDL3 stb ffmpeg xxHash
 
 if(ANDROID)
 	target_link_libraries(renderer PRIVATE android adrenotools)
+endif()
+
+if(WIN32)
+	# the compile worker creates WGL contexts of its own
+	target_link_libraries(renderer PRIVATE opengl32)
 endif()
 
 if(APPLE)

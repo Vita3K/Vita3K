@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <renderer/gl/compile_worker.h>
 #include <renderer/gl/overlay_renderer.h>
 #include <renderer/gl/screen_render.h>
 #include <renderer/gl/surface_cache.h>
@@ -25,9 +26,13 @@
 
 #include "types.h"
 
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <deque>
+#include <mutex>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 namespace renderer::gl {
@@ -82,6 +87,47 @@ struct GLState : public renderer::State {
     std::vector<uint8_t> readback_scratch;
     std::vector<DownscaleTarget> downscale_targets;
 
+    // Does the driver expose GL_ARB_parallel_shader_compile (or its KHR variant)?
+    bool support_parallel_shader_compile = false;
+    // What the user asked for. set_async_compilation can be called from any thread, so it
+    // only records the request, which the render thread applies between draws.
+    std::atomic<bool> async_compilation_requested{ false };
+    // Translate shaders on worker threads and drop draws whose program is not ready.
+    // Does not need any extension. Only used by the render thread.
+    bool use_async_compilation = false;
+    // Skip the GL status queries that would block the render thread. Only possible
+    // with GL_ARB_parallel_shader_compile.
+    bool defer_gl_status_checks = false;
+
+    // Programs whose linking is in flight, polled from the render thread.
+    std::vector<PendingProgram> pending_programs;
+
+    // gxp -> GLSL/SPIR-V translations in flight. Guarded by shader_translations_mutex.
+    // Entries are shared so that a worker can safely finish writing to one that has
+    // already been dropped from the map.
+    std::mutex shader_translations_mutex;
+    // Keyed by the format too, as the setting can change while a translation is in flight.
+    std::map<std::pair<Sha256Hash, bool>, std::shared_ptr<ShaderTranslation>> shader_translations;
+
+    std::unique_ptr<CompileWorker> compile_worker;
+    bool compile_worker_unavailable = false;
+    // Programs being linked by compile_worker, by job id
+    std::map<uint64_t, WorkerProgram> worker_programs;
+    uint64_t next_worker_job = 0;
+    // Translated sources of the fragment [0] and vertex [1] shaders, to link new pairs on the worker
+    std::map<std::pair<Sha256Hash, bool>, std::shared_ptr<const ShaderTranslation>> shader_sources[2];
+    // Format of the stage objects in the shader caches, they cannot be mixed in a program
+    bool shader_cache_spirv = false;
+
+    // Serializes starting and stopping the translation threads, which the render thread and the
+    // thread closing the game can both do. The workers never take it.
+    std::mutex shader_translate_lifecycle_mutex;
+    std::vector<std::thread> shader_translate_threads;
+    std::mutex shader_translate_queue_mutex;
+    std::condition_variable shader_translate_queue_cond;
+    std::deque<ShaderTranslateRequest *> shader_translate_queue;
+    bool shader_translate_abort = false;
+
     bool init() override;
     void cleanup() override;
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
@@ -101,6 +147,22 @@ struct GLState : public renderer::State {
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
     int get_max_2d_texture_width() override;
+    void set_async_compilation(bool enable) override;
+    // Render thread only: applies what set_async_compilation recorded
+    void apply_async_compilation();
+
+    // Move every pending program that the driver has finished linking to its final state.
+    // Must be called from the render thread. Cheap when nothing is pending.
+    void poll_pending_programs();
+    // Created on first use, as it needs the render context to be current. Null if not supported.
+    CompileWorker *get_compile_worker();
+
+    void start_shader_translate_threads();
+    void stop_shader_translate_threads();
+    // Entry point of each shader translation worker.
+    void shader_translate_thread();
+    // Hand a request over to the workers. Takes ownership of the request.
+    void enqueue_shader_translation(ShaderTranslateRequest *request);
 
     std::string_view get_gpu_name() override;
 

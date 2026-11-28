@@ -36,6 +36,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <SDL3/SDL_cpuinfo.h>
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -210,7 +212,11 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
         { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image },
         { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format },
-        { "GL_EXT_texture_sRGB_decode", &gl_state.surface_cache.support_srgb_decode }
+        { "GL_EXT_texture_sRGB_decode", &gl_state.surface_cache.support_srgb_decode },
+        // Deliberately not part of FeatureState: this does not change the shaders we generate,
+        // so it must not end up in get_features_mask() and invalidate the shader cache.
+        { "GL_ARB_parallel_shader_compile", &gl_state.support_parallel_shader_compile },
+        { "GL_KHR_parallel_shader_compile", &gl_state.support_parallel_shader_compile }
     };
 
     for (int i = 0; i < total_extensions; i++) {
@@ -235,6 +241,28 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
     } else {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
+    }
+
+    if (gl_state.support_parallel_shader_compile) {
+        using MaxShaderCompilerThreadsProc = void (*)(GLuint);
+
+        // Not available through glad, so resolve it by hand. Android only ships the KHR variant.
+        auto max_shader_compiler_threads = reinterpret_cast<MaxShaderCompilerThreadsProc>(
+            s_frame->get_proc_address("glMaxShaderCompilerThreadsARB"));
+        if (!max_shader_compiler_threads)
+            max_shader_compiler_threads = reinterpret_cast<MaxShaderCompilerThreadsProc>(
+                s_frame->get_proc_address("glMaxShaderCompilerThreadsKHR"));
+
+        if (max_shader_compiler_threads) {
+            // 0xFFFFFFFF asks for the implementation defined maximum, ie let the driver decide.
+            max_shader_compiler_threads(0xFFFFFFFFu);
+            LOG_INFO("Your GPU supports parallel shader compilation.");
+        } else {
+            LOG_WARN("Parallel shader compilation is advertised but glMaxShaderCompilerThreads is missing.");
+            gl_state.support_parallel_shader_compile = false;
+        }
+    } else {
+        LOG_INFO("Your GPU doesn't support parallel shader compilation, shader compilation may cause stutters.");
     }
 
 #ifdef __ANDROID__
@@ -1025,6 +1053,130 @@ int GLState::get_max_anisotropic_filtering() {
     return static_cast<int>(max_aniso);
 }
 
+void GLState::set_async_compilation(bool enable) {
+    async_compilation_requested = enable;
+}
+
+void GLState::apply_async_compilation() {
+    const bool enable = async_compilation_requested;
+    if (enable == use_async_compilation)
+        return;
+
+    use_async_compilation = enable;
+    defer_gl_status_checks = enable && support_parallel_shader_compile;
+
+    if (enable) {
+        start_shader_translate_threads();
+    } else {
+        stop_shader_translate_threads();
+    }
+
+    LOG_INFO("Asynchronous shader compilation is now {}", enable ? "enabled" : "disabled");
+}
+
+static bool is_amd_driver() {
+    const auto contains = [](const GLubyte *text, std::string_view part) {
+        return text && std::string_view(reinterpret_cast<const char *>(text)).find(part) != std::string_view::npos;
+    };
+    const GLubyte *vendor = glGetString(GL_VENDOR);
+    const GLubyte *renderer = glGetString(GL_RENDERER);
+    return contains(vendor, "ATI") || contains(vendor, "AMD") || contains(renderer, "AMD") || contains(renderer, "Radeon");
+}
+
+CompileWorker *GLState::get_compile_worker() {
+    if (!compile_worker && !compile_worker_unavailable) {
+        // Only the AMD driver is known to link on the thread that polls the result and to
+        // reuse a program linked in another context, so other drivers keep the plain path
+        if (is_amd_driver())
+            compile_worker = CompileWorker::create();
+        compile_worker_unavailable = !compile_worker;
+    }
+    return compile_worker.get();
+}
+
+void GLState::start_shader_translate_threads() {
+    std::lock_guard<std::mutex> lifecycle(shader_translate_lifecycle_mutex);
+    if (!shader_translate_threads.empty())
+        return;
+
+    const int nb_logical_threads = SDL_GetNumLogicalCPUCores();
+    // same heuristic as the vulkan pipeline cache
+    int nb_threads;
+    if (nb_logical_threads > 12)
+        nb_threads = 6;
+    else if (nb_logical_threads > 8)
+        nb_threads = 4;
+    else if (nb_logical_threads >= 8)
+        nb_threads = 3;
+    else if (nb_logical_threads >= 6)
+        nb_threads = 2;
+    else
+        nb_threads = 1;
+
+    {
+        std::lock_guard<std::mutex> guard(shader_translate_queue_mutex);
+        shader_translate_abort = false;
+    }
+
+    LOG_INFO("Translating shaders on {} worker threads", nb_threads);
+
+    shader_translate_threads.reserve(nb_threads);
+    for (int i = 0; i < nb_threads; i++)
+        shader_translate_threads.emplace_back(&GLState::shader_translate_thread, this);
+}
+
+void GLState::stop_shader_translate_threads() {
+    std::lock_guard<std::mutex> lifecycle(shader_translate_lifecycle_mutex);
+    if (shader_translate_threads.empty())
+        return;
+
+    std::deque<ShaderTranslateRequest *> dropped;
+    {
+        std::lock_guard<std::mutex> guard(shader_translate_queue_mutex);
+        shader_translate_abort = true;
+        dropped.swap(shader_translate_queue);
+    }
+    shader_translate_queue_cond.notify_all();
+
+    for (auto &thread : shader_translate_threads) {
+        if (thread.joinable())
+            thread.join();
+    }
+    shader_translate_threads.clear();
+
+    // Requests that never made it to a worker still hold a reference on their program.
+    for (ShaderTranslateRequest *request : dropped) {
+        request->target->status.store(ShaderStatus::Failed, std::memory_order_release);
+        request->refcount->fetch_sub(1, std::memory_order_release);
+        delete request;
+    }
+
+    // Anything left translating will never complete, so drop it. The shaders are simply
+    // translated again, synchronously this time.
+    std::lock_guard<std::mutex> guard(shader_translations_mutex);
+    for (auto it = shader_translations.begin(); it != shader_translations.end();) {
+        if (it->second->status.load(std::memory_order_acquire) != ShaderStatus::Ready)
+            it = shader_translations.erase(it);
+        else
+            ++it;
+    }
+}
+
+void GLState::enqueue_shader_translation(ShaderTranslateRequest *request) {
+    {
+        std::lock_guard<std::mutex> guard(shader_translate_queue_mutex);
+        if (shader_translate_abort) {
+            // The workers are gone, so this request would hold its reference for good
+            request->target->status.store(ShaderStatus::Failed, std::memory_order_release);
+            request->refcount->fetch_sub(1, std::memory_order_release);
+            delete request;
+            return;
+        }
+        shader_translate_queue.push_back(request);
+    }
+    shader_translate_queue_cond.notify_one();
+}
+
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
@@ -1045,13 +1197,30 @@ void GLState::precompile_shader(const ShadersHash &hash) {
     pre_compile_program(*this, hash);
 }
 
-void GLState::preclose_action() {}
+void GLState::preclose_action() {
+    // The workers do not touch GL, but they hold references on guest programs
+    // that are about to go away.
+    stop_shader_translate_threads();
+}
 
 void GLState::cleanup() {
+    stop_shader_translate_threads();
+
     set_current();
 
     context = nullptr;
 
+    {
+        std::lock_guard<std::mutex> guard(shader_translations_mutex);
+        shader_translations.clear();
+    }
+
+    compile_worker = nullptr;
+    compile_worker_unavailable = false;
+    worker_programs.clear();
+    shader_sources[0].clear();
+    shader_sources[1].clear();
+    pending_programs.clear();
     program_cache.clear();
     fragment_shader_cache.clear();
     vertex_shader_cache.clear();
@@ -1086,6 +1255,8 @@ void GLState::cleanup() {
     programs_count_pre_compiled = 0;
     should_display = false;
     render_abort = false;
+    use_async_compilation = false;
+    defer_gl_status_checks = false;
 
     frame = nullptr;
 }

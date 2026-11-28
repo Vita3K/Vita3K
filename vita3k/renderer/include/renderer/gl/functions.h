@@ -32,7 +32,9 @@ struct FeatureState;
 namespace renderer::gl {
 
 // Compile program.
-SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool shader_cache, bool spirv, bool maskupdate);
+// Returns a null object when the program is not usable yet. When that happens, is_compiling
+// tells whether it is still being linked (retry later) or whether it failed for good.
+SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool shader_cache, bool spirv, bool maskupdate, bool *is_compiling = nullptr);
 void pre_compile_program(GLState &renderer, const ShadersHash &hashs);
 
 // Uniforms.

@@ -58,17 +58,22 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     return GL_TRIANGLES;
 }
 
+// Data of a draw that is skipped must not leak into the next one, which would copy the stale streams
+static void drop_draw_data(GLContext &context) {
+    for (auto &stream : context.record.vertex_streams) {
+        stream.data = nullptr;
+        stream.size = 0;
+    }
+    clear_previous_uniform_storage(context);
+}
+
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
     MemState &mem, const Config &config) {
     R_PROFILE(__func__);
 
     // a draw whose color nothing observes and which leaves depth, stencil and guest memory untouched has no effect
     if (context.record.skip_color_output && !may_write_depth_stencil(context.record) && !may_store_to_memory(context.record, mem)) {
-        for (auto &stream : context.record.vertex_streams) {
-            stream.data = nullptr;
-            stream.size = 0;
-        }
-        clear_previous_uniform_storage(context);
+        drop_draw_data(context);
         return;
     }
 
@@ -84,16 +89,30 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         return;
     }
 
+    renderer.apply_async_compilation();
+
+    // Links already in flight are still polled after the setting is turned off
+    if (renderer.defer_gl_status_checks || renderer.compile_worker || !renderer.pending_programs.empty())
+        renderer.poll_pending_programs();
+
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
     if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
         // Need to recompile!
-        SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate);
+        bool is_compiling = false;
+        SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate, &is_compiling);
 
-        LOG_ERROR_IF(!program, "Fail to get program!");
+        if (!program) {
+            // Drop the draw. The last draw hashes are left untouched on purpose, so the next
+            // draw using this pair goes through the cache lookup again and picks the program
+            // up as soon as the driver is done with it.
+            LOG_ERROR_IF(!is_compiling, "Fail to get program!");
+            drop_draw_data(context);
+            return;
+        }
 
         // Use it
-        program_id = program ? (*program).get() : 0;
+        program_id = program->get();
         context.last_draw_program = program_id;
     } else {
         program_id = context.last_draw_program;
