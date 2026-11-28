@@ -77,7 +77,7 @@ bool map_guest_memory(MemState &mem, Address dest, uint32_t size, Address source
     }
     for (uint32_t offset = 0; offset < size; offset += page_size) {
         auto &backing = pages[offset / page_size];
-        if (dest + offset != backing->address && std::find(backing->aliases.begin(), backing->aliases.end(), dest + offset) == backing->aliases.end())
+        if (dest + offset != backing->address && !std::ranges::contains(backing->aliases, dest + offset))
             backing->aliases.push_back(dest + offset);
         mem.guest_mappings[dest + offset] = { backing, perm };
     }
@@ -149,11 +149,10 @@ std::vector<std::pair<Address, uint32_t>> guest_alias_ranges(const MemState &mem
         if (outside(backing->address))
             ranges.emplace_back(backing->address, page_size);
         auto &aliases = backing->aliases;
-        aliases.erase(std::remove_if(aliases.begin(), aliases.end(), [&](Address alias) {
+        std::erase_if(aliases, [&](Address alias) {
             const auto found = mem.guest_mappings.find(alias);
             return found == mem.guest_mappings.end() || found->second.backing != backing;
-        }),
-            aliases.end());
+        });
         for (const auto alias : aliases)
             if (outside(alias))
                 ranges.emplace_back(alias, page_size);

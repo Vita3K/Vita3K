@@ -299,7 +299,7 @@ TEST(guest_mapping, alias_ranges_follow_remaps) {
         ASSERT_NE(allocate_page(mem, first_alias_address, "guest_mapping_alias_1"), 0U);
         ASSERT_NE(allocate_page(mem, second_alias_address, "guest_mapping_alias_2"), 0U);
         const auto has = [](const auto &ranges, Address addr) {
-            return std::any_of(ranges.begin(), ranges.end(), [addr](const auto &r) { return r.first == addr; });
+            return std::ranges::any_of(ranges, [addr](const auto &r) { return r.first == addr; });
         };
 
         // A page that is only committed has no other view.
