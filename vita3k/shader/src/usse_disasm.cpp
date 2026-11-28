@@ -27,6 +27,7 @@ using namespace shader::usse;
 namespace shader::usse::disasm {
 
 thread_local std::stringstream *disasm_storage = nullptr;
+thread_local uint32_t disasm_count = 0;
 
 //
 // Disasm helpers

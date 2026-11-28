@@ -26,6 +26,7 @@
 namespace shader::usse::disasm {
 
 extern thread_local std::stringstream *disasm_storage;
+extern thread_local uint32_t disasm_count;
 
 //
 // Disasm helpers
@@ -47,6 +48,7 @@ std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask);
     {                                                                    \
         auto fmt_disasm = fmt::format(fmt_str, ##__VA_ARGS__);           \
         LOG_TRACE("\t{}", fmt_disasm);                                   \
+        ++shader::usse::disasm::disasm_count;                            \
         if (shader::usse::disasm::disasm_storage)                        \
             *shader::usse::disasm::disasm_storage << fmt_disasm << '\n'; \
     }
