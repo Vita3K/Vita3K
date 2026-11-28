@@ -535,7 +535,8 @@ void MainWindow::initialize() {
     m_update_manager->set_skipped_build(emuenv.cfg.skipped_update_build);
     connect(m_update_manager, &UpdateManager::skip_build_requested, this, [this](const std::uint64_t build_number) {
         emuenv.cfg.skipped_update_build = build_number;
-        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        if (emuenv.cfg.overwrite_config)
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     });
 
     // Only the options that pick the configuration carry over, the others start one-shot jobs

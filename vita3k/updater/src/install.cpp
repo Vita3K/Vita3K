@@ -92,7 +92,7 @@ bool extract_zip(std::span<const uint8_t> data, const stdfs::path &out_dir) {
 
         const std::string_view name(stat.m_filename);
         const stdfs::path relative(std::u8string(name.begin(), name.end()));
-        if (relative.empty() || relative.is_absolute() || relative.has_root_name()
+        if (relative.empty() || relative.has_root_path()
             || std::any_of(relative.begin(), relative.end(), [](const stdfs::path &part) { return part == ".."; })) {
             LOG_ERROR("Refusing to extract {} outside of the staging directory", name);
             success = false;
@@ -149,16 +149,16 @@ bool install_appimage(std::span<const uint8_t> payload, const stdfs::path &appim
     constexpr stdfs::perms appimage_perms = stdfs::perms::owner_all | stdfs::perms::group_read | stdfs::perms::group_exec | stdfs::perms::others_read | stdfs::perms::others_exec;
     stdfs::permissions(staged, appimage_perms, ec);
     if (ec) {
-        stdfs::remove(staged, ec);
         error_message = fmt::format("Could not make {} executable: {}", to_utf8(staged), ec.message());
+        stdfs::remove(staged, ec);
         return false;
     }
 
     // Renaming over the old AppImage is atomic, and the running one keeps the inode it was mounted from
     stdfs::rename(staged, appimage, ec);
     if (ec) {
-        stdfs::remove(staged, ec);
         error_message = fmt::format("Could not replace {}: {}", to_utf8(appimage), ec.message());
+        stdfs::remove(staged, ec);
         return false;
     }
 
@@ -166,26 +166,30 @@ bool install_appimage(std::span<const uint8_t> payload, const stdfs::path &appim
     return true;
 }
 
-std::vector<stdfs::path> collect_staged_files(const stdfs::path &staging) {
-    std::vector<stdfs::path> files;
+// An incomplete list would install some files of the new version next to the old ones, so any error is fatal
+bool collect_staged_files(const stdfs::path &staging, std::vector<stdfs::path> &files) {
+    std::error_code ec;
+    stdfs::recursive_directory_iterator it(staging, ec);
+    if (ec)
+        return false;
 
-    std::error_code iterate_error;
-    for (stdfs::recursive_directory_iterator it(staging, iterate_error), end; it != end; it.increment(iterate_error)) {
-        if (iterate_error)
-            break;
+    for (const stdfs::recursive_directory_iterator end; it != end;) {
+        if (it->is_regular_file(ec)) {
+            stdfs::path relative = stdfs::relative(it->path(), staging, ec);
+            if (ec || relative.empty())
+                return false;
 
-        std::error_code entry_error;
-        if (!it->is_regular_file(entry_error) || entry_error)
-            continue;
+            files.push_back(std::move(relative));
+        } else if (ec) {
+            return false;
+        }
 
-        stdfs::path relative = stdfs::relative(it->path(), staging, entry_error);
-        if (entry_error || relative.empty())
-            continue;
-
-        files.push_back(std::move(relative));
+        it.increment(ec);
+        if (ec)
+            return false;
     }
 
-    return files;
+    return true;
 }
 
 void undo_applied_files(const std::vector<AppliedFile> &applied) {
@@ -267,7 +271,9 @@ bool install_update(std::span<const uint8_t> archive_data, const stdfs::path &in
     if (!extract_zip(archive_data, staging))
         return fail("The downloaded update archive could not be extracted.");
 
-    const std::vector<stdfs::path> staged_files = collect_staged_files(staging);
+    std::vector<stdfs::path> staged_files;
+    if (!collect_staged_files(staging, staged_files))
+        return fail("The extracted update files could not be listed.");
     if (staged_files.empty())
         return fail("The downloaded update archive did not contain any file.");
 
@@ -314,6 +320,10 @@ bool install_update(std::span<const uint8_t> archive_data, const stdfs::path &in
     std::ofstream marker(install_dir / k_pending_marker_name, std::ios::binary | std::ios::app);
     for (const stdfs::path &backup : backups)
         marker << to_utf8(backup.generic_u8string()) << '\n';
+    marker.close();
+    // The update is already in place, so a failure here only leaves the old files behind
+    if (!marker)
+        LOG_WARN("Could not record the update backups in {}, the *{} files can be deleted by hand", to_utf8(install_dir / k_pending_marker_name), k_backup_suffix);
 
     LOG_INFO("Installed {} updated file(s) in {}", applied.size(), to_utf8(install_dir));
     return true;
@@ -332,7 +342,7 @@ void remove_update_backups(const stdfs::path &install_dir) {
     std::vector<std::string> remaining;
     for (std::string line; std::getline(in, line);) {
         const stdfs::path relative(std::u8string(line.begin(), line.end()));
-        if (relative.empty() || relative.is_absolute() || relative.extension() != stdfs::path(k_backup_suffix)
+        if (relative.empty() || relative.has_root_path() || relative.extension() != stdfs::path(k_backup_suffix)
             || std::any_of(relative.begin(), relative.end(), [](const stdfs::path &part) { return part == ".."; }))
             continue;
 
@@ -350,9 +360,26 @@ void remove_update_backups(const stdfs::path &install_dir) {
         return;
     }
 
-    std::ofstream out(marker, std::ios::binary | std::ios::trunc);
-    for (const std::string &line : remaining)
-        out << line << '\n';
+    // Replace the marker in one step so a failed write cannot lose the entries that are still pending
+    stdfs::path rewritten = marker;
+    rewritten += ".tmp";
+    {
+        std::ofstream out(rewritten, std::ios::binary | std::ios::trunc);
+        for (const std::string &line : remaining)
+            out << line << '\n';
+        out.close();
+        if (!out) {
+            LOG_WARN("Could not rewrite {}", to_utf8(marker));
+            stdfs::remove(rewritten, ec);
+            return;
+        }
+    }
+
+    stdfs::rename(rewritten, marker, ec);
+    if (ec) {
+        LOG_WARN("Could not replace {}: {}", to_utf8(marker), ec.message());
+        stdfs::remove(rewritten, ec);
+    }
 }
 
 } // namespace updater
