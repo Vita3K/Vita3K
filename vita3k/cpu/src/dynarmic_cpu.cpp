@@ -598,10 +598,12 @@ std::size_t DynarmicCPU::processor_id() const {
 
 void DynarmicCPU::invalidate_jit_cache(Address start, size_t length) {
     const std::lock_guard lock(jit_replacement_mutex);
-    // A write through one alias may modify code cached at any other alias.
-    if (parent->mem->guest_mappings_active.load(std::memory_order_acquire))
-        jit->ClearCache();
-    else
+    // A write through one alias may modify code cached at any other alias: invalidate those
+    // aliases too instead of the whole cache (guests flush their JIT buffers block by block).
+    if (parent->mem->guest_mappings_active.load(std::memory_order_acquire)) {
+        for (const auto &[addr, size] : guest_alias_ranges(*parent->mem, start, static_cast<uint32_t>(length)))
+            jit->InvalidateCacheRange(addr, size);
+    } else
         jit->InvalidateCacheRange(start, length);
 }
 

@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include <mem/block.h>
 #include <mem/util.h>
 
@@ -55,6 +58,9 @@ bool protect_guest_memory(MemState &mem, Address dest, uint32_t size, MemPerm pe
 bool decommit_guest_memory(MemState &mem, Address dest, uint32_t size);
 void release_guest_mappings(MemState &mem, Address dest, uint32_t size);
 uint8_t *resolve_guest_pointer(const MemState &mem, Address addr);
+// Guest ranges whose cached translations a write to [addr, addr + size) can change: the range itself
+// plus every alias sharing backing with one of its pages. Pages only committed or protected count once.
+std::vector<std::pair<Address, uint32_t>> guest_alias_ranges(const MemState &mem, Address addr, uint32_t size);
 bool access_guest_memory(MemState &mem, Address addr, void *data, uint32_t size, bool write, Address &fault);
 bool check_guest_memory_access(MemState &mem, Address addr, uint32_t size, bool write, Address &fault);
 bool compare_exchange_guest_memory(MemState &mem, Address addr, uint32_t size, uint64_t value, uint64_t expected, bool &swapped, Address &fault);
